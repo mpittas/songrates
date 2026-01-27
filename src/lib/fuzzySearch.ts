@@ -22,13 +22,18 @@ export function fuzzySearchArtists(artists: Artist[], query: string): Artist[] {
       { name: "name", weight: 0.8 },
       { name: "disambiguation", weight: 0.2 },
     ],
-    threshold: 0.5, // 0 = exact match, 1 = match anything
+    threshold: 0.6, // Increased for better tolerance on short queries
     includeScore: true,
     ignoreLocation: true, // Match anywhere in the string
     minMatchCharLength: 2,
   });
 
   const results = fuse.search(query);
+
+  // If Fuse.js finds nothing, fall back to original MusicBrainz-ranked list
+  if (results.length === 0) {
+    return artists;
+  }
 
   // Combine Fuse.js score with MusicBrainz popularity score
   // Fuse score is 0 (perfect) to 1 (worst), so we invert it
