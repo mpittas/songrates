@@ -16,17 +16,21 @@ export default function RecentArtists() {
   }
 
   return (
-    <div className="mt-16">
-      <h2 className="text-xl font-thin text-zinc-400 mb-6">Recently Visited</h2>
-      <div className="grid gap-2">
+    <div>
+      <h2 className="text-2xl font-thin text-zinc-400 mb-8 tracking-tight">
+        Recently Visited
+      </h2>
+      <div className="grid gap-1">
         {history.map((artist) => (
           <Link
             key={artist.id}
             href={`/artist/${artist.id}`}
-            className="text-zinc-100 hover:text-white transition-colors py-2 px-3 rounded hover:bg-zinc-900/50 block"
+            className="text-zinc-100 hover:text-white transition-colors py-3 px-4 rounded-lg hover:bg-zinc-900/50 block group"
           >
             <div className="flex items-center justify-between">
-              <span className="font-normal">{artist.name}</span>
+              <span className="font-light group-hover:font-normal transition-all">
+                {artist.name}
+              </span>
               <span className="text-xs text-zinc-600 font-mono">
                 {formatTime(artist.visitedAt)}
               </span>

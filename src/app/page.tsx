@@ -24,35 +24,44 @@ function SearchResults() {
       .finally(() => setLoading(false));
   }, [query]);
 
+  if (!query) return null;
+
   return (
-    <>
+    <div className="absolute top-full left-0 right-0 mt-4 bg-[#000000] border border-zinc-800 rounded-lg shadow-2xl z-50 max-h-[500px] overflow-y-auto">
       {loading ? (
-        <div className="text-center text-zinc-600 animate-pulse">
+        <div className="text-center text-zinc-600 animate-pulse py-8">
           searching...
         </div>
       ) : (
         <ArtistList artists={artists} />
-        // temp
       )}
-    </>
+    </div>
   );
 }
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-black text-zinc-100 p-8 md:p-24 font-light">
+    <main className="min-h-screen bg-[#0a0a0a] text-zinc-100 p-8 md:p-24 font-light">
       <div className="max-w-4xl mx-auto">
         <h1 className="text-4xl md:text-6xl font-thin mb-16 text-center tracking-tight">
           songrates
         </h1>
 
-        <SearchBar />
+        {/* Search Container - relative positioning for absolute dropdown */}
+        <div className="relative mb-24">
+          <SearchBar />
+          <Suspense fallback={null}>
+            <SearchResults />
+          </Suspense>
+        </div>
 
-        <Suspense fallback={null}>
-          <SearchResults />
-        </Suspense>
+        {/* Divider */}
+        <div className="border-t border-zinc-800/50 mb-16"></div>
 
-        <RecentArtists />
+        {/* Recent Artists Section */}
+        <div className="bg-zinc-950/30 rounded-xl">
+          <RecentArtists />
+        </div>
       </div>
     </main>
   );

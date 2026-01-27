@@ -47,17 +47,31 @@ export async function GET(request: NextRequest) {
 
   const data = await fetchMB("artist", {
     query: `artist:${query}`,
-    limit: "10",
+    limit: "25", // Request more to filter
   });
 
+  if (!data?.artists) return NextResponse.json({ artists: [] });
+
+  // Filter and sort artists to prioritize official/verified ones
+  const filteredArtists = data.artists
+    // Keep only artists with score >= 85 (MusicBrainz relevance score)
+    // This filters out most fake/duplicate artists
+    .filter((a: any) => a.score >= 85)
+    // Sort by score descending (most relevant first)
+    .sort((a: any, b: any) => b.score - a.score)
+    // Take top 10
+    .slice(0, 10)
+    .map((a: any) => ({
+      id: a.id,
+      name: a.name,
+      disambiguation: a.disambiguation,
+      country: a.country,
+      type: a.type, // "Person" or "Group"
+      lifeSpan: a["life-span"],
+      score: a.score, // Include score for debugging/display
+    }));
+
   return NextResponse.json({
-    artists:
-      data?.artists?.map((a: any) => ({
-        id: a.id,
-        name: a.name,
-        disambiguation: a.disambiguation,
-        country: a.country,
-        lifeSpan: a["life-span"],
-      })) || [],
+    artists: filteredArtists,
   });
 }
