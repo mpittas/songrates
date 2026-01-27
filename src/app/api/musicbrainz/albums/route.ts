@@ -20,13 +20,38 @@ export async function GET(request: NextRequest) {
     if (!res.ok) throw new Error("MB API Error");
     const data = await res.json();
 
-    // Filter strictly for official albums (exclude compilations, live, etc.)
+    // Filter for official studio albums
+    // Include: Regular albums, soundtracks, remixes
+    // Exclude: Compilations, live albums, interviews, demos, etc.
+    const excludedSecondaryTypes = [
+      "Compilation",
+      "Live",
+      "Spokenword",
+      "Interview",
+      "Audiobook",
+      "Audio drama",
+      "Mixtape/Street",
+      "Demo",
+      "DJ-mix",
+      "Field recording",
+    ];
+
     const basicAlbums = data["release-groups"]
-      .filter(
-        (rg: any) =>
-          rg["primary-type"] === "Album" &&
-          (!rg["secondary-types"] || rg["secondary-types"].length === 0),
-      )
+      .filter((rg: any) => {
+        // Must be primary type Album
+        if (rg["primary-type"] !== "Album") return false;
+
+        // If no secondary types, it's a regular studio album - include it
+        if (!rg["secondary-types"] || rg["secondary-types"].length === 0)
+          return true;
+
+        // If has secondary types, check if any are in the excluded list
+        const hasExcludedType = rg["secondary-types"].some((type: string) =>
+          excludedSecondaryTypes.includes(type),
+        );
+
+        return !hasExcludedType;
+      })
       .map((rg: any) => {
         // Extract Wikidata ID if available
         const wikidataRel = rg.relations?.find(
