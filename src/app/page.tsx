@@ -1,6 +1,7 @@
 "use client";
 import SearchBar from "@/components/SearchBar";
 import ArtistList from "@/components/ArtistList";
+import RecentArtists from "@/components/RecentArtists";
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
@@ -50,6 +51,8 @@ export default function Home() {
         <Suspense fallback={null}>
           <SearchResults />
         </Suspense>
+
+        <RecentArtists />
       </div>
     </main>
   );

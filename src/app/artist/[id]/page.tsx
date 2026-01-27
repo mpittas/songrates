@@ -5,6 +5,7 @@ import AlbumGrid from "@/components/AlbumGrid";
 import TrackList from "@/components/TrackList";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { addToHistory } from "@/lib/history";
 
 export default function ArtistPage() {
   const { id } = useParams();
@@ -36,6 +37,8 @@ export default function ArtistPage() {
       .then((data) => {
         if (data.artist) {
           setArtistName(data.artist.name);
+          // Save to history when artist name is loaded
+          addToHistory(id as string, data.artist.name);
         }
       });
   }, [id]);
