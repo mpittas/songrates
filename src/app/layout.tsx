@@ -24,6 +24,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        {/* Preconnect to image CDN for faster loading */}
+        <link rel="preconnect" href="https://coverartarchive.org" />
+        <link rel="dns-prefetch" href="https://coverartarchive.org" />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >

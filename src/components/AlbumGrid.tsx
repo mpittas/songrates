@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Image from "next/image";
+import { useState } from "react";
 
 interface Album {
   id: string;
@@ -13,27 +13,38 @@ interface Album {
 function AlbumCard({
   album,
   onSelect,
+  isPriority = false,
 }: {
   album: Album;
   onSelect: (id: string) => void;
+  isPriority?: boolean;
 }) {
-  const [imgSrc, setImgSrc] = useState<string>(
-    `https://coverartarchive.org/release-group/${album.id}/front-250`,
-  );
-  const [error, setError] = useState(false);
+  // Cover Art Archive provides optimized thumbnails at 250px, 500px, and 1200px
+  // Using 250px for fastest loading - it's optimized specifically for grid displays
+  const imageUrl = `https://coverartarchive.org/release-group/${album.id}/front-250`;
+  const [imageError, setImageError] = useState(false);
+
+  // Simple low-quality placeholder for perceived performance
+  const blurDataURL =
+    "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMSIgaGVpZ2h0PSIxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiMxODE4MWIiLz48L3N2Zz4=";
 
   return (
     <div onClick={() => onSelect(album.id)} className="group cursor-pointer">
       <div className="aspect-square bg-zinc-900 mb-3 overflow-hidden relative rounded-md">
-        {!error ? (
+        {!imageError ? (
           <Image
-            src={imgSrc}
+            src={imageUrl}
             alt={album.title}
             fill
-            className="object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-500"
-            sizes="(max-width: 768px) 50vw, 33vw"
-            onError={() => setError(true)}
-            unoptimized // Bypass Next.js server for speed
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 250px"
+            className="object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-150"
+            onError={() => setImageError(true)}
+            priority={isPriority}
+            loading={isPriority ? "eager" : "lazy"}
+            placeholder="blur"
+            blurDataURL={blurDataURL}
+            quality={90}
+            unoptimized
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-zinc-800 text-4xl font-thin">
@@ -47,7 +58,7 @@ function AlbumCard({
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
-            className="absolute top-2 right-2 bg-black/60 hover:bg-black/80 text-white/90 p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 backdrop-blur-sm"
+            className="absolute top-2 right-2 bg-black/80 hover:bg-black text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10"
             title="View on Wikipedia"
           >
             <svg
@@ -85,8 +96,13 @@ export default function AlbumGrid({
 }) {
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-8 gap-y-12">
-      {albums.map((album) => (
-        <AlbumCard key={album.id} album={album} onSelect={onSelectAlbum} />
+      {albums.map((album, index) => (
+        <AlbumCard
+          key={album.id}
+          album={album}
+          onSelect={onSelectAlbum}
+          isPriority={index < 4} // Prioritize first row
+        />
       ))}
     </div>
   );
