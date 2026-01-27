@@ -6,9 +6,21 @@ import { getArtistHistory, type ArtistVisit } from "@/lib/history";
 
 export default function RecentArtists() {
   const [history, setHistory] = useState<ArtistVisit[]>([]);
+  const [images, setImages] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    setHistory(getArtistHistory());
+    const data = getArtistHistory();
+    setHistory(data);
+
+    if (data.length > 0) {
+      const ids = data.map((a) => a.id).join(",");
+      fetch(`/api/images/artists?ids=${ids}`)
+        .then((res) => res.json())
+        .then((data) => {
+          setImages((prev) => ({ ...prev, ...data.images }));
+        })
+        .catch((e) => console.error(e));
+    }
   }, []);
 
   if (history.length === 0) {
@@ -28,9 +40,27 @@ export default function RecentArtists() {
             className="text-zinc-100 hover:text-white transition-colors py-3 px-4 rounded-lg hover:bg-zinc-900/50 block group"
           >
             <div className="flex items-center justify-between">
-              <span className="font-light group-hover:font-normal transition-all">
-                {artist.name}
-              </span>
+              <div className="flex items-center gap-4">
+                {/* Image Placeholder */}
+                <div className="w-12 h-12 rounded-full overflow-hidden bg-zinc-800 border border-zinc-700 flex-shrink-0">
+                  {images[artist.id] ? (
+                    <img
+                      src={images[artist.id]}
+                      alt={artist.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-zinc-600">
+                      <span className="text-[10px] font-mono">
+                        {artist.name.slice(0, 2).toUpperCase()}
+                      </span>
+                    </div>
+                  )}
+                </div>
+                <span className="font-light group-hover:font-normal transition-all">
+                  {artist.name}
+                </span>
+              </div>
               <span className="text-xs text-zinc-600 font-mono">
                 {formatTime(artist.visitedAt)}
               </span>
