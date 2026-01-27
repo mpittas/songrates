@@ -31,6 +31,7 @@ function SearchResults() {
         </div>
       ) : (
         <ArtistList artists={artists} />
+        // temp
       )}
     </>
   );
