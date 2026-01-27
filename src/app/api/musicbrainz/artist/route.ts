@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { fuzzySearchArtists, Artist } from "@/lib/fuzzySearch";
 
 const MB_USER_AGENT = "SongRates/1.0 (mpittas@gmail.com)"; // Good practice to include contact info
 const MB_BASE_URL = "https://musicbrainz.org/ws/2";
@@ -45,33 +46,34 @@ export async function GET(request: NextRequest) {
 
   if (!query) return NextResponse.json({ artists: [] });
 
+  // Get more results from MusicBrainz with multiple matching strategies
+  // - artist:query* for prefix/partial matching
+  // - artist:query~ for fuzzy/typo tolerance (Levenshtein distance)
   const data = await fetchMB("artist", {
-    query: `artist:${query}`,
-    limit: "25", // Request more to filter
+    query: `artist:${query}* OR artist:${query}~`,
+    limit: "50",
   });
 
   if (!data?.artists) return NextResponse.json({ artists: [] });
 
-  // Filter and sort artists to prioritize official/verified ones
-  const filteredArtists = data.artists
-    // Keep only artists with score >= 85 (MusicBrainz relevance score)
-    // This filters out most fake/duplicate artists
-    .filter((a: any) => a.score >= 85)
-    // Sort by score descending (most relevant first)
-    .sort((a: any, b: any) => b.score - a.score)
-    // Take top 10
-    .slice(0, 10)
+  // First filter: keep artists with reasonable MusicBrainz score
+  const candidates: Artist[] = data.artists
+    .filter((a: any) => a.score >= 50) // Lower threshold to get more candidates
     .map((a: any) => ({
       id: a.id,
       name: a.name,
       disambiguation: a.disambiguation,
       country: a.country,
-      type: a.type, // "Person" or "Group"
+      type: a.type,
       lifeSpan: a["life-span"],
-      score: a.score, // Include score for debugging/display
+      score: a.score,
     }));
 
+  // Re-rank using Fuse.js fuzzy matching
+  const rankedArtists = fuzzySearchArtists(candidates, query);
+
+  // Return top 10
   return NextResponse.json({
-    artists: filteredArtists,
+    artists: rankedArtists.slice(0, 10),
   });
 }
