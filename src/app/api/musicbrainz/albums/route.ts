@@ -7,9 +7,9 @@ export async function GET(request: NextRequest) {
   const artistId = request.nextUrl.searchParams.get("artistId");
   if (!artistId) return NextResponse.json({ albums: [] });
 
-  // Fetch Release Groups (Albums)
+  // Fetch Release Groups (Albums) with URL relations
   // primary-type=Album filters for main albums
-  const url = `${MB_BASE_URL}/release-group?artist=${artistId}&type=album&fmt=json&limit=100`;
+  const url = `${MB_BASE_URL}/release-group?artist=${artistId}&type=album&fmt=json&limit=100&inc=url-rels`;
 
   try {
     const res = await fetch(url, {
@@ -21,20 +21,77 @@ export async function GET(request: NextRequest) {
     const data = await res.json();
 
     // Filter strictly for official albums (exclude compilations, live, etc.)
-    const albums = data["release-groups"]
+    const basicAlbums = data["release-groups"]
       .filter(
         (rg: any) =>
           rg["primary-type"] === "Album" &&
           (!rg["secondary-types"] || rg["secondary-types"].length === 0),
       )
-      .map((rg: any) => ({
-        id: rg.id,
-        title: rg.title,
-        releaseDate: rg["first-release-date"],
-      }))
+      .map((rg: any) => {
+        // Extract Wikidata ID if available
+        const wikidataRel = rg.relations?.find(
+          (rel: any) => rel.type === "wikidata",
+        );
+        const wikidataId = wikidataRel?.url?.resource?.split("/").pop();
+
+        return {
+          id: rg.id,
+          title: rg.title,
+          releaseDate: rg["first-release-date"],
+          wikidataId,
+        };
+      })
       .sort((a: any, b: any) =>
         (b.releaseDate || "").localeCompare(a.releaseDate || ""),
       );
+
+    // Collect all Wikidata IDs
+    const wikidataIds = basicAlbums
+      .map((a: any) => a.wikidataId)
+      .filter(Boolean);
+
+    // Batch fetch Wikipedia URLs from Wikidata
+    const wikiMap = new Map<string, string>();
+    if (wikidataIds.length > 0) {
+      // Wikidata API limit matches to 50 entities per request usually, but let's do chunks if needed.
+      // For simplicity, we'll assume < 50 for a single artist main albums list or just slice.
+      // Usually main studio albums are < 50.
+      const idsChunk = wikidataIds.slice(0, 50).join("|");
+      const wdUrl = `https://www.wikidata.org/w/api.php?action=wbgetentities&ids=${idsChunk}&props=sitelinks/urls&format=json`;
+
+      try {
+        const wdRes = await fetch(wdUrl, {
+          next: { revalidate: 3600 },
+        });
+        if (wdRes.ok) {
+          const wdData = await wdRes.json();
+          const entities = wdData.entities || {};
+
+          Object.keys(entities).forEach((id) => {
+            const entity = entities[id];
+            // Prefer English Wikipedia, fall back to others if needed?
+            // Let's stick to enwiki for now based on user request implication.
+            const siteLink = entity.sitelinks?.enwiki;
+            if (siteLink?.url) {
+              wikiMap.set(id, siteLink.url);
+            }
+          });
+        }
+      } catch (e) {
+        console.error("Wikidata fetch error:", e);
+        // Continue without links on error
+      }
+    }
+
+    // Merge Wikipedia URLs
+    const albums = basicAlbums.map((album: any) => ({
+      id: album.id,
+      title: album.title,
+      releaseDate: album.releaseDate,
+      wikipediaUrl: album.wikidataId
+        ? wikiMap.get(album.wikidataId)
+        : undefined,
+    }));
 
     return NextResponse.json({ albums });
   } catch (e) {
