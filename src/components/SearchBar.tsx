@@ -1,11 +1,25 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 export default function SearchBar() {
-  const [query, setQuery] = useState("");
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const [query, setQuery] = useState(searchParams.get("q") || "");
+
+  // Debounced search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (query.trim()) {
+        router.replace(`/?q=${encodeURIComponent(query)}`);
+      } else {
+        router.replace("/");
+      }
+    }, 300); // 300ms debounce
+
+    return () => clearTimeout(timer);
+  }, [query, router]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
