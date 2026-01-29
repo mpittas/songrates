@@ -63,11 +63,16 @@ function TrackItem({
         </span>
 
         <div className="flex flex-col min-w-0">
-          <span className="text-zinc-300 font-medium group-hover:text-white transition-colors truncate text-base">
+          <a
+            href={`https://www.youtube.com/results?search_query=${encodeURIComponent(artistName + " " + track.title)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-zinc-300 font-medium group-hover:text-white transition-colors truncate text-base hover:underline"
+          >
             {track.title}
-          </span>
+          </a>
           {track.artists && track.artists.length > 0 && (
-            <span className="text-zinc-500 text-xs truncate">
+            <span className="text-zinc-500 text-xs line-clamp-2 leading-relaxed mt-0.5">
               {track.artists
                 .filter((a) => a.id !== artistId)
                 .map((a, i, arr) => (
@@ -148,6 +153,10 @@ export default function AlbumPage() {
 
   const imageUrl = `https://coverartarchive.org/release-group/${album.id}/front-500`;
 
+  // Simple low-quality placeholder for perceived performance
+  const blurDataURL =
+    "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMSIgaGVpZ2h0PSIxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiMxODE4MWIiLz48L3N2Zz4=";
+
   return (
     <main className="min-h-screen bg-black text-zinc-100 pb-24">
       <div className="max-w-5xl mx-auto pt-20 px-6 sm:px-8">
@@ -170,6 +179,8 @@ export default function AlbumPage() {
               className="object-cover"
               sizes="(max-width: 768px) 100vw, 320px"
               priority
+              placeholder="blur"
+              blurDataURL={blurDataURL}
               unoptimized
             />
           </div>

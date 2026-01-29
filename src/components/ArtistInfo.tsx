@@ -1,5 +1,8 @@
 "use client";
 
+import Image from "next/image";
+import { useEffect, useState } from "react";
+
 interface ArtistInfoProps {
   artistId: string;
   artistName: string;
@@ -18,8 +21,6 @@ interface ArtistInfoData {
   spotify: string | null;
   officialSite: string | null;
 }
-
-import { useEffect, useState } from "react";
 
 export default function ArtistInfo({
   artistId,
@@ -79,12 +80,16 @@ export default function ArtistInfo({
     <div className="border border-zinc-800 bg-zinc-900/30 p-3 h-fit">
       <div className="flex flex-col gap-4">
         {/* Artist Image */}
-        <div className="w-full aspect-square bg-zinc-800 border border-zinc-700 overflow-hidden">
+        <div className="w-full aspect-square bg-zinc-800 border border-zinc-700 overflow-hidden relative">
           {info.image ? (
-            <img
+            <Image
               src={info.image}
               alt={artistName}
-              className="w-full h-full object-cover"
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, 250px"
+              loading="lazy"
+              unoptimized
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-zinc-600">
