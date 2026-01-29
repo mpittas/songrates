@@ -61,10 +61,10 @@ export default function ArtistInfo({ artistId, artistName }: ArtistInfoProps) {
     info.youtube;
 
   return (
-    <div className="mb-10 border border-zinc-800 bg-zinc-900/30 p-4">
-      <div className="flex flex-col md:flex-row gap-6">
+    <div className="border border-zinc-800 bg-zinc-900/30 p-3 h-fit">
+      <div className="flex flex-col gap-4">
         {/* Artist Image */}
-        <div className="w-32 h-32 flex-shrink-0 bg-zinc-800 border border-zinc-700 overflow-hidden">
+        <div className="w-full aspect-square bg-zinc-800 border border-zinc-700 overflow-hidden">
           {info.image ? (
             <img
               src={info.image}
@@ -73,7 +73,7 @@ export default function ArtistInfo({ artistId, artistName }: ArtistInfoProps) {
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-zinc-600">
-              <span className="text-2xl font-mono">
+              <span className="text-4xl font-mono">
                 {artistName.slice(0, 2).toUpperCase()}
               </span>
             </div>
@@ -84,20 +84,20 @@ export default function ArtistInfo({ artistId, artistName }: ArtistInfoProps) {
         <div className="flex-1 min-w-0">
           {/* Description */}
           {info.description && (
-            <p className="text-sm text-zinc-400 mb-4 leading-relaxed">
+            <p className="text-sm text-zinc-400 mb-6 leading-relaxed">
               {info.description}
             </p>
           )}
 
           {/* Links */}
           {hasLinks && (
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-2">
               {info.wikipedia && (
                 <a
                   href={info.wikipedia}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-xs text-zinc-500 hover:text-white transition-colors flex items-center gap-1 border border-zinc-800 px-2 py-1 hover:border-zinc-600"
+                  className="text-xs text-zinc-500 hover:text-white transition-colors flex items-center gap-2 border border-zinc-800 px-3 py-2 w-full hover:border-zinc-600"
                 >
                   <WikiIcon />
                   wikipedia
@@ -108,7 +108,7 @@ export default function ArtistInfo({ artistId, artistName }: ArtistInfoProps) {
                   href={info.officialSite}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-xs text-zinc-500 hover:text-white transition-colors flex items-center gap-1 border border-zinc-800 px-2 py-1 hover:border-zinc-600"
+                  className="text-xs text-zinc-500 hover:text-white transition-colors flex items-center gap-2 border border-zinc-800 px-3 py-2 w-full hover:border-zinc-600"
                 >
                   <GlobeIcon />
                   official
@@ -119,7 +119,7 @@ export default function ArtistInfo({ artistId, artistName }: ArtistInfoProps) {
                   href={info.spotify}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-xs text-zinc-500 hover:text-white transition-colors flex items-center gap-1 border border-zinc-800 px-2 py-1 hover:border-zinc-600"
+                  className="text-xs text-zinc-500 hover:text-white transition-colors flex items-center gap-2 border border-zinc-800 px-3 py-2 w-full hover:border-zinc-600"
                 >
                   <SpotifyIcon />
                   spotify
@@ -130,7 +130,7 @@ export default function ArtistInfo({ artistId, artistName }: ArtistInfoProps) {
                   href={info.twitter}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-xs text-zinc-500 hover:text-white transition-colors flex items-center gap-1 border border-zinc-800 px-2 py-1 hover:border-zinc-600"
+                  className="text-xs text-zinc-500 hover:text-white transition-colors flex items-center gap-2 border border-zinc-800 px-3 py-2 w-full hover:border-zinc-600"
                 >
                   <TwitterIcon />
                   twitter
@@ -141,7 +141,7 @@ export default function ArtistInfo({ artistId, artistName }: ArtistInfoProps) {
                   href={info.instagram}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-xs text-zinc-500 hover:text-white transition-colors flex items-center gap-1 border border-zinc-800 px-2 py-1 hover:border-zinc-600"
+                  className="text-xs text-zinc-500 hover:text-white transition-colors flex items-center gap-2 border border-zinc-800 px-3 py-2 w-full hover:border-zinc-600"
                 >
                   <InstagramIcon />
                   instagram
@@ -152,7 +152,7 @@ export default function ArtistInfo({ artistId, artistName }: ArtistInfoProps) {
                   href={info.facebook}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-xs text-zinc-500 hover:text-white transition-colors flex items-center gap-1 border border-zinc-800 px-2 py-1 hover:border-zinc-600"
+                  className="text-xs text-zinc-500 hover:text-white transition-colors flex items-center gap-2 border border-zinc-800 px-3 py-2 w-full hover:border-zinc-600"
                 >
                   <FacebookIcon />
                   facebook
@@ -163,7 +163,7 @@ export default function ArtistInfo({ artistId, artistName }: ArtistInfoProps) {
                   href={info.youtube}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-xs text-zinc-500 hover:text-white transition-colors flex items-center gap-1 border border-zinc-800 px-2 py-1 hover:border-zinc-600"
+                  className="text-xs text-zinc-500 hover:text-white transition-colors flex items-center gap-2 border border-zinc-800 px-3 py-2 w-full hover:border-zinc-600"
                 >
                   <YoutubeIcon />
                   youtube

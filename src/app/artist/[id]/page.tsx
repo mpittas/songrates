@@ -73,7 +73,7 @@ export default function ArtistPage() {
 
   return (
     <main className="min-h-screen bg-black text-zinc-100 p-8 md:p-24 font-light">
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-7xl mx-auto">
         <div className="flex flex-col md:flex-row justify-between items-baseline mb-12 gap-4">
           <div className="flex items-baseline gap-4">
             <Link
@@ -114,28 +114,35 @@ export default function ArtistPage() {
           )}
         </div>
 
-        {/* Artist Info Panel */}
-        {artistName && (
-          <ArtistInfo artistId={id as string} artistName={artistName} />
-        )}
-
-        {loading ? (
-          <div className="text-center text-zinc-600 animate-pulse">
-            loading discography...
+        <div className="grid grid-cols-1 lg:grid-cols-[200px_1fr] gap-12 items-start">
+          {/* Left Sidebar - Artist Info */}
+          <div className="lg:sticky lg:top-8">
+            {artistName && (
+              <ArtistInfo artistId={id as string} artistName={artistName} />
+            )}
           </div>
-        ) : (
-          <>
-            <AlbumGrid
-              albums={sortedAlbums}
-              onSelectAlbum={setSelectedAlbumId}
-              title="Albums"
-            />
-            <OtherReleases
-              artistId={id as string}
-              onSelectAlbum={setSelectedAlbumId}
-            />
-          </>
-        )}
+
+          {/* Right Section - Discography */}
+          <div className="min-w-0 space-y-16">
+            {loading ? (
+              <div className="text-center text-zinc-600 animate-pulse py-20">
+                loading discography...
+              </div>
+            ) : (
+              <>
+                <AlbumGrid
+                  albums={sortedAlbums}
+                  onSelectAlbum={setSelectedAlbumId}
+                  title="Albums"
+                />
+                <OtherReleases
+                  artistId={id as string}
+                  onSelectAlbum={setSelectedAlbumId}
+                />
+              </>
+            )}
+          </div>
+        </div>
 
         {selectedAlbumId && (
           <TrackList
