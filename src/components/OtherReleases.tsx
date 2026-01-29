@@ -14,7 +14,13 @@ interface GroupedReleases {
 }
 
 // Order for displaying categories (excluding "Other Albums" which gets grid display)
-const CATEGORY_ORDER = ["Singles", "EPs", "Other"];
+const CATEGORY_ORDER = [
+  "Singles",
+  "EPs",
+  // "Compilations",
+  // "Live Albums",
+  "Other",
+];
 
 export default function OtherReleases({
   artistId,
