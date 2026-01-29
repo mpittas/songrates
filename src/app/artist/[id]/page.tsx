@@ -79,7 +79,7 @@ export default function ArtistPage() {
   });
 
   return (
-    <main className="min-h-screen bg-black text-zinc-100 p-8 md:p-24 font-light">
+    <main className="min-h-screen bg-black text-zinc-100 p-8 md:px-24 md:py-8 font-light">
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col md:flex-row justify-between items-baseline mb-12 gap-4">
           <div className="flex items-baseline gap-4">

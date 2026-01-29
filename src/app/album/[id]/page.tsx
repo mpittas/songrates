@@ -21,15 +21,18 @@ interface AlbumInfo {
     title: string;
     number: string;
     length?: number;
+    artists?: { id: string; name: string; joinPhrase?: string }[];
   }[];
 }
 
 function TrackItem({
   track,
   artistName,
+  artistId,
 }: {
   track: AlbumInfo["tracks"][0];
   artistName: string;
+  artistId: string;
 }) {
   const { ratings, setRating } = useRatings();
   const rating = ratings[track.id] || 0;
@@ -63,6 +66,25 @@ function TrackItem({
           <span className="text-zinc-300 font-medium group-hover:text-white transition-colors truncate text-base">
             {track.title}
           </span>
+          {track.artists && track.artists.length > 0 && (
+            <span className="text-zinc-500 text-xs truncate">
+              {track.artists
+                .filter((a) => a.id !== artistId)
+                .map((a, i, arr) => (
+                  <span key={a.id}>
+                    {i === 0 ? "feat. " : ""}
+                    <Link
+                      href={`/artist/${a.id}`}
+                      className="hover:text-zinc-300 hover:underline transition-colors"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {a.name}
+                    </Link>
+                    {i < arr.length - 1 ? ", " : ""}
+                  </span>
+                ))}
+            </span>
+          )}
         </div>
       </div>
 
@@ -131,7 +153,7 @@ export default function AlbumPage() {
       <div className="max-w-5xl mx-auto pt-20 px-6 sm:px-8">
         {/* Navigation */}
         <Link
-          href={`/artist/${album.artist.id}`}
+          href={`/artist/${album.artist?.id}`}
           className="text-zinc-500 hover:text-white transition-colors mb-8 inline-block"
         >
           ← back to artist
@@ -166,10 +188,10 @@ export default function AlbumPage() {
 
             <div className="flex flex-col gap-1">
               <Link
-                href={`/artist/${album.artist.id}`}
+                href={`/artist/${album.artist?.id}`}
                 className="text-2xl text-zinc-400 hover:text-white transition-colors"
               >
-                {album.artist.name}
+                {album.artist?.name}
               </Link>
               <span className="text-zinc-600 font-mono text-sm">
                 {album.releaseDate?.split("-")[0]} • {album.tracks.length}{" "}
@@ -229,7 +251,8 @@ export default function AlbumPage() {
                 <TrackItem
                   key={track.id}
                   track={track}
-                  artistName={album.artist.name}
+                  artistName={album.artist?.name || ""}
+                  artistId={album.artist?.id || ""}
                 />
               ))}
             </div>

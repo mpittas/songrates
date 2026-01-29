@@ -78,7 +78,7 @@ export async function GET(request: NextRequest) {
     let tracks = [];
     if (release) {
       const tracksRes = await fetch(
-        `${MB_BASE_URL}/release/${release.id}?inc=recordings&fmt=json`,
+        `${MB_BASE_URL}/release/${release.id}?inc=recordings+artist-credits&fmt=json`,
         {
           headers: { "User-Agent": MB_USER_AGENT, Accept: "application/json" },
           next: { revalidate: 3600 },
@@ -94,6 +94,16 @@ export async function GET(request: NextRequest) {
             title: t.title,
             number: t.number,
             length: t.length,
+            // Extract featured artists. The track usually has 'artist-credit' inside 'recording' or directly on track if it varies.
+            // On a release lookup with inc=recordings+artist-credits, the track object has 'artist-credit'.
+            artists:
+              (t["artist-credit"] || t.recording?.["artist-credit"])?.map(
+                (ac: any) => ({
+                  id: ac.artist?.id,
+                  name: ac.name,
+                  joinPhrase: ac.joinphrase,
+                }),
+              ) || [],
           })) || [];
     }
 
