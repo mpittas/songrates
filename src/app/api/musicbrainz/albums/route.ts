@@ -9,7 +9,8 @@ export async function GET(request: NextRequest) {
 
   // Fetch Release Groups (Albums) with URL relations
   // primary-type=Album filters for main albums
-  const url = `${MB_BASE_URL}/release-group?artist=${artistId}&type=album&fmt=json&limit=100&inc=url-rels`;
+  // release-group-status=website-default excludes bootlegs, promos, and pseudo-releases (matches MusicBrainz website behavior)
+  const url = `${MB_BASE_URL}/release-group?artist=${artistId}&type=album&release-group-status=website-default&fmt=json&limit=100&inc=url-rels`;
 
   try {
     const res = await fetch(url, {
