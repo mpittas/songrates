@@ -28,13 +28,13 @@ export default function SearchBar() {
   };
 
   return (
-    <form onSubmit={handleSearch} className="w-full mb-12">
+    <form onSubmit={handleSearch} className="w-full mb-4">
       <input
         type="text"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        placeholder="Search for an artist..."
-        className="w-full bg-transparent border-b border-zinc-700 py-3 text-xl text-white focus:outline-none focus:border-white transition-colors placeholder:text-zinc-600"
+        placeholder="search_artist..."
+        className="w-full bg-transparent border-b border-zinc-700 py-2 text-base text-white focus:outline-none focus:border-white transition-colors placeholder:text-zinc-600"
         autoFocus
       />
     </form>

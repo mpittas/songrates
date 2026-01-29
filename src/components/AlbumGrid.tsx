@@ -30,14 +30,14 @@ function AlbumCard({
 
   return (
     <div onClick={() => onSelect(album.id)} className="group cursor-pointer">
-      <div className="aspect-square bg-zinc-900 mb-3 overflow-hidden relative rounded-md">
+      <div className="aspect-square bg-zinc-900 mb-2 overflow-hidden relative border border-zinc-800">
         {!imageError ? (
           <Image
             src={imageUrl}
             alt={album.title}
             fill
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 250px"
-            className="object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-150"
+            className="object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-150 grayscale group-hover:grayscale-0"
             onError={() => setImageError(true)}
             priority={isPriority}
             loading={isPriority ? "eager" : "lazy"}
@@ -47,7 +47,7 @@ function AlbumCard({
             unoptimized
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-zinc-800 text-4xl font-thin">
+          <div className="w-full h-full flex items-center justify-center text-zinc-800 text-4xl">
             ●
           </div>
         )}
@@ -58,13 +58,13 @@ function AlbumCard({
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
-            className="absolute top-2 right-2 bg-black/80 hover:bg-black text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10"
+            className="absolute top-1 right-1 bg-black text-white p-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10 border border-zinc-700 hover:border-white"
             title="View on Wikipedia"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
+              width="12"
+              height="12"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -74,13 +74,15 @@ function AlbumCard({
             >
               <circle cx="12" cy="12" r="10"></circle>
               <line x1="2" y1="12" x2="22" y2="12"></line>
-              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1 4-10 15.3 15.3 0 1 4-10z"></path>
             </svg>
           </a>
         )}
       </div>
-      <h3 className="text-zinc-100 font-normal truncate">{album.title}</h3>
-      <p className="text-zinc-500 text-sm font-mono mt-1">
+      <h3 className="text-zinc-100 text-xs font-bold truncate">
+        {album.title}
+      </h3>
+      <p className="text-zinc-500 text-[10px] mt-0.5">
         {album.releaseDate?.split("-")[0] || "Unknown"}
       </p>
     </div>
@@ -95,7 +97,7 @@ export default function AlbumGrid({
   onSelectAlbum: (id: string) => void;
 }) {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-8 gap-y-12">
+    <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
       {albums.map((album, index) => (
         <AlbumCard
           key={album.id}

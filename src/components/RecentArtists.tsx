@@ -29,39 +29,39 @@ export default function RecentArtists() {
 
   return (
     <div>
-      <h2 className="text-2xl font-thin text-zinc-400 mb-8 tracking-tight">
-        Recently Visited
+      <h2 className="text-sm font-bold text-zinc-400 mb-2 lowercase tracking-tight">
+        recently_visited
       </h2>
-      <div className="grid gap-1">
+      <div className="grid gap-px bg-zinc-800/50 border border-zinc-800">
         {history.map((artist) => (
           <Link
             key={artist.id}
             href={`/artist/${artist.id}`}
-            className="text-zinc-100 hover:text-white transition-colors py-3 px-4 rounded-lg hover:bg-zinc-900/50 block group"
+            className="text-zinc-100 hover:text-white transition-colors p-2 hover:bg-zinc-800 block group bg-[#0a0a0a]"
           >
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
                 {/* Image Placeholder */}
-                <div className="w-12 h-12 rounded-full overflow-hidden bg-zinc-800 border border-zinc-700 flex-shrink-0">
+                <div className="w-6 h-6 overflow-hidden bg-zinc-800 border border-zinc-700 flex-shrink-0">
                   {images[artist.id] ? (
                     <img
                       src={images[artist.id]}
                       alt={artist.name}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover grayscale group-hover:grayscale-0"
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-zinc-600">
-                      <span className="text-[10px] font-mono">
+                      <span className="text-[8px] font-mono">
                         {artist.name.slice(0, 2).toUpperCase()}
                       </span>
                     </div>
                   )}
                 </div>
-                <span className="font-light group-hover:font-normal transition-all">
+                <span className="text-sm group-hover:underline transition-all truncate max-w-[200px]">
                   {artist.name}
                 </span>
               </div>
-              <span className="text-xs text-zinc-600 font-mono">
+              <span className="text-[10px] text-zinc-600">
                 {formatTime(artist.visitedAt)}
               </span>
             </div>
