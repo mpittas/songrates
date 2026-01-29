@@ -47,7 +47,7 @@ export default function RecentArtists() {
                     <img
                       src={images[artist.id]}
                       alt={artist.name}
-                      className="w-full h-full object-cover grayscale group-hover:grayscale-0"
+                      className="w-full h-full object-cover"
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-zinc-600">

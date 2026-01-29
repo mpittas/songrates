@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import AlbumGrid from "@/components/AlbumGrid";
 import TrackList from "@/components/TrackList";
+import ArtistInfo from "@/components/ArtistInfo";
+import OtherReleases from "@/components/OtherReleases";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { addToHistory } from "@/lib/history";
@@ -112,12 +114,26 @@ export default function ArtistPage() {
           )}
         </div>
 
+        {/* Artist Info Panel */}
+        {artistName && (
+          <ArtistInfo artistId={id as string} artistName={artistName} />
+        )}
+
         {loading ? (
           <div className="text-center text-zinc-600 animate-pulse">
             loading discography...
           </div>
         ) : (
-          <AlbumGrid albums={sortedAlbums} onSelectAlbum={setSelectedAlbumId} />
+          <>
+            <AlbumGrid
+              albums={sortedAlbums}
+              onSelectAlbum={setSelectedAlbumId}
+            />
+            <OtherReleases
+              artistId={id as string}
+              onSelectAlbum={setSelectedAlbumId}
+            />
+          </>
         )}
 
         {selectedAlbumId && (
