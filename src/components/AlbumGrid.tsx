@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useState } from "react";
+import Link from "next/link";
 
 interface Album {
   id: string;
@@ -29,7 +30,7 @@ function AlbumCard({
     "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMSIgaGVpZ2h0PSIxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiMxODE4MWIiLz48L3N2Zz4=";
 
   return (
-    <div onClick={() => onSelect(album.id)} className="group cursor-pointer">
+    <Link href={`/album/${album.id}`} className="group block">
       <div className="aspect-square bg-zinc-900 mb-2 overflow-hidden relative border border-zinc-800">
         {!imageError ? (
           <Image
@@ -53,12 +54,12 @@ function AlbumCard({
         )}
 
         {album.wikipediaUrl && (
-          <a
-            href={album.wikipediaUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            className="absolute top-1 right-1 bg-black text-white p-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10 border border-zinc-700 hover:border-white"
+          <div
+            onClick={(e) => {
+              e.preventDefault();
+              window.open(album.wikipediaUrl, "_blank");
+            }}
+            className="absolute top-1 right-1 bg-black text-white p-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10 border border-zinc-700 hover:border-white cursor-pointer"
             title="View on Wikipedia"
           >
             <svg
@@ -76,7 +77,7 @@ function AlbumCard({
               <line x1="2" y1="12" x2="22" y2="12"></line>
               <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1 4-10 15.3 15.3 0 1 4-10z"></path>
             </svg>
-          </a>
+          </div>
         )}
       </div>
       <h3 className="text-zinc-100 text-xs font-bold truncate">
@@ -85,7 +86,7 @@ function AlbumCard({
       <p className="text-zinc-500 text-[10px] mt-0.5">
         {album.releaseDate?.split("-")[0] || "Unknown"}
       </p>
-    </div>
+    </Link>
   );
 }
 

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import AlbumGrid from "@/components/AlbumGrid";
+import Link from "next/link";
 
 interface Release {
   id: string;
@@ -135,18 +136,18 @@ export default function OtherReleases({
                   {/* Items List */}
                   <div className="border-t border-zinc-800">
                     {displayItems.map((release) => (
-                      <div
+                      <Link
                         key={release.id}
-                        onClick={() => onSelectAlbum(release.id)}
-                        className="px-4 py-2 flex items-center justify-between hover:bg-zinc-800/30 cursor-pointer transition-colors border-b border-zinc-800/50 last:border-b-0"
+                        href={`/album/${release.id}`}
+                        className="px-4 py-2 flex items-center justify-between hover:bg-zinc-800/30 cursor-pointer transition-colors border-b border-zinc-800/50 last:border-b-0 group"
                       >
-                        <span className="text-sm text-zinc-400 truncate">
+                        <span className="text-sm text-zinc-400 truncate group-hover:text-zinc-200">
                           {release.title}
                         </span>
                         <span className="text-xs text-zinc-600 flex-shrink-0 ml-4">
                           {release.releaseDate?.split("-")[0] || "—"}
                         </span>
-                      </div>
+                      </Link>
                     ))}
 
                     {/* Show more button */}

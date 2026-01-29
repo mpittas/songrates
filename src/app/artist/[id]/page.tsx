@@ -18,10 +18,10 @@ export default function ArtistPage() {
   // Sorting State
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "title">("newest");
 
-  // Tracklist State
-  const [selectedAlbumId, setSelectedAlbumId] = useState<string | null>(null);
-  const [tracks, setTracks] = useState([]);
-  const [currentAlbumTitle, setCurrentAlbumTitle] = useState("");
+  // Tracklist State - Logic moved to Album Page
+  // const [selectedAlbumId, setSelectedAlbumId] = useState<string | null>(null);
+  // const [tracks, setTracks] = useState([]);
+  // const [currentAlbumTitle, setCurrentAlbumTitle] = useState("");
 
   // Fetch Albums & Artist Info
   const [artistInfoData, setArtistInfoData] = useState<any>(null);
@@ -77,18 +77,6 @@ export default function ArtistPage() {
     }
     return 0;
   });
-
-  // Fetch Tracks when album selected
-  useEffect(() => {
-    if (!selectedAlbumId) return;
-
-    fetch(`/api/musicbrainz/tracks?albumId=${selectedAlbumId}`)
-      .then((res) => res.json())
-      .then((data) => {
-        setTracks(data.tracks);
-        setCurrentAlbumTitle(data.title);
-      });
-  }, [selectedAlbumId]);
 
   return (
     <main className="min-h-screen bg-black text-zinc-100 p-8 md:p-24 font-light">
@@ -156,26 +144,17 @@ export default function ArtistPage() {
               <>
                 <AlbumGrid
                   albums={sortedAlbums}
-                  onSelectAlbum={setSelectedAlbumId}
+                  onSelectAlbum={() => {}}
                   title="Albums"
                 />
                 <OtherReleases
                   artistId={id as string}
-                  onSelectAlbum={setSelectedAlbumId}
+                  onSelectAlbum={() => {}}
                 />
               </>
             )}
           </div>
         </div>
-
-        {selectedAlbumId && (
-          <TrackList
-            tracks={tracks}
-            albumTitle={currentAlbumTitle}
-            artistName={artistName}
-            onClose={() => setSelectedAlbumId(null)}
-          />
-        )}
       </div>
     </main>
   );
