@@ -42,11 +42,7 @@ function SearchResults() {
 export default function Home() {
   return (
     <main className="min-h-screen bg-[#0a0a0a] text-zinc-100 p-4 font-sans">
-      <div className="max-w-xl mx-auto">
-        <h1 className="text-2xl font-bold mb-4 text-center tracking-tight lowercase">
-          songrates
-        </h1>
-
+      <div className="max-w-xl mx-auto mt-10">
         {/* Search Container - relative positioning for absolute dropdown */}
         <div className="relative mb-8">
           <SearchBar />
@@ -54,9 +50,6 @@ export default function Home() {
             <SearchResults />
           </Suspense>
         </div>
-
-        {/* Divider */}
-        <div className="border-t border-zinc-800/50 mb-8"></div>
 
         {/* Recent Artists Section */}
         <div className="bg-zinc-950/30">

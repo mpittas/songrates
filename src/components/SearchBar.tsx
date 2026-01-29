@@ -34,7 +34,7 @@ export default function SearchBar() {
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder="search_artist..."
-        className="w-full bg-transparent border-b border-zinc-700 py-2 text-base text-white focus:outline-none focus:border-white transition-colors placeholder:text-zinc-600"
+        className="w-full bg-white/4 p-3 text-base text-white focus:outline-none focus:border-white transition-colors placeholder:text-zinc-600"
         autoFocus
       />
     </form>
