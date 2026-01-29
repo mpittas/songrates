@@ -128,6 +128,7 @@ export default function ArtistPage() {
             <AlbumGrid
               albums={sortedAlbums}
               onSelectAlbum={setSelectedAlbumId}
+              title="Albums"
             />
             <OtherReleases
               artistId={id as string}

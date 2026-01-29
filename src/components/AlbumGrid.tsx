@@ -92,20 +92,32 @@ function AlbumCard({
 export default function AlbumGrid({
   albums,
   onSelectAlbum,
+  title,
 }: {
   albums: Album[];
   onSelectAlbum: (id: string) => void;
+  title?: string;
 }) {
+  if (albums.length === 0) return null;
+
   return (
-    <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-      {albums.map((album, index) => (
-        <AlbumCard
-          key={album.id}
-          album={album}
-          onSelect={onSelectAlbum}
-          isPriority={index < 4} // Prioritize first row
-        />
-      ))}
+    <div>
+      {title && (
+        <h2 className="text-lg font-light text-zinc-400 mb-4">
+          {title}
+          <span className="text-zinc-600 ml-2">({albums.length})</span>
+        </h2>
+      )}
+      <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+        {albums.map((album, index) => (
+          <AlbumCard
+            key={album.id}
+            album={album}
+            onSelect={onSelectAlbum}
+            isPriority={index < 4} // Prioritize first row
+          />
+        ))}
+      </div>
     </div>
   );
 }
