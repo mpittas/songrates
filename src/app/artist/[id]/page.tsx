@@ -24,25 +24,44 @@ export default function ArtistPage() {
   const [currentAlbumTitle, setCurrentAlbumTitle] = useState("");
 
   // Fetch Albums & Artist Info
-  useEffect(() => {
-    // Fetch Albums
-    fetch(`/api/musicbrainz/albums?artistId=${id}`)
-      .then((res) => res.json())
-      .then((data) => {
-        setAlbums(data.albums);
-        setLoading(false);
-      });
+  const [artistInfoData, setArtistInfoData] = useState<any>(null);
 
-    // Fetch Artist Info
-    fetch(`/api/musicbrainz/artist?id=${id}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.artist) {
-          setArtistName(data.artist.name);
-          // Save to history when artist name is loaded
-          addToHistory(id as string, data.artist.name);
+  // Fetch Albums & Artist Info
+  useEffect(() => {
+    const loadData = async () => {
+      if (!id) return;
+
+      try {
+        // 1. Fetch Artist Name (Fastest check)
+        const nameRes = await fetch(`/api/musicbrainz/artist?id=${id}`);
+        const nameData = await nameRes.json();
+
+        if (nameData.artist) {
+          setArtistName(nameData.artist.name);
+          addToHistory(id as string, nameData.artist.name);
         }
-      });
+
+        // 2. Fetch Artist Info (Images, Bio, Links) - Wait for this before starting albums
+        const infoRes = await fetch(`/api/artist-info?id=${id}`);
+        const infoData = await infoRes.json();
+
+        if (infoData.artistInfo) {
+          setArtistInfoData(infoData.artistInfo);
+        }
+
+        // 3. Now fetch the discography logic
+        const albumsRes = await fetch(`/api/musicbrainz/albums?artistId=${id}`);
+        const albumsData = await albumsRes.json();
+
+        setAlbums(albumsData.albums || []);
+        setLoading(false);
+      } catch (error) {
+        console.error("Error loading artist data:", error);
+        setLoading(false);
+      }
+    };
+
+    loadData();
   }, [id]);
 
   // Sort Albums
@@ -118,7 +137,12 @@ export default function ArtistPage() {
           {/* Left Sidebar - Artist Info */}
           <div className="lg:sticky lg:top-8">
             {artistName && (
-              <ArtistInfo artistId={id as string} artistName={artistName} />
+              <ArtistInfo
+                artistId={id as string}
+                artistName={artistName}
+                data={artistInfoData}
+                disableFetch={true}
+              />
             )}
           </div>
 

@@ -3,6 +3,8 @@
 interface ArtistInfoProps {
   artistId: string;
   artistName: string;
+  data?: ArtistInfoData | null;
+  disableFetch?: boolean;
 }
 
 interface ArtistInfoData {
@@ -19,11 +21,24 @@ interface ArtistInfoData {
 
 import { useEffect, useState } from "react";
 
-export default function ArtistInfo({ artistId, artistName }: ArtistInfoProps) {
-  const [info, setInfo] = useState<ArtistInfoData | null>(null);
-  const [loading, setLoading] = useState(true);
+export default function ArtistInfo({
+  artistId,
+  artistName,
+  data,
+  disableFetch = false,
+}: ArtistInfoProps) {
+  const [info, setInfo] = useState<ArtistInfoData | null>(data || null);
+  const [loading, setLoading] = useState(!data);
 
   useEffect(() => {
+    if (data) {
+      setInfo(data);
+      setLoading(false);
+      return;
+    }
+
+    if (disableFetch) return;
+
     if (!artistId) return;
 
     fetch(`/api/artist-info?id=${artistId}`)
@@ -33,7 +48,7 @@ export default function ArtistInfo({ artistId, artistName }: ArtistInfoProps) {
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, [artistId]);
+  }, [artistId, data, disableFetch]);
 
   if (loading) {
     return (

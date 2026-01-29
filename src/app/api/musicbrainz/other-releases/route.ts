@@ -25,17 +25,35 @@ export async function GET(request: NextRequest) {
 
   try {
     // Fetch all release groups for this artist
-    const url = `${MB_BASE_URL}/release-group?artist=${artistId}&release-group-status=website-default&fmt=json&limit=100`;
+    const limit = 100;
+    let offset = 0;
+    let allReleaseGroups: ReleaseGroup[] = [];
+    let hasMore = true;
 
-    const res = await fetch(url, {
-      headers: { "User-Agent": MB_USER_AGENT, Accept: "application/json" },
-      next: { revalidate: 3600 },
-    });
+    while (hasMore) {
+      const url = `${MB_BASE_URL}/release-group?artist=${artistId}&release-group-status=website-default&fmt=json&limit=${limit}&offset=${offset}`;
 
-    if (!res.ok) throw new Error("MB API Error");
-    const data = await res.json();
+      const res = await fetch(url, {
+        headers: { "User-Agent": MB_USER_AGENT, Accept: "application/json" },
+        next: { revalidate: 3600 },
+      });
 
-    const releaseGroups: ReleaseGroup[] = data["release-groups"] || [];
+      if (!res.ok) throw new Error("MB API Error");
+      const data = await res.json();
+
+      const pageGroups = data["release-groups"] || [];
+      allReleaseGroups = [...allReleaseGroups, ...pageGroups];
+
+      if (pageGroups.length < limit) {
+        hasMore = false;
+      } else {
+        offset += limit;
+        // Be nice to the API (approx 1 req/sec)
+        await new Promise((resolve) => setTimeout(resolve, 1100));
+      }
+    }
+
+    const releaseGroups = allReleaseGroups;
 
     // Group releases by type
     const grouped: GroupedReleases = {};
