@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { albumCache } from "@/lib/cache";
 
 const MB_USER_AGENT = "SongRates/1.0 (mpittas@gmail.com)";
 const MB_BASE_URL = "https://musicbrainz.org/ws/2";
@@ -6,6 +7,19 @@ const MB_BASE_URL = "https://musicbrainz.org/ws/2";
 export async function GET(request: NextRequest) {
   const artistId = request.nextUrl.searchParams.get("artistId");
   if (!artistId) return NextResponse.json({ albums: [] });
+
+  // Check in-memory cache first
+  const cacheKey = `albums:${artistId}`;
+  const cached = albumCache.get(cacheKey);
+  if (cached) {
+    const response = NextResponse.json(cached);
+    response.headers.set("X-Cache", "HIT");
+    response.headers.set(
+      "Cache-Control",
+      "public, max-age=3600, s-maxage=86400, stale-while-revalidate=86400",
+    );
+    return response;
+  }
 
   // Fetch Release Groups (Albums) with URL relations
   // primary-type=Album filters for main albums
@@ -119,7 +133,17 @@ export async function GET(request: NextRequest) {
         : undefined,
     }));
 
-    return NextResponse.json({ albums });
+    // Cache result for 24 hours
+    const result = { albums };
+    albumCache.set(cacheKey, result, 86400);
+
+    const response = NextResponse.json(result);
+    response.headers.set("X-Cache", "MISS");
+    response.headers.set(
+      "Cache-Control",
+      "public, max-age=3600, s-maxage=86400, stale-while-revalidate=86400",
+    );
+    return response;
   } catch (e) {
     console.error(e);
     return NextResponse.json({ albums: [] });

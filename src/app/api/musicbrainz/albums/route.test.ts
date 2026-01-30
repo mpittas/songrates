@@ -3,12 +3,14 @@
  */
 import { GET } from "./route";
 import { NextRequest } from "next/server";
+import { albumCache } from "@/lib/cache";
 
 global.fetch = jest.fn();
 
 describe("GET /api/musicbrainz/albums", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    albumCache.clear();
   });
 
   it("should return empty list if artistId is missing", async () => {

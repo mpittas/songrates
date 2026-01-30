@@ -3,6 +3,7 @@
  */
 import { GET } from "./route";
 import { NextRequest } from "next/server";
+import { artistCache } from "@/lib/cache";
 
 // Mock fetch globally
 global.fetch = jest.fn();
@@ -10,6 +11,8 @@ global.fetch = jest.fn();
 describe("GET /api/artist-info", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // Clear cache between tests
+    artistCache.clear();
   });
 
   it("should return 400 if artist ID is missing", async () => {

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { artistCache, wikidataCache, withCache } from "@/lib/cache";
 
 const MB_USER_AGENT = "SongRates/1.0 (mpittas@gmail.com)";
 const MB_BASE_URL = "https://musicbrainz.org/ws/2";
@@ -147,6 +148,19 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Missing artist ID" }, { status: 400 });
   }
 
+  // Check in-memory cache first for instant response
+  const cacheKey = `artist-info:${artistId}`;
+  const cached = artistCache.get(cacheKey);
+  if (cached) {
+    const response = NextResponse.json(cached);
+    response.headers.set("X-Cache", "HIT");
+    response.headers.set(
+      "Cache-Control",
+      "public, max-age=3600, s-maxage=86400, stale-while-revalidate=86400",
+    );
+    return response;
+  }
+
   // Fetch data from both sources in parallel
   const [wikidataInfo, mbData] = await Promise.all([
     fetchWikidataInfo(artistId),
@@ -176,5 +190,16 @@ export async function GET(request: NextRequest) {
     lifeSpan: mbData.lifeSpan || null,
   };
 
-  return NextResponse.json({ artistInfo, artist });
+  const result = { artistInfo, artist };
+
+  // Store in memory cache for 24 hours
+  artistCache.set(cacheKey, result, 86400);
+
+  const response = NextResponse.json(result);
+  response.headers.set("X-Cache", "MISS");
+  response.headers.set(
+    "Cache-Control",
+    "public, max-age=3600, s-maxage=86400, stale-while-revalidate=86400",
+  );
+  return response;
 }

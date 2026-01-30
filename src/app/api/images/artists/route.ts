@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { imageCache } from "@/lib/cache";
 
 // Convert Wikimedia Commons URL to a thumbnail URL
 // Example: https://commons.wikimedia.org/wiki/Special:FilePath/Image.jpg
@@ -71,7 +72,17 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    return NextResponse.json({ images });
+    // Cache individual image URLs for 7 days
+    Object.entries(images).forEach(([mbid, url]) => {
+      imageCache.set(`artist-image:${mbid}`, url, 604800);
+    });
+
+    const response = NextResponse.json({ images });
+    response.headers.set(
+      "Cache-Control",
+      "public, max-age=604800, s-maxage=604800, stale-while-revalidate=86400",
+    );
+    return response;
   } catch (error) {
     console.error("Failed to fetch images from Wikidata:", error);
     return NextResponse.json({ images: {} });
