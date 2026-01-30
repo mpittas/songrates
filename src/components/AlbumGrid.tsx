@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useState } from "react";
 import Link from "next/link";
+import { FaWikipediaW } from "react-icons/fa";
 
 interface Album {
   id: string;
@@ -56,21 +57,7 @@ function AlbumCard({ album, onSelect, isPriority = false }: AlbumCardProps) {
             className="absolute top-2 right-2 bg-[#050507]/90 text-neutral-400 p-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10 border border-[#1a1a1f] hover:text-[#00f0ff] hover:border-[#00f0ff]/50 cursor-pointer"
             title="Wikipedia"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="10"
-              height="10"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <circle cx="12" cy="12" r="10"></circle>
-              <line x1="2" y1="12" x2="22" y2="12"></line>
-              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1 4-10 15.3 15.3 0 1 4-10z"></path>
-            </svg>
+            <FaWikipediaW size={10} />
           </div>
         )}
       </div>
