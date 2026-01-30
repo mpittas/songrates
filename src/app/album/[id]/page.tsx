@@ -40,57 +40,6 @@ function TrackItem({
   const rating = ratings[track.id] || 0;
   const isCurrentTrack = currentTrack?.id === track.id;
   const [expanded, setExpanded] = useState(false);
-  const [lyrics, setLyrics] = useState<string | null>(null);
-  const [lyricsAvailable, setLyricsAvailable] = useState<boolean | null>(null);
-  const [loadingLyrics, setLoadingLyrics] = useState(false);
-
-  // Check lyrics availability on mount
-  useEffect(() => {
-    const checkLyrics = async () => {
-      try {
-        const res = await fetch(
-          `/api/lyrics?artist=${encodeURIComponent(artistName)}&title=${encodeURIComponent(track.title)}`,
-        );
-        const data = await res.json();
-        setLyricsAvailable(data.available);
-        if (data.lyrics) {
-          setLyrics(data.lyrics);
-        }
-      } catch {
-        setLyricsAvailable(false);
-      }
-    };
-    checkLyrics();
-  }, [artistName, track.title]);
-
-  const handleToggleLyrics = async () => {
-    if (!lyricsAvailable) return;
-
-    if (expanded) {
-      setExpanded(false);
-      return;
-    }
-
-    if (lyrics) {
-      setExpanded(true);
-      return;
-    }
-
-    setLoadingLyrics(true);
-    try {
-      const res = await fetch(
-        `/api/lyrics?artist=${encodeURIComponent(artistName)}&title=${encodeURIComponent(track.title)}`,
-      );
-      const data = await res.json();
-      if (data.lyrics) {
-        setLyrics(data.lyrics);
-        setExpanded(true);
-      }
-    } catch {
-      // Failed to load
-    }
-    setLoadingLyrics(false);
-  };
 
   const formatTime = (ms?: number) => {
     if (!ms) return "-:--";
@@ -158,21 +107,6 @@ function TrackItem({
         </div>
 
         <div className="flex items-center gap-4">
-          {/* Lyrics Indicator */}
-          {lyricsAvailable && (
-            <button
-              onClick={handleToggleLyrics}
-              className={`text-[10px] font-mono px-2 py-1 border transition-all ${
-                expanded
-                  ? "border-[#00f0ff] text-[#00f0ff] bg-[#00f0ff]/10"
-                  : "border-[#1a1a1f] text-neutral-600 hover:border-[#00f0ff]/50 hover:text-neutral-400"
-              }`}
-              title={expanded ? "Hide lyrics" : "Show lyrics"}
-            >
-              {loadingLyrics ? "..." : expanded ? "−" : "lyrics"}
-            </button>
-          )}
-
           <span className="text-[10px] text-neutral-600 font-mono hidden sm:block">
             {formatTime(track.length)}
           </span>
@@ -191,20 +125,6 @@ function TrackItem({
           </div>
         </div>
       </div>
-
-      {/* Expanded Lyrics Section */}
-      {expanded && lyrics && (
-        <div className="px-4 py-4 bg-[#0a0a0d]/50 border-t border-[#1a1a1f]/50">
-          <div className="pl-16 pr-4">
-            <p className="text-xs text-neutral-500 whitespace-pre-line leading-relaxed max-h-64 overflow-y-auto custom-scrollbar">
-              {lyrics}
-            </p>
-            <p className="text-[10px] text-neutral-700 font-mono mt-3">
-              lyrics provided by lyrics.ovh
-            </p>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

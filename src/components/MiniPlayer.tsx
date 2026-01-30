@@ -21,10 +21,6 @@ export default function MiniPlayer() {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const progressRef = useRef<HTMLDivElement>(null);
   const [showVideo, setShowVideo] = useState(false);
-  const [showLyrics, setShowLyrics] = useState(false);
-  const [lyrics, setLyrics] = useState<string | null>(null);
-  const [lyricsLoading, setLyricsLoading] = useState(false);
-  const [lyricsAvailable, setLyricsAvailable] = useState<boolean | null>(null);
   const [isDragging, setIsDragging] = useState(false);
 
   // Register iframe ref with context
@@ -84,37 +80,6 @@ export default function MiniPlayer() {
     return () => window.removeEventListener("message", handleMessage);
   }, [updateProgress]);
 
-  // Fetch lyrics when track changes
-  useEffect(() => {
-    if (!currentTrack) {
-      setLyrics(null);
-      setLyricsAvailable(null);
-      return;
-    }
-
-    const fetchLyrics = async () => {
-      setLyricsLoading(true);
-      try {
-        const res = await fetch(
-          `/api/lyrics?artist=${encodeURIComponent(currentTrack.artistName)}&title=${encodeURIComponent(currentTrack.title)}`,
-        );
-        const data = await res.json();
-        setLyricsAvailable(data.available);
-        if (data.lyrics) {
-          setLyrics(data.lyrics);
-        } else {
-          setLyrics(null);
-        }
-      } catch {
-        setLyricsAvailable(false);
-        setLyrics(null);
-      }
-      setLyricsLoading(false);
-    };
-
-    fetchLyrics();
-  }, [currentTrack?.id, currentTrack?.artistName, currentTrack?.title]);
-
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
@@ -152,33 +117,6 @@ export default function MiniPlayer() {
 
   return (
     <>
-      {/* Floating Lyrics Panel */}
-      {showLyrics && lyrics && (
-        <div className="fixed bottom-24 right-4 z-50 shadow-2xl border border-[#1a1a1f] bg-[#0a0a0d] w-80 max-h-96">
-          {/* Lyrics Header */}
-          <div className="flex items-center justify-between px-3 py-2 bg-[#050507] border-b border-[#1a1a1f]">
-            <span className="text-[10px] text-neutral-500 font-mono truncate max-w-[200px]">
-              {currentTrack.title} — lyrics
-            </span>
-            <button
-              onClick={() => setShowLyrics(false)}
-              className="text-neutral-500 hover:text-white transition-colors ml-2"
-            >
-              <FaTimes size={10} />
-            </button>
-          </div>
-          {/* Lyrics Content */}
-          <div className="p-4 overflow-y-auto max-h-72 custom-scrollbar">
-            <p className="text-xs text-neutral-400 whitespace-pre-line leading-relaxed">
-              {lyrics}
-            </p>
-            <p className="text-[10px] text-neutral-700 font-mono mt-4">
-              lyrics.ovh
-            </p>
-          </div>
-        </div>
-      )}
-
       {/* Single persistent iframe - always rendered, visually hidden when not showing video */}
       {videoId && (
         <div
@@ -278,28 +216,9 @@ export default function MiniPlayer() {
 
           {/* Controls */}
           <div className="flex items-center gap-2">
-            {/* Lyrics Button */}
-            {lyricsAvailable && (
-              <button
-                onClick={() => {
-                  setShowLyrics(!showLyrics);
-                  if (!showLyrics) setShowVideo(false);
-                }}
-                className={`text-[10px] font-mono px-2 py-1 border transition-colors ${
-                  showLyrics
-                    ? "border-[#00f0ff] text-[#00f0ff] bg-[#00f0ff]/10"
-                    : "border-[#1a1a1f] text-neutral-600 hover:border-[#00f0ff]/50 hover:text-neutral-400"
-                }`}
-              >
-                {lyricsLoading ? "..." : showLyrics ? "hide" : "lyrics"}
-              </button>
-            )}
             {/* Video Button */}
             <button
-              onClick={() => {
-                setShowVideo(!showVideo);
-                if (!showVideo) setShowLyrics(false);
-              }}
+              onClick={() => setShowVideo(!showVideo)}
               className={`text-[10px] font-mono px-2 py-1 border transition-colors ${
                 showVideo
                   ? "border-[#00f0ff] text-[#00f0ff] bg-[#00f0ff]/10"
