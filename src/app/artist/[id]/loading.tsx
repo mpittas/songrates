@@ -1,4 +1,4 @@
-import ArtistSkeleton from "@/components/ArtistSkeleton";
+import ArtistSkeleton from "@/components/artist/ArtistSkeleton";
 
 export default function Loading() {
   return (
