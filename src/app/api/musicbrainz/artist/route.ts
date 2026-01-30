@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { searchArtists } from "@/lib/musicbrainz";
 
 const MB_USER_AGENT = "SongRates/1.0 (mpittas@gmail.com)";
 const MB_BASE_URL = "https://musicbrainz.org/ws/2";
@@ -37,7 +38,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ artists: [] });
   }
 
-  const data = await fetchMB("artist", { query: query.trim(), limit: "10" });
-
-  return NextResponse.json({ artists: data?.artists || [] });
+  const artists = await searchArtists(query.trim());
+  return NextResponse.json({ artists });
 }

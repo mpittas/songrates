@@ -1,4 +1,4 @@
-import { albumCache, artistCache, withCache } from "@/lib/cache";
+import { albumCache, artistCache, searchCache, withCache } from "@/lib/cache";
 
 const MB_USER_AGENT = "SongRates/1.0 (mpittas@gmail.com)";
 const MB_BASE_URL = "https://musicbrainz.org/ws/2";
@@ -306,6 +306,38 @@ export async function getOtherReleases(
   } catch (e) {
     console.error(e);
     return {};
+  }
+}
+
+export async function searchArtists(query: string): Promise<any[]> {
+  const cacheKey = `search:${query}`;
+  const cached = searchCache.get(cacheKey);
+  if (cached) return cached;
+
+  try {
+    const url = `${MB_BASE_URL}/artist?query=${encodeURIComponent(query)}&limit=10&fmt=json`;
+    const res = await fetch(url, {
+      headers: { "User-Agent": MB_USER_AGENT, Accept: "application/json" },
+      next: { revalidate: 3600 },
+    });
+
+    if (!res.ok) return [];
+
+    const data = await res.json();
+    const artists = (data.artists || []).map((artist: any) => ({
+      id: artist.id,
+      name: artist.name,
+      country: artist.country,
+      lifeSpan: artist["life-span"],
+      type: artist.type,
+      disambiguation: artist.disambiguation,
+    }));
+
+    searchCache.set(cacheKey, artists);
+    return artists;
+  } catch (e) {
+    console.error("Search error:", e);
+    return [];
   }
 }
 
