@@ -14,14 +14,7 @@ interface GroupedReleases {
   [type: string]: Release[];
 }
 
-// Order for displaying categories (excluding "Other Albums" which gets grid display)
-const CATEGORY_ORDER = [
-  "Singles",
-  "EPs",
-  // "Compilations",
-  // "Live Albums",
-  "Other",
-];
+const CATEGORY_ORDER = ["Singles", "EPs", "Other"];
 
 export default function OtherReleases({
   artistId,
@@ -60,15 +53,11 @@ export default function OtherReleases({
     });
   };
 
-  // Get "Other Albums" for grid display
   const otherAlbums = releases["Other Albums"] || [];
-
-  // Get categories in preferred order (excluding "Other Albums")
   const sortedCategories = CATEGORY_ORDER.filter(
     (cat) => releases[cat] && releases[cat].length > 0,
   );
 
-  // If no other releases, don't show anything
   const hasOtherAlbums = otherAlbums.length > 0;
   const hasOtherCategories = sortedCategories.length > 0;
 
@@ -79,16 +68,15 @@ export default function OtherReleases({
   if (loading) {
     return (
       <div className="mt-12">
-        <div className="text-zinc-600 text-sm animate-pulse">
-          loading other releases...
+        <div className="text-neutral-600 text-xs font-mono animate-pulse">
+          loading_releases...
         </div>
       </div>
     );
   }
 
   return (
-    <div className="mt-12 border-t border-zinc-800 pt-8">
-      {/* Other Albums Grid Section */}
+    <div className="mt-12 border-t border-[#1a1a1f] pt-8">
       {hasOtherAlbums && (
         <div className="mb-8">
           <AlbumGrid
@@ -99,14 +87,13 @@ export default function OtherReleases({
         </div>
       )}
 
-      {/* Other Releases (Singles, EPs, etc.) */}
       {hasOtherCategories && (
         <>
-          <h2 className="text-lg font-light text-zinc-400 mb-6">
-            Other Releases
+          <h2 className="font-mono text-xs text-neutral-500 mb-4 tracking-wide">
+            other_releases_
           </h2>
 
-          <div className="space-y-4">
+          <div className="space-y-2">
             {sortedCategories.map((category) => {
               const items = releases[category];
               const isExpanded = expandedCategories.has(category);
@@ -115,48 +102,45 @@ export default function OtherReleases({
               return (
                 <div
                   key={category}
-                  className="border border-zinc-800 bg-zinc-900/30"
+                  className="border border-[#1a1a1f] bg-[#0a0a0d]/50"
                 >
-                  {/* Category Header */}
                   <button
                     onClick={() => toggleCategory(category)}
-                    className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-zinc-800/50 transition-colors"
+                    className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-[#0f0f12] transition-colors"
                   >
-                    <span className="text-sm text-zinc-300">
+                    <span className="text-sm text-neutral-400">
                       {category}
-                      <span className="text-zinc-600 ml-2">
-                        ({items.length})
+                      <span className="text-neutral-600 font-mono ml-2 text-xs">
+                        {items.length}
                       </span>
                     </span>
-                    <span className="text-zinc-600 text-xs">
-                      {isExpanded ? "▲" : "▼"}
+                    <span className="text-neutral-600 text-xs font-mono">
+                      {isExpanded ? "−" : "+"}
                     </span>
                   </button>
 
-                  {/* Items List */}
-                  <div className="border-t border-zinc-800">
+                  <div className="border-t border-[#1a1a1f]">
                     {displayItems.map((release) => (
                       <Link
                         key={release.id}
                         href={`/album/${release.id}`}
-                        className="px-4 py-2 flex items-center justify-between hover:bg-zinc-800/30 cursor-pointer transition-colors border-b border-zinc-800/50 last:border-b-0 group"
+                        className="px-4 py-2 flex items-center justify-between hover:bg-[#0f0f12] cursor-pointer transition-colors border-b border-[#1a1a1f]/50 last:border-b-0 group"
                       >
-                        <span className="text-sm text-zinc-400 truncate group-hover:text-zinc-200">
+                        <span className="text-sm text-neutral-500 truncate group-hover:text-[#00f0ff]">
                           {release.title}
                         </span>
-                        <span className="text-xs text-zinc-600 flex-shrink-0 ml-4">
+                        <span className="text-[10px] text-neutral-700 font-mono flex-shrink-0 ml-4">
                           {release.releaseDate?.split("-")[0] || "—"}
                         </span>
                       </Link>
                     ))}
 
-                    {/* Show more button */}
                     {!isExpanded && items.length > 5 && (
                       <button
                         onClick={() => toggleCategory(category)}
-                        className="w-full px-4 py-2 text-xs text-zinc-500 hover:text-zinc-300 transition-colors text-center"
+                        className="w-full px-4 py-2 text-xs text-neutral-600 hover:text-[#00f0ff] transition-colors text-center font-mono"
                       >
-                        Show all {items.length} {category.toLowerCase()}
+                        show all {items.length}
                       </button>
                     )}
                   </div>

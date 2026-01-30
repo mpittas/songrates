@@ -1,16 +1,22 @@
 import type { Metadata } from "next";
-import { Manrope } from "next/font/google";
+import { Space_Mono, Inter } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/Header";
 
-const manrope = Manrope({
+const spaceMono = Space_Mono({
+  variable: "--font-mono",
+  subsets: ["latin"],
+  weight: ["400", "700"],
+});
+
+const inter = Inter({
   variable: "--font-manrope",
   subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
-  title: "SongRates",
-  description: "Buiilt by SongRates",
+  title: "songrates",
+  description: "minimal music discovery",
 };
 
 export default function RootLayout({
@@ -19,9 +25,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="bg-[#0a0a0a]">
+    <html lang="en" className="bg-[#050507]">
       <head>
-        {/* Preconnect to image CDNs for faster loading */}
         <link rel="preconnect" href="https://coverartarchive.org" />
         <link rel="dns-prefetch" href="https://coverartarchive.org" />
         <link rel="preconnect" href="https://upload.wikimedia.org" />
@@ -29,7 +34,9 @@ export default function RootLayout({
         <link rel="preconnect" href="https://commons.wikimedia.org" />
         <link rel="dns-prefetch" href="https://commons.wikimedia.org" />
       </head>
-      <body className={`${manrope.variable} antialiased bg-[#0a0a0a]`}>
+      <body
+        className={`${inter.variable} ${spaceMono.variable} antialiased bg-[#050507]`}
+      >
         <Header />
         {children}
       </body>

@@ -53,13 +53,11 @@ export default function ArtistInfo({
 
   if (loading) {
     return (
-      <div className="mb-8 animate-pulse">
-        <div className="flex gap-6">
-          <div className="w-32 h-32 bg-zinc-800 flex-shrink-0" />
-          <div className="flex-1 space-y-2">
-            <div className="h-4 bg-zinc-800 w-3/4" />
-            <div className="h-4 bg-zinc-800 w-1/2" />
-          </div>
+      <div className="animate-pulse">
+        <div className="w-full aspect-square bg-[#0a0a0d] mb-4" />
+        <div className="space-y-2">
+          <div className="h-3 bg-[#0a0a0d] w-3/4" />
+          <div className="h-3 bg-[#0a0a0d] w-1/2" />
         </div>
       </div>
     );
@@ -77,123 +75,108 @@ export default function ArtistInfo({
     info.youtube;
 
   return (
-    <div className="border border-zinc-800 bg-zinc-900/30 p-3 h-fit">
-      <div className="flex flex-col gap-4">
-        {/* Artist Image */}
-        <div className="w-full aspect-square bg-zinc-800 border border-zinc-700 overflow-hidden relative">
-          {info.image ? (
-            <Image
-              src={info.image}
-              alt={artistName}
-              fill
-              className="object-cover"
-              sizes="(max-width: 768px) 100vw, 250px"
-              loading="lazy"
-              unoptimized
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-zinc-600">
-              <span className="text-4xl font-mono">
-                {artistName.slice(0, 2).toUpperCase()}
-              </span>
-            </div>
-          )}
-        </div>
-
-        {/* Info Section */}
-        <div className="flex-1 min-w-0">
-          {/* Description */}
-          {info.description && (
-            <p className="text-sm text-zinc-400 mb-6 leading-relaxed">
-              {info.description}
-            </p>
-          )}
-
-          {/* Links */}
-          {hasLinks && (
-            <div className="flex flex-wrap gap-2">
-              {info.wikipedia && (
-                <a
-                  href={info.wikipedia}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs text-zinc-500 hover:text-white transition-colors flex items-center gap-2 border border-zinc-800 px-3 py-2 w-full hover:border-zinc-600"
-                >
-                  <WikiIcon />
-                  wikipedia
-                </a>
-              )}
-              {info.officialSite && (
-                <a
-                  href={info.officialSite}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs text-zinc-500 hover:text-white transition-colors flex items-center gap-2 border border-zinc-800 px-3 py-2 w-full hover:border-zinc-600"
-                >
-                  <GlobeIcon />
-                  official
-                </a>
-              )}
-              {info.spotify && (
-                <a
-                  href={info.spotify}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs text-zinc-500 hover:text-white transition-colors flex items-center gap-2 border border-zinc-800 px-3 py-2 w-full hover:border-zinc-600"
-                >
-                  <SpotifyIcon />
-                  spotify
-                </a>
-              )}
-              {info.twitter && (
-                <a
-                  href={info.twitter}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs text-zinc-500 hover:text-white transition-colors flex items-center gap-2 border border-zinc-800 px-3 py-2 w-full hover:border-zinc-600"
-                >
-                  <TwitterIcon />
-                  twitter
-                </a>
-              )}
-              {info.instagram && (
-                <a
-                  href={info.instagram}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs text-zinc-500 hover:text-white transition-colors flex items-center gap-2 border border-zinc-800 px-3 py-2 w-full hover:border-zinc-600"
-                >
-                  <InstagramIcon />
-                  instagram
-                </a>
-              )}
-              {info.facebook && (
-                <a
-                  href={info.facebook}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs text-zinc-500 hover:text-white transition-colors flex items-center gap-2 border border-zinc-800 px-3 py-2 w-full hover:border-zinc-600"
-                >
-                  <FacebookIcon />
-                  facebook
-                </a>
-              )}
-              {info.youtube && (
-                <a
-                  href={info.youtube}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs text-zinc-500 hover:text-white transition-colors flex items-center gap-2 border border-zinc-800 px-3 py-2 w-full hover:border-zinc-600"
-                >
-                  <YoutubeIcon />
-                  youtube
-                </a>
-              )}
-            </div>
-          )}
-        </div>
+    <div className="space-y-4">
+      {/* Artist Image */}
+      <div className="w-full aspect-square bg-[#0a0a0d] border border-[#1a1a1f] overflow-hidden relative">
+        {info.image ? (
+          <Image
+            src={info.image}
+            alt={artistName}
+            fill
+            className="object-cover grayscale hover:grayscale-0 transition-all duration-500"
+            sizes="(max-width: 768px) 100vw, 200px"
+            loading="lazy"
+            unoptimized
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-neutral-700">
+            <span className="text-3xl font-mono">
+              {artistName.slice(0, 2).toUpperCase()}
+            </span>
+          </div>
+        )}
       </div>
+
+      {/* Description */}
+      {info.description && (
+        <p className="text-xs text-neutral-500 leading-relaxed line-clamp-4">
+          {info.description}
+        </p>
+      )}
+
+      {/* Links */}
+      {hasLinks && (
+        <div className="space-y-1">
+          {info.wikipedia && (
+            <LinkItem href={info.wikipedia} icon={<WikiIcon />} label="wiki" />
+          )}
+          {info.officialSite && (
+            <LinkItem
+              href={info.officialSite}
+              icon={<GlobeIcon />}
+              label="official"
+            />
+          )}
+          {info.spotify && (
+            <LinkItem
+              href={info.spotify}
+              icon={<SpotifyIcon />}
+              label="spotify"
+            />
+          )}
+          {info.twitter && (
+            <LinkItem
+              href={info.twitter}
+              icon={<TwitterIcon />}
+              label="twitter"
+            />
+          )}
+          {info.instagram && (
+            <LinkItem
+              href={info.instagram}
+              icon={<InstagramIcon />}
+              label="instagram"
+            />
+          )}
+          {info.facebook && (
+            <LinkItem
+              href={info.facebook}
+              icon={<FacebookIcon />}
+              label="facebook"
+            />
+          )}
+          {info.youtube && (
+            <LinkItem
+              href={info.youtube}
+              icon={<YoutubeIcon />}
+              label="youtube"
+            />
+          )}
+        </div>
+      )}
     </div>
+  );
+}
+
+function LinkItem({
+  href,
+  icon,
+  label,
+}: {
+  href: string;
+  icon: React.ReactNode;
+  label: string;
+}) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="flex items-center gap-2 py-1.5 text-xs text-neutral-600 hover:text-[#00f0ff] transition-colors font-mono"
+    >
+      {icon}
+      {label}
+    </a>
   );
 }
 

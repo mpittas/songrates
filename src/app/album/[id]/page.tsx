@@ -37,7 +37,6 @@ function TrackItem({
   const { ratings, setRating } = useRatings();
   const rating = ratings[track.id] || 0;
 
-  // Format milliseconds to mm:ss
   const formatTime = (ms?: number) => {
     if (!ms) return "-:--";
     const minutes = Math.floor(ms / 60000);
@@ -46,19 +45,19 @@ function TrackItem({
   };
 
   return (
-    <div className="flex items-center justify-between py-3 border-b border-zinc-900 group hover:bg-zinc-900/30 px-4 transition-colors">
+    <div className="flex items-center justify-between py-3 border-b border-[#1a1a1f] group hover:bg-[#0a0a0d] px-4 transition-colors">
       <div className="flex items-center gap-4 min-w-0 flex-1">
         <a
           href={`https://www.youtube.com/results?search_query=${encodeURIComponent(artistName + " " + track.title)}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center justify-center w-5 h-5 rounded-full bg-zinc-800 text-zinc-400 transition-all hover:bg-white hover:text-black shrink-0"
+          className="flex items-center justify-center w-6 h-6 bg-[#0a0a0d] border border-[#1a1a1f] text-neutral-500 transition-all hover:bg-[#00f0ff] hover:border-[#00f0ff] hover:text-[#050507] shrink-0"
           title="Play on YouTube"
         >
-          <FaPlay size={10} className="ml-0.5" />
+          <FaPlay size={8} className="ml-0.5" />
         </a>
 
-        <span className="text-zinc-600 font-mono text-sm w-6 shrink-0 text-left">
+        <span className="text-neutral-600 font-mono text-xs w-6 shrink-0 text-left">
           {track.number}
         </span>
 
@@ -67,12 +66,12 @@ function TrackItem({
             href={`https://www.youtube.com/results?search_query=${encodeURIComponent(artistName + " " + track.title)}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-zinc-300 font-medium group-hover:text-white transition-colors truncate text-base hover:underline"
+            className="text-neutral-300 group-hover:text-[#00f0ff] transition-colors truncate text-sm hover:underline"
           >
             {track.title}
           </a>
           {track.artists && track.artists.length > 0 && (
-            <span className="text-zinc-500 text-xs line-clamp-2 leading-relaxed mt-0.5">
+            <span className="text-neutral-600 text-xs line-clamp-2 leading-relaxed mt-0.5">
               {track.artists
                 .filter((a) => a.id !== artistId)
                 .map((a, i, arr) => (
@@ -80,7 +79,7 @@ function TrackItem({
                     {i === 0 ? "feat. " : ""}
                     <Link
                       href={`/artist/${a.id}`}
-                      className="hover:text-zinc-300 hover:underline transition-colors"
+                      className="hover:text-[#00f0ff] hover:underline transition-colors"
                       onClick={(e) => e.stopPropagation()}
                     >
                       {a.name}
@@ -94,7 +93,7 @@ function TrackItem({
       </div>
 
       <div className="flex items-center gap-6">
-        <span className="text-xs text-zinc-600 font-mono hidden sm:block">
+        <span className="text-[10px] text-neutral-600 font-mono hidden sm:block">
           {formatTime(track.length)}
         </span>
         <div className="flex gap-1 shrink-0">
@@ -102,10 +101,10 @@ function TrackItem({
             <button
               key={star}
               onClick={() => setRating(track.id, star)}
-              className={`w-3 h-3 rounded-full border border-zinc-800 transition-all duration-200 ${
+              className={`w-2.5 h-2.5 border border-[#1a1a1f] transition-all duration-200 ${
                 rating >= star
-                  ? "bg-white border-white scale-110"
-                  : "hover:border-zinc-500 bg-zinc-900"
+                  ? "bg-[#00f0ff] border-[#00f0ff]"
+                  : "hover:border-[#00f0ff]/50 bg-transparent"
               }`}
             />
           ))}
@@ -137,47 +136,45 @@ export default function AlbumPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center text-zinc-600 animate-pulse">
-        loading album details...
+      <div className="min-h-screen bg-[#050507] flex items-center justify-center text-neutral-600 font-mono text-sm animate-pulse">
+        loading_album...
       </div>
     );
   }
 
   if (!album) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center text-zinc-500">
-        Album not found.
+      <div className="min-h-screen bg-[#050507] flex items-center justify-center text-neutral-600 font-mono text-sm">
+        album not found
       </div>
     );
   }
 
   const imageUrl = `https://coverartarchive.org/release-group/${album.id}/front-500`;
-
-  // Simple low-quality placeholder for perceived performance
   const blurDataURL =
-    "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMSIgaGVpZ2h0PSIxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiMxODE4MWIiLz48L3N2Zz4=";
+    "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMSIgaGVpZ2h0PSIxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiMwYTBhMGQiLz48L3N2Zz4=";
 
   return (
-    <main className="min-h-screen bg-black text-zinc-100 pb-24">
-      <div className="max-w-5xl mx-auto pt-20 px-6 sm:px-8">
+    <main className="min-h-screen bg-[#050507] text-neutral-100 pb-24">
+      <div className="max-w-4xl mx-auto pt-16 px-6">
         {/* Navigation */}
         <Link
           href={`/artist/${album.artist?.id}`}
-          className="text-zinc-500 hover:text-white transition-colors mb-8 inline-block"
+          className="text-neutral-600 hover:text-[#00f0ff] transition-colors mb-12 inline-block font-mono text-sm"
         >
           ← back to artist
         </Link>
 
         {/* Hero Section */}
-        <div className="flex flex-col md:flex-row gap-10 items-start mb-20">
+        <div className="flex flex-col md:flex-row gap-10 items-start mb-16">
           {/* Album Cover */}
-          <div className="w-full md:w-80 shrink-0 aspect-square relative bg-zinc-900 border border-zinc-800 shadow-2xl">
+          <div className="w-full md:w-64 shrink-0 aspect-square relative bg-[#0a0a0d] border border-[#1a1a1f]">
             <Image
               src={imageUrl}
               alt={album.title}
               fill
-              className="object-cover"
-              sizes="(max-width: 768px) 100vw, 320px"
+              className="object-cover grayscale hover:grayscale-0 transition-all duration-500"
+              sizes="(max-width: 768px) 100vw, 256px"
               priority
               placeholder="blur"
               blurDataURL={blurDataURL}
@@ -188,24 +185,24 @@ export default function AlbumPage() {
           {/* Album Details */}
           <div className="flex-1 space-y-4 pt-2">
             <div>
-              <span className="text-xs font-mono text-zinc-500 uppercase tracking-widest border border-zinc-800 px-2 py-1 rounded-sm">
+              <span className="text-[10px] font-mono text-neutral-600 uppercase tracking-widest border border-[#1a1a1f] px-2 py-1">
                 {album.type}
               </span>
             </div>
 
-            <h1 className="text-5xl md:text-7xl font-bold tracking-tighter text-white uppercase leading-[0.9]">
+            <h1 className="text-3xl md:text-5xl font-light tracking-tight text-neutral-200 leading-tight">
               {album.title}
             </h1>
 
             <div className="flex flex-col gap-1">
               <Link
                 href={`/artist/${album.artist?.id}`}
-                className="text-2xl text-zinc-400 hover:text-white transition-colors"
+                className="text-lg text-neutral-500 hover:text-[#00f0ff] transition-colors"
               >
                 {album.artist?.name}
               </Link>
-              <span className="text-zinc-600 font-mono text-sm">
-                {album.releaseDate?.split("-")[0]} • {album.tracks.length}{" "}
+              <span className="text-neutral-600 font-mono text-xs">
+                {album.releaseDate?.split("-")[0]} · {album.tracks.length}{" "}
                 tracks
               </span>
             </div>
@@ -215,7 +212,7 @@ export default function AlbumPage() {
                 {album.genres.map((g) => (
                   <span
                     key={g}
-                    className="text-xs text-zinc-500 bg-zinc-900/50 px-2 py-1 rounded-full border border-zinc-800/50"
+                    className="text-[10px] text-neutral-600 font-mono border border-[#1a1a1f] px-2 py-1"
                   >
                     {g}
                   </span>
@@ -223,15 +220,15 @@ export default function AlbumPage() {
               </div>
             )}
 
-            <div className="flex items-center gap-4 pt-6">
+            <div className="flex items-center gap-4 pt-4">
               {album.rating && (
                 <div className="flex flex-col">
-                  <span className="text-[10px] text-zinc-600 uppercase tracking-wider">
-                    Rating
+                  <span className="text-[10px] text-neutral-600 uppercase tracking-wider font-mono">
+                    rating
                   </span>
-                  <span className="text-xl text-zinc-300 font-mono">
+                  <span className="text-lg text-neutral-400 font-mono">
                     {album.rating}{" "}
-                    <span className="text-zinc-600 text-sm">/ 5</span>
+                    <span className="text-neutral-600 text-xs">/ 5</span>
                   </span>
                 </div>
               )}
@@ -240,9 +237,9 @@ export default function AlbumPage() {
                   href={album.wikipediaUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="bg-white text-black px-4 py-2 text-sm font-bold hover:bg-zinc-200 transition-colors"
+                  className="bg-transparent border border-[#1a1a1f] text-neutral-500 px-4 py-2 text-xs font-mono hover:border-[#00f0ff] hover:text-[#00f0ff] transition-colors"
                 >
-                  Wiki
+                  wiki →
                 </a>
               )}
             </div>
@@ -251,10 +248,10 @@ export default function AlbumPage() {
 
         {/* Tracklist Section */}
         <div className="w-full">
-          <div className="border border-zinc-800/50 bg-zinc-900/10 backdrop-blur-sm rounded-lg overflow-hidden">
-            <div className="px-6 py-4 border-b border-zinc-800/50 flex justify-between items-end">
-              <h3 className="text-zinc-400 font-light tracking-wide text-sm uppercase">
-                Tracklist
+          <div className="border border-[#1a1a1f] bg-[#0a0a0d]/30 overflow-hidden">
+            <div className="px-4 py-3 border-b border-[#1a1a1f] flex justify-between items-end">
+              <h3 className="text-neutral-600 font-mono tracking-wide text-xs uppercase">
+                tracklist_
               </h3>
             </div>
             <div>

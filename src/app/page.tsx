@@ -27,9 +27,9 @@ function SearchResults() {
   if (!query) return null;
 
   return (
-    <div className="absolute top-full left-0 right-0 mt-4 bg-[#000000] border border-zinc-800 rounded-lg shadow-2xl z-50 max-h-[500px] overflow-y-auto">
+    <div className="absolute top-full left-0 right-0 mt-2 bg-[#0a0a0d] border border-[#1a1a1f] shadow-2xl z-50 max-h-[400px] overflow-y-auto">
       {loading ? (
-        <div className="text-center text-zinc-600 animate-pulse py-8">
+        <div className="text-center text-neutral-600 py-8 font-mono text-sm">
           searching...
         </div>
       ) : (
@@ -41,20 +41,16 @@ function SearchResults() {
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-[#0a0a0a] text-zinc-100 p-4 font-sans">
-      <div className="max-w-xl mx-auto mt-10">
-        {/* Search Container - relative positioning for absolute dropdown */}
-        <div className="relative mb-8">
+    <main className="min-h-screen bg-[#050507] text-neutral-100">
+      <div className="max-w-lg mx-auto pt-24 px-6">
+        <div className="relative mb-12">
           <SearchBar />
           <Suspense fallback={null}>
             <SearchResults />
           </Suspense>
         </div>
 
-        {/* Recent Artists Section */}
-        <div className="bg-zinc-950/30">
-          <RecentArtists />
-        </div>
+        <RecentArtists />
       </div>
     </main>
   );

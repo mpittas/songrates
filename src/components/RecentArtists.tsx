@@ -29,42 +29,39 @@ export default function RecentArtists() {
 
   return (
     <div>
-      <h2 className="text-sm font-bold text-zinc-400 mb-2 lowercase tracking-tight">
-        recently_visited
+      <h2 className="font-mono text-xs text-neutral-500 mb-4 tracking-wide">
+        recent_
       </h2>
-      <div className="grid gap-px bg-zinc-800/50 border border-zinc-800">
+      <div className="space-y-1">
         {history.map((artist) => (
           <Link
             key={artist.id}
             href={`/artist/${artist.id}`}
-            className="text-zinc-100 hover:text-white transition-colors p-2 hover:bg-zinc-800 block group bg-[#0a0a0a]"
+            className="flex items-center justify-between p-2 -mx-2 group hover:bg-[#0a0a0d] transition-colors"
           >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                {/* Image Placeholder */}
-                <div className="w-6 h-6 overflow-hidden bg-zinc-800 border border-zinc-700 flex-shrink-0">
-                  {images[artist.id] ? (
-                    <img
-                      src={images[artist.id]}
-                      alt={artist.name}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-zinc-600">
-                      <span className="text-[8px] font-mono">
-                        {artist.name.slice(0, 2).toUpperCase()}
-                      </span>
-                    </div>
-                  )}
-                </div>
-                <span className="text-sm group-hover:underline transition-all truncate max-w-[200px]">
-                  {artist.name}
-                </span>
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 overflow-hidden bg-[#0a0a0d] border border-[#1a1a1f] flex-shrink-0 group-hover:border-[#00f0ff]/30">
+                {images[artist.id] ? (
+                  <img
+                    src={images[artist.id]}
+                    alt={artist.name}
+                    className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-neutral-600">
+                    <span className="text-[10px] font-mono">
+                      {artist.name.slice(0, 2).toUpperCase()}
+                    </span>
+                  </div>
+                )}
               </div>
-              <span className="text-[10px] text-zinc-600">
-                {formatTime(artist.visitedAt)}
+              <span className="text-sm text-neutral-400 group-hover:text-[#00f0ff] transition-colors truncate max-w-[200px]">
+                {artist.name}
               </span>
             </div>
+            <span className="text-[10px] text-neutral-600 font-mono">
+              {formatTime(artist.visitedAt)}
+            </span>
           </Link>
         ))}
       </div>
@@ -80,8 +77,8 @@ function formatTime(timestamp: number): string {
   const hours = Math.floor(diff / 3600000);
   const days = Math.floor(diff / 86400000);
 
-  if (minutes < 1) return "just now";
-  if (minutes < 60) return `${minutes}m ago`;
-  if (hours < 24) return `${hours}h ago`;
-  return `${days}d ago`;
+  if (minutes < 1) return "now";
+  if (minutes < 60) return `${minutes}m`;
+  if (hours < 24) return `${hours}h`;
+  return `${days}d`;
 }

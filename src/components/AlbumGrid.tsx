@@ -20,25 +20,22 @@ function AlbumCard({
   onSelect: (id: string) => void;
   isPriority?: boolean;
 }) {
-  // Cover Art Archive provides optimized thumbnails at 250px, 500px, and 1200px
-  // Using 250px for fastest loading - it's optimized specifically for grid displays
   const imageUrl = `https://coverartarchive.org/release-group/${album.id}/front-250`;
   const [imageError, setImageError] = useState(false);
 
-  // Simple low-quality placeholder for perceived performance
   const blurDataURL =
-    "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMSIgaGVpZ2h0PSIxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiMxODE4MWIiLz48L3N2Zz4=";
+    "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMSIgaGVpZ2h0PSIxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiMwYTBhMGQiLz48L3N2Zz4=";
 
   return (
     <Link href={`/album/${album.id}`} className="group block">
-      <div className="aspect-square bg-zinc-900 mb-2 overflow-hidden relative border border-zinc-800">
+      <div className="aspect-square bg-[#0a0a0d] mb-2 overflow-hidden relative border border-[#1a1a1f] group-hover:border-[#00f0ff]/30 transition-colors">
         {!imageError ? (
           <Image
             src={imageUrl}
             alt={album.title}
             fill
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 250px"
-            className="object-cover transition-opacity duration-150"
+            className="object-cover  transition-all duration-300"
             onError={() => setImageError(true)}
             priority={isPriority}
             loading={isPriority ? "eager" : "lazy"}
@@ -48,8 +45,8 @@ function AlbumCard({
             unoptimized
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-zinc-800 text-4xl">
-            ●
+          <div className="w-full h-full flex items-center justify-center text-neutral-700 font-mono text-2xl">
+            ·
           </div>
         )}
 
@@ -59,13 +56,13 @@ function AlbumCard({
               e.preventDefault();
               window.open(album.wikipediaUrl, "_blank");
             }}
-            className="absolute top-1 right-1 bg-black text-white p-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10 border border-zinc-700 hover:border-white cursor-pointer"
-            title="View on Wikipedia"
+            className="absolute top-2 right-2 bg-[#050507]/90 text-neutral-400 p-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10 border border-[#1a1a1f] hover:text-[#00f0ff] hover:border-[#00f0ff]/50 cursor-pointer"
+            title="Wikipedia"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              width="12"
-              height="12"
+              width="10"
+              height="10"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -80,11 +77,11 @@ function AlbumCard({
           </div>
         )}
       </div>
-      <h3 className="text-zinc-100 text-xs font-bold truncate">
+      <h3 className="text-neutral-300 text-xs truncate group-hover:text-[#00f0ff] transition-colors">
         {album.title}
       </h3>
-      <p className="text-zinc-500 text-[10px] mt-0.5">
-        {album.releaseDate?.split("-")[0] || "Unknown"}
+      <p className="text-neutral-600 text-[10px] font-mono mt-0.5">
+        {album.releaseDate?.split("-")[0] || "—"}
       </p>
     </Link>
   );
@@ -104,9 +101,9 @@ export default function AlbumGrid({
   return (
     <div>
       {title && (
-        <h2 className="text-lg font-light text-zinc-400 mb-4">
-          {title}
-          <span className="text-zinc-600 ml-2">({albums.length})</span>
+        <h2 className="font-mono text-xs text-neutral-500 mb-4 tracking-wide">
+          {title.toLowerCase()}_
+          <span className="text-neutral-700 ml-1">{albums.length}</span>
         </h2>
       )}
       <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
@@ -115,7 +112,7 @@ export default function AlbumGrid({
             key={album.id}
             album={album}
             onSelect={onSelectAlbum}
-            isPriority={index < 4} // Prioritize first row
+            isPriority={index < 4}
           />
         ))}
       </div>

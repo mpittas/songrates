@@ -2,38 +2,32 @@ import Link from "next/link";
 
 export default function Header() {
   return (
-    <header className="border-b border-zinc-800 bg-black/50 backdrop-blur-md sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
+    <header className="border-b border-[#1a1a1f] bg-[#050507]/80 backdrop-blur-sm sticky top-0 z-50">
+      <div className="max-w-6xl mx-auto px-6 h-12 flex items-center justify-between">
         <Link
           href="/"
-          className="text-lg font-bold tracking-tight lowercase text-zinc-100 hover:text-white transition-colors"
+          className="font-mono text-sm tracking-wide text-neutral-400 hover:text-[#00f0ff] transition-colors"
         >
-          songrates
+          songrates_
         </Link>
 
-        <nav className="flex items-center gap-6">
+        <nav className="flex items-center gap-8">
           <Link
             href="#"
-            className="text-sm text-zinc-400 hover:text-white transition-colors"
+            className="font-mono text-xs text-neutral-500 hover:text-neutral-200 transition-colors"
           >
             charts
           </Link>
           <Link
             href="#"
-            className="text-sm text-zinc-400 hover:text-white transition-colors"
+            className="font-mono text-xs text-neutral-500 hover:text-neutral-200 transition-colors"
           >
             lists
           </Link>
+          <span className="w-px h-3 bg-[#1a1a1f]"></span>
           <Link
             href="#"
-            className="text-sm text-zinc-400 hover:text-white transition-colors"
-          >
-            community
-          </Link>
-          <div className="w-px h-4 bg-zinc-800 mx-2"></div>
-          <Link
-            href="#"
-            className="text-sm text-zinc-400 hover:text-white transition-colors"
+            className="font-mono text-xs text-neutral-500 hover:text-neutral-200 transition-colors"
           >
             profile
           </Link>

@@ -8,7 +8,6 @@ export default function SearchBar() {
   const searchParams = useSearchParams();
   const [query, setQuery] = useState(searchParams.get("q") || "");
 
-  // Debounced search
   useEffect(() => {
     const timer = setTimeout(() => {
       if (query.trim()) {
@@ -16,7 +15,7 @@ export default function SearchBar() {
       } else {
         router.replace("/");
       }
-    }, 300); // 300ms debounce
+    }, 300);
 
     return () => clearTimeout(timer);
   }, [query, router]);
@@ -28,15 +27,20 @@ export default function SearchBar() {
   };
 
   return (
-    <form onSubmit={handleSearch} className="w-full mb-4">
-      <input
-        type="text"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        placeholder="search_artist..."
-        className="w-full bg-white/4 p-3 text-base text-white focus:outline-none focus:border-white transition-colors placeholder:text-zinc-600"
-        autoFocus
-      />
+    <form onSubmit={handleSearch} className="w-full">
+      <div className="relative">
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="search artist..."
+          className="w-full bg-transparent border-b border-[#1a1a1f] py-4 text-lg text-neutral-200 focus:outline-none placeholder:text-neutral-600 font-light tracking-wide"
+          autoFocus
+        />
+        <span className="absolute right-0 top-1/2 -translate-y-1/2 font-mono text-xs text-neutral-600">
+          ↵
+        </span>
+      </div>
     </form>
   );
 }

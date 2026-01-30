@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import AlbumGrid from "@/components/AlbumGrid";
-import TrackList from "@/components/TrackList";
 import ArtistInfo from "@/components/ArtistInfo";
 import OtherReleases from "@/components/OtherReleases";
 import Link from "next/link";
@@ -14,25 +13,14 @@ export default function ArtistPage() {
   const [albums, setAlbums] = useState([]);
   const [artistName, setArtistName] = useState("");
   const [loading, setLoading] = useState(true);
-
-  // Sorting State
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "title">("newest");
-
-  // Tracklist State - Logic moved to Album Page
-  // const [selectedAlbumId, setSelectedAlbumId] = useState<string | null>(null);
-  // const [tracks, setTracks] = useState([]);
-  // const [currentAlbumTitle, setCurrentAlbumTitle] = useState("");
-
-  // Fetch Albums & Artist Info
   const [artistInfoData, setArtistInfoData] = useState<any>(null);
 
-  // Fetch Albums & Artist Info
   useEffect(() => {
     const loadData = async () => {
       if (!id) return;
 
       try {
-        // 1. Fetch Artist Name (Fastest check)
         const nameRes = await fetch(`/api/musicbrainz/artist?id=${id}`);
         const nameData = await nameRes.json();
 
@@ -41,7 +29,6 @@ export default function ArtistPage() {
           addToHistory(id as string, nameData.artist.name);
         }
 
-        // 2. Fetch Artist Info (Images, Bio, Links) - Wait for this before starting albums
         const infoRes = await fetch(`/api/artist-info?id=${id}`);
         const infoData = await infoRes.json();
 
@@ -49,7 +36,6 @@ export default function ArtistPage() {
           setArtistInfoData(infoData.artistInfo);
         }
 
-        // 3. Now fetch the discography logic
         const albumsRes = await fetch(`/api/musicbrainz/albums?artistId=${id}`);
         const albumsData = await albumsRes.json();
 
@@ -64,7 +50,6 @@ export default function ArtistPage() {
     loadData();
   }, [id]);
 
-  // Sort Albums
   const sortedAlbums = [...albums].sort((a: any, b: any) => {
     if (sortBy === "newest") {
       return (b.releaseDate || "").localeCompare(a.releaseDate || "");
@@ -79,41 +64,48 @@ export default function ArtistPage() {
   });
 
   return (
-    <main className="min-h-screen bg-black text-zinc-100 p-8 md:px-24 md:py-8 font-light">
-      <div className="max-w-7xl mx-auto">
+    <main className="min-h-screen bg-[#050507] text-neutral-100 p-6 md:px-16 md:py-8">
+      <div className="max-w-6xl mx-auto">
+        {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-baseline mb-12 gap-4">
-          <div className="flex items-baseline gap-4">
+          <div className="flex items-baseline gap-6">
             <Link
               href="/"
-              className="text-zinc-500 hover:text-white transition-colors"
+              className="text-neutral-600 hover:text-[#00f0ff] transition-colors font-mono text-sm"
             >
-              ← search
+              ← back
             </Link>
             {artistName && (
-              <h1 className="text-4xl font-thin tracking-tight text-white">
+              <h1 className="text-3xl md:text-4xl font-light tracking-tight text-neutral-200">
                 {artistName}
               </h1>
             )}
           </div>
 
           {albums.length > 0 && (
-            <div className="flex gap-4 text-sm text-zinc-500 font-mono">
-              <span>sort by:</span>
+            <div className="flex gap-4 text-xs text-neutral-600 font-mono">
+              <span>sort:</span>
               <button
                 onClick={() => setSortBy("newest")}
-                className={`hover:text-white transition-colors ${sortBy === "newest" ? "text-white underline decoration-zinc-700 underline-offset-4" : ""}`}
+                className={`hover:text-[#00f0ff] transition-colors ${
+                  sortBy === "newest" ? "text-[#00f0ff]" : ""
+                }`}
               >
-                newest
+                new
               </button>
               <button
                 onClick={() => setSortBy("oldest")}
-                className={`hover:text-white transition-colors ${sortBy === "oldest" ? "text-white underline decoration-zinc-700 underline-offset-4" : ""}`}
+                className={`hover:text-[#00f0ff] transition-colors ${
+                  sortBy === "oldest" ? "text-[#00f0ff]" : ""
+                }`}
               >
-                oldest
+                old
               </button>
               <button
                 onClick={() => setSortBy("title")}
-                className={`hover:text-white transition-colors ${sortBy === "title" ? "text-white underline decoration-zinc-700 underline-offset-4" : ""}`}
+                className={`hover:text-[#00f0ff] transition-colors ${
+                  sortBy === "title" ? "text-[#00f0ff]" : ""
+                }`}
               >
                 a-z
               </button>
@@ -121,9 +113,9 @@ export default function ArtistPage() {
           )}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[200px_1fr] gap-12 items-start">
-          {/* Left Sidebar - Artist Info */}
-          <div className="lg:sticky lg:top-8">
+        <div className="grid grid-cols-1 lg:grid-cols-[180px_1fr] gap-12 items-start">
+          {/* Sidebar */}
+          <div className="lg:sticky lg:top-20">
             {artistName && (
               <ArtistInfo
                 artistId={id as string}
@@ -134,11 +126,11 @@ export default function ArtistPage() {
             )}
           </div>
 
-          {/* Right Section - Discography */}
+          {/* Discography */}
           <div className="min-w-0 space-y-16">
             {loading ? (
-              <div className="text-center text-zinc-600 animate-pulse py-20">
-                loading discography...
+              <div className="text-center text-neutral-600 font-mono text-sm py-20 animate-pulse">
+                loading_discography...
               </div>
             ) : (
               <>
