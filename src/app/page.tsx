@@ -1,7 +1,7 @@
 "use client";
 import SearchBar from "@/components/SearchBar";
-import ArtistList from "@/components/ArtistList";
-import RecentArtists from "@/components/RecentArtists";
+import ArtistList from "@/components/artist/ArtistList";
+import RecentArtists from "@/components/artist/RecentArtists";
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 

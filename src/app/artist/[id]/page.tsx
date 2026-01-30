@@ -3,7 +3,7 @@ import {
   getArtistData,
   getOtherReleases,
 } from "@/lib/musicbrainz";
-import ArtistPageContent from "@/components/ArtistPageContent";
+import ArtistPageContent from "@/components/artist/ArtistPageContent";
 
 interface PageProps {
   params: Promise<{ id: string }>;

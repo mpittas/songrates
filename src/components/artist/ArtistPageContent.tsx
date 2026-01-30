@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import AlbumGrid from "@/components/AlbumGrid";
-import ArtistInfo from "@/components/ArtistInfo";
-import Discography from "@/components/Discography";
+import ArtistInfo from "./ArtistInfo";
+import Discography from "./Discography";
 import Link from "next/link";
 import { addToHistory } from "@/lib/history";
 // Types
