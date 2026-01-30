@@ -8,6 +8,10 @@ import {
   FaTimes,
   FaStepBackward,
   FaStepForward,
+  FaVolumeUp,
+  FaVolumeDown,
+  FaVolumeMute,
+  FaVolumeOff,
 } from "react-icons/fa";
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import YouTube, { YouTubeProps } from "react-youtube";
@@ -33,6 +37,11 @@ export default function MiniPlayer() {
   const [showVideo, setShowVideo] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [dragProgress, setDragProgress] = useState<number | null>(null);
+  const [volume, setVolume] = useState(100);
+  const [isDraggingVolume, setIsDraggingVolume] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const [showVolumeSlider, setShowVolumeSlider] = useState(false);
+  const volumeSliderRef = useRef<HTMLDivElement>(null);
 
   // Poll for current time
   useEffect(() => {
@@ -75,6 +84,70 @@ export default function MiniPlayer() {
     },
     [pausePlayback],
   );
+
+  const updateVolumeFromEvent = useCallback(
+    (clientY: number) => {
+      if (!volumeSliderRef.current || !playerRef.current) return;
+      const rect = volumeSliderRef.current.getBoundingClientRect();
+      const height = rect.height;
+      const y = clientY - rect.top;
+      // 0 at bottom, 1 at top
+      const percent = Math.max(0, Math.min(1, 1 - y / height));
+      const newVol = Math.round(percent * 100);
+
+      setVolume(newVol);
+      if (newVol > 0 && isMuted) setIsMuted(false);
+
+      if (
+        playerRef.current &&
+        typeof playerRef.current.setVolume === "function"
+      ) {
+        playerRef.current.setVolume(newVol);
+        if (isMuted) playerRef.current.unMute();
+      }
+    },
+    [isMuted],
+  );
+
+  const handleVolumeDragStart = (e: React.MouseEvent<HTMLDivElement>) => {
+    setIsDraggingVolume(true);
+    updateVolumeFromEvent(e.clientY);
+  };
+
+  useEffect(() => {
+    const handleGlobalMouseMove = (e: MouseEvent) => {
+      if (isDraggingVolume) {
+        e.preventDefault(); // Prevent selection
+        updateVolumeFromEvent(e.clientY);
+      }
+    };
+
+    const handleGlobalMouseUp = () => {
+      if (isDraggingVolume) {
+        setIsDraggingVolume(false);
+      }
+    };
+
+    if (isDraggingVolume) {
+      window.addEventListener("mousemove", handleGlobalMouseMove);
+      window.addEventListener("mouseup", handleGlobalMouseUp);
+    }
+    return () => {
+      window.removeEventListener("mousemove", handleGlobalMouseMove);
+      window.removeEventListener("mouseup", handleGlobalMouseUp);
+    };
+  }, [isDraggingVolume, updateVolumeFromEvent]);
+
+  const toggleMute = () => {
+    if (!playerRef.current) return;
+    if (isMuted) {
+      playerRef.current.unMute();
+      setIsMuted(false);
+    } else {
+      playerRef.current.mute();
+      setIsMuted(true);
+    }
+  };
 
   const opts: YouTubeProps["opts"] = useMemo(
     () => ({
@@ -208,7 +281,7 @@ export default function MiniPlayer() {
 
       {/* Bottom Mini Player Bar */}
       <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-[#1a1a1f] bg-[#050507]/95 backdrop-blur-sm">
-        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-6">
+        <div className="flex items-center justify-between gap-6 px-4 py-3 w-full">
           {/* Left: Track Info */}
           <div className="flex items-center gap-4 min-w-[200px] w-1/4">
             {/* Album Art */}
@@ -323,6 +396,52 @@ export default function MiniPlayer() {
 
           {/* Right: Extra Controls */}
           <div className="flex items-center gap-3 min-w-[200px] w-1/4 justify-end">
+            {/* Volume Control */}
+            <div
+              className="relative group flex items-center justify-center"
+              onMouseEnter={() => setShowVolumeSlider(true)}
+              onMouseLeave={() => setShowVolumeSlider(false)}
+            >
+              <button
+                onClick={toggleMute}
+                className="text-neutral-500 hover:text-white transition-colors p-2"
+              >
+                {isMuted || volume === 0 ? (
+                  <FaVolumeMute size={14} />
+                ) : volume < 50 ? (
+                  <FaVolumeDown size={14} />
+                ) : (
+                  <FaVolumeUp size={14} />
+                )}
+              </button>
+
+              {/* Vertical Slider popup */}
+              <div
+                className={`absolute bottom-full left-1/2 -translate-x-1/2 w-10 h-40 bg-[#0a0a0d] border border-[#1a1a1f] shadow-xl flex items-end justify-center pb-4 z-50 transition-all duration-200 ease-out origin-bottom ${showVolumeSlider ? "opacity-100 visible translate-y-0 scale-100" : "opacity-0 invisible translate-y-2 scale-95 pointer-events-none"}`}
+              >
+                <div
+                  ref={volumeSliderRef}
+                  className="w-2 h-32 bg-neutral-800 relative cursor-pointer group/slider py-2 select-none"
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    handleVolumeDragStart(e);
+                  }}
+                >
+                  <div
+                    className="absolute bottom-0 left-0 w-full bg-[#00f0ff]"
+                    style={{ height: `${isMuted ? 0 : volume}%` }}
+                  />
+                  {/* Knob */}
+                  <div
+                    className="absolute left-1/2 -translate-x-1/2 w-4 h-4 bg-white shadow-lg opacity-0 group-hover/slider:opacity-100 transition-opacity"
+                    style={{ bottom: `calc(${isMuted ? 0 : volume}% - 8px)` }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="h-4 w-px bg-[#1a1a1f] mx-2" />
+
             {/* Video Button */}
             <button
               onClick={() => setShowVideo(!showVideo)}
