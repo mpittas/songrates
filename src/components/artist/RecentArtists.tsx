@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getArtistHistory, type ArtistVisit } from "@/lib/history";
+import { formatTimeAgo } from "@/lib/utils";
 
 export default function RecentArtists() {
   const [history, setHistory] = useState<ArtistVisit[]>([]);
@@ -60,25 +61,11 @@ export default function RecentArtists() {
               </span>
             </div>
             <span className="text-[10px] text-neutral-600 font-mono">
-              {formatTime(artist.visitedAt)}
+              {formatTimeAgo(artist.visitedAt)}
             </span>
           </Link>
         ))}
       </div>
     </div>
   );
-}
-
-function formatTime(timestamp: number): string {
-  const now = Date.now();
-  const diff = now - timestamp;
-
-  const minutes = Math.floor(diff / 60000);
-  const hours = Math.floor(diff / 3600000);
-  const days = Math.floor(diff / 86400000);
-
-  if (minutes < 1) return "now";
-  if (minutes < 60) return `${minutes}m`;
-  if (hours < 24) return `${hours}h`;
-  return `${days}d`;
 }

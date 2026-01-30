@@ -39,48 +39,9 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [buffered, setBuffered] = useState(0);
-  const [isInitialized, setIsInitialized] = useState(false);
-
-  // Load state from local storage on mount
-  useEffect(() => {
-    const savedTrack = localStorage.getItem("player_currentTrack");
-    const savedVideoId = localStorage.getItem("player_videoId");
-
-    if (savedTrack) {
-      try {
-        const track = JSON.parse(savedTrack);
-        setCurrentTrack(track);
-      } catch (e) {
-        console.error("Failed to parse saved track", e);
-      }
-    }
-    if (savedVideoId) {
-      setVideoId(savedVideoId);
-    }
-    setIsInitialized(true);
-  }, []);
-
-  // Save currentTrack to local storage
-  useEffect(() => {
-    if (!isInitialized) return;
-    if (currentTrack) {
-      localStorage.setItem("player_currentTrack", JSON.stringify(currentTrack));
-    } else {
-      localStorage.removeItem("player_currentTrack");
-    }
-  }, [currentTrack, isInitialized]);
-
-  // Save videoId to local storage
-  useEffect(() => {
-    if (!isInitialized) return;
-    if (videoId) {
-      localStorage.setItem("player_videoId", videoId);
-    } else {
-      localStorage.removeItem("player_videoId");
-    }
-  }, [videoId, isInitialized]);
 
   const playerRef = useRef<any>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const setPlayerRef = useCallback((player: any) => {
     playerRef.current = player;
@@ -103,36 +64,72 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const playTrack = async (track: Track) => {
-    // If same track, just toggle play
-    if (currentTrack?.id === track.id && videoId) {
-      setIsPlaying(!isPlaying);
-      return;
-    }
-
-    setIsLoading(true);
-    setCurrentTrack(track);
-    setIsPlaying(false);
-    setCurrentTime(0);
-    setDuration(0);
-
-    try {
-      const searchQuery = `${track.artistName} ${track.title} audio`;
-      const res = await fetch(
-        `/api/youtube-search?q=${encodeURIComponent(searchQuery)}`,
-      );
-      const data = await res.json();
-
-      if (data.videoId) {
-        setVideoId(data.videoId);
-        setIsPlaying(true);
+  const playTrack = useCallback(
+    async (track: Track) => {
+      // If same track, just toggle play
+      if (currentTrack?.id === track.id && videoId) {
+        if (playerRef.current) {
+          if (isPlaying) {
+            playerRef.current.pauseVideo?.();
+            setIsPlaying(false);
+          } else {
+            playerRef.current.playVideo?.();
+            setIsPlaying(true);
+          }
+        } else {
+          setIsPlaying(!isPlaying);
+        }
+        return;
       }
-    } catch (e) {
-      console.error("Failed to search YouTube:", e);
-    }
 
-    setIsLoading(false);
-  };
+      // Cancel any pending search
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      abortControllerRef.current = new AbortController();
+
+      // Immediately update UI with new track info (optimistic update)
+      setCurrentTrack(track);
+      setIsLoading(true);
+      setCurrentTime(0);
+      setDuration(0);
+      setBuffered(0);
+
+      try {
+        const searchQuery = `${track.artistName} ${track.title} audio`;
+        const res = await fetch(
+          `/api/youtube-search?q=${encodeURIComponent(searchQuery)}`,
+          { signal: abortControllerRef.current.signal },
+        );
+        const data = await res.json();
+
+        if (data.videoId) {
+          // Use loadVideoById for faster switching if player exists
+          if (
+            playerRef.current &&
+            typeof playerRef.current.loadVideoById === "function" &&
+            videoId // Only use loadVideoById if we already have a video loaded
+          ) {
+            playerRef.current.loadVideoById(data.videoId);
+            setVideoId(data.videoId);
+            setIsPlaying(true);
+          } else {
+            // First time or player not ready - set videoId to trigger player mount
+            setVideoId(data.videoId);
+            setIsPlaying(true);
+          }
+        }
+      } catch (e: any) {
+        // Ignore abort errors
+        if (e.name !== "AbortError") {
+          console.error("Failed to search YouTube:", e);
+        }
+      }
+
+      setIsLoading(false);
+    },
+    [currentTrack?.id, videoId, isPlaying],
+  );
 
   const stopPlayback = () => {
     setCurrentTrack(null);

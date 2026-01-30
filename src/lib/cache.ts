@@ -87,6 +87,9 @@ export const wikidataCache = new LRUCache<any>(1000, 86400);
 // Search results cache - 1 hour TTL, up to 500 entries
 export const searchCache = new LRUCache<any>(500, 3600);
 
+// YouTube video ID cache - 1 hour TTL, up to 500 entries (for faster track switching)
+export const youtubeCache = new LRUCache<string>(500, 3600);
+
 /**
  * Helper to wrap async functions with caching
  */

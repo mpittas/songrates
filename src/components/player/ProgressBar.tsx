@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect, useCallback } from "react";
+import { formatTimeSeconds } from "@/lib/utils";
 
 interface ProgressBarProps {
   currentTime: number;
@@ -16,12 +17,6 @@ export default function ProgressBar({
   const progressRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [dragProgress, setDragProgress] = useState<number | null>(null);
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, "0")}`;
-  };
 
   const handleProgressClick = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
@@ -97,7 +92,7 @@ export default function ProgressBar({
   return (
     <div className="flex items-center gap-3 flex-1 max-w-lg">
       <span className="text-[10px] text-neutral-500 font-mono w-8 text-right">
-        {formatTime(currentTime)}
+        {formatTimeSeconds(currentTime)}
       </span>
 
       <div
@@ -125,7 +120,7 @@ export default function ProgressBar({
       </div>
 
       <span className="text-[10px] text-neutral-500 font-mono w-8">
-        {formatTime(duration)}
+        {formatTimeSeconds(duration)}
       </span>
     </div>
   );

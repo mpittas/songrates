@@ -35,30 +35,6 @@ export default function MiniPlayer() {
   const [volume, setVolume] = useState(100);
   const [isMuted, setIsMuted] = useState(false);
 
-  const [isInitialized, setIsInitialized] = useState(false);
-
-  useEffect(() => {
-    const savedVolume = localStorage.getItem("player_volume");
-    if (savedVolume) {
-      setVolume(Number(savedVolume));
-    }
-    const savedMuted = localStorage.getItem("player_muted");
-    if (savedMuted) {
-      setIsMuted(savedMuted === "true");
-    }
-    setIsInitialized(true);
-  }, []);
-
-  useEffect(() => {
-    if (!isInitialized) return;
-    localStorage.setItem("player_volume", volume.toString());
-  }, [volume, isInitialized]);
-
-  useEffect(() => {
-    if (!isInitialized) return;
-    localStorage.setItem("player_muted", isMuted.toString());
-  }, [isMuted, isInitialized]);
-
   // Poll for current time
   useEffect(() => {
     if (!videoId || !isPlaying) return;

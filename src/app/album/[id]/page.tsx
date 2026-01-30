@@ -6,6 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRatings } from "@/hooks/useRatings";
 import { usePlayer } from "@/context/PlayerContext";
+import { formatTimeMs } from "@/lib/utils";
 import { FaPlay, FaPause } from "react-icons/fa";
 
 interface AlbumInfo {
@@ -44,13 +45,6 @@ function TrackItem({
   const rating = ratings[track.id] || 0;
   const isCurrentTrack = currentTrack?.id === track.id;
   const [expanded, setExpanded] = useState(false);
-
-  const formatTime = (ms?: number) => {
-    if (!ms) return "-:--";
-    const minutes = Math.floor(ms / 60000);
-    const seconds = Math.floor((ms % 60000) / 1000);
-    return `${minutes}:${seconds.toString().padStart(2, "0")}`;
-  };
 
   return (
     <div className="border-b border-[#1a1a1f]">
@@ -115,7 +109,7 @@ function TrackItem({
 
         <div className="flex items-center gap-4">
           <span className="text-[10px] text-neutral-600 font-mono hidden sm:block">
-            {formatTime(track.length)}
+            {formatTimeMs(track.length)}
           </span>
           <div className="flex gap-1 shrink-0">
             {[1, 2, 3, 4, 5].map((star) => (

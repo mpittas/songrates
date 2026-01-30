@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { youtubeCache } from "@/lib/cache";
 
 const YOUTUBE_SEARCH_URL = "https://www.youtube.com/results";
 
@@ -7,6 +8,17 @@ export async function GET(request: NextRequest) {
 
   if (!query) {
     return NextResponse.json({ videoId: null, error: "Missing query" });
+  }
+
+  // Check cache first for instant response
+  const cacheKey = query.toLowerCase().trim();
+  const cachedVideoId = youtubeCache.get(cacheKey);
+  if (cachedVideoId) {
+    return NextResponse.json({
+      videoId: cachedVideoId,
+      success: true,
+      cached: true,
+    });
   }
 
   try {
@@ -28,8 +40,13 @@ export async function GET(request: NextRequest) {
     const videoIdMatch = html.match(/\/watch\?v=([a-zA-Z0-9_-]{11})/);
 
     if (videoIdMatch && videoIdMatch[1]) {
+      const videoId = videoIdMatch[1];
+
+      // Cache the result for faster future lookups
+      youtubeCache.set(cacheKey, videoId);
+
       return NextResponse.json({
-        videoId: videoIdMatch[1],
+        videoId,
         success: true,
       });
     }
