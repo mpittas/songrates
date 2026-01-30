@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import AlbumGrid from "@/components/AlbumGrid";
 import ArtistInfo from "@/components/ArtistInfo";
-import OtherReleases from "@/components/OtherReleases";
+import Discography from "@/components/Discography";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { addToHistory } from "@/lib/history";
@@ -134,13 +134,9 @@ export default function ArtistPage() {
               </div>
             ) : (
               <>
-                <AlbumGrid
-                  albums={sortedAlbums}
-                  onSelectAlbum={() => {}}
-                  title="Albums"
-                />
-                <OtherReleases
+                <Discography
                   artistId={id as string}
+                  mainAlbums={sortedAlbums}
                   onSelectAlbum={() => {}}
                 />
               </>
