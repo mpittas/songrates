@@ -11,15 +11,13 @@ interface Album {
   wikipediaUrl?: string;
 }
 
-function AlbumCard({
-  album,
-  onSelect,
-  isPriority = false,
-}: {
+interface AlbumCardProps {
   album: Album;
   onSelect: (id: string) => void;
   isPriority?: boolean;
-}) {
+}
+
+function AlbumCard({ album, onSelect, isPriority = false }: AlbumCardProps) {
   const imageUrl = `https://coverartarchive.org/release-group/${album.id}/front-250`;
   const [imageError, setImageError] = useState(false);
 
@@ -79,7 +77,7 @@ function AlbumCard({
       <h3 className="text-neutral-300 text-xs truncate group-hover:text-[#00f0ff] transition-colors">
         {album.title}
       </h3>
-      <p className="text-neutral-600 text-[10px] font-mono mt-0.5">
+      <p className="text-neutral-600 text-neutral-500 text-[10px] font-mono mt-0.5">
         {album.releaseDate?.split("-")[0] || "—"}
       </p>
     </Link>
@@ -90,10 +88,12 @@ export default function AlbumGrid({
   albums,
   onSelectAlbum,
   title,
+  priorityCount = 0,
 }: {
   albums: Album[];
   onSelectAlbum: (id: string) => void;
   title?: string;
+  priorityCount?: number;
 }) {
   if (albums.length === 0) return null;
 
@@ -111,7 +111,7 @@ export default function AlbumGrid({
             key={album.id}
             album={album}
             onSelect={onSelectAlbum}
-            isPriority={index < 4}
+            isPriority={index < priorityCount}
           />
         ))}
       </div>

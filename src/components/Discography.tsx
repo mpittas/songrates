@@ -20,18 +20,23 @@ export default function Discography({
   artistId,
   mainAlbums,
   onSelectAlbum,
+  initialReleases = {},
 }: {
   artistId: string;
   mainAlbums: any[]; // Using the type from your main page or AlbumGrid
   onSelectAlbum: (id: string) => void;
+  initialReleases?: GroupedReleases;
 }) {
-  const [releases, setReleases] = useState<GroupedReleases>({});
-  const [loading, setLoading] = useState(true);
+  const [releases, setReleases] = useState<GroupedReleases>(initialReleases);
+  const [loading, setLoading] = useState(
+    Object.keys(initialReleases).length === 0,
+  );
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
     new Set(),
   );
 
   useEffect(() => {
+    if (Object.keys(initialReleases).length > 0) return;
     if (!artistId) return;
 
     fetch(`/api/musicbrainz/other-releases?artistId=${artistId}`)
@@ -41,7 +46,7 @@ export default function Discography({
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, [artistId]);
+  }, [artistId, initialReleases]);
 
   const toggleCategory = (category: string) => {
     setExpandedCategories((prev) => {
@@ -82,6 +87,7 @@ export default function Discography({
             albums={mainAlbums}
             onSelectAlbum={onSelectAlbum}
             title="Albums"
+            priorityCount={6}
           />
         </div>
       )}
@@ -107,6 +113,7 @@ export default function Discography({
                   albums={otherAlbums}
                   onSelectAlbum={onSelectAlbum}
                   title="Other Albums"
+                  priorityCount={0}
                 />
               </div>
             </>
@@ -121,6 +128,7 @@ export default function Discography({
                   albums={eps}
                   onSelectAlbum={onSelectAlbum}
                   title="EPs"
+                  priorityCount={0}
                 />
               </div>
             </>
