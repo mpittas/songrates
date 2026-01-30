@@ -5,7 +5,8 @@ import { useParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { useRatings } from "@/hooks/useRatings";
-import { FaPlay } from "react-icons/fa";
+import { usePlayer } from "@/context/PlayerContext";
+import { FaPlay, FaPause } from "react-icons/fa";
 
 interface AlbumInfo {
   id: string;
@@ -35,7 +36,9 @@ function TrackItem({
   artistId: string;
 }) {
   const { ratings, setRating } = useRatings();
+  const { currentTrack, isPlaying, isLoading, playTrack } = usePlayer();
   const rating = ratings[track.id] || 0;
+  const isCurrentTrack = currentTrack?.id === track.id;
   const [expanded, setExpanded] = useState(false);
   const [lyrics, setLyrics] = useState<string | null>(null);
   const [lyricsAvailable, setLyricsAvailable] = useState<boolean | null>(null);
@@ -100,29 +103,38 @@ function TrackItem({
     <div className="border-b border-[#1a1a1f]">
       <div className="flex items-center justify-between py-3 group hover:bg-[#0a0a0d] px-4 transition-colors">
         <div className="flex items-center gap-4 min-w-0 flex-1">
-          <a
-            href={`https://www.youtube.com/results?search_query=${encodeURIComponent(artistName + " " + track.title)}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-center w-6 h-6 bg-[#0a0a0d] border border-[#1a1a1f] text-neutral-500 transition-all hover:bg-[#00f0ff] hover:border-[#00f0ff] hover:text-[#050507] shrink-0"
-            title="Play on YouTube"
+          <button
+            onClick={() =>
+              playTrack({
+                id: track.id,
+                title: track.title,
+                artistName: artistName,
+              })
+            }
+            className={`flex items-center justify-center w-6 h-6 border shrink-0 transition-all ${
+              isCurrentTrack && isPlaying
+                ? "bg-[#00f0ff] border-[#00f0ff] text-[#050507]"
+                : "bg-[#0a0a0d] border-[#1a1a1f] text-neutral-500 hover:bg-[#00f0ff] hover:border-[#00f0ff] hover:text-[#050507]"
+            }`}
+            title="Play"
           >
-            <FaPlay size={8} className="ml-0.5" />
-          </a>
+            {isCurrentTrack && isLoading ? (
+              <span className="animate-pulse text-[8px]">...</span>
+            ) : isCurrentTrack && isPlaying ? (
+              <FaPause size={8} />
+            ) : (
+              <FaPlay size={8} className="ml-0.5" />
+            )}
+          </button>
 
           <span className="text-neutral-600 font-mono text-xs w-6 shrink-0 text-left">
             {track.number}
           </span>
 
           <div className="flex flex-col min-w-0">
-            <a
-              href={`https://www.youtube.com/results?search_query=${encodeURIComponent(artistName + " " + track.title)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-neutral-300 group-hover:text-[#00f0ff] transition-colors truncate text-sm hover:underline"
-            >
+            <span className="text-neutral-300 group-hover:text-[#00f0ff] transition-colors truncate text-sm">
               {track.title}
-            </a>
+            </span>
             {track.artists && track.artists.length > 0 && (
               <span className="text-neutral-600 text-xs line-clamp-2 leading-relaxed mt-0.5">
                 {track.artists
