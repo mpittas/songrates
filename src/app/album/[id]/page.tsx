@@ -36,6 +36,58 @@ function TrackItem({
 }) {
   const { ratings, setRating } = useRatings();
   const rating = ratings[track.id] || 0;
+  const [expanded, setExpanded] = useState(false);
+  const [lyrics, setLyrics] = useState<string | null>(null);
+  const [lyricsAvailable, setLyricsAvailable] = useState<boolean | null>(null);
+  const [loadingLyrics, setLoadingLyrics] = useState(false);
+
+  // Check lyrics availability on mount
+  useEffect(() => {
+    const checkLyrics = async () => {
+      try {
+        const res = await fetch(
+          `/api/lyrics?artist=${encodeURIComponent(artistName)}&title=${encodeURIComponent(track.title)}`,
+        );
+        const data = await res.json();
+        setLyricsAvailable(data.available);
+        if (data.lyrics) {
+          setLyrics(data.lyrics);
+        }
+      } catch {
+        setLyricsAvailable(false);
+      }
+    };
+    checkLyrics();
+  }, [artistName, track.title]);
+
+  const handleToggleLyrics = async () => {
+    if (!lyricsAvailable) return;
+
+    if (expanded) {
+      setExpanded(false);
+      return;
+    }
+
+    if (lyrics) {
+      setExpanded(true);
+      return;
+    }
+
+    setLoadingLyrics(true);
+    try {
+      const res = await fetch(
+        `/api/lyrics?artist=${encodeURIComponent(artistName)}&title=${encodeURIComponent(track.title)}`,
+      );
+      const data = await res.json();
+      if (data.lyrics) {
+        setLyrics(data.lyrics);
+        setExpanded(true);
+      }
+    } catch {
+      // Failed to load
+    }
+    setLoadingLyrics(false);
+  };
 
   const formatTime = (ms?: number) => {
     if (!ms) return "-:--";
@@ -45,71 +97,102 @@ function TrackItem({
   };
 
   return (
-    <div className="flex items-center justify-between py-3 border-b border-[#1a1a1f] group hover:bg-[#0a0a0d] px-4 transition-colors">
-      <div className="flex items-center gap-4 min-w-0 flex-1">
-        <a
-          href={`https://www.youtube.com/results?search_query=${encodeURIComponent(artistName + " " + track.title)}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center justify-center w-6 h-6 bg-[#0a0a0d] border border-[#1a1a1f] text-neutral-500 transition-all hover:bg-[#00f0ff] hover:border-[#00f0ff] hover:text-[#050507] shrink-0"
-          title="Play on YouTube"
-        >
-          <FaPlay size={8} className="ml-0.5" />
-        </a>
-
-        <span className="text-neutral-600 font-mono text-xs w-6 shrink-0 text-left">
-          {track.number}
-        </span>
-
-        <div className="flex flex-col min-w-0">
+    <div className="border-b border-[#1a1a1f]">
+      <div className="flex items-center justify-between py-3 group hover:bg-[#0a0a0d] px-4 transition-colors">
+        <div className="flex items-center gap-4 min-w-0 flex-1">
           <a
             href={`https://www.youtube.com/results?search_query=${encodeURIComponent(artistName + " " + track.title)}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-neutral-300 group-hover:text-[#00f0ff] transition-colors truncate text-sm hover:underline"
+            className="flex items-center justify-center w-6 h-6 bg-[#0a0a0d] border border-[#1a1a1f] text-neutral-500 transition-all hover:bg-[#00f0ff] hover:border-[#00f0ff] hover:text-[#050507] shrink-0"
+            title="Play on YouTube"
           >
-            {track.title}
+            <FaPlay size={8} className="ml-0.5" />
           </a>
-          {track.artists && track.artists.length > 0 && (
-            <span className="text-neutral-600 text-xs line-clamp-2 leading-relaxed mt-0.5">
-              {track.artists
-                .filter((a) => a.id !== artistId)
-                .map((a, i, arr) => (
-                  <span key={a.id}>
-                    {i === 0 ? "feat. " : ""}
-                    <Link
-                      href={`/artist/${a.id}`}
-                      className="hover:text-[#00f0ff] hover:underline transition-colors"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      {a.name}
-                    </Link>
-                    {i < arr.length - 1 ? ", " : ""}
-                  </span>
-                ))}
-            </span>
+
+          <span className="text-neutral-600 font-mono text-xs w-6 shrink-0 text-left">
+            {track.number}
+          </span>
+
+          <div className="flex flex-col min-w-0">
+            <a
+              href={`https://www.youtube.com/results?search_query=${encodeURIComponent(artistName + " " + track.title)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-neutral-300 group-hover:text-[#00f0ff] transition-colors truncate text-sm hover:underline"
+            >
+              {track.title}
+            </a>
+            {track.artists && track.artists.length > 0 && (
+              <span className="text-neutral-600 text-xs line-clamp-2 leading-relaxed mt-0.5">
+                {track.artists
+                  .filter((a) => a.id !== artistId)
+                  .map((a, i, arr) => (
+                    <span key={a.id}>
+                      {i === 0 ? "feat. " : ""}
+                      <Link
+                        href={`/artist/${a.id}`}
+                        className="hover:text-[#00f0ff] hover:underline transition-colors"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {a.name}
+                      </Link>
+                      {i < arr.length - 1 ? ", " : ""}
+                    </span>
+                  ))}
+              </span>
+            )}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-4">
+          {/* Lyrics Indicator */}
+          {lyricsAvailable && (
+            <button
+              onClick={handleToggleLyrics}
+              className={`text-[10px] font-mono px-2 py-1 border transition-all ${
+                expanded
+                  ? "border-[#00f0ff] text-[#00f0ff] bg-[#00f0ff]/10"
+                  : "border-[#1a1a1f] text-neutral-600 hover:border-[#00f0ff]/50 hover:text-neutral-400"
+              }`}
+              title={expanded ? "Hide lyrics" : "Show lyrics"}
+            >
+              {loadingLyrics ? "..." : expanded ? "−" : "lyrics"}
+            </button>
           )}
+
+          <span className="text-[10px] text-neutral-600 font-mono hidden sm:block">
+            {formatTime(track.length)}
+          </span>
+          <div className="flex gap-1 shrink-0">
+            {[1, 2, 3, 4, 5].map((star) => (
+              <button
+                key={star}
+                onClick={() => setRating(track.id, star)}
+                className={`w-2.5 h-2.5 border border-[#1a1a1f] transition-all duration-200 ${
+                  rating >= star
+                    ? "bg-[#00f0ff] border-[#00f0ff]"
+                    : "hover:border-[#00f0ff]/50 bg-transparent"
+                }`}
+              />
+            ))}
+          </div>
         </div>
       </div>
 
-      <div className="flex items-center gap-6">
-        <span className="text-[10px] text-neutral-600 font-mono hidden sm:block">
-          {formatTime(track.length)}
-        </span>
-        <div className="flex gap-1 shrink-0">
-          {[1, 2, 3, 4, 5].map((star) => (
-            <button
-              key={star}
-              onClick={() => setRating(track.id, star)}
-              className={`w-2.5 h-2.5 border border-[#1a1a1f] transition-all duration-200 ${
-                rating >= star
-                  ? "bg-[#00f0ff] border-[#00f0ff]"
-                  : "hover:border-[#00f0ff]/50 bg-transparent"
-              }`}
-            />
-          ))}
+      {/* Expanded Lyrics Section */}
+      {expanded && lyrics && (
+        <div className="px-4 py-4 bg-[#0a0a0d]/50 border-t border-[#1a1a1f]/50">
+          <div className="pl-16 pr-4">
+            <p className="text-xs text-neutral-500 whitespace-pre-line leading-relaxed max-h-64 overflow-y-auto custom-scrollbar">
+              {lyrics}
+            </p>
+            <p className="text-[10px] text-neutral-700 font-mono mt-3">
+              lyrics provided by lyrics.ovh
+            </p>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
