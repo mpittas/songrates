@@ -44,7 +44,9 @@ export default function Home() {
     <main className="min-h-screen bg-[#050507] text-neutral-100">
       <div className="max-w-lg mx-auto pt-24 px-6">
         <div className="relative mb-12">
-          <SearchBar />
+          <Suspense fallback={null}>
+            <SearchBar />
+          </Suspense>
           <Suspense fallback={null}>
             <SearchResults />
           </Suspense>
