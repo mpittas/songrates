@@ -165,7 +165,7 @@ export default function AlbumPage() {
     );
   }
 
-  const imageUrl = `https://coverartarchive.org/release-group/${album.id}/front-500`;
+  const imageUrl = `https://coverartarchive.org/release-group/${album.id}/front-250`;
   const blurDataURL =
     "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMSIgaGVpZ2h0PSIxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiMwYTBhMGQiLz48L3N2Zz4=";
 
@@ -193,7 +193,7 @@ export default function AlbumPage() {
               priority
               placeholder="blur"
               blurDataURL={blurDataURL}
-              unoptimized
+              quality={70}
             />
           </div>
 

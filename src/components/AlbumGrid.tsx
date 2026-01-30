@@ -34,15 +34,14 @@ function AlbumCard({
             src={imageUrl}
             alt={album.title}
             fill
-            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 250px"
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 200px"
             className="object-cover  transition-all duration-300"
             onError={() => setImageError(true)}
             priority={isPriority}
             loading={isPriority ? "eager" : "lazy"}
             placeholder="blur"
             blurDataURL={blurDataURL}
-            quality={90}
-            unoptimized
+            quality={60}
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-neutral-700 font-mono text-2xl">

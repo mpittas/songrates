@@ -86,7 +86,7 @@ export default function ArtistInfo({
             className="object-cover grayscale hover:grayscale-0 transition-all duration-500"
             sizes="(max-width: 768px) 100vw, 200px"
             loading="lazy"
-            unoptimized
+            quality={60}
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-neutral-700">

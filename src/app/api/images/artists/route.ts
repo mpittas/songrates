@@ -1,5 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 
+// Convert Wikimedia Commons URL to a thumbnail URL
+// Example: https://commons.wikimedia.org/wiki/Special:FilePath/Image.jpg
+// becomes: https://commons.wikimedia.org/wiki/Special:FilePath/Image.jpg?width=200
+function toThumbnailUrl(imageUrl: string, width: number = 200): string {
+  if (
+    imageUrl.includes("commons.wikimedia.org") ||
+    imageUrl.includes("upload.wikimedia.org")
+  ) {
+    // Add width parameter to get a resized thumbnail
+    const separator = imageUrl.includes("?") ? "&" : "?";
+    return `${imageUrl}${separator}width=${width}`;
+  }
+  return imageUrl;
+}
+
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const idsParam = searchParams.get("ids");
@@ -52,7 +67,7 @@ export async function GET(request: NextRequest) {
       // Wikidata returns http urls sometimes, prefer https if possible (though usually they handle it)
       // Images are usually standard URLs.
       if (mbid && imageUrl) {
-        images[mbid] = imageUrl;
+        images[mbid] = toThumbnailUrl(imageUrl);
       }
     });
 

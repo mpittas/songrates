@@ -15,9 +15,21 @@ export async function GET(request: NextRequest) {
     const image =
       data.images?.find((img: any) => img.front) || data.images?.[0];
 
-    return NextResponse.json({
-      url: image?.thumbnails?.small || image?.image || null, // Use small thumb for grid
+    const response = NextResponse.json({
+      // Prefer smallest thumbnail: 250px > small > full image
+      url:
+        image?.thumbnails?.["250"] ||
+        image?.thumbnails?.small ||
+        image?.image ||
+        null,
     });
+
+    // Cache for 1 week in browser, 1 day on CDN
+    response.headers.set(
+      "Cache-Control",
+      "public, max-age=604800, s-maxage=86400, stale-while-revalidate=86400",
+    );
+    return response;
   } catch {
     return NextResponse.json({ url: null });
   }

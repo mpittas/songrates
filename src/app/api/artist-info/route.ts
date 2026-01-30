@@ -3,6 +3,18 @@ import { NextRequest, NextResponse } from "next/server";
 const MB_USER_AGENT = "SongRates/1.0 (mpittas@gmail.com)";
 const MB_BASE_URL = "https://musicbrainz.org/ws/2";
 
+// Convert Wikimedia Commons URL to a thumbnail URL for smaller file sizes
+function toThumbnailUrl(imageUrl: string, width: number = 250): string {
+  if (
+    imageUrl.includes("commons.wikimedia.org") ||
+    imageUrl.includes("upload.wikimedia.org")
+  ) {
+    const separator = imageUrl.includes("?") ? "&" : "?";
+    return `${imageUrl}${separator}width=${width}`;
+  }
+  return imageUrl;
+}
+
 interface ArtistInfo {
   image: string | null;
   description: string | null;
@@ -102,7 +114,7 @@ async function fetchWikidataInfo(
     if (!binding) return {};
 
     return {
-      image: binding.image?.value || null,
+      image: binding.image?.value ? toThumbnailUrl(binding.image.value) : null,
       description: binding.artistDescription?.value || null,
       wikipedia: binding.wikipediaLink?.value || null,
       twitter: binding.twitter?.value
