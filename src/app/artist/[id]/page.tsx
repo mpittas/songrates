@@ -22,28 +22,31 @@ export default function ArtistPage() {
       if (!id) return;
 
       try {
-        const nameRes = await fetch(`/api/musicbrainz/artist?id=${id}`);
-        const nameData = await nameRes.json();
+        const [infoRes, albumsRes] = await Promise.all([
+          fetch(`/api/artist-info?id=${id}`),
+          fetch(`/api/musicbrainz/albums?artistId=${id}`),
+        ]);
 
-        if (nameData.artist) {
-          setArtistName(nameData.artist.name);
-          addToHistory(id as string, nameData.artist.name);
+        const [infoData, albumsData] = await Promise.all([
+          infoRes.ok ? infoRes.json() : null,
+          albumsRes.ok ? albumsRes.json() : null,
+        ]);
+
+        if (infoData?.artist) {
+          setArtistName(infoData.artist.name);
+          addToHistory(id as string, infoData.artist.name);
         }
 
-        const infoRes = await fetch(`/api/artist-info?id=${id}`);
-        const infoData = await infoRes.json();
-
-        if (infoData.artistInfo) {
+        if (infoData?.artistInfo) {
           setArtistInfoData(infoData.artistInfo);
         }
 
-        const albumsRes = await fetch(`/api/musicbrainz/albums?artistId=${id}`);
-        const albumsData = await albumsRes.json();
-
-        setAlbums(albumsData.albums || []);
-        setLoading(false);
+        if (albumsData?.albums) {
+          setAlbums(albumsData.albums);
+        }
       } catch (error) {
         console.error("Error loading artist data:", error);
+      } finally {
         setLoading(false);
       }
     };

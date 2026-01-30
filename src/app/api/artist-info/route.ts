@@ -19,10 +19,13 @@ interface ArtistInfo {
   country: string | null;
 }
 
-// Fetch URL relations from MusicBrainz
-async function fetchMBUrlRelations(
-  artistId: string,
-): Promise<{ officialSite: string | null }> {
+// Fetch URL relations from MusicBrainz - Now also fetches basic artist data
+async function fetchMBData(artistId: string): Promise<{
+  officialSite: string | null;
+  name?: string;
+  country?: string;
+  lifeSpan?: any;
+}> {
   const url = `${MB_BASE_URL}/artist/${artistId}?inc=url-rels&fmt=json`;
 
   try {
@@ -43,6 +46,9 @@ async function fetchMBUrlRelations(
 
     return {
       officialSite: officialHomepage?.url?.resource || null,
+      name: data.name,
+      country: data.country,
+      lifeSpan: data["life-span"],
     };
   } catch {
     return { officialSite: null };
@@ -130,9 +136,9 @@ export async function GET(request: NextRequest) {
   }
 
   // Fetch data from both sources in parallel
-  const [wikidataInfo, mbInfo] = await Promise.all([
+  const [wikidataInfo, mbData] = await Promise.all([
     fetchWikidataInfo(artistId),
-    fetchMBUrlRelations(artistId),
+    fetchMBData(artistId),
   ]);
 
   const artistInfo: ArtistInfo = {
@@ -144,12 +150,19 @@ export async function GET(request: NextRequest) {
     facebook: wikidataInfo.facebook || null,
     youtube: wikidataInfo.youtube || null,
     spotify: wikidataInfo.spotify || null,
-    officialSite: mbInfo.officialSite,
+    officialSite: mbData.officialSite,
     genres: [],
     beginDate: null,
     endDate: null,
     country: null,
   };
 
-  return NextResponse.json({ artistInfo });
+  const artist = {
+    id: artistId,
+    name: mbData.name || null,
+    country: mbData.country || null,
+    lifeSpan: mbData.lifeSpan || null,
+  };
+
+  return NextResponse.json({ artistInfo, artist });
 }
