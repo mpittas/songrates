@@ -7,6 +7,7 @@ import Discography from "@/components/Discography";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { addToHistory } from "@/lib/history";
+import ArtistSkeleton from "@/components/ArtistSkeleton";
 
 export default function ArtistPage() {
   const { id } = useParams();
@@ -62,6 +63,14 @@ export default function ArtistPage() {
     }
     return 0;
   });
+
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-[#050507] text-neutral-100 p-6 md:px-16 md:py-8">
+        <ArtistSkeleton />
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-[#050507] text-neutral-100 p-6 md:px-16 md:py-8">
@@ -128,19 +137,11 @@ export default function ArtistPage() {
 
           {/* Discography */}
           <div className="min-w-0 space-y-16">
-            {loading ? (
-              <div className="text-center text-neutral-600 font-mono text-sm py-20 animate-pulse">
-                loading_discography...
-              </div>
-            ) : (
-              <>
-                <Discography
-                  artistId={id as string}
-                  mainAlbums={sortedAlbums}
-                  onSelectAlbum={() => {}}
-                />
-              </>
-            )}
+            <Discography
+              artistId={id as string}
+              mainAlbums={sortedAlbums}
+              onSelectAlbum={() => {}}
+            />
           </div>
         </div>
       </div>

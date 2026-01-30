@@ -1,0 +1,63 @@
+export default function ArtistSkeleton() {
+  return (
+    <div className="max-w-6xl mx-auto animate-pulse">
+      {/* Header Skeleton */}
+      <div className="flex flex-col md:flex-row justify-between items-baseline mb-12 gap-4">
+        <div className="flex items-baseline gap-6 w-full">
+          <div className="h-4 w-16 bg-[#1a1a1f] rounded"></div>{" "}
+          {/* Back link */}
+          <div className="h-8 md:h-10 w-64 bg-[#1a1a1f] rounded"></div>{" "}
+          {/* Artist Name */}
+        </div>
+        {/* Sort buttons skeleton */}
+        <div className="flex gap-4">
+          <div className="h-3 w-8 bg-[#1a1a1f] rounded"></div>
+          <div className="h-3 w-8 bg-[#1a1a1f] rounded"></div>
+          <div className="h-3 w-8 bg-[#1a1a1f] rounded"></div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-[180px_1fr] gap-12 items-start">
+        {/* Sidebar Skeleton */}
+        <div className="lg:sticky lg:top-20 space-y-4">
+          <div className="w-full aspect-square bg-[#1a1a1f] rounded-none border border-[#1a1a1f]"></div>{" "}
+          {/* Artist Image */}
+          <div className="space-y-2">
+            <div className="h-3 w-full bg-[#1a1a1f] rounded"></div>
+            <div className="h-3 w-3/4 bg-[#1a1a1f] rounded"></div>
+            <div className="h-3 w-1/2 bg-[#1a1a1f] rounded"></div>
+          </div>
+        </div>
+
+        {/* Discography Skeleton */}
+        <div className="min-w-0 space-y-16">
+          {/* Main Albums Section */}
+          <div className="space-y-6">
+            <div className="flex items-baseline justify-between border-b border-[#1a1a1f] pb-2">
+              <div className="h-4 w-32 bg-[#1a1a1f] rounded"></div>{" "}
+              {/* Section Title */}
+              <div className="h-3 w-12 bg-[#1a1a1f] rounded"></div>{" "}
+              {/* Count */}
+            </div>
+
+            {/* Grid of Albums */}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-12">
+              {[...Array(8)].map((_, i) => (
+                <div key={i} className="space-y-3">
+                  <div className="aspect-square bg-[#1a1a1f] border border-[#1a1a1f]"></div>{" "}
+                  {/* Album Cover */}
+                  <div className="space-y-2">
+                    <div className="h-3 w-3/4 bg-[#1a1a1f] rounded"></div>{" "}
+                    {/* Title */}
+                    <div className="h-2 w-1/2 bg-[#1a1a1f] rounded"></div>{" "}
+                    {/* Year */}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
