@@ -4,6 +4,7 @@ import {
   createContext,
   useContext,
   useState,
+  useEffect,
   ReactNode,
   useRef,
   useCallback,
@@ -38,6 +39,47 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [buffered, setBuffered] = useState(0);
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  // Load state from local storage on mount
+  useEffect(() => {
+    const savedTrack = localStorage.getItem("player_currentTrack");
+    const savedVideoId = localStorage.getItem("player_videoId");
+
+    if (savedTrack) {
+      try {
+        const track = JSON.parse(savedTrack);
+        setCurrentTrack(track);
+      } catch (e) {
+        console.error("Failed to parse saved track", e);
+      }
+    }
+    if (savedVideoId) {
+      setVideoId(savedVideoId);
+    }
+    setIsInitialized(true);
+  }, []);
+
+  // Save currentTrack to local storage
+  useEffect(() => {
+    if (!isInitialized) return;
+    if (currentTrack) {
+      localStorage.setItem("player_currentTrack", JSON.stringify(currentTrack));
+    } else {
+      localStorage.removeItem("player_currentTrack");
+    }
+  }, [currentTrack, isInitialized]);
+
+  // Save videoId to local storage
+  useEffect(() => {
+    if (!isInitialized) return;
+    if (videoId) {
+      localStorage.setItem("player_videoId", videoId);
+    } else {
+      localStorage.removeItem("player_videoId");
+    }
+  }, [videoId, isInitialized]);
+
   const playerRef = useRef<any>(null);
 
   const setPlayerRef = useCallback((player: any) => {

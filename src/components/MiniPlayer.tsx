@@ -35,6 +35,30 @@ export default function MiniPlayer() {
   const [volume, setVolume] = useState(100);
   const [isMuted, setIsMuted] = useState(false);
 
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  useEffect(() => {
+    const savedVolume = localStorage.getItem("player_volume");
+    if (savedVolume) {
+      setVolume(Number(savedVolume));
+    }
+    const savedMuted = localStorage.getItem("player_muted");
+    if (savedMuted) {
+      setIsMuted(savedMuted === "true");
+    }
+    setIsInitialized(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isInitialized) return;
+    localStorage.setItem("player_volume", volume.toString());
+  }, [volume, isInitialized]);
+
+  useEffect(() => {
+    if (!isInitialized) return;
+    localStorage.setItem("player_muted", isMuted.toString());
+  }, [isMuted, isInitialized]);
+
   // Poll for current time
   useEffect(() => {
     if (!videoId || !isPlaying) return;
@@ -59,11 +83,25 @@ export default function MiniPlayer() {
     (event: any) => {
       playerRef.current = event.target;
       setPlayerRef(event.target);
+
+      // Restore volume and mute state
+      if (typeof event.target.setVolume === "function") {
+        event.target.setVolume(volume);
+        if (isMuted) {
+          event.target.mute();
+        } else {
+          event.target.unMute();
+        }
+      }
+
       if (isPlaying) {
         event.target.playVideo();
+      } else {
+        // Ensure it doesn't autoplay if state says paused
+        event.target.pauseVideo();
       }
     },
-    [isPlaying, setPlayerRef],
+    [isPlaying, setPlayerRef, volume, isMuted],
   );
 
   const onStateChange: YouTubeProps["onStateChange"] = useCallback(
@@ -108,13 +146,13 @@ export default function MiniPlayer() {
       height: "100%",
       width: "100%",
       playerVars: {
-        autoplay: 1,
+        autoplay: isPlaying ? 1 : 0,
         controls: 0,
         origin:
           typeof window !== "undefined" ? window.location.origin : undefined,
       },
     }),
-    [],
+    [isPlaying],
   );
 
   if (!currentTrack) return null;
