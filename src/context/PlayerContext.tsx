@@ -9,14 +9,7 @@ import {
   useCallback,
 } from "react";
 
-interface Track {
-  id: string;
-  title: string;
-  artistName: string;
-  artistId?: string;
-  albumId?: string;
-  albumImageUrl?: string;
-}
+import { Track } from "@/types/music";
 
 interface PlayerContextType {
   currentTrack: Track | null;
