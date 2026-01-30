@@ -13,6 +13,9 @@ interface Track {
   id: string;
   title: string;
   artistName: string;
+  artistId?: string;
+  albumId?: string;
+  albumImageUrl?: string;
 }
 
 interface PlayerContextType {
@@ -22,12 +25,14 @@ interface PlayerContextType {
   isLoading: boolean;
   currentTime: number;
   duration: number;
+  buffered: number;
   playTrack: (track: Track) => Promise<void>;
   stopPlayback: () => void;
+  pausePlayback: () => void;
   togglePlayPause: () => void;
   seekTo: (seconds: number) => void;
-  setPlayerRef: (iframe: HTMLIFrameElement | null) => void;
-  updateProgress: (current: number, total: number) => void;
+  setPlayerRef: (player: any) => void;
+  updateProgress: (current: number, total: number, buffered?: number) => void;
 }
 
 const PlayerContext = createContext<PlayerContextType | null>(null);
@@ -39,27 +44,27 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-  const playerRef = useRef<HTMLIFrameElement | null>(null);
+  const [buffered, setBuffered] = useState(0);
+  const playerRef = useRef<any>(null);
 
-  const setPlayerRef = useCallback((iframe: HTMLIFrameElement | null) => {
-    playerRef.current = iframe;
+  const setPlayerRef = useCallback((player: any) => {
+    playerRef.current = player;
   }, []);
 
-  const updateProgress = useCallback((current: number, total: number) => {
-    setCurrentTime(current);
-    setDuration(total);
-  }, []);
+  const updateProgress = useCallback(
+    (current: number, total: number, bufferedData?: number) => {
+      setCurrentTime(current);
+      setDuration(total);
+      if (bufferedData !== undefined) {
+        setBuffered(bufferedData);
+      }
+    },
+    [],
+  );
 
   const seekTo = useCallback((seconds: number) => {
-    if (playerRef.current) {
-      playerRef.current.contentWindow?.postMessage(
-        JSON.stringify({
-          event: "command",
-          func: "seekTo",
-          args: [seconds, true],
-        }),
-        "*",
-      );
+    if (playerRef.current && typeof playerRef.current.seekTo === "function") {
+      playerRef.current.seekTo(seconds, true);
     }
   }, []);
 
@@ -102,8 +107,34 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     setDuration(0);
   };
 
+  const pausePlayback = () => {
+    setIsPlaying(false);
+    if (
+      playerRef.current &&
+      typeof playerRef.current.pauseVideo === "function"
+    ) {
+      playerRef.current.pauseVideo();
+    }
+  };
+
   const togglePlayPause = () => {
-    setIsPlaying(!isPlaying);
+    if (
+      playerRef.current &&
+      typeof playerRef.current.getPlayerState === "function"
+    ) {
+      const state = playerRef.current.getPlayerState();
+      // 1 = playing, 2 = paused
+      if (state === 1) {
+        playerRef.current.pauseVideo();
+        setIsPlaying(false);
+      } else {
+        playerRef.current.playVideo();
+        setIsPlaying(true);
+      }
+    } else {
+      // Fallback state toggle
+      setIsPlaying(!isPlaying);
+    }
   };
 
   return (
@@ -115,8 +146,10 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         isLoading,
         currentTime,
         duration,
+        buffered,
         playTrack,
         stopPlayback,
+        pausePlayback,
         togglePlayPause,
         seekTo,
         setPlayerRef,

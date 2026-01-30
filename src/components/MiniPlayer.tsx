@@ -1,8 +1,16 @@
 "use client";
 
+import Link from "next/link";
 import { usePlayer } from "@/context/PlayerContext";
-import { FaPlay, FaPause, FaTimes } from "react-icons/fa";
-import { useEffect, useRef, useState, useCallback } from "react";
+import {
+  FaPlay,
+  FaPause,
+  FaTimes,
+  FaStepBackward,
+  FaStepForward,
+} from "react-icons/fa";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
+import YouTube, { YouTubeProps } from "react-youtube";
 
 export default function MiniPlayer() {
   const {
@@ -12,73 +20,74 @@ export default function MiniPlayer() {
     isLoading,
     currentTime,
     duration,
+    buffered,
     stopPlayback,
+    pausePlayback,
     togglePlayPause,
     seekTo,
     setPlayerRef,
     updateProgress,
   } = usePlayer();
-  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const playerRef = useRef<any>(null);
   const progressRef = useRef<HTMLDivElement>(null);
   const [showVideo, setShowVideo] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
 
-  // Register iframe ref with context
-  useEffect(() => {
-    setPlayerRef(iframeRef.current);
-  }, [iframeRef.current, setPlayerRef]);
-
-  // Control YouTube player via postMessage
-  useEffect(() => {
-    if (iframeRef.current && videoId) {
-      const command = isPlaying ? "playVideo" : "pauseVideo";
-      iframeRef.current.contentWindow?.postMessage(
-        JSON.stringify({ event: "command", func: command }),
-        "*",
-      );
-    }
-  }, [isPlaying, videoId]);
-
-  // Poll for current time from YouTube player
+  // Poll for current time
   useEffect(() => {
     if (!videoId || !isPlaying) return;
 
     const interval = setInterval(() => {
-      if (iframeRef.current) {
-        // Request current time and duration
-        iframeRef.current.contentWindow?.postMessage(
-          JSON.stringify({ event: "listening" }),
-          "*",
-        );
+      // Check if player is available and has methods
+      if (
+        playerRef.current &&
+        typeof playerRef.current.getCurrentTime === "function"
+      ) {
+        const time = playerRef.current.getCurrentTime();
+        const duration = playerRef.current.getDuration();
+        const loaded = playerRef.current.getVideoLoadedFraction(); // 0 to 1
+        updateProgress(time, duration, loaded);
       }
-    }, 1000);
+    }, 500);
 
     return () => clearInterval(interval);
-  }, [videoId, isPlaying]);
+  }, [videoId, isPlaying, updateProgress]);
 
-  // Listen for YouTube player messages
-  useEffect(() => {
-    const handleMessage = (event: MessageEvent) => {
-      if (event.origin !== "https://www.youtube.com") return;
-
-      try {
-        const data = JSON.parse(event.data);
-        if (data.event === "infoDelivery" && data.info) {
-          if (
-            typeof data.info.currentTime === "number" &&
-            typeof data.info.duration === "number"
-          ) {
-            updateProgress(data.info.currentTime, data.info.duration);
-          }
-        }
-      } catch {
-        // Not a JSON message, ignore
+  const onPlayerReady: YouTubeProps["onReady"] = useCallback(
+    (event: any) => {
+      playerRef.current = event.target;
+      setPlayerRef(event.target);
+      if (isPlaying) {
+        event.target.playVideo();
       }
-    };
+    },
+    [isPlaying, setPlayerRef],
+  );
 
-    window.addEventListener("message", handleMessage);
-    return () => window.removeEventListener("message", handleMessage);
-  }, [updateProgress]);
+  const onStateChange: YouTubeProps["onStateChange"] = useCallback(
+    (event: any) => {
+      // 0 = ended
+      if (event.data === 0) {
+        pausePlayback();
+      }
+      // 1 = playing, 2 = paused. Context handles toggle, so we just let it sync via polling/interval or manual toggle.
+    },
+    [pausePlayback],
+  );
+
+  const opts: YouTubeProps["opts"] = useMemo(
+    () => ({
+      height: "100%",
+      width: "100%",
+      playerVars: {
+        autoplay: 1,
+        controls: 0,
+        origin:
+          typeof window !== "undefined" ? window.location.origin : undefined,
+      },
+    }),
+    [],
+  );
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -139,21 +148,14 @@ export default function MiniPlayer() {
             </button>
           </div>
           {/* Video Player */}
-          <div
-            onMouseLeave={() => {
-              // Remove focus from iframe when mouse leaves to prevent navigation capture
-              if (document.activeElement instanceof HTMLIFrameElement) {
-                (document.activeElement as HTMLElement).blur();
-              }
-            }}
-          >
-            <iframe
-              ref={iframeRef}
-              src={`https://www.youtube.com/embed/${videoId}?autoplay=1&enablejsapi=1&origin=${typeof window !== "undefined" ? window.location.origin : ""}`}
-              className="w-80 h-48"
-              allow="autoplay; encrypted-media"
-              allowFullScreen
-              tabIndex={-1}
+          <div className="w-80 h-48 bg-black relative">
+            <YouTube
+              videoId={videoId}
+              opts={opts}
+              onReady={onPlayerReady}
+              onStateChange={onStateChange}
+              className="absolute inset-0 w-full h-full"
+              iframeClassName="w-full h-full"
             />
           </div>
         </div>
@@ -161,61 +163,121 @@ export default function MiniPlayer() {
 
       {/* Bottom Mini Player Bar */}
       <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-[#1a1a1f] bg-[#050507]/95 backdrop-blur-sm">
-        {/* Progress Bar */}
-        <div
-          ref={progressRef}
-          className="h-1 bg-[#1a1a1f] cursor-pointer group"
-          onClick={handleProgressClick}
-          onMouseDown={() => setIsDragging(true)}
-          onMouseUp={() => setIsDragging(false)}
-          onMouseLeave={() => setIsDragging(false)}
-          onMouseMove={handleProgressDrag}
-        >
-          <div
-            className="h-full bg-[#00f0ff] relative transition-all"
-            style={{ width: `${progress}%` }}
-          >
-            {/* Draggable dot */}
-            <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-[#00f0ff] opacity-0 group-hover:opacity-100 transition-opacity" />
-          </div>
-        </div>
+        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-6">
+          {/* Left: Track Info */}
+          <div className="flex items-center gap-4 min-w-[200px] w-1/4">
+            {/* Album Art */}
+            {currentTrack.albumImageUrl && (
+              <Link
+                href={
+                  currentTrack.artistId
+                    ? `/artist/${currentTrack.artistId}`
+                    : "#"
+                }
+                className="w-10 h-10 relative shrink-0 border border-[#1a1a1f] hover:border-[#00f0ff] transition-colors overflow-hidden group/image"
+              >
+                <img
+                  src={currentTrack.albumImageUrl}
+                  alt={currentTrack.artistName}
+                  className="w-full h-full object-cover grayscale group-hover/image:grayscale-0 transition-all"
+                />
+              </Link>
+            )}
 
-        <div className="max-w-4xl mx-auto px-4 py-2 flex items-center justify-between gap-4">
-          {/* Track Info */}
-          <div className="flex items-center gap-4 min-w-0 flex-1">
-            <button
-              onClick={togglePlayPause}
-              disabled={isLoading || !videoId}
-              className="w-10 h-10 flex items-center justify-center bg-[#00f0ff] text-[#050507] shrink-0 hover:bg-[#00f0ff]/80 transition-colors disabled:opacity-50"
-            >
-              {isLoading ? (
-                <span className="animate-pulse text-xs">...</span>
-              ) : isPlaying ? (
-                <FaPause size={14} />
-              ) : (
-                <FaPlay size={14} className="ml-0.5" />
-              )}
-            </button>
-
-            <div className="min-w-0 flex-1">
-              <p className="text-sm text-neutral-200 truncate">
+            <div className="min-w-0 flex flex-col justify-center">
+              <Link
+                href={
+                  currentTrack.albumId ? `/album/${currentTrack.albumId}` : "#"
+                }
+                className="text-sm text-neutral-200 truncate hover:text-[#00f0ff] transition-colors block"
+              >
                 {currentTrack.title}
-              </p>
-              <div className="flex items-center gap-2">
-                <p className="text-xs text-neutral-500 truncate">
-                  {currentTrack.artistName}
-                </p>
-                {duration > 0 && (
-                  <span className="text-[10px] text-neutral-600 font-mono">
-                    {formatTime(currentTime)} / {formatTime(duration)}
-                  </span>
-                )}
-              </div>
+              </Link>
+              <Link
+                href={
+                  currentTrack.artistId
+                    ? `/artist/${currentTrack.artistId}`
+                    : "#"
+                }
+                className="text-xs text-neutral-500 truncate hover:text-[#00f0ff] transition-colors"
+              >
+                {currentTrack.artistName}
+              </Link>
             </div>
           </div>
 
-          {/* Controls */}
-          <div className="flex items-center gap-2">
+          {/* Center: Controls & Progress */}
+          <div className="flex flex-1 items-center justify-center gap-6">
+            {/* Playback Controls */}
+            <div className="flex items-center gap-4">
+              <button
+                disabled
+                className="text-neutral-600 cursor-not-allowed hover:text-neutral-600"
+              >
+                <FaStepBackward size={14} />
+              </button>
+
+              <button
+                onClick={togglePlayPause}
+                disabled={isLoading || !videoId}
+                className="w-8 h-8 flex items-center justify-center bg-[#00f0ff] text-[#050507] rounded-full hover:bg-[#00f0ff]/80 transition-colors disabled:opacity-50"
+              >
+                {isLoading ? (
+                  <span className="animate-pulse text-[8px]">...</span>
+                ) : isPlaying ? (
+                  <FaPause size={10} />
+                ) : (
+                  <FaPlay size={10} className="ml-0.5" />
+                )}
+              </button>
+
+              <button
+                disabled
+                className="text-neutral-600 cursor-not-allowed hover:text-neutral-600"
+              >
+                <FaStepForward size={14} />
+              </button>
+            </div>
+
+            {/* Time & Progress */}
+            <div className="flex items-center gap-3 flex-1 max-w-lg">
+              <span className="text-[10px] text-neutral-500 font-mono w-8 text-right">
+                {formatTime(currentTime)}
+              </span>
+
+              <div
+                ref={progressRef}
+                className="flex-1 h-1 bg-[#1a1a1f] cursor-pointer group relative rounded-full overflow-visible select-none"
+                onClick={handleProgressClick}
+                onMouseDown={() => setIsDragging(true)}
+                onMouseUp={() => setIsDragging(false)}
+                onMouseLeave={() => setIsDragging(false)}
+                onMouseMove={handleProgressDrag}
+              >
+                {/* Buffered Bar */}
+                <div
+                  className="absolute top-0 left-0 h-full bg-neutral-600 transition-all duration-300"
+                  style={{ width: `${(buffered || 0) * 100}%` }}
+                />
+
+                {/* Progress Bar */}
+                <div
+                  className="absolute top-0 left-0 h-full bg-[#00f0ff] relative"
+                  style={{ width: `${progress}%` }}
+                >
+                  {/* Knob - Always visible now */}
+                  <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full shadow-md scale-0 group-hover:scale-100 transition-transform duration-100 opacity-100 scale-100" />
+                </div>
+              </div>
+
+              <span className="text-[10px] text-neutral-500 font-mono w-8">
+                {formatTime(duration)}
+              </span>
+            </div>
+          </div>
+
+          {/* Right: Extra Controls */}
+          <div className="flex items-center gap-3 min-w-[200px] w-1/4 justify-end">
             {/* Video Button */}
             <button
               onClick={() => setShowVideo(!showVideo)}
@@ -225,21 +287,29 @@ export default function MiniPlayer() {
                   : "border-[#1a1a1f] text-neutral-600 hover:border-[#00f0ff]/50 hover:text-neutral-400"
               }`}
             >
-              {showVideo ? "hide" : "video"}
+              {showVideo ? "hide video" : "show video"}
             </button>
             {/* YouTube Link */}
             <a
               href={`https://www.youtube.com/results?search_query=${encodeURIComponent(currentTrack.artistName + " " + currentTrack.title)}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-[10px] font-mono px-2 py-1 border border-[#1a1a1f] text-neutral-600 hover:border-[#00f0ff]/50 hover:text-neutral-400 transition-colors"
+              className="text-neutral-600 hover:text-neutral-400 transition-colors"
+              title="Open in YouTube"
             >
-              youtube ↗
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+              >
+                <path d="M10 15l5.19-3L10 9v6m11.56-7.83c.13.47.22 1.1.28 1.9.07.8.1 1.49.1 2.09L22 12c0 2.19-.16 3.8-.44 4.83-.25.9-.83 1.48-1.73 1.73-.47.13-1.33.22-2.65.28-1.3.07-2.49.1-3.59.1L12 19c-4.19 0-6.8-.16-7.83-.44-.9-.25-1.48-.83-1.73-1.73-.13-.47-.22-1.1-.28-1.9-.07-.8-.1-1.49-.1-2.09L2 12c0-2.19.16-3.8.44-4.83.25-.9.83-1.48 1.73-1.73.47-.13 1.33-.22 2.65-.28 1.3-.07 2.49-.1 3.59-.1L12 5c4.19 0 6.8.16 7.83.44.9.25 1.48.83 1.73 1.73z" />
+              </svg>
             </a>
             {/* Close Button */}
             <button
               onClick={stopPlayback}
-              className="w-8 h-8 flex items-center justify-center text-neutral-500 hover:text-neutral-200 transition-colors"
+              className="text-neutral-500 hover:text-white transition-colors ml-2"
             >
               <FaTimes size={14} />
             </button>

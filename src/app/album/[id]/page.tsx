@@ -30,10 +30,14 @@ function TrackItem({
   track,
   artistName,
   artistId,
+  albumId,
+  albumImageUrl,
 }: {
   track: AlbumInfo["tracks"][0];
   artistName: string;
   artistId: string;
+  albumId: string;
+  albumImageUrl: string;
 }) {
   const { ratings, setRating } = useRatings();
   const { currentTrack, isPlaying, isLoading, playTrack } = usePlayer();
@@ -58,6 +62,9 @@ function TrackItem({
                 id: track.id,
                 title: track.title,
                 artistName: artistName,
+                artistId: artistId,
+                albumId: albumId,
+                albumImageUrl: albumImageUrl,
               })
             }
             className={`flex items-center justify-center w-6 h-6 border shrink-0 transition-all ${
@@ -276,6 +283,8 @@ export default function AlbumPage() {
                   track={track}
                   artistName={album.artist?.name || ""}
                   artistId={album.artist?.id || ""}
+                  albumId={album.id}
+                  albumImageUrl={imageUrl}
                 />
               ))}
             </div>
