@@ -32,6 +32,7 @@ export default function MiniPlayer() {
   const progressRef = useRef<HTMLDivElement>(null);
   const [showVideo, setShowVideo] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [dragProgress, setDragProgress] = useState<number | null>(null);
 
   // Poll for current time
   useEffect(() => {
@@ -48,7 +49,7 @@ export default function MiniPlayer() {
         const loaded = playerRef.current.getVideoLoadedFraction(); // 0 to 1
         updateProgress(time, duration, loaded);
       }
-    }, 500);
+    }, 100);
 
     return () => clearInterval(interval);
   }, [videoId, isPlaying, updateProgress]);
@@ -102,6 +103,7 @@ export default function MiniPlayer() {
       const percent = (e.clientX - rect.left) / rect.width;
       const newTime = percent * duration;
       seekTo(newTime);
+      setDragProgress(null); // Clear drag state just in case
     },
     [duration, seekTo],
   );
@@ -114,13 +116,56 @@ export default function MiniPlayer() {
         0,
         Math.min(1, (e.clientX - rect.left) / rect.width),
       );
-      const newTime = percent * duration;
-      seekTo(newTime);
+      setDragProgress(percent * 100);
     },
-    [isDragging, duration, seekTo],
+    [isDragging, duration],
   );
 
-  const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
+  const handleDragStart = () => {
+    setIsDragging(true);
+  };
+
+  const handleDragEnd = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      if (!isDragging) return;
+      setIsDragging(false);
+
+      if (dragProgress !== null && duration > 0) {
+        const newTime = (dragProgress / 100) * duration;
+        seekTo(newTime);
+      }
+      setDragProgress(null);
+    },
+    [isDragging, dragProgress, duration, seekTo],
+  );
+
+  // Global mouse up to catch release outside component
+  useEffect(() => {
+    const handleGlobalMouseUp = () => {
+      if (isDragging) {
+        setIsDragging(false);
+        if (dragProgress !== null && duration > 0) {
+          const newTime = (dragProgress / 100) * duration;
+          seekTo(newTime);
+        }
+        setDragProgress(null);
+      }
+    };
+
+    if (isDragging) {
+      window.addEventListener("mouseup", handleGlobalMouseUp);
+    }
+    return () => {
+      window.removeEventListener("mouseup", handleGlobalMouseUp);
+    };
+  }, [isDragging, dragProgress, duration, seekTo]);
+
+  const progress =
+    dragProgress !== null
+      ? dragProgress
+      : duration > 0
+        ? (currentTime / duration) * 100
+        : 0;
 
   if (!currentTrack) return null;
 
@@ -249,10 +294,10 @@ export default function MiniPlayer() {
                 ref={progressRef}
                 className="flex-1 h-1 bg-[#1a1a1f] cursor-pointer group relative rounded-full overflow-visible select-none"
                 onClick={handleProgressClick}
-                onMouseDown={() => setIsDragging(true)}
-                onMouseUp={() => setIsDragging(false)}
-                onMouseLeave={() => setIsDragging(false)}
+                onMouseDown={handleDragStart}
                 onMouseMove={handleProgressDrag}
+                onMouseUp={handleDragEnd}
+                // onMouseLeave handled by global window event now
               >
                 {/* Buffered Bar */}
                 <div
