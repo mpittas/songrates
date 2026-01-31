@@ -17,7 +17,7 @@ export default function MySection({
   return (
     <section id={id} className={cn("relative w-full", className)}>
       {container ? (
-        <div className="mx-auto w-full max-w-[960px] px-6">{children}</div>
+        <div className="mx-auto w-full max-w-[900px] px-6">{children}</div>
       ) : (
         children
       )}

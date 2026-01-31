@@ -44,18 +44,18 @@ export default function SearchBar() {
       <div
         className={`
           relative flex items-center w-full
-          bg-[#0a0a0d] border transition-all duration-200
+          bg-neutral-300 transition-all duration-200
           ${
             isFocused
-              ? "border-[#00f0ff] shadow-[0_0_0_1px_rgba(0,240,255,0.2)]"
-              : "border-[#1a1a1f] hover:border-[#2a2a35]"
+              ? "shadow-[0_0_0px_5px_rgba(0,240,255,0.2)]"
+              : "hover:border-[#2a2a35]"
           }
         `}
       >
         {/* Search Icon */}
         <div
           className={`pl-5 pr-4 transition-colors duration-200 ${
-            isFocused ? "text-[#00f0ff]" : "text-neutral-600"
+            isFocused ? "text-neutral-950" : "text-neutral-600"
           }`}
         >
           <IoSearch size={20} />
@@ -70,7 +70,7 @@ export default function SearchBar() {
           onBlur={() => setIsFocused(false)}
           placeholder="Search for artists..."
           style={{ outline: "none" }}
-          className="flex-1 bg-transparent py-4 text-lg text-white placeholder:text-neutral-600 font-light focus:outline-none"
+          className="flex-1 bg-transparent py-3 text-lg text-neutral-950 placeholder:text-neutral-600 focus:outline-none"
         />
 
         {/* Clear Button */}

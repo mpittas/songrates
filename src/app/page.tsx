@@ -5,7 +5,7 @@ import RecentArtists from "@/components/artist/RecentArtists";
 import MeshGradientBackground from "@/components/mesh/MeshGradientWrap";
 import MySection from "@/components/MySection";
 import { Suspense, useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 
 function SearchResults() {
   const searchParams = useSearchParams();
@@ -42,24 +42,42 @@ function SearchResults() {
 }
 
 export default function Home() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  // Close search results when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      // Check if search query exists
+      if (!searchParams.get("q")) return;
+
+      const target = e.target as HTMLElement;
+      // If click is NOT inside the search container (z-[100] div)
+      if (!target.closest(".z-\\[100\\]")) {
+        const newParams = new URLSearchParams(searchParams.toString());
+        newParams.delete("q");
+        router.replace(`/?${newParams.toString()}`);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [searchParams, router]);
+
   return (
-    <main className="min-h-screen text-neutral-100 flex flex-col relative -mt-12">
-      <div className="absolute top-0 left-0 right-0 h-[300px] z-0 overflow-hidden">
+    <main className="min-h-screen text-neutral-100 flex flex-col relative">
+      <div className="absolute top-0 left-0 right-0 h-[400px] z-0 overflow-hidden -mt-12">
         <MeshGradientBackground />
         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[#050507]" />
       </div>
 
-      <MySection className="flex-1 flex flex-col justify-center relative z-20 pt-20 pb-12">
+      <MySection className="relative z-20 pt-24 pb-12">
         <div className="flex flex-col items-center justify-center w-full">
           <div className="text-center mb-16 space-y-6">
             <h1 className="text-6xl md:text-8xl font-light tracking-tighter text-white">
               Discover Music
-              <br />
-              <span className="text-neutral-500 block text-4xl md:text-6xl mt-2 font-thin">
-                Rate & Review
-              </span>
             </h1>
-            <p className="text-neutral-500 text-lg md:text-xl max-w-xl mx-auto font-light tracking-wide">
+            <p className="text-white/60 text-lg md:text-xl max-w-xl mx-auto font-light tracking-wide">
               Your personal space to track, rate, and discover.
             </p>
           </div>

@@ -53,7 +53,7 @@ export default function ArtistPageContent({
 
   return (
     <main className="min-h-screen bg-[#050507] text-neutral-100">
-      <MySection className="py-8 md:py-12">
+      <MySection className="py-8">
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-baseline mb-12 gap-4">
           <div className="flex items-baseline gap-6">

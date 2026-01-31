@@ -173,15 +173,7 @@ export default function AlbumPage() {
 
   return (
     <main className="min-h-screen bg-[#050507] text-neutral-100">
-      <MySection className="pt-16 pb-24">
-        {/* Navigation */}
-        <Link
-          href={`/artist/${album.artist?.id}`}
-          className="text-neutral-600 hover:text-[#00f0ff] transition-colors mb-12 inline-block font-mono text-sm"
-        >
-          ← back to artist
-        </Link>
-
+      <MySection className="pt-7 pb-24">
         {/* Hero Section */}
         <div className="flex flex-col md:flex-row gap-10 items-start mb-16">
           {/* Album Cover */}
@@ -201,10 +193,20 @@ export default function AlbumPage() {
 
           {/* Album Details */}
           <div className="flex-1 space-y-4 pt-2">
-            <div>
-              <span className="text-[10px] font-mono text-neutral-600 uppercase tracking-widest border border-[#1a1a1f] px-2 py-1">
-                {album.type}
-              </span>
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-[10px] font-mono text-neutral-600 uppercase tracking-widest border border-[#1a1a1f] px-2 py-1">
+                  {album.type}
+                </span>
+              </div>
+
+              {/* Navigation */}
+              <Link
+                href={`/artist/${album.artist?.id}`}
+                className="text-neutral-600 hover:text-[#00f0ff] transition-colors inline-block font-mono text-sm"
+              >
+                ← back to artist
+              </Link>
             </div>
 
             <h1 className="text-3xl md:text-5xl font-light tracking-tight text-neutral-200 leading-tight">
