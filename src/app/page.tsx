@@ -41,7 +41,7 @@ function SearchResults() {
   );
 }
 
-export default function Home() {
+function HomeContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -99,5 +99,13 @@ export default function Home() {
         </div>
       </MySection>
     </main>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={null}>
+      <HomeContent />
+    </Suspense>
   );
 }
