@@ -8,6 +8,7 @@ import { useRatings } from "@/hooks/useRatings";
 import { usePlayer } from "@/context/PlayerContext";
 import { formatTimeMs } from "@/lib/utils";
 import { FaPlay, FaPause } from "react-icons/fa";
+import MySection from "@/components/MySection";
 
 interface AlbumInfo {
   id: string;
@@ -171,8 +172,8 @@ export default function AlbumPage() {
     "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMSIgaGVpZ2h0PSIxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiMwYTBhMGQiLz48L3N2Zz4=";
 
   return (
-    <main className="min-h-screen bg-[#050507] text-neutral-100 pb-24">
-      <div className="max-w-4xl mx-auto pt-16 px-6">
+    <main className="min-h-screen bg-[#050507] text-neutral-100">
+      <MySection className="pt-16 pb-24">
         {/* Navigation */}
         <Link
           href={`/artist/${album.artist?.id}`}
@@ -284,7 +285,7 @@ export default function AlbumPage() {
             </div>
           </div>
         </div>
-      </div>
+      </MySection>
     </main>
   );
 }

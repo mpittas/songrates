@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import AlbumGrid from "@/components/AlbumGrid";
+
 import ArtistInfo from "./ArtistInfo";
 import Discography from "./Discography";
 import Link from "next/link";
 import { addToHistory } from "@/lib/history";
+import MySection from "@/components/MySection";
 // Types
 import {
   Album,
@@ -51,8 +52,8 @@ export default function ArtistPageContent({
   }, [artistId, artistName]);
 
   return (
-    <main className="min-h-screen bg-[#050507] text-neutral-100 p-6 md:px-16 md:py-8">
-      <div className="max-w-6xl mx-auto">
+    <main className="min-h-screen bg-[#050507] text-neutral-100">
+      <MySection className="py-8 md:py-12">
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-baseline mb-12 gap-4">
           <div className="flex items-baseline gap-6">
@@ -100,7 +101,7 @@ export default function ArtistPageContent({
           )}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[180px_1fr] gap-12 items-start">
+        <div className="grid grid-cols-1 gap-12 items-start lg:grid-cols-[140px_1fr]">
           {/* Sidebar */}
           <div className="lg:sticky lg:top-20">
             <ArtistInfo
@@ -121,7 +122,7 @@ export default function ArtistPageContent({
             />
           </div>
         </div>
-      </div>
+      </MySection>
     </main>
   );
 }

@@ -3,6 +3,13 @@
  */
 
 /**
+ * Combine class names
+ */
+export function cn(...classes: (string | undefined | null | false)[]) {
+  return classes.filter(Boolean).join(" ");
+}
+
+/**
  * Format seconds to MM:SS display format
  * @param seconds - Time in seconds
  * @returns Formatted time string (e.g., "3:45")

@@ -92,7 +92,7 @@ export default function AlbumGrid({
           <span className="text-neutral-700 ml-1">{albums.length}</span>
         </h2>
       )}
-      <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
         {albums.map((album, index) => (
           <AlbumCard
             key={album.id}
