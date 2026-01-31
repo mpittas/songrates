@@ -92,7 +92,7 @@ export default function ArtistInfo({
             src={info.image}
             alt={artistName}
             fill
-            className="object-cover grayscale hover:grayscale-0 transition-all duration-500"
+            className="object-cover transition-all duration-500"
             priority
             fallbackText={artistName.slice(0, 2).toUpperCase()}
           />

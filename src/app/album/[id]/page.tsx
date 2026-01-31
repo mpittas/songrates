@@ -180,7 +180,7 @@ export default function AlbumPage() {
               src={imageUrl}
               alt={album.title}
               fill
-              className="object-cover grayscale hover:grayscale-0 transition-all duration-500"
+              className="object-cover transition-all duration-500"
               priority
               fallbackText={album.title.slice(0, 2).toUpperCase()}
             />

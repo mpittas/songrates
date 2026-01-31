@@ -25,7 +25,7 @@ export default function TrackInfo({ currentTrack }: TrackInfoProps) {
             height={40}
             loading="eager"
             decoding="async"
-            className="w-full h-full object-cover grayscale group-hover/image:grayscale-0 transition-all"
+            className="w-full h-full object-cover transition-all"
           />
         </Link>
       )}

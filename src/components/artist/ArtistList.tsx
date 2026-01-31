@@ -51,7 +51,7 @@ export default function ArtistList({ artists }: { artists: Artist[] }) {
                   height={40}
                   loading="lazy"
                   decoding="async"
-                  className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all"
+                  className="w-full h-full object-cover transition-all"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-neutral-600">
