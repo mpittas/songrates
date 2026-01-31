@@ -46,6 +46,10 @@ export default function RecentArtists() {
                   <img
                     src={images[artist.id]}
                     alt={artist.name}
+                    width={32}
+                    height={32}
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all"
                   />
                 ) : (

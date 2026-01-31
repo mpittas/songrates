@@ -21,6 +21,10 @@ export default function TrackInfo({ currentTrack }: TrackInfoProps) {
           <img
             src={currentTrack.albumImageUrl}
             alt={currentTrack.artistName}
+            width={40}
+            height={40}
+            loading="eager"
+            decoding="async"
             className="w-full h-full object-cover grayscale group-hover/image:grayscale-0 transition-all"
           />
         </Link>

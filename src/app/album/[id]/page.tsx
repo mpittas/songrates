@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import Image from "next/image";
+import OptimizedImage from "@/components/OptimizedImage";
 import Link from "next/link";
 import { useRatings } from "@/hooks/useRatings";
 import { usePlayer } from "@/context/PlayerContext";
@@ -168,8 +168,6 @@ export default function AlbumPage() {
   }
 
   const imageUrl = `https://coverartarchive.org/release-group/${album.id}/front-250`;
-  const blurDataURL =
-    "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMSIgaGVpZ2h0PSIxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiMwYTBhMGQiLz48L3N2Zz4=";
 
   return (
     <main className="min-h-screen bg-[#050507] text-neutral-100">
@@ -178,16 +176,13 @@ export default function AlbumPage() {
         <div className="flex flex-col md:flex-row gap-10 items-start mb-16">
           {/* Album Cover */}
           <div className="w-full md:w-64 shrink-0 aspect-square relative bg-[#0a0a0d] border border-[#1a1a1f]">
-            <Image
+            <OptimizedImage
               src={imageUrl}
               alt={album.title}
               fill
               className="object-cover grayscale hover:grayscale-0 transition-all duration-500"
-              sizes="(max-width: 768px) 100vw, 256px"
               priority
-              placeholder="blur"
-              blurDataURL={blurDataURL}
-              quality={70}
+              fallbackText={album.title.slice(0, 2).toUpperCase()}
             />
           </div>
 

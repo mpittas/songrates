@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import OptimizedImage from "@/components/OptimizedImage";
 import { useState } from "react";
 import Link from "next/link";
 import { FaWikipediaW } from "react-icons/fa";
@@ -28,10 +28,6 @@ function AlbumCard({
   const imageUrl = `https://coverartarchive.org/release-group/${album.id}/front-250`;
   const [imageError, setImageError] = useState(false);
 
-  // Simplified blur URL (solid color approx)
-  const blurDataURL =
-    "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMSIgaGVpZ2h0PSIxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiMwYTBhMGQiLz48L3N2Zz4=";
-
   if (layout === "list") {
     return (
       <Link
@@ -40,15 +36,13 @@ function AlbumCard({
       >
         <div className="relative w-8 h-8 shrink-0 border border-[#1a1a1f] overflow-hidden bg-[#0a0a0d]">
           {!imageError ? (
-            <Image
+            <OptimizedImage
               src={imageUrl}
               alt={album.title}
               fill
-              sizes="40px"
               className="object-cover"
               onError={() => setImageError(true)}
-              loading="lazy"
-              unoptimized
+              fallbackText="·"
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-neutral-700 font-mono text-xs">
@@ -73,18 +67,14 @@ function AlbumCard({
     <Link href={`/album/${album.id}`} className="group block">
       <div className="aspect-square bg-[#0a0a0d] mb-2 overflow-hidden relative border border-[#1a1a1f] group-hover:border-[#00f0ff]/30 transition-colors">
         {!imageError ? (
-          <Image
+          <OptimizedImage
             src={imageUrl}
             alt={album.title}
             fill
-            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 200px"
             className="object-cover transition-all duration-300"
             onError={() => setImageError(true)}
             priority={isPriority}
-            loading={isPriority ? "eager" : "lazy"}
-            placeholder="blur"
-            blurDataURL={blurDataURL}
-            unoptimized
+            fallbackText="·"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-neutral-700 font-mono text-2xl">

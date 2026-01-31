@@ -47,6 +47,10 @@ export default function ArtistList({ artists }: { artists: Artist[] }) {
                 <img
                   src={images[artist.id]}
                   alt={artist.name}
+                  width={40}
+                  height={40}
+                  loading="lazy"
+                  decoding="async"
                   className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all"
                 />
               ) : (

@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import OptimizedImage from "@/components/OptimizedImage";
 import { useEffect, useState } from "react";
 import {
   FaFacebook,
@@ -88,14 +88,13 @@ export default function ArtistInfo({
       {/* Artist Image */}
       <div className="w-full aspect-square bg-[#0a0a0d] border border-[#1a1a1f] overflow-hidden relative">
         {info.image ? (
-          <Image
+          <OptimizedImage
             src={info.image}
             alt={artistName}
             fill
             className="object-cover grayscale hover:grayscale-0 transition-all duration-500"
-            sizes="(max-width: 768px) 100vw, 200px"
-            loading="lazy"
-            quality={60}
+            priority
+            fallbackText={artistName.slice(0, 2).toUpperCase()}
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-neutral-700">
