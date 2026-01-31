@@ -79,7 +79,7 @@ export default function Discography({
   const Divider = () => <div className="h-px bg-[#1a1a1f] w-full my-12" />;
 
   return (
-    <div className="border border-[#1a1a1f] bg-[#0a0a0d]/40 p-4">
+    <div className="bg-[#222]/40 p-4">
       {/* Main Albums */}
       {hasMainAlbums && (
         <div>

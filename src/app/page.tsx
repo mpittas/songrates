@@ -44,12 +44,12 @@ function SearchResults() {
 export default function Home() {
   return (
     <main className="min-h-screen text-neutral-100 flex flex-col relative -mt-12">
-      <div className="absolute top-0 left-0 right-0 h-[500px] z-0 overflow-hidden">
+      <div className="absolute top-0 left-0 right-0 h-[300px] z-0 overflow-hidden">
         <MeshGradientBackground />
         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[#050507]" />
       </div>
 
-      <MySection className="flex-1 flex flex-col justify-center relative z-10 pt-20 pb-12">
+      <MySection className="flex-1 flex flex-col justify-center relative z-20 pt-20 pb-12">
         <div className="flex flex-col items-center justify-center w-full">
           <div className="text-center mb-16 space-y-6">
             <h1 className="text-6xl md:text-8xl font-light tracking-tighter text-white">
@@ -75,8 +75,8 @@ export default function Home() {
         </div>
       </MySection>
 
-      <MySection className="pb-20 relative z-10">
-        <div className="border-t border-neutral-900/50 pt-10">
+      <MySection className="pb-20 relative z-0">
+        <div>
           <RecentArtists />
         </div>
       </MySection>

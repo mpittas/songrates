@@ -69,6 +69,7 @@ export default function SearchBar() {
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
           placeholder="Search for artists..."
+          style={{ outline: "none" }}
           className="flex-1 bg-transparent py-4 text-lg text-white placeholder:text-neutral-600 font-light focus:outline-none"
         />
 
