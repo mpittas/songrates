@@ -48,7 +48,7 @@ function AlbumCard({
               className="object-cover"
               onError={() => setImageError(true)}
               loading="lazy"
-              quality={40}
+              unoptimized
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-neutral-700 font-mono text-xs">
@@ -84,7 +84,7 @@ function AlbumCard({
             loading={isPriority ? "eager" : "lazy"}
             placeholder="blur"
             blurDataURL={blurDataURL}
-            quality={60}
+            unoptimized
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-neutral-700 font-mono text-2xl">
