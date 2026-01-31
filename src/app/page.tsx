@@ -1,44 +1,18 @@
 "use client";
 import SearchBar from "@/components/SearchBar";
+import SearchResults from "@/components/SearchResults";
 import ArtistList from "@/components/artist/ArtistList";
 import RecentArtists from "@/components/artist/RecentArtists";
 import MeshGradientBackground from "@/components/mesh/MeshGradientWrap";
 import MySection from "@/components/MySection";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 
-function SearchResults() {
+function SearchResultsWrapper() {
   const searchParams = useSearchParams();
-  const query = searchParams.get("q");
-  const [artists, setArtists] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const query = searchParams.get("q") || "";
 
-  useEffect(() => {
-    if (!query) {
-      setArtists([]);
-      return;
-    }
-
-    setLoading(true);
-    fetch(`/api/musicbrainz/artist?query=${query}`)
-      .then((res) => res.json())
-      .then((data) => setArtists(data.artists))
-      .finally(() => setLoading(false));
-  }, [query]);
-
-  if (!query) return null;
-
-  return (
-    <div className="absolute top-full left-0 right-0 mt-0 bg-[#0a0a0d] border-x border-b border-[#1a1a1f] z-[100] max-h-[400px] overflow-y-auto shadow-2xl">
-      {loading ? (
-        <div className="flex items-center justify-center py-12 text-neutral-600 font-mono text-sm tracking-widest uppercase">
-          <span>Searching...</span>
-        </div>
-      ) : (
-        <ArtistList artists={artists} />
-      )}
-    </div>
-  );
+  return <SearchResults query={query} />;
 }
 
 function HomeContent() {
@@ -87,7 +61,7 @@ function HomeContent() {
               <SearchBar />
             </Suspense>
             <Suspense fallback={null}>
-              <SearchResults />
+              <SearchResultsWrapper />
             </Suspense>
           </div>
         </div>
