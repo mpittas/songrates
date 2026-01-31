@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { getArtistHistory, type ArtistVisit } from "@/lib/history";
 import { formatTimeAgo } from "@/lib/utils";
+import PrefetchLink from "@/components/PrefetchLink";
 
 export default function RecentArtists() {
   const [history, setHistory] = useState<ArtistVisit[]>([]);
@@ -35,9 +35,10 @@ export default function RecentArtists() {
       </h2>
       <div className="space-y-1">
         {history.map((artist) => (
-          <Link
+          <PrefetchLink
             key={artist.id}
             href={`/artist/${artist.id}`}
+            artistId={artist.id}
             className="flex items-center justify-between p-2 -mx-2 group hover:bg-[#0a0a0d] transition-colors"
           >
             <div className="flex items-center gap-3">
@@ -67,7 +68,7 @@ export default function RecentArtists() {
             <span className="text-[10px] text-neutral-600 font-mono">
               {formatTimeAgo(artist.visitedAt)}
             </span>
-          </Link>
+          </PrefetchLink>
         ))}
       </div>
     </div>

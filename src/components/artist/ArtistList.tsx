@@ -1,5 +1,7 @@
-import Link from "next/link";
+"use client";
+
 import { useEffect, useState } from "react";
+import PrefetchLink from "@/components/PrefetchLink";
 
 interface Artist {
   id: string;
@@ -36,9 +38,10 @@ export default function ArtistList({ artists }: { artists: Artist[] }) {
   return (
     <div className="divide-y divide-[#1a1a1f]">
       {artists.map((artist) => (
-        <Link
+        <PrefetchLink
           key={artist.id}
           href={`/artist/${artist.id}`}
+          artistId={artist.id}
           className="block group p-3 hover:bg-[#0f0f12] transition-colors"
         >
           <div className="flex justify-between items-center gap-3">
@@ -79,7 +82,7 @@ export default function ArtistList({ artists }: { artists: Artist[] }) {
               <span>{artist.country || "—"}</span>
             </div>
           </div>
-        </Link>
+        </PrefetchLink>
       ))}
     </div>
   );

@@ -237,8 +237,11 @@ export async function getOtherReleases(
       } else {
         offset += limit;
         pageCount++;
-        // Be nice to the API
-        await new Promise((resolve) => setTimeout(resolve, 1100));
+        // Minimal delay to respect rate limits (MusicBrainz allows 1 req/sec)
+        // Only delay if we need more pages
+        if (hasMore) {
+          await new Promise((resolve) => setTimeout(resolve, 250));
+        }
       }
     }
 
