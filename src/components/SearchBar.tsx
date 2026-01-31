@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { IoSearch } from "react-icons/io5";
+import { useDebouncedCallback } from "use-debounce";
+import { IoSearch, IoClose } from "react-icons/io5";
 
 export default function SearchBar() {
   const router = useRouter();
@@ -10,44 +11,57 @@ export default function SearchBar() {
   const [query, setQuery] = useState(searchParams.get("q") || "");
   const [isFocused, setIsFocused] = useState(false);
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (query.trim()) {
-        router.replace(`/?q=${encodeURIComponent(query)}`);
-      } else {
-        router.replace("/");
-      }
-    }, 300);
+  // Debounced search - only triggers URL update after 300ms of no typing
+  const debouncedSearch = useDebouncedCallback((value: string) => {
+    if (value.trim()) {
+      router.replace(`/?q=${encodeURIComponent(value)}`);
+    } else {
+      router.replace("/");
+    }
+  }, 300);
 
-    return () => clearTimeout(timer);
-  }, [query, router]);
+  // Update debounced search when query changes
+  useEffect(() => {
+    debouncedSearch(query);
+  }, [query, debouncedSearch]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (!query.trim()) return;
+    // Cancel pending debounce and navigate immediately on form submit
+    debouncedSearch.cancel();
     router.push(`/?q=${encodeURIComponent(query)}`);
   };
 
+  const clearSearch = () => {
+    setQuery("");
+    debouncedSearch.cancel();
+    router.replace("/");
+  };
+
   return (
-    <form onSubmit={handleSearch} className="w-full relative group">
+    <form onSubmit={handleSearch} className="w-full">
       <div
         className={`
-          flex items-center w-full transition-all duration-300 ease-out
-          backdrop-blur-xl border
+          relative flex items-center w-full
+          bg-[#0a0a0d] border transition-all duration-200
           ${
             isFocused
-              ? "bg-[#0a0a0d]/90 border-[#00f0ff]/50 shadow-[0_0_40px_-10px_rgba(0,240,255,0.3)]"
-              : "bg-[#0a0a0d]/60 border-white/10 hover:border-white/20 hover:bg-[#0a0a0d]/80"
+              ? "border-[#00f0ff] shadow-[0_0_0_1px_rgba(0,240,255,0.2)]"
+              : "border-[#1a1a1f] hover:border-[#2a2a35]"
           }
         `}
       >
+        {/* Search Icon */}
         <div
-          className={`pl-8 pr-6 transition-colors duration-300 ${
-            isFocused ? "text-[#00f0ff]" : "text-neutral-500"
+          className={`pl-5 pr-4 transition-colors duration-200 ${
+            isFocused ? "text-[#00f0ff]" : "text-neutral-600"
           }`}
         >
-          <IoSearch size={24} />
+          <IoSearch size={20} />
         </div>
+
+        {/* Input */}
         <input
           type="text"
           value={query}
@@ -55,43 +69,20 @@ export default function SearchBar() {
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
           placeholder="Search for artists..."
-          style={{ boxShadow: "none", outline: "none" }}
-          className="w-full bg-transparent border-none appearance-none focus:ring-0 focus:outline-none py-6 text-xl md:text-2xl text-white placeholder:text-neutral-700 font-light tracking-tight"
+          className="flex-1 bg-transparent py-4 text-lg text-white placeholder:text-neutral-600 font-light focus:outline-none"
         />
+
+        {/* Clear Button */}
         {query && (
           <button
             type="button"
-            onClick={() => setQuery("")}
-            className="px-8 text-neutral-600 hover:text-[#00f0ff] transition-colors"
+            onClick={clearSearch}
+            className="pr-5 pl-4 text-neutral-600 hover:text-white transition-colors"
           >
-            <div className="text-[10px] font-mono uppercase tracking-widest hidden md:block border border-transparent hover:border-[#00f0ff]/30 px-2 py-1">
-              Clear
-            </div>
-            <div className="md:hidden">×</div>
+            <IoClose size={20} />
           </button>
         )}
       </div>
-      {/* Decorative corner accents when focused */}
-      <div
-        className={`absolute top-0 left-0 w-2 h-2 border-t border-l border-[#00f0ff] transition-opacity duration-300 pointer-events-none ${
-          isFocused ? "opacity-100" : "opacity-0"
-        }`}
-      />
-      <div
-        className={`absolute top-0 right-0 w-2 h-2 border-t border-r border-[#00f0ff] transition-opacity duration-300 pointer-events-none ${
-          isFocused ? "opacity-100" : "opacity-0"
-        }`}
-      />
-      <div
-        className={`absolute bottom-0 left-0 w-2 h-2 border-b border-l border-[#00f0ff] transition-opacity duration-300 pointer-events-none ${
-          isFocused ? "opacity-100" : "opacity-0"
-        }`}
-      />
-      <div
-        className={`absolute bottom-0 right-0 w-2 h-2 border-b border-r border-[#00f0ff] transition-opacity duration-300 pointer-events-none ${
-          isFocused ? "opacity-100" : "opacity-0"
-        }`}
-      />
     </form>
   );
 }

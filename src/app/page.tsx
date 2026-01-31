@@ -29,7 +29,7 @@ function SearchResults() {
   if (!query) return null;
 
   return (
-    <div className="absolute top-full left-0 right-0 mt-0 bg-[#0a0a0d] border-x border-b border-[#1a1a1f] z-50 max-h-[400px] overflow-y-auto">
+    <div className="absolute top-full left-0 right-0 mt-0 bg-[#0a0a0d] border-x border-b border-[#1a1a1f] z-[100] max-h-[400px] overflow-y-auto shadow-2xl">
       {loading ? (
         <div className="flex items-center justify-center py-12 text-neutral-600 font-mono text-sm tracking-widest uppercase">
           <span>Searching...</span>
@@ -64,15 +64,13 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="w-full relative z-10">
+          <div className="w-full relative z-[100]">
             <Suspense fallback={null}>
               <SearchBar />
             </Suspense>
-            <div className="relative">
-              <Suspense fallback={null}>
-                <SearchResults />
-              </Suspense>
-            </div>
+            <Suspense fallback={null}>
+              <SearchResults />
+            </Suspense>
           </div>
         </div>
       </MySection>
