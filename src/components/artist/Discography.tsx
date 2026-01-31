@@ -3,18 +3,99 @@
 import { useEffect, useState } from "react";
 import AlbumGrid from "@/components/AlbumGrid";
 import Link from "next/link";
+import { FaChevronDown, FaChevronUp, FaChevronRight } from "react-icons/fa";
 
 interface Release {
   id: string;
   title: string;
   releaseDate?: string;
+  wikipediaUrl?: string;
 }
 
 interface GroupedReleases {
   [type: string]: Release[];
 }
 
-const CATEGORY_ORDER = ["Singles", "Other"];
+type AlbumType = Release & { wikipediaUrl?: string };
+
+const FILTER_OUT_CATEGORIES = ["Compilations", "Live"];
+
+// Helper component for Collapsible List Section
+function CollapsibleListSection({
+  title,
+  releases,
+  onSelectAlbum,
+}: {
+  title: string;
+  releases: AlbumType[];
+  onSelectAlbum: (id: string) => void;
+}) {
+  const [isOpen, setIsOpen] = useState(false); // Default logic: "When accordion toggle is clicked it collapsers". Wait, user said "Keep accordions... when toggle is clicked it collapses and hides all list items".
+  // Usually this means it starts OPEN? Or CLOSED?
+  // "by default show 10 items from each category" implies it is OPEN initially to show those 10 items.
+  // So default isOpen = true.
+
+  const [isExpanded, setIsExpanded] = useState(false); // For "Show More" (>10)
+
+  // Wait, let's re-read: "Keep the accordions, by default show 10 items from each category and the when accordion toggle is clicked it collapsers and hides all list items."
+  // This confirms:
+  // 1. Accordion Header -> Controls visibility of whole list. Default: OPEN (showing 10).
+  // 2. "Show More / Hide Items" -> Controls visibility of items > 10. Default: HIDDEN (Limit 10).
+
+  useEffect(() => {
+    setIsOpen(true);
+  }, []); // Set default open
+
+  const handleToggleAccordion = () => {
+    setIsOpen(!isOpen);
+  };
+
+  const handleToggleShowMore = () => {
+    setIsExpanded(!isExpanded);
+  };
+
+  const displayCount = isExpanded ? releases.length : 10;
+  const visibleReleases = releases.slice(0, displayCount);
+  const hasMore = releases.length > 10;
+
+  return (
+    <div className="border border-[#1a1a1f] bg-[#0a0a0d]/50 mb-4">
+      <button
+        onClick={handleToggleAccordion}
+        className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-[#0f0f12] transition-colors group"
+      >
+        <span className="text-sm text-neutral-400 group-hover:text-neutral-200 transition-colors">
+          {title}
+          <span className="text-neutral-600 font-mono ml-2 text-xs">
+            {releases.length}
+          </span>
+        </span>
+        <span className="text-neutral-600 text-xs font-mono">
+          {isOpen ? <FaChevronUp size={10} /> : <FaChevronDown size={10} />}
+        </span>
+      </button>
+
+      {isOpen && (
+        <div className="border-t border-[#1a1a1f]">
+          <AlbumGrid
+            albums={visibleReleases}
+            onSelectAlbum={onSelectAlbum}
+            layout="list"
+          />
+
+          {hasMore && (
+            <button
+              onClick={handleToggleShowMore}
+              className="w-full px-4 py-3 text-xs text-neutral-500 hover:text-[#00f0ff] transition-colors text-center font-mono border-t border-[#1a1a1f]/50 hover:bg-[#0f0f12]"
+            >
+              {isExpanded ? "show less" : `show all ${releases.length} items`}
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function Discography({
   artistId,
@@ -23,16 +104,13 @@ export default function Discography({
   initialReleases = {},
 }: {
   artistId: string;
-  mainAlbums: any[]; // Using the type from your main page or AlbumGrid
+  mainAlbums: any[];
   onSelectAlbum: (id: string) => void;
   initialReleases?: GroupedReleases;
 }) {
   const [releases, setReleases] = useState<GroupedReleases>(initialReleases);
   const [loading, setLoading] = useState(
     Object.keys(initialReleases).length === 0,
-  );
-  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
-    new Set(),
   );
 
   useEffect(() => {
@@ -48,54 +126,42 @@ export default function Discography({
       .catch(() => setLoading(false));
   }, [artistId, initialReleases]);
 
-  const toggleCategory = (category: string) => {
-    setExpandedCategories((prev) => {
-      const next = new Set(prev);
-      if (next.has(category)) {
-        next.delete(category);
-      } else {
-        next.add(category);
-      }
-      return next;
-    });
-  };
-
-  const otherAlbums = releases["Other Albums"] || [];
-  const eps = releases["EPs"] || [];
-  const sortedCategories = CATEGORY_ORDER.filter(
-    (cat) => releases[cat] && releases[cat].length > 0,
-  );
-
-  const hasMainAlbums = mainAlbums.length > 0;
-  const hasOtherAlbums = otherAlbums.length > 0;
-  const hasEps = eps.length > 0;
-  const hasOtherCategories = sortedCategories.length > 0;
-
-  // We always show the container if there are main albums, even if loading other stuff.
-  // If no main albums and loading other stuff, we show loading state?
-  // User's page.tsx handles global loading for main albums. This component assumes mainAlbums are loaded (or empty).
-
   // Section Divider Component
   const Divider = () => <div className="h-px bg-[#1a1a1f] w-full my-12" />;
 
+  const getReleases = (key: string) => releases[key] || [];
+
+  const eps = getReleases("EPs");
+  const otherAlbums = getReleases("Other Albums");
+  const singles = getReleases("Singles");
+
+  // Collect other miscellaneous categories (excluding Grid types, Singles, and Filtered types)
+  const miscCategories = Object.keys(releases).filter(
+    (key) =>
+      !["EPs", "Other Albums", "Singles"].includes(key) &&
+      !FILTER_OUT_CATEGORIES.some(
+        (filter) => key.includes(filter) || key === filter,
+      ) &&
+      releases[key].length > 0,
+  );
+
+  let hasRenderedPrevious = mainAlbums.length > 0;
+
   return (
     <div className="bg-[#222]/40 p-4">
-      {/* Main Albums */}
-      {hasMainAlbums && (
-        <div>
-          <AlbumGrid
-            albums={mainAlbums}
-            onSelectAlbum={onSelectAlbum}
-            title="Albums"
-            priorityCount={6}
-          />
-        </div>
+      {mainAlbums.length > 0 && (
+        <AlbumGrid
+          albums={mainAlbums}
+          onSelectAlbum={onSelectAlbum}
+          title="Albums"
+          priorityCount={6}
+          layout="grid"
+        />
       )}
 
-      {/* Loading State for Other Releases */}
       {loading && (
         <div className="mt-12">
-          {hasMainAlbums && <Divider />}
+          {hasRenderedPrevious && <Divider />}
           <div className="text-neutral-600 text-xs font-mono animate-pulse">
             loading_more_releases...
           </div>
@@ -104,102 +170,59 @@ export default function Discography({
 
       {!loading && (
         <>
-          {/* Other Albums */}
-          {hasOtherAlbums && (
+          {/* Grid Sections */}
+          {otherAlbums.length > 0 && (
             <>
-              {hasMainAlbums && <Divider />}
-              <div>
-                <AlbumGrid
-                  albums={otherAlbums}
-                  onSelectAlbum={onSelectAlbum}
-                  title="Other Albums"
-                  priorityCount={0}
-                />
-              </div>
+              {hasRenderedPrevious && <Divider />}
+              <AlbumGrid
+                albums={otherAlbums as AlbumType[]}
+                onSelectAlbum={onSelectAlbum}
+                title="Other Albums"
+                layout="grid"
+              />
+              {(hasRenderedPrevious = true)}
             </>
           )}
 
-          {/* EPs */}
-          {hasEps && (
+          {eps.length > 0 && (
             <>
-              {(hasMainAlbums || hasOtherAlbums) && <Divider />}
-              <div>
-                <AlbumGrid
-                  albums={eps}
-                  onSelectAlbum={onSelectAlbum}
-                  title="EPs"
-                  priorityCount={0}
-                />
-              </div>
+              {hasRenderedPrevious && <Divider />}
+              <AlbumGrid
+                albums={eps as AlbumType[]}
+                onSelectAlbum={onSelectAlbum}
+                title="EPs"
+                layout="grid"
+              />
+              {(hasRenderedPrevious = true)}
             </>
           )}
 
-          {/* Other Categories (Singles, etc.) */}
-          {hasOtherCategories && (
-            <>
-              {(hasMainAlbums || hasOtherAlbums || hasEps) && <Divider />}
-              <div>
+          {/* List Sections (Accordion style) */}
+          {(singles.length > 0 || miscCategories.length > 0) && (
+            <div className="mt-12 space-y-4">
+              {hasRenderedPrevious && (
                 <h2 className="font-mono text-xs text-neutral-500 mb-6 tracking-wide">
                   other_releases_
                 </h2>
+              )}
 
-                <div className="space-y-2">
-                  {sortedCategories.map((category) => {
-                    const items = releases[category];
-                    const isExpanded = expandedCategories.has(category);
-                    const displayItems = isExpanded ? items : items.slice(0, 5);
+              {singles.length > 0 && (
+                <CollapsibleListSection
+                  title="Singles"
+                  releases={singles as AlbumType[]}
+                  onSelectAlbum={onSelectAlbum}
+                />
+              )}
 
-                    return (
-                      <div
-                        key={category}
-                        className="border border-[#1a1a1f] bg-[#0a0a0d]/50"
-                      >
-                        <button
-                          onClick={() => toggleCategory(category)}
-                          className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-[#0f0f12] transition-colors"
-                        >
-                          <span className="text-sm text-neutral-400">
-                            {category}
-                            <span className="text-neutral-600 font-mono ml-2 text-xs">
-                              {items.length}
-                            </span>
-                          </span>
-                          <span className="text-neutral-600 text-xs font-mono">
-                            {isExpanded ? "−" : "+"}
-                          </span>
-                        </button>
-
-                        <div className="border-t border-[#1a1a1f]">
-                          {displayItems.map((release) => (
-                            <Link
-                              key={release.id}
-                              href={`/album/${release.id}`}
-                              className="px-4 py-2 flex items-center justify-between hover:bg-[#0f0f12] cursor-pointer transition-colors border-b border-[#1a1a1f]/50 last:border-b-0 group"
-                            >
-                              <span className="text-sm text-neutral-500 truncate group-hover:text-[#00f0ff]">
-                                {release.title}
-                              </span>
-                              <span className="text-[10px] text-neutral-700 font-mono flex-shrink-0 ml-4">
-                                {release.releaseDate?.split("-")[0] || "—"}
-                              </span>
-                            </Link>
-                          ))}
-
-                          {!isExpanded && items.length > 5 && (
-                            <button
-                              onClick={() => toggleCategory(category)}
-                              className="w-full px-4 py-2 text-xs text-neutral-600 hover:text-[#00f0ff] transition-colors text-center font-mono"
-                            >
-                              show all {items.length}
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </>
+              {miscCategories.map((category) => (
+                <CollapsibleListSection
+                  key={category}
+                  title={category}
+                  releases={releases[category] as AlbumType[]}
+                  onSelectAlbum={onSelectAlbum}
+                />
+              ))}
+            </div>
           )}
         </>
       )}
