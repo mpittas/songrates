@@ -179,7 +179,7 @@ export default function AlbumPage() {
               fill
               className="object-cover transition-all duration-500"
               priority
-              fallbackText={album.title.slice(0, 2).toUpperCase()}
+              fallbackText={album.title?.slice(0, 2).toUpperCase() || "??"}
             />
           </div>
 

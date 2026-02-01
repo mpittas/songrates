@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import AlbumGrid from "@/components/AlbumGrid";
-import { FaChevronDown, FaChevronUp } from "react-icons/fa";
+import { FaChevronDown, FaChevronUp, FaInfoCircle } from "react-icons/fa";
+import Tooltip from "@/components/Tooltip";
 
 interface Release {
   id: string;
@@ -26,12 +27,14 @@ function CollapsibleSection({
   onSelectAlbum,
   layout = "list",
   defaultOpen = true,
+  tooltipText,
 }: {
   title: string;
   releases: AlbumType[];
   onSelectAlbum: (id: string) => void;
   layout?: "grid" | "list";
   defaultOpen?: boolean;
+  tooltipText?: string;
 }) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
   const [isExpanded, setIsExpanded] = useState(false); // For "Show More" (>10 items)
@@ -56,11 +59,20 @@ function CollapsibleSection({
         onClick={handleToggleAccordion}
         className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-[#0f0f12] transition-colors group"
       >
-        <span className="text-sm text-neutral-400 group-hover:text-neutral-200 transition-colors uppercase font-mono tracking-wider">
-          {title}
-          <span className="text-neutral-600 ml-2 text-xs normal-case">
+        <span className="text-sm text-neutral-400 group-hover:text-neutral-200 transition-colors font-mono flex items-center gap-1">
+          <div className="uppercase">{title}</div>
+
+          <span className="text-neutral-600 text-xs normal-case">
             ({releases.length})
           </span>
+
+          {tooltipText && (
+            <Tooltip content={tooltipText}>
+              <span className="block p-1 hover:text-neutral-100 transition-colors cursor-help opacity-50 hover:opacity-100">
+                <FaInfoCircle size={10} />
+              </span>
+            </Tooltip>
+          )}
         </span>
         <span className="text-neutral-600 text-xs font-mono">
           {isOpen ? <FaChevronUp size={10} /> : <FaChevronDown size={10} />}
@@ -100,7 +112,7 @@ export default function Discography({
   initialReleases = {},
 }: {
   artistId: string;
-  mainAlbums: any[];
+  mainAlbums: AlbumType[];
   onSelectAlbum: (id: string) => void;
   initialReleases?: GroupedReleases;
 }) {
@@ -131,7 +143,7 @@ export default function Discography({
   // Collect other miscellaneous categories
   const miscCategories = Object.keys(releases).filter(
     (key) =>
-      !["EPs", "Other Albums", "Singles"].includes(key) &&
+      !["EPs", "Other Albums", "Singles", "Other"].includes(key) &&
       !FILTER_OUT_CATEGORIES.some(
         (filter) => key.includes(filter) || key === filter,
       ) &&
@@ -148,6 +160,7 @@ export default function Discography({
           onSelectAlbum={onSelectAlbum}
           layout="grid"
           defaultOpen={true}
+          tooltipText="Full-length studio albums, typically containing 7+ tracks."
         />
       )}
 
@@ -159,6 +172,7 @@ export default function Discography({
           onSelectAlbum={onSelectAlbum}
           layout="grid"
           defaultOpen={true}
+          tooltipText="Extended Plays. Shorter than albums but longer than singles (usually 3-6 tracks)."
         />
       )}
 
@@ -170,6 +184,7 @@ export default function Discography({
           onSelectAlbum={onSelectAlbum}
           layout="grid"
           defaultOpen={false}
+          tooltipText="Live albums, compilations, remixes, and soundtracks."
         />
       )}
 
@@ -191,6 +206,7 @@ export default function Discography({
               onSelectAlbum={onSelectAlbum}
               layout="list"
               defaultOpen={false}
+              tooltipText="Individual songs or small bundles (1-3 tracks) released separately."
             />
           )}
 
@@ -203,6 +219,7 @@ export default function Discography({
               onSelectAlbum={onSelectAlbum}
               layout="list"
               defaultOpen={false}
+              tooltipText="Miscellaneous releases not fitting into standard categories."
             />
           ))}
         </>
