@@ -9,6 +9,7 @@ import { usePlayer } from "@/context/PlayerContext";
 import { formatTimeMs } from "@/lib/utils";
 import { FaPlay, FaPause } from "react-icons/fa";
 import MySection from "@/components/MySection";
+import AlbumSkeleton from "@/components/AlbumSkeleton";
 
 interface AlbumInfo {
   id: string;
@@ -152,11 +153,7 @@ export default function AlbumPage() {
   }, [id]);
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-[#050507] flex items-center justify-center text-neutral-600 font-mono text-sm animate-pulse">
-        loading_album...
-      </div>
-    );
+    return <AlbumSkeleton />;
   }
 
   if (!album) {
