@@ -45,8 +45,12 @@ function AlbumCard({
               fallbackText="·"
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-neutral-700 font-mono text-xs">
-              ·
+            <div className="w-full h-full flex items-center justify-center bg-[#0a0a0d] p-2 opacity-40">
+              <img
+                src="/vinyl-placeholder.svg"
+                alt="No art"
+                className="w-full h-full object-contain invert"
+              />
             </div>
           )}
         </div>
@@ -77,8 +81,12 @@ function AlbumCard({
             fallbackText="·"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-neutral-700 font-mono text-2xl">
-            ·
+          <div className="w-full h-full flex items-center justify-center bg-[#0a0a0d] p-10 opacity-20 group-hover:opacity-30 transition-opacity">
+            <img
+              src="/vinyl-placeholder.svg"
+              alt="No art"
+              className="w-full h-full object-contain invert"
+            />
           </div>
         )}
 

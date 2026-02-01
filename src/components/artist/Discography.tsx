@@ -51,7 +51,7 @@ function CollapsibleSection({
   const hasMore = releases.length > 12;
 
   return (
-    <div className="border border-[#1a1a1f] bg-[#0a0a0d]/50 mb-6">
+    <div className="border border-[#1a1a1f] bg-[#0a0a0d]/50">
       <button
         onClick={handleToggleAccordion}
         className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-[#0f0f12] transition-colors group"
@@ -139,7 +139,7 @@ export default function Discography({
   );
 
   return (
-    <div className="bg-[#222]/40 p-4 space-y-6">
+    <div className="bg-[#222]/40 p-4 space-y-2">
       {/* Main Albums */}
       {mainAlbums.length > 0 && (
         <CollapsibleSection
