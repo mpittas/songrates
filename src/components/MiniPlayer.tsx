@@ -146,7 +146,7 @@ export default function MiniPlayer() {
       />
 
       {/* Bottom Mini Player Bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-[#1a1a1f] bg-[#050507]/95 backdrop-blur-sm">
+      <div className="fixed bottom-0 left-0 right-0 z-[60] border-t border-[#1a1a1f] bg-[#050507]/95 backdrop-blur-sm">
         <div className="flex items-center justify-between gap-6 px-4 py-3 w-full">
           {/* Left: Track Info */}
           <TrackInfo currentTrack={currentTrack} />

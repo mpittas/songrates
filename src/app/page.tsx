@@ -40,7 +40,7 @@ function HomeContent() {
 
   return (
     <main className="min-h-screen text-neutral-100 flex flex-col relative">
-      <div className="absolute top-0 left-0 right-0 h-[400px] z-0 overflow-hidden -mt-12">
+      <div className="absolute top-0 left-0 right-0 h-[400px] z-0 overflow-hidden -mt-17">
         <MeshGradientBackground />
         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[#050507]" />
       </div>
