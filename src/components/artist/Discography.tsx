@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import AlbumGrid from "@/components/AlbumGrid";
 import { FaChevronDown, FaChevronUp, FaInfoCircle } from "react-icons/fa";
 import Tooltip from "@/components/Tooltip";
+import { useQuery } from "@tanstack/react-query";
 
 import { Album, GroupedReleases, Release } from "@/types/music";
 
@@ -117,11 +118,6 @@ export default function Discography({
   const [loading, setLoading] = useState(
     Object.keys(initialReleases).length === 0,
   );
-  const [popularityScores, setPopularityScores] = useState<
-    Record<string, number>
-  >({});
-  const [isLoadingPopularity, setIsLoadingPopularity] = useState(false);
-  const [hasFetchedPopularity, setHasFetchedPopularity] = useState(false);
 
   useEffect(() => {
     if (Object.keys(initialReleases).length > 0) return;
@@ -136,40 +132,22 @@ export default function Discography({
       .catch(() => setLoading(false));
   }, [artistId, initialReleases]);
 
-  // Fetch popularity in the background after mount (delayed)
-  useEffect(() => {
-    if (hasFetchedPopularity) return; // Already fetched for this artist
-    if (!artistName) return;
-
-    setIsLoadingPopularity(true);
-
-    // Use local proxy to avoid CORS/Mixed Content issues with Last.fm API
-    fetch(`/api/lastfm/popularity?artistName=${encodeURIComponent(artistName)}`)
-      .then((res) => {
-        if (!res.ok) throw new Error("Proxy fetch failed");
-        return res.json();
-      })
-      .then((scores) => {
-        console.log("Popularity scores loaded:", Object.keys(scores).length);
-        setPopularityScores(scores);
-        setHasFetchedPopularity(true);
-      })
-      .catch((err) => console.error("Error fetching popularity:", err))
-      .finally(() => setIsLoadingPopularity(false));
-  }, [artistName, hasFetchedPopularity]);
+  // key: "artist-popularity", artistName
+  const { data: popularityScores = {} } = useQuery({
+    queryKey: ["artist-popularity", artistName],
+    queryFn: async () => {
+      if (!artistName) return {};
+      const res = await fetch(
+        `/api/lastfm/popularity?artistName=${encodeURIComponent(artistName)}`,
+      );
+      if (!res.ok) throw new Error("Popularity fetch failed");
+      return res.json() as Promise<Record<string, number>>;
+    },
+    enabled: !!artistName,
+    staleTime: Infinity, // Popularity doesn't change often in a session
+  });
 
   const sortReleases = (list: Release[]) => {
-    // If not popularity, we assume list is passed in default order (Newest/Oldest/etc)
-    // from parent or is raw. But wait, Parent 'ArtistPageContent' handles Newest/Oldest/Title.
-    // So if sortBy is NOT popularity, we preserver order?
-    // Actually, 'Releases' are fetched internally here, so PARENT sort doesn't affect them.
-    // We need to implement ALL sorts here for 'Releases', or at least 'Popularity'.
-    // For consistency, let's replicate parent sort or just handle popularity.
-    // Given the props say 'sortBy' is passed, we should probably respect it for ALL lists if possible.
-
-    // Parent sorts 'mainAlbums'. We should re-sort mainAlbums only if popularity.
-    // For other releases, we should also sort them.
-
     const sorted = [...list];
 
     if (sortBy === "popularity") {
