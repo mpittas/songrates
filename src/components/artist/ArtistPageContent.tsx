@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { FaSearch } from "react-icons/fa";
 
 import ArtistInfo from "./ArtistInfo";
 import Discography from "./Discography";
@@ -30,6 +31,7 @@ export default function ArtistPageContent({
   otherReleases = {},
 }: ArtistPageContentProps) {
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "title">("newest");
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Track sorting
   const sortedAlbums = [...albums].sort((a, b) => {
@@ -45,6 +47,10 @@ export default function ArtistPageContent({
     return 0;
   });
 
+  const filteredMainAlbums = sortedAlbums.filter((album) =>
+    album.title.toLowerCase().includes(searchQuery.toLowerCase()),
+  );
+
   useEffect(() => {
     if (artistId && artistName) {
       addToHistory(artistId, artistName);
@@ -55,7 +61,7 @@ export default function ArtistPageContent({
     <main className="min-h-screen bg-[#050507] text-neutral-100">
       <MySection className="pt-8 pb-24">
         {/* Header */}
-        <div className="flex flex-col md:flex-row justify-between items-baseline mb-12 gap-4">
+        <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-4">
           <div className="flex items-baseline gap-6">
             <Link
               href="/"
@@ -70,35 +76,51 @@ export default function ArtistPageContent({
             )}
           </div>
 
-          {albums.length > 0 && (
-            <div className="flex gap-4 text-xs text-neutral-600 font-mono">
-              <span>sort:</span>
-              <button
-                onClick={() => setSortBy("newest")}
-                className={`hover:text-[#00f0ff] transition-colors ${
-                  sortBy === "newest" ? "text-[#00f0ff]" : ""
-                }`}
-              >
-                new
-              </button>
-              <button
-                onClick={() => setSortBy("oldest")}
-                className={`hover:text-[#00f0ff] transition-colors ${
-                  sortBy === "oldest" ? "text-[#00f0ff]" : ""
-                }`}
-              >
-                old
-              </button>
-              <button
-                onClick={() => setSortBy("title")}
-                className={`hover:text-[#00f0ff] transition-colors ${
-                  sortBy === "title" ? "text-[#00f0ff]" : ""
-                }`}
-              >
-                a-z
-              </button>
+          <div className="flex flex-col md:flex-row items-end md:items-center gap-6">
+            {/* Search Input */}
+            <div className="relative group">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-neutral-600 group-focus-within:text-[#00f0ff] transition-colors">
+                <FaSearch size={12} />
+              </div>
+              <input
+                type="text"
+                placeholder="search discography..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="bg-[#0a0a0d] border border-[#1a1a1f] text-neutral-200 text-xs font-mono rounded-full py-1.5 pl-9 pr-4 focus:outline-none focus:border-[#00f0ff]/50 w-48 transition-all"
+              />
             </div>
-          )}
+
+            {albums.length > 0 && (
+              <div className="flex gap-4 text-xs text-neutral-600 font-mono">
+                <span>sort:</span>
+                <button
+                  onClick={() => setSortBy("newest")}
+                  className={`hover:text-[#00f0ff] transition-colors ${
+                    sortBy === "newest" ? "text-[#00f0ff]" : ""
+                  }`}
+                >
+                  new
+                </button>
+                <button
+                  onClick={() => setSortBy("oldest")}
+                  className={`hover:text-[#00f0ff] transition-colors ${
+                    sortBy === "oldest" ? "text-[#00f0ff]" : ""
+                  }`}
+                >
+                  old
+                </button>
+                <button
+                  onClick={() => setSortBy("title")}
+                  className={`hover:text-[#00f0ff] transition-colors ${
+                    sortBy === "title" ? "text-[#00f0ff]" : ""
+                  }`}
+                >
+                  a-z
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="grid grid-cols-1 gap-12 items-start lg:grid-cols-[140px_1fr]">
@@ -116,9 +138,10 @@ export default function ArtistPageContent({
           <div className="min-w-0 space-y-16">
             <Discography
               artistId={artistId}
-              mainAlbums={sortedAlbums}
+              mainAlbums={filteredMainAlbums}
               onSelectAlbum={() => {}}
               initialReleases={otherReleases}
+              searchQuery={searchQuery}
             />
           </div>
         </div>

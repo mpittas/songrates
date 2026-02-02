@@ -110,11 +110,13 @@ export default function Discography({
   mainAlbums,
   onSelectAlbum,
   initialReleases = {},
+  searchQuery,
 }: {
   artistId: string;
   mainAlbums: AlbumType[];
   onSelectAlbum: (id: string) => void;
   initialReleases?: GroupedReleases;
+  searchQuery?: string;
 }) {
   const [releases, setReleases] = useState<GroupedReleases>(initialReleases);
   const [loading, setLoading] = useState(
@@ -134,7 +136,13 @@ export default function Discography({
       .catch(() => setLoading(false));
   }, [artistId, initialReleases]);
 
-  const getReleases = (key: string) => releases[key] || [];
+  const filterReleases = (list: Release[]) => {
+    if (!searchQuery) return list;
+    const lowerQuery = searchQuery.toLowerCase();
+    return list.filter((r) => r.title.toLowerCase().includes(lowerQuery));
+  };
+
+  const getReleases = (key: string) => filterReleases(releases[key] || []);
 
   const eps = getReleases("EPs");
   const otherAlbums = getReleases("Other Albums");
@@ -147,7 +155,7 @@ export default function Discography({
       !FILTER_OUT_CATEGORIES.some(
         (filter) => key.includes(filter) || key === filter,
       ) &&
-      releases[key].length > 0,
+      filterReleases(releases[key] || []).length > 0,
   );
 
   return (
@@ -183,7 +191,7 @@ export default function Discography({
           releases={otherAlbums as AlbumType[]}
           onSelectAlbum={onSelectAlbum}
           layout="grid"
-          defaultOpen={false}
+          defaultOpen={true}
           tooltipText="Live albums, compilations, remixes, and soundtracks."
         />
       )}
@@ -205,7 +213,7 @@ export default function Discography({
               releases={singles as AlbumType[]}
               onSelectAlbum={onSelectAlbum}
               layout="list"
-              defaultOpen={false}
+              defaultOpen={true}
               tooltipText="Individual songs or small bundles (1-3 tracks) released separately."
             />
           )}
@@ -215,10 +223,10 @@ export default function Discography({
             <CollapsibleSection
               key={category}
               title={category}
-              releases={releases[category] as AlbumType[]}
+              releases={getReleases(category) as AlbumType[]}
               onSelectAlbum={onSelectAlbum}
               layout="list"
-              defaultOpen={false}
+              defaultOpen={true}
               tooltipText="Miscellaneous releases not fitting into standard categories."
             />
           ))}
