@@ -3,6 +3,7 @@
 import { QueryClientProvider } from "@tanstack/react-query";
 import { getQueryClient } from "@/lib/queryClient";
 import { PlayerProvider } from "@/context/PlayerContext";
+import { RatingsProvider } from "@/context/RatingsContext";
 import MiniPlayer from "@/components/MiniPlayer";
 
 export default function Providers({ children }: { children: React.ReactNode }) {
@@ -11,8 +12,10 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       <PlayerProvider>
-        {children}
-        <MiniPlayer />
+        <RatingsProvider>
+          {children}
+          <MiniPlayer />
+        </RatingsProvider>
       </PlayerProvider>
     </QueryClientProvider>
   );

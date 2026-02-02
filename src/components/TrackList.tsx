@@ -3,7 +3,7 @@
 import { useRatings } from "@/hooks/useRatings";
 
 import { Track } from "@/types/music";
-import ColorRating from "./ColorRating";
+import ColorRating from "@/components/ColorRating";
 
 function TrackItem({
   track,

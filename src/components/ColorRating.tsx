@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface ColorRatingProps {
   rating: number;
@@ -27,6 +27,11 @@ export default function ColorRating({
   max = 10,
 }: ColorRatingProps) {
   const [hovered, setHovered] = useState<number | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   return (
     <div
@@ -50,11 +55,12 @@ export default function ColorRating({
             }}
           >
             {/* Tooltip on hover or default rating */}
-            {(hovered !== null ? hovered === value : rating === value) && (
-              <span className="absolute -top-6 left-1/2 -translate-x-1/2 bg-[#1a1a1f] text-neutral-400 text-[8px] font-mono px-1 py-0.5 pointer-events-none z-10 whitespace-nowrap">
-                {value}
-              </span>
-            )}
+            {mounted &&
+              (hovered !== null ? hovered === value : rating === value) && (
+                <span className="absolute -top-6 left-1/2 -translate-x-1/2 bg-[#1a1a1f] text-neutral-400 text-[8px] font-mono px-1 py-0.5 pointer-events-none z-10 whitespace-nowrap">
+                  {value}
+                </span>
+              )}
           </button>
         );
       })}
