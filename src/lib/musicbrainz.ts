@@ -3,10 +3,8 @@ import { albumCache, artistCache, searchCache, withCache } from "@/lib/cache";
 const MB_USER_AGENT = "SongRates/1.0 (mpittas@gmail.com)";
 const MB_BASE_URL = "https://musicbrainz.org/ws/2";
 
-// Types
 import { Album, ArtistData, ArtistInfo, GroupedReleases } from "@/types/music";
 
-// Helpers
 export function toThumbnailUrl(imageUrl: string, width: number = 250): string {
   if (
     imageUrl.includes("commons.wikimedia.org") ||
@@ -18,19 +16,15 @@ export function toThumbnailUrl(imageUrl: string, width: number = 250): string {
   return imageUrl;
 }
 
-// Data Fetching Functions
-
 export async function getArtistData(artistId: string): Promise<{
   artistInfo: ArtistInfo;
   artist: ArtistData;
 }> {
   const cacheKey = `artist-info:${artistId}`;
 
-  // Try to get from cache first (manually to return full object)
   const cached = artistCache.get(cacheKey);
   if (cached) return cached;
 
-  // Fetch logic
   const [wikidataInfo, mbData] = await Promise.all([
     fetchWikidataInfo(artistId),
     fetchMBData(artistId),
@@ -70,7 +64,6 @@ export async function getArtistAlbums(artistId: string): Promise<Album[]> {
   const cached = albumCache.get(cacheKey);
   if (cached && cached.albums) return cached.albums;
 
-  // Fetch Release Groups
   const url = `${MB_BASE_URL}/release-group?artist=${artistId}&type=album&release-group-status=website-default&fmt=json&limit=100&inc=url-rels`;
 
   try {
@@ -119,7 +112,6 @@ export async function getArtistAlbums(artistId: string): Promise<Album[]> {
         (b.releaseDate || "").localeCompare(a.releaseDate || ""),
       );
 
-    // Fetch Wikipedia URLs
     const wikidataIds = basicAlbums
       .map((a: any) => a.wikidataId)
       .filter(Boolean);
@@ -164,10 +156,8 @@ export async function getArtistAlbums(artistId: string): Promise<Album[]> {
 export async function getOtherReleases(
   artistId: string,
 ): Promise<GroupedReleases> {
-  // Use a separate cache key or shared?
   const cacheKey = `other-releases:${artistId}`;
 
-  // Note: we're using albumCache for this too as it stores similar data structure (or just any)
   const cached = albumCache.get(cacheKey);
   if (cached && cached.releases) return cached.releases;
 
@@ -208,7 +198,6 @@ export async function getOtherReleases(
       }
     }
 
-    // Group releases logic
     const grouped: GroupedReleases = {};
 
     allReleaseGroups.forEach((rg) => {
@@ -231,7 +220,6 @@ export async function getOtherReleases(
         }
       }
 
-      // Determine the category for this release
       let category: string;
 
       if (primaryType === "Single") {
@@ -243,7 +231,6 @@ export async function getOtherReleases(
       } else if (secondaryTypes.includes("Live")) {
         category = "Live Albums";
       } else if (primaryType === "Album") {
-        // Other album types we excluded from main
         category = "Other Albums";
       } else {
         category = "Other";
@@ -260,7 +247,6 @@ export async function getOtherReleases(
       });
     });
 
-    // Sort each category
     Object.keys(grouped).forEach((key) => {
       grouped[key].sort((a, b) =>
         (b.releaseDate || "").localeCompare(a.releaseDate || ""),
@@ -306,8 +292,6 @@ export async function searchArtists(query: string): Promise<any[]> {
     return [];
   }
 }
-
-// Private Helpers
 
 async function fetchMBData(artistId: string): Promise<{
   officialSite: string | null;

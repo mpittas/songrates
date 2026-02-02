@@ -6,7 +6,6 @@ import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { YouTubeProps, YouTubeEvent } from "react-youtube";
 import { YouTubePlayer } from "@/types/player";
 
-// Components
 import TrackInfo from "./player/TrackInfo";
 import PlaybackControls from "./player/PlaybackControls";
 import ProgressBar from "./player/ProgressBar";
@@ -33,11 +32,9 @@ export default function MiniPlayer() {
   const playerRef = useRef<YouTubePlayer | null>(null);
   const [showVideo, setShowVideo] = useState(false);
 
-  // Volume State
   const [volume, setVolume] = useState(100);
   const [isMuted, setIsMuted] = useState(false);
 
-  // Poll for current time
   useEffect(() => {
     if (!videoId || !isPlaying) return;
 
@@ -57,7 +54,6 @@ export default function MiniPlayer() {
     return () => clearInterval(interval);
   }, [videoId, isPlaying, updateProgress]);
 
-  // Sync state on window focus (recovers from background tab pause)
   useEffect(() => {
     const handleFocus = () => {
       if (
@@ -83,7 +79,6 @@ export default function MiniPlayer() {
       playerRef.current = event.target;
       setPlayerRef(event.target);
 
-      // Restore volume and mute state
       if (typeof event.target.setVolume === "function") {
         event.target.setVolume(volume);
         if (isMuted) {
@@ -176,13 +171,10 @@ export default function MiniPlayer() {
         opts={opts}
       />
 
-      {/* Bottom Mini Player Bar */}
       <div className="fixed bottom-0 left-0 right-0 z-[60] border-t border-[#1a1a1f] bg-[#050507]/95 backdrop-blur-sm">
         <div className="flex items-center justify-between gap-6 px-4 py-3 w-full">
-          {/* Left: Track Info */}
           <TrackInfo currentTrack={currentTrack} />
 
-          {/* Center: Controls & Progress */}
           <div className="flex flex-1 items-center justify-center gap-6">
             <PlaybackControls
               isPlaying={isPlaying}
@@ -199,7 +191,6 @@ export default function MiniPlayer() {
             />
           </div>
 
-          {/* Right: Extra Controls */}
           <div className="flex items-center gap-3 min-w-[200px] w-1/4 justify-end">
             <VolumeControl
               volume={volume}
@@ -210,7 +201,6 @@ export default function MiniPlayer() {
 
             <div className="h-4 w-px bg-[#1a1a1f] mx-2" />
 
-            {/* Video Button */}
             <button
               onClick={() => setShowVideo(!showVideo)}
               className={`text-[10px] font-mono px-2 py-1 border transition-colors ${
@@ -221,7 +211,6 @@ export default function MiniPlayer() {
             >
               {showVideo ? "hide video" : "show video"}
             </button>
-            {/* YouTube Link */}
             <a
               href={`https://www.youtube.com/results?search_query=${encodeURIComponent(
                 currentTrack.artistName + " " + currentTrack.title,
@@ -234,7 +223,6 @@ export default function MiniPlayer() {
             >
               <FaYoutube size={16} />
             </a>
-            {/* Close Button */}
             <button
               onClick={stopPlayback}
               className="text-neutral-500 hover:text-white transition-colors ml-2"

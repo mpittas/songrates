@@ -61,7 +61,6 @@ function AlbumCard({
     );
   }
 
-  // Grid Layout
   return (
     <Link href={`/album/${album.id}`} className="group block">
       <div className="aspect-square bg-[#0a0a0d] mb-2 overflow-hidden relative border border-[#1a1a1f] group-hover:border-[#00f0ff]/30 transition-colors">

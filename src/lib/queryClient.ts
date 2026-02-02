@@ -6,13 +6,9 @@ function makeQueryClient() {
   return new QueryClient({
     defaultOptions: {
       queries: {
-        // Data stays fresh for 5 minutes
         staleTime: 5 * 60 * 1000,
-        // Cache persists for 30 minutes
         gcTime: 30 * 60 * 1000,
-        // Retry failed requests up to 2 times
         retry: 2,
-        // Don't refetch on window focus for this app
         refetchOnWindowFocus: false,
       },
     },

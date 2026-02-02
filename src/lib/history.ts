@@ -1,5 +1,3 @@
-// Utility functions for managing artist visit history in localStorage
-
 import { ArtistVisit } from "@/types/artist";
 
 const HISTORY_KEY = "songrates_artist_history";
@@ -22,10 +20,8 @@ export function addToHistory(id: string, name: string): void {
   try {
     const history = getArtistHistory();
 
-    // Remove existing entry for this artist if present
     const filtered = history.filter((item) => item.id !== id);
 
-    // Add new entry at the beginning
     const newHistory = [{ id, name, visitedAt: Date.now() }, ...filtered].slice(
       0,
       MAX_HISTORY,

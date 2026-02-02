@@ -1,8 +1,5 @@
 import { NextResponse } from "next/server";
 
-/**
- * Standard cache headers for API responses
- */
 export const CACHE_HEADERS = {
   artist: {
     "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400",
@@ -18,9 +15,6 @@ export const CACHE_HEADERS = {
   },
 } as const;
 
-/**
- * Creates a successful JSON response with appropriate cache headers
- */
 export function successResponse<T>(
   data: T,
   cacheType: keyof typeof CACHE_HEADERS = "artist",
@@ -30,9 +24,6 @@ export function successResponse<T>(
   });
 }
 
-/**
- * Creates an error JSON response
- */
 export function errorResponse(
   message: string,
   status: number = 500,
@@ -40,9 +31,6 @@ export function errorResponse(
   return NextResponse.json({ error: message }, { status });
 }
 
-/**
- * Wraps an async API handler with standardized error handling
- */
 export async function handleApiRequest<T>(
   fetcher: () => Promise<T>,
   errorMessage: string,
@@ -57,9 +45,6 @@ export async function handleApiRequest<T>(
   }
 }
 
-/**
- * Extracts and validates the ID parameter from route params
- */
 export async function getRouteId(
   params: Promise<{ id: string }>,
 ): Promise<string | null> {
@@ -71,9 +56,6 @@ export async function getRouteId(
   }
 }
 
-/**
- * Validates that a required parameter exists
- */
 export function validateRequiredParam(
   param: string | null,
   paramName: string = "id",

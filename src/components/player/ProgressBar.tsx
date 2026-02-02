@@ -56,7 +56,6 @@ export default function ProgressBar({
     [isDragging, dragProgress, duration, onSeek],
   );
 
-  // Global mouse up
   useEffect(() => {
     const handleGlobalMouseUp = () => {
       if (isDragging) {
@@ -98,18 +97,15 @@ export default function ProgressBar({
         onMouseMove={handleProgressDrag}
         onMouseUp={handleDragEnd}
       >
-        {/* Buffered Bar */}
         <div
           className="absolute top-0 left-0 h-full bg-neutral-600 transition-all duration-300"
           style={{ width: `${(buffered || 0) * 100}%` }}
         />
 
-        {/* Progress Bar */}
         <div
           className="absolute top-0 left-0 h-full bg-[#00f0ff] relative"
           style={{ width: `${progress}%` }}
         >
-          {/* Knob */}
           <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full shadow-md scale-0 group-hover:scale-100 transition-transform duration-100 opacity-100 scale-100" />
         </div>
       </div>

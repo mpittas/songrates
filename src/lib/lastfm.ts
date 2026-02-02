@@ -4,10 +4,6 @@ export interface PopularityResponse {
   [titleKey: string]: number;
 }
 
-/**
- * Fetches album popularity (playcount) for an artist from Last.fm.
- * Returns a map of Lowercase Album Title -> Playcount.
- */
 export async function getArtistPopularity(
   artistName: string,
 ): Promise<PopularityResponse> {
@@ -20,7 +16,7 @@ export async function getArtistPopularity(
   if (!artistName) return {};
 
   try {
-    // Fetch top albums. Limit 1000 to get a good coverage of discography.
+    // Limit 500 to get a good coverage of discography.
     // We use artist name because MBID support in Last.fm can be spotty.
     const url = `${LASTFM_BASE_URL}?method=artist.gettopalbums&artist=${encodeURIComponent(
       artistName,
@@ -44,7 +40,6 @@ export async function getArtistPopularity(
         const key = album.name.toLowerCase().trim();
         const playcount = parseInt(album.playcount, 10);
 
-        // Use the highest playcount found for a title (handling duplicates)
         if (!popularityMap[key] || playcount > popularityMap[key]) {
           popularityMap[key] = playcount;
         }
