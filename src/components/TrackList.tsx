@@ -3,6 +3,7 @@
 import { useRatings } from "@/hooks/useRatings";
 
 import { Track } from "@/types/music";
+import ColorRating from "./ColorRating";
 
 function TrackItem({
   track,
@@ -33,19 +34,7 @@ function TrackItem({
         </a>
       </div>
 
-      <div className="flex gap-1 shrink-0">
-        {[1, 2, 3, 4, 5].map((star) => (
-          <button
-            key={star}
-            onClick={() => setRating(track.id, star)}
-            className={`w-2.5 h-2.5 border border-[#1a1a1f] transition-all duration-200 ${
-              rating >= star
-                ? "bg-[#00f0ff] border-[#00f0ff]"
-                : "hover:border-[#00f0ff]/50"
-            }`}
-          />
-        ))}
-      </div>
+      <ColorRating rating={rating} onRate={(val) => setRating(track.id, val)} />
     </div>
   );
 }

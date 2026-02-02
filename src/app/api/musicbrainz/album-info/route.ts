@@ -45,7 +45,7 @@ async function fetchAlbumInfo(albumId: string) {
   const artistId = rgData["artist-credit"]?.[0]?.artist?.id;
   const releaseDate = rgData["first-release-date"];
   const rating = rgData.rating?.score
-    ? Math.round(rgData.rating.score * 10) / 10
+    ? Math.round(rgData.rating.score * 2 * 10) / 10
     : null;
   const primaryType = rgData["primary-type"];
   const secondaryTypes = rgData["secondary-types"] || [];
@@ -92,8 +92,9 @@ async function fetchAlbumInfo(albumId: string) {
   const releasesData = await releasesRes.json();
 
   // Pick oldest release
-  const release = releasesData.releases?.sort((a: { date?: string }, b: { date?: string }) =>
-    (a.date || "9999").localeCompare(b.date || "9999"),
+  const release = releasesData.releases?.sort(
+    (a: { date?: string }, b: { date?: string }) =>
+      (a.date || "9999").localeCompare(b.date || "9999"),
   )[0];
 
   let tracks: Track[] = [];
