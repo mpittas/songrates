@@ -1,4 +1,7 @@
-const LASTFM_API_KEY = "b25b959554ed76058ac220b7b2e0a026"; // Common public key for testing
+const LASTFM_API_KEY = process.env.LASTFM_API_KEY;
+if (!LASTFM_API_KEY) {
+  throw new Error("Missing LASTFM_API_KEY environment variable");
+}
 const LASTFM_BASE_URL = "http://ws.audioscrobbler.com/2.0/";
 
 export interface PopularityResponse {
