@@ -219,7 +219,7 @@ export async function getOtherReleases(
     let pageCount = 0;
 
     while (hasMore && pageCount < maxPages) {
-      const url = `${MB_BASE_URL}/release-group?artist=${artistId}&release-group-status=website-default&fmt=json&limit=${limit}&offset=${offset}`;
+      const url = `${MB_BASE_URL}/release-group?artist=${artistId}&release-group-status=website-default&fmt=json&limit=${limit}&offset=${offset}&inc=releases`;
 
       const res = await fetch(url, {
         headers: { "User-Agent": MB_USER_AGENT, Accept: "application/json" },
@@ -272,6 +272,12 @@ export async function getOtherReleases(
       let category: string;
 
       if (primaryType === "Single") {
+        // Additional filter: search for "Official" status in releases
+        const hasOfficialRelease = rg.releases?.some(
+          (rel: any) => rel.status === "Official",
+        );
+        if (!hasOfficialRelease) return;
+
         category = "Singles";
       } else if (primaryType === "EP") {
         category = "EPs";
