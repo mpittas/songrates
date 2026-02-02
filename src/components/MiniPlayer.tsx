@@ -27,6 +27,7 @@ export default function MiniPlayer() {
     seekTo,
     setPlayerRef,
     updateProgress,
+    setIsPlaying,
   } = usePlayer();
   const playerRef = useRef<any>(null);
   const [showVideo, setShowVideo] = useState(false);
@@ -55,6 +56,27 @@ export default function MiniPlayer() {
     return () => clearInterval(interval);
   }, [videoId, isPlaying, updateProgress]);
 
+  // Sync state on window focus (recovers from background tab pause)
+  useEffect(() => {
+    const handleFocus = () => {
+      if (
+        playerRef.current &&
+        typeof playerRef.current.getPlayerState === "function"
+      ) {
+        const state = playerRef.current.getPlayerState();
+        // 1 = playing, 2 = paused
+        if (state === 1 && !isPlaying) {
+          setIsPlaying(true);
+        } else if (state === 2 && isPlaying) {
+          setIsPlaying(false);
+        }
+      }
+    };
+
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
+  }, [isPlaying, setIsPlaying]);
+
   const onPlayerReady: YouTubeProps["onReady"] = useCallback(
     (event: any) => {
       playerRef.current = event.target;
@@ -82,12 +104,20 @@ export default function MiniPlayer() {
 
   const onStateChange: YouTubeProps["onStateChange"] = useCallback(
     (event: any) => {
+      // 1 = playing
+      if (event.data === 1) {
+        if (!isPlaying) setIsPlaying(true);
+      }
+      // 2 = paused
+      if (event.data === 2) {
+        if (isPlaying) setIsPlaying(false);
+      }
       // 0 = ended
       if (event.data === 0) {
-        pausePlayback();
+        setIsPlaying(false);
       }
     },
-    [pausePlayback],
+    [isPlaying, setIsPlaying],
   );
 
   const handleVolumeChange = useCallback(
@@ -197,6 +227,7 @@ export default function MiniPlayer() {
               )}`}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() => pausePlayback()}
               className="text-neutral-600 hover:text-neutral-400 transition-colors"
               title="Open in YouTube"
             >

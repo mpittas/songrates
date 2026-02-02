@@ -209,12 +209,12 @@ export default function Discography({
           {/* Singles */}
           {singles.length > 0 && (
             <CollapsibleSection
-              title="Singles"
+              title="Singles & Features"
               releases={singles as AlbumType[]}
               onSelectAlbum={onSelectAlbum}
               layout="list"
               defaultOpen={true}
-              tooltipText="Individual songs or small bundles (1-3 tracks) released separately."
+              tooltipText="Individual songs, guest appearances, and stand-alone releases."
             />
           )}
 

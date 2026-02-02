@@ -52,7 +52,8 @@ function HomeContent() {
               Discover Music
             </h1>
             <p className="text-white/60 text-lg md:text-xl max-w-xl mx-auto font-light tracking-wide">
-              Your personal space to track, rate, and discover.
+              Rate albums and individual tracks. Explore studio albums, EPs, and
+              Singles & Features.
             </p>
           </div>
 

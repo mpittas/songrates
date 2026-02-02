@@ -20,6 +20,7 @@ interface PlayerContextType {
   currentTime: number;
   duration: number;
   buffered: number;
+  setIsPlaying: (playing: boolean) => void;
   playTrack: (track: Track) => Promise<void>;
   stopPlayback: () => void;
   pausePlayback: () => void;
@@ -179,6 +180,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         currentTime,
         duration,
         buffered,
+        setIsPlaying,
         playTrack,
         stopPlayback,
         pausePlayback,
