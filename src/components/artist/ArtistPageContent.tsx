@@ -30,7 +30,9 @@ export default function ArtistPageContent({
   albums,
   otherReleases = {},
 }: ArtistPageContentProps) {
-  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "title">("newest");
+  const [sortBy, setSortBy] = useState<
+    "newest" | "oldest" | "title" | "popularity"
+  >("newest");
   const [searchQuery, setSearchQuery] = useState("");
 
   // Track sorting
@@ -118,6 +120,14 @@ export default function ArtistPageContent({
                 >
                   a-z
                 </button>
+                <button
+                  onClick={() => setSortBy("popularity")}
+                  className={`hover:text-[#00f0ff] transition-colors ${
+                    sortBy === "popularity" ? "text-[#00f0ff]" : ""
+                  }`}
+                >
+                  popularity
+                </button>
               </div>
             )}
           </div>
@@ -138,10 +148,12 @@ export default function ArtistPageContent({
           <div className="min-w-0 space-y-16">
             <Discography
               artistId={artistId}
+              artistName={artistName}
               mainAlbums={filteredMainAlbums}
               onSelectAlbum={() => {}}
               initialReleases={otherReleases}
               searchQuery={searchQuery}
+              sortBy={sortBy}
             />
           </div>
         </div>

@@ -98,21 +98,30 @@ function CollapsibleSection({
 
 export default function Discography({
   artistId,
+  artistName,
   mainAlbums,
   onSelectAlbum,
   initialReleases = {},
   searchQuery,
+  sortBy,
 }: {
   artistId: string;
+  artistName: string;
   mainAlbums: AlbumType[];
   onSelectAlbum: (id: string) => void;
   initialReleases?: GroupedReleases;
   searchQuery?: string;
+  sortBy?: "newest" | "oldest" | "title" | "popularity";
 }) {
   const [releases, setReleases] = useState<GroupedReleases>(initialReleases);
   const [loading, setLoading] = useState(
     Object.keys(initialReleases).length === 0,
   );
+  const [popularityScores, setPopularityScores] = useState<
+    Record<string, number>
+  >({});
+  const [isLoadingPopularity, setIsLoadingPopularity] = useState(false);
+  const [hasFetchedPopularity, setHasFetchedPopularity] = useState(false);
 
   useEffect(() => {
     if (Object.keys(initialReleases).length > 0) return;
@@ -127,13 +136,85 @@ export default function Discography({
       .catch(() => setLoading(false));
   }, [artistId, initialReleases]);
 
+  // Fetch popularity when sort is set to popularity
+  useEffect(() => {
+    if (sortBy !== "popularity") return;
+    if (hasFetchedPopularity) return; // Already fetched for this artist
+
+    setIsLoadingPopularity(true);
+
+    // Use local proxy to avoid CORS/Mixed Content issues with Last.fm API
+    fetch(`/api/lastfm/popularity?artistName=${encodeURIComponent(artistName)}`)
+      .then((res) => {
+        if (!res.ok) throw new Error("Proxy fetch failed");
+        return res.json();
+      })
+      .then((scores) => {
+        console.log("Popularity scores loaded:", Object.keys(scores).length);
+        setPopularityScores(scores);
+        setHasFetchedPopularity(true);
+      })
+      .catch((err) => console.error("Error fetching popularity:", err))
+      .finally(() => setIsLoadingPopularity(false));
+  }, [sortBy, artistName, hasFetchedPopularity]);
+
+  const sortReleases = (list: Release[]) => {
+    // If not popularity, we assume list is passed in default order (Newest/Oldest/etc)
+    // from parent or is raw. But wait, Parent 'ArtistPageContent' handles Newest/Oldest/Title.
+    // So if sortBy is NOT popularity, we preserver order?
+    // Actually, 'Releases' are fetched internally here, so PARENT sort doesn't affect them.
+    // We need to implement ALL sorts here for 'Releases', or at least 'Popularity'.
+    // For consistency, let's replicate parent sort or just handle popularity.
+    // Given the props say 'sortBy' is passed, we should probably respect it for ALL lists if possible.
+
+    // Parent sorts 'mainAlbums'. We should re-sort mainAlbums only if popularity.
+    // For other releases, we should also sort them.
+
+    const sorted = [...list];
+
+    if (sortBy === "popularity") {
+      return sorted.sort((a, b) => {
+        const titleA = a.title.toLowerCase().trim();
+        const titleB = b.title.toLowerCase().trim();
+        const scoreA = popularityScores[titleA] || 0;
+        const scoreB = popularityScores[titleB] || 0;
+
+        // Secondary sort by date if scores are equal?
+        if (scoreB === scoreA) {
+          return (b.releaseDate || "").localeCompare(a.releaseDate || "");
+        }
+        return scoreB - scoreA;
+      });
+    }
+
+    // If we want to support other sorts for the "other releases" (which are fetched internally):
+    if (sortBy === "newest") {
+      return sorted.sort((a, b) =>
+        (b.releaseDate || "").localeCompare(a.releaseDate || ""),
+      );
+    }
+    if (sortBy === "oldest") {
+      return sorted.sort((a, b) =>
+        (a.releaseDate || "").localeCompare(b.releaseDate || ""),
+      );
+    }
+    if (sortBy === "title") {
+      return sorted.sort((a, b) => a.title.localeCompare(b.title));
+    }
+
+    return sorted;
+  };
+
   const filterReleases = (list: Release[]) => {
     if (!searchQuery) return list;
     const lowerQuery = searchQuery.toLowerCase();
     return list.filter((r) => r.title.toLowerCase().includes(lowerQuery));
   };
 
-  const getReleases = (key: string) => filterReleases(releases[key] || []);
+  const getReleases = (key: string) => {
+    const filtered = filterReleases(releases[key] || []);
+    return sortReleases(filtered);
+  };
 
   const eps = getReleases("EPs");
   const otherAlbums = getReleases("Other Albums");
@@ -149,13 +230,17 @@ export default function Discography({
       getReleases(key).length > 0,
   );
 
+  // Apply popularity sort to mainAlbums as well (if popularity is selected)
+  // For other sorts, mainAlbums is already passed sorted from parent, but doing it here again doesn't hurt.
+  const processedMainAlbums = sortReleases(filterReleases(mainAlbums));
+
   return (
     <div className="bg-[#222]/40 p-4 space-y-2">
       {/* Main Albums */}
-      {mainAlbums.length > 0 && (
+      {processedMainAlbums.length > 0 && (
         <CollapsibleSection
           title="Albums"
-          releases={mainAlbums}
+          releases={processedMainAlbums}
           onSelectAlbum={onSelectAlbum}
           layout="grid"
           defaultOpen={true}
