@@ -1,7 +1,7 @@
 /**
  * @jest-environment node
  */
-import { GET } from "./route";
+import { GET } from "@/app/api/musicbrainz/tracks/route";
 import { NextRequest } from "next/server";
 
 global.fetch = jest.fn();

@@ -23,6 +23,7 @@ jest.mock("@/hooks/useSearchInput", () => ({
     isFocused: false,
     setIsFocused: jest.fn(),
     clearQuery: jest.fn(),
+    cancelDebounce: jest.fn(),
   })),
 }));
 
@@ -55,12 +56,13 @@ describe("HeaderSearchBar", () => {
       isFocused: false,
       setIsFocused: jest.fn(),
       clearQuery: jest.fn(),
+      cancelDebounce: jest.fn(),
     });
 
     render(<HeaderSearchBar />);
 
     const form =
-      screen.getByRole("form") ||
+      screen.queryByRole("form") ||
       screen.getByPlaceholderText("Search artists...").closest("form");
     if (form) {
       fireEvent.submit(form);
@@ -78,6 +80,7 @@ describe("HeaderSearchBar", () => {
       isFocused: false,
       setIsFocused: jest.fn(),
       clearQuery: jest.fn(),
+      cancelDebounce: jest.fn(),
     });
 
     render(<HeaderSearchBar />);
@@ -101,6 +104,7 @@ describe("HeaderSearchBar", () => {
       isFocused: true,
       setIsFocused: jest.fn(),
       clearQuery: jest.fn(),
+      cancelDebounce: jest.fn(),
     });
 
     render(<HeaderSearchBar />);
@@ -119,6 +123,7 @@ describe("HeaderSearchBar", () => {
       isFocused: false,
       setIsFocused: jest.fn(),
       clearQuery: jest.fn(),
+      cancelDebounce: jest.fn(),
     });
 
     render(<HeaderSearchBar />);
@@ -135,6 +140,7 @@ describe("HeaderSearchBar", () => {
       isFocused: true,
       setIsFocused: jest.fn(),
       clearQuery: jest.fn(),
+      cancelDebounce: jest.fn(),
     });
 
     render(<HeaderSearchBar />);
@@ -152,6 +158,7 @@ describe("HeaderSearchBar", () => {
       isFocused: true,
       setIsFocused,
       clearQuery: jest.fn(),
+      cancelDebounce: jest.fn(),
     });
 
     render(<HeaderSearchBar />);

@@ -146,7 +146,7 @@ export default function Discography({
       !FILTER_OUT_CATEGORIES.some(
         (filter) => key.includes(filter) || key === filter,
       ) &&
-      filterReleases(releases[key] || []).length > 0,
+      getReleases(key).length > 0,
   );
 
   return (

@@ -1,7 +1,7 @@
 /**
  * @jest-environment node
  */
-import { GET } from "./route";
+import { GET } from "@/app/api/musicbrainz/albums/route";
 import { NextRequest } from "next/server";
 import { albumCache } from "@/lib/cache";
 
