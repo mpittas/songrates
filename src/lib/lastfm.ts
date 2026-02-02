@@ -1,7 +1,3 @@
-const LASTFM_API_KEY = process.env.LASTFM_API_KEY;
-if (!LASTFM_API_KEY) {
-  throw new Error("Missing LASTFM_API_KEY environment variable");
-}
 const LASTFM_BASE_URL = "http://ws.audioscrobbler.com/2.0/";
 
 export interface PopularityResponse {
@@ -15,6 +11,12 @@ export interface PopularityResponse {
 export async function getArtistPopularity(
   artistName: string,
 ): Promise<PopularityResponse> {
+  const apiKey = process.env.LASTFM_API_KEY;
+  if (!apiKey) {
+    console.error("Missing LASTFM_API_KEY environment variable");
+    return {};
+  }
+
   if (!artistName) return {};
 
   try {
@@ -22,7 +24,7 @@ export async function getArtistPopularity(
     // We use artist name because MBID support in Last.fm can be spotty.
     const url = `${LASTFM_BASE_URL}?method=artist.gettopalbums&artist=${encodeURIComponent(
       artistName,
-    )}&api_key=${LASTFM_API_KEY}&format=json&limit=500`;
+    )}&api_key=${apiKey}&format=json&limit=500`;
 
     const res = await fetch(url);
     const data = await res.json();
