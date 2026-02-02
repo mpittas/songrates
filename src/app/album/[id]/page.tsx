@@ -44,7 +44,7 @@ function TrackItem({
                 artistName: artistName,
                 artistId: artistId,
                 albumId: albumId,
-                albumImageUrl: albumImageUrl,
+                albumImageUrl: albumImageUrl || "/vinyl-placeholder.svg",
               })
             }
             className={`flex items-center justify-center w-6 h-6 border shrink-0 transition-all ${
@@ -151,7 +151,7 @@ export default function AlbumPage() {
 
   const imageUrl = `https://coverartarchive.org/release-group/${album.id}/front-250`;
 
-  const filteredTracks = album.tracks.filter((track) =>
+  const filteredTracks = (album.tracks || []).filter((track) =>
     track.title.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
@@ -169,6 +169,7 @@ export default function AlbumPage() {
               className="object-cover transition-all duration-500"
               priority
               fallbackText={album.title?.slice(0, 2).toUpperCase() || "??"}
+              fallbackSrc="/vinyl-placeholder.svg"
             />
           </div>
 

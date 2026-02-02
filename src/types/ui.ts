@@ -22,6 +22,7 @@ export interface OptimizedImageProps {
   className?: string;
   priority?: boolean;
   fallbackText?: string;
+  fallbackSrc?: string;
   onError?: () => void;
 }
 

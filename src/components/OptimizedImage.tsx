@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { LazyLoadImage } from "react-lazy-load-image-component";
 import "react-lazy-load-image-component/src/effects/blur.css";
 
@@ -21,10 +21,16 @@ export default function OptimizedImage({
   className = "",
   priority = false,
   fallbackText,
+  fallbackSrc,
   onError,
   fill = false,
 }: OptimizedImageProps) {
   const [hasError, setHasError] = useState(false);
+
+  // Reset error state when src changes
+  useEffect(() => {
+    setHasError(false);
+  }, [src]);
 
   const handleError = useCallback(() => {
     setHasError(true);
@@ -39,6 +45,25 @@ export default function OptimizedImage({
     "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMSIgaGVpZ2h0PSIxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiMwYTBhMGQiLz48L3N2Zz4=";
 
   if (hasError) {
+    if (fallbackSrc) {
+      // If fallbackSrc is provided, we try to show it.
+      // We assume fallbackSrc is a local asset that exists.
+      return (
+        <div
+          className={`flex items-center justify-center bg-[#0a0a0d] ${
+            fill ? "absolute inset-0 w-full h-full" : ""
+          } ${className}`}
+          style={!fill ? { width, height } : undefined}
+        >
+          <img
+            src={fallbackSrc}
+            alt={alt}
+            className="w-[60%] h-[60%] object-contain invert opacity-20"
+          />
+        </div>
+      );
+    }
+
     return (
       <div
         className={`flex items-center justify-center bg-[#0a0a0d] text-neutral-700 font-mono ${

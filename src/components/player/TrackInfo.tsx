@@ -1,4 +1,5 @@
 import Link from "next/link";
+import OptimizedImage from "@/components/OptimizedImage";
 import { TrackInfoProps } from "@/types/player";
 
 export default function TrackInfo({ currentTrack }: TrackInfoProps) {
@@ -7,24 +8,21 @@ export default function TrackInfo({ currentTrack }: TrackInfoProps) {
   return (
     <div className="flex items-center gap-4 min-w-[200px] w-1/4">
       {/* Album Art */}
-      {currentTrack.albumImageUrl && (
-        <Link
-          href={
-            currentTrack.artistId ? `/artist/${currentTrack.artistId}` : "#"
-          }
-          className="w-10 h-10 relative shrink-0 border border-[#1a1a1f] hover:border-[#00f0ff] transition-colors overflow-hidden group/image"
-        >
-          <img
-            src={currentTrack.albumImageUrl}
-            alt={currentTrack.artistName}
-            width={40}
-            height={40}
-            loading="eager"
-            decoding="async"
-            className="w-full h-full object-cover transition-all"
-          />
-        </Link>
-      )}
+      <Link
+        href={currentTrack.artistId ? `/artist/${currentTrack.artistId}` : "#"}
+        className="w-10 h-10 relative shrink-0 border border-[#1a1a1f] hover:border-[#00f0ff] transition-colors overflow-hidden group/image"
+      >
+        <OptimizedImage
+          src={currentTrack.albumImageUrl || "/vinyl-placeholder.svg"}
+          alt={currentTrack.artistName || "Unknown Artist"}
+          width={40}
+          height={40}
+          priority
+          className="object-cover transition-all"
+          fallbackSrc="/vinyl-placeholder.svg"
+          fallbackText={currentTrack.title?.slice(0, 2) || "??"}
+        />
+      </Link>
 
       <div className="min-w-0 flex flex-col justify-center">
         <Link
