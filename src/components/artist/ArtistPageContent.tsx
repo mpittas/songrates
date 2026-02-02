@@ -93,43 +93,41 @@ export default function ArtistPageContent({
               />
             </div>
 
-            {albums.length > 0 && (
-              <div className="flex gap-4 text-xs text-neutral-600 font-mono">
-                <span>sort:</span>
-                <button
-                  onClick={() => setSortBy("newest")}
-                  className={`hover:text-[#00f0ff] transition-colors ${
-                    sortBy === "newest" ? "text-[#00f0ff]" : ""
-                  }`}
-                >
-                  new
-                </button>
-                <button
-                  onClick={() => setSortBy("oldest")}
-                  className={`hover:text-[#00f0ff] transition-colors ${
-                    sortBy === "oldest" ? "text-[#00f0ff]" : ""
-                  }`}
-                >
-                  old
-                </button>
-                <button
-                  onClick={() => setSortBy("title")}
-                  className={`hover:text-[#00f0ff] transition-colors ${
-                    sortBy === "title" ? "text-[#00f0ff]" : ""
-                  }`}
-                >
-                  a-z
-                </button>
-                <button
-                  onClick={() => setSortBy("popularity")}
-                  className={`hover:text-[#00f0ff] transition-colors ${
-                    sortBy === "popularity" ? "text-[#00f0ff]" : ""
-                  }`}
-                >
-                  popularity
-                </button>
-              </div>
-            )}
+            <div className="flex gap-4 text-xs text-neutral-600 font-mono">
+              <span>sort:</span>
+              <button
+                onClick={() => setSortBy("newest")}
+                className={`hover:text-[#00f0ff] transition-colors ${
+                  sortBy === "newest" ? "text-[#00f0ff]" : ""
+                }`}
+              >
+                new
+              </button>
+              <button
+                onClick={() => setSortBy("oldest")}
+                className={`hover:text-[#00f0ff] transition-colors ${
+                  sortBy === "oldest" ? "text-[#00f0ff]" : ""
+                }`}
+              >
+                old
+              </button>
+              <button
+                onClick={() => setSortBy("title")}
+                className={`hover:text-[#00f0ff] transition-colors ${
+                  sortBy === "title" ? "text-[#00f0ff]" : ""
+                }`}
+              >
+                a-z
+              </button>
+              <button
+                onClick={() => setSortBy("popularity")}
+                className={`hover:text-[#00f0ff] transition-colors ${
+                  sortBy === "popularity" ? "text-[#00f0ff]" : ""
+                }`}
+              >
+                popularity
+              </button>
+            </div>
           </div>
         </div>
 
