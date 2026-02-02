@@ -38,6 +38,7 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${spaceMono.variable} antialiased bg-[#050507]`}
       >
+        {/* Providers for auth, search, etc. */}
         <Providers>
           <Header />
           {children}
