@@ -10,9 +10,17 @@ export async function GET(request: NextRequest) {
     return errorResponse("Missing artistName parameter", 400);
   }
 
-  return handleApiRequest(
+  const response = await handleApiRequest(
     () => getArtistPopularity(artistName),
     "Failed to fetch popularity data",
     "search",
   );
+
+  // Add Cache-Control header for 24 hours (matching the server cache)
+  response.headers.set(
+    "Cache-Control",
+    "public, s-maxage=86400, stale-while-revalidate=3600",
+  );
+
+  return response;
 }

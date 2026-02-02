@@ -22,7 +22,7 @@ export async function getArtistPopularity(
       artistName,
     )}&api_key=${apiKey}&format=json&limit=500`;
 
-    const res = await fetch(url);
+    const res = await fetch(url, { next: { revalidate: 86400 } });
     const data = await res.json();
 
     if (!data.topalbums || !data.topalbums.album) {
