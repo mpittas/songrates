@@ -1,12 +1,7 @@
 import { useRef, useState, useEffect, useCallback } from "react";
 import { formatTimeSeconds } from "@/lib/utils";
 
-interface ProgressBarProps {
-  currentTime: number;
-  duration: number;
-  buffered: number;
-  onSeek: (time: number) => void;
-}
+import { ProgressBarProps } from "@/types/player";
 
 export default function ProgressBar({
   currentTime,

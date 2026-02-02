@@ -1,12 +1,7 @@
 import { cn } from "@/lib/utils";
 import { ReactNode } from "react";
 
-interface MySectionProps {
-  children: ReactNode;
-  className?: string;
-  container?: boolean;
-  id?: string;
-}
+import { MySectionProps } from "@/types/ui";
 
 export default function MySection({
   children,

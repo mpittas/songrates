@@ -1,9 +1,5 @@
 import Link from "next/link";
-import { Track } from "@/types/music";
-
-interface TrackInfoProps {
-  currentTrack: Track;
-}
+import { TrackInfoProps } from "@/types/player";
 
 export default function TrackInfo({ currentTrack }: TrackInfoProps) {
   if (!currentTrack) return null;

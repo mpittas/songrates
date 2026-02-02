@@ -3,10 +3,9 @@
 import { useState, useEffect } from "react";
 import ArtistList from "@/components/artist/ArtistList";
 
-interface SearchResultsProps {
-  query: string;
-  onClose?: () => void;
-}
+import { SearchResultsProps } from "@/types/search";
+import { Artist } from "@/types/artist";
+import { Album } from "@/types/music";
 
 export default function SearchResults({ query, onClose }: SearchResultsProps) {
   const [artists, setArtists] = useState([]);

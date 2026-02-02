@@ -11,23 +11,7 @@ import { FaPlay, FaPause, FaSearch } from "react-icons/fa";
 import MySection from "@/components/MySection";
 import AlbumSkeleton from "@/components/AlbumSkeleton";
 
-interface AlbumInfo {
-  id: string;
-  title: string;
-  artist: { name: string; id: string };
-  type: string;
-  releaseDate: string;
-  genres: string[];
-  rating: number | null;
-  wikipediaUrl: string | null;
-  tracks: {
-    id: string;
-    title: string;
-    number: string;
-    length?: number;
-    artists?: { id: string; name: string; joinPhrase?: string }[];
-  }[];
-}
+import { AlbumInfo, TrackInfo } from "@/types/music";
 
 function TrackItem({
   track,
@@ -36,7 +20,7 @@ function TrackItem({
   albumId,
   albumImageUrl,
 }: {
-  track: AlbumInfo["tracks"][0];
+  track: TrackInfo;
   artistName: string;
   artistId: string;
   albumId: string;

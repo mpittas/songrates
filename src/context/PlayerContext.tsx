@@ -11,24 +11,7 @@ import {
 } from "react";
 
 import { Track } from "@/types/music";
-
-interface PlayerContextType {
-  currentTrack: Track | null;
-  videoId: string | null;
-  isPlaying: boolean;
-  isLoading: boolean;
-  currentTime: number;
-  duration: number;
-  buffered: number;
-  setIsPlaying: (playing: boolean) => void;
-  playTrack: (track: Track) => Promise<void>;
-  stopPlayback: () => void;
-  pausePlayback: () => void;
-  togglePlayPause: () => void;
-  seekTo: (seconds: number) => void;
-  setPlayerRef: (player: any) => void;
-  updateProgress: (current: number, total: number, buffered?: number) => void;
-}
+import { PlayerContextType } from "@/types/player";
 
 const PlayerContext = createContext<PlayerContextType | null>(null);
 

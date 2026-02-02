@@ -1,10 +1,6 @@
 // Utility functions for managing artist visit history in localStorage
 
-export interface ArtistVisit {
-  id: string;
-  name: string;
-  visitedAt: number; // timestamp
-}
+import { ArtistVisit } from "@/types/artist";
 
 const HISTORY_KEY = "songrates_artist_history";
 const MAX_HISTORY = 10;

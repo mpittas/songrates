@@ -5,12 +5,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { FaWikipediaW } from "react-icons/fa";
 
-interface Album {
-  id: string;
-  title: string;
-  releaseDate?: string;
-  wikipediaUrl?: string;
-}
+import { Album } from "@/types/music";
 
 interface AlbumCardProps {
   album: Album;

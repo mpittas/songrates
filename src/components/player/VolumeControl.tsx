@@ -1,12 +1,7 @@
 import { useRef, useState, useEffect, useCallback } from "react";
 import { FaVolumeUp, FaVolumeDown, FaVolumeMute } from "react-icons/fa";
 
-interface VolumeControlProps {
-  volume: number;
-  isMuted: boolean;
-  onVolumeChange: (volume: number) => void;
-  onToggleMute: () => void;
-}
+import { VolumeControlProps } from "@/types/player";
 
 export default function VolumeControl({
   volume,

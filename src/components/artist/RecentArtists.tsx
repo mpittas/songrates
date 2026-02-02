@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getArtistHistory, type ArtistVisit } from "@/lib/history";
+import { getArtistHistory } from "@/lib/history";
+import { ArtistVisit } from "@/types/artist";
 import { formatTimeAgo } from "@/lib/utils";
 import PrefetchLink from "@/components/PrefetchLink";
 

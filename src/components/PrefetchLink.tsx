@@ -4,13 +4,7 @@ import Link from "next/link";
 import { useCallback, useRef } from "react";
 import { usePrefetchArtist } from "@/hooks/useArtistData";
 
-interface PrefetchLinkProps {
-  href: string;
-  artistId: string;
-  children: React.ReactNode;
-  className?: string;
-  prefetchDelay?: number;
-}
+import { PrefetchLinkProps } from "@/types/ui";
 
 /**
  * Link component that prefetches artist data on hover

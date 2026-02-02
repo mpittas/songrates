@@ -1,8 +1,70 @@
 export interface Track {
   id: string;
   title: string;
-  artistName: string;
+  artistName?: string;
   artistId?: string;
   albumId?: string;
   albumImageUrl?: string;
+  length?: number;
+  number?: string;
+}
+
+export interface Album {
+  id: string;
+  title: string;
+  releaseDate?: string;
+  wikipediaUrl?: string;
+  wikidataId?: string;
+}
+
+export interface TrackInfo extends Track {
+  number: string;
+  length?: number;
+  artists?: { id: string; name: string; joinPhrase?: string }[];
+}
+
+export interface AlbumInfo {
+  id: string;
+  title: string;
+  artist: { name: string; id: string };
+  type: string;
+  releaseDate: string;
+  genres: string[];
+  rating: number | null;
+  wikipediaUrl: string | null;
+  tracks: TrackInfo[];
+}
+
+export interface ArtistInfo {
+  image: string | null;
+  description: string | null;
+  wikipedia: string | null;
+  twitter: string | null;
+  instagram: string | null;
+  facebook: string | null;
+  youtube: string | null;
+  spotify: string | null;
+  officialSite: string | null;
+  genres: string[];
+  beginDate: string | null;
+  endDate: string | null;
+  country: string | null;
+}
+
+export interface ArtistData {
+  id: string;
+  name: string | null;
+  country: string | null;
+  lifeSpan: any;
+}
+
+export interface Release {
+  id: string;
+  title: string;
+  releaseDate?: string;
+  wikipediaUrl?: string;
+}
+
+export interface GroupedReleases {
+  [type: string]: Release[];
 }

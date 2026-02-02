@@ -2,12 +2,7 @@
 
 import { useRatings } from "@/hooks/useRatings";
 
-interface Track {
-  id: string;
-  title: string;
-  length?: number;
-  number?: string;
-}
+import { Track } from "@/types/music";
 
 function TrackItem({
   track,

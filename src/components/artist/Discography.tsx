@@ -5,16 +5,7 @@ import AlbumGrid from "@/components/AlbumGrid";
 import { FaChevronDown, FaChevronUp, FaInfoCircle } from "react-icons/fa";
 import Tooltip from "@/components/Tooltip";
 
-interface Release {
-  id: string;
-  title: string;
-  releaseDate?: string;
-  wikipediaUrl?: string;
-}
-
-interface GroupedReleases {
-  [type: string]: Release[];
-}
+import { Album, GroupedReleases, Release } from "@/types/music";
 
 type AlbumType = Release & { wikipediaUrl?: string };
 

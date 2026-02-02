@@ -1,19 +1,10 @@
 import { IoSearch, IoClose } from "react-icons/io5";
 
-type SearchInputSize = "small" | "large";
-type SearchInputVariant = "light" | "dark";
-
-interface SearchInputProps {
-  value: string;
-  onChange: (value: string) => void;
-  onClear: () => void;
-  onFocus?: () => void;
-  onBlur?: () => void;
-  isFocused: boolean;
-  placeholder?: string;
-  size?: SearchInputSize;
-  variant?: SearchInputVariant;
-}
+import {
+  SearchInputProps,
+  SearchInputSize,
+  SearchInputVariant,
+} from "@/types/search";
 
 export default function SearchInput({
   value,

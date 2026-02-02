@@ -4,44 +4,7 @@ const MB_USER_AGENT = "SongRates/1.0 (mpittas@gmail.com)";
 const MB_BASE_URL = "https://musicbrainz.org/ws/2";
 
 // Types
-export interface Album {
-  id: string;
-  title: string;
-  releaseDate?: string;
-  wikipediaUrl?: string;
-  wikidataId?: string;
-}
-
-export interface ArtistInfo {
-  image: string | null;
-  description: string | null;
-  wikipedia: string | null;
-  twitter: string | null;
-  instagram: string | null;
-  facebook: string | null;
-  youtube: string | null;
-  spotify: string | null;
-  officialSite: string | null;
-  genres: string[];
-  beginDate: string | null;
-  endDate: string | null;
-  country: string | null;
-}
-
-export interface ArtistData {
-  id: string;
-  name: string | null;
-  country: string | null;
-  lifeSpan: any;
-}
-
-export interface GroupedReleases {
-  [type: string]: {
-    id: string;
-    title: string;
-    releaseDate?: string;
-  }[];
-}
+import { Album, ArtistData, ArtistInfo, GroupedReleases } from "@/types/music";
 
 // Helpers
 function toThumbnailUrl(imageUrl: string, width: number = 250): string {

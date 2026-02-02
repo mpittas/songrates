@@ -3,14 +3,7 @@
 import { useEffect, useState } from "react";
 import PrefetchLink from "@/components/PrefetchLink";
 
-interface Artist {
-  id: string;
-  name: string;
-  country?: string;
-  disambiguation?: string;
-  type?: string;
-  lifeSpan?: { begin?: string; end?: string };
-}
+import { Artist } from "@/types/artist";
 
 export default function ArtistList({ artists }: { artists: Artist[] }) {
   const [images, setImages] = useState<Record<string, string>>({});

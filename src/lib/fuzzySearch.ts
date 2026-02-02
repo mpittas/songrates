@@ -1,14 +1,6 @@
 import Fuse from "fuse.js";
 
-export interface Artist {
-  id: string;
-  name: string;
-  disambiguation?: string;
-  country?: string;
-  type?: string;
-  lifeSpan?: { begin?: string; end?: string; ended?: boolean };
-  score?: number; // MusicBrainz popularity score
-}
+import { Artist } from "@/types/artist";
 
 /**
  * Re-ranks artists using Fuse.js fuzzy matching combined with MusicBrainz popularity.

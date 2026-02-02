@@ -1,15 +1,7 @@
 import YouTube, { YouTubeProps } from "react-youtube";
 import { FaTimes } from "react-icons/fa";
 
-interface VideoPlayerProps {
-  videoId: string;
-  title: string;
-  showVideo: boolean;
-  onClose: () => void;
-  onReady: YouTubeProps["onReady"];
-  onStateChange: YouTubeProps["onStateChange"];
-  opts: YouTubeProps["opts"];
-}
+import { VideoPlayerProps } from "@/types/player";
 
 export default function VideoPlayer({
   videoId,

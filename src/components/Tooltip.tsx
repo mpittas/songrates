@@ -1,9 +1,5 @@
 import React from "react";
-
-interface TooltipProps {
-  content: React.ReactNode;
-  children: React.ReactNode;
-}
+import { TooltipProps } from "@/types/ui";
 
 export default function Tooltip({ content, children }: TooltipProps) {
   if (!content) return <>{children}</>;

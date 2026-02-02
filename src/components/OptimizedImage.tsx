@@ -4,17 +4,7 @@ import { useState, useCallback } from "react";
 import { LazyLoadImage } from "react-lazy-load-image-component";
 import "react-lazy-load-image-component/src/effects/blur.css";
 
-interface OptimizedImageProps {
-  src: string;
-  alt: string;
-  width?: number;
-  height?: number;
-  className?: string;
-  priority?: boolean;
-  fallbackText?: string;
-  onError?: () => void;
-  fill?: boolean;
-}
+import { OptimizedImageProps } from "@/types/ui";
 
 /**
  * Optimized image component using react-lazy-load-image-component

@@ -1,11 +1,6 @@
 import { FaPlay, FaPause, FaStepBackward, FaStepForward } from "react-icons/fa";
 
-interface PlaybackControlsProps {
-  isPlaying: boolean;
-  isLoading: boolean;
-  hasVideoId: boolean;
-  onTogglePlay: () => void;
-}
+import { PlaybackControlsProps } from "@/types/player";
 
 export default function PlaybackControls({
   isPlaying,

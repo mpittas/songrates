@@ -13,7 +13,7 @@ import {
   Album,
   ArtistInfo as ArtistInfoType,
   GroupedReleases,
-} from "@/lib/musicbrainz";
+} from "@/types/music";
 
 interface ArtistPageContentProps {
   artistId: string;
