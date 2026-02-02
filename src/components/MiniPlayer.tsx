@@ -3,7 +3,8 @@
 import { usePlayer } from "@/context/PlayerContext";
 import { FaTimes, FaYoutube } from "react-icons/fa";
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
-import { YouTubeProps } from "react-youtube";
+import { YouTubeProps, YouTubeEvent } from "react-youtube";
+import { YouTubePlayer } from "@/types/player";
 
 // Components
 import TrackInfo from "./player/TrackInfo";
@@ -29,7 +30,7 @@ export default function MiniPlayer() {
     updateProgress,
     setIsPlaying,
   } = usePlayer();
-  const playerRef = useRef<any>(null);
+  const playerRef = useRef<YouTubePlayer | null>(null);
   const [showVideo, setShowVideo] = useState(false);
 
   // Volume State
@@ -78,7 +79,7 @@ export default function MiniPlayer() {
   }, [isPlaying, setIsPlaying]);
 
   const onPlayerReady: YouTubeProps["onReady"] = useCallback(
-    (event: any) => {
+    (event: YouTubeEvent) => {
       playerRef.current = event.target;
       setPlayerRef(event.target);
 
@@ -103,7 +104,7 @@ export default function MiniPlayer() {
   );
 
   const onStateChange: YouTubeProps["onStateChange"] = useCallback(
-    (event: any) => {
+    (event: YouTubeEvent) => {
       // 1 = playing
       if (event.data === 1) {
         if (!isPlaying) setIsPlaying(true);

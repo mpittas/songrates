@@ -1,4 +1,20 @@
+import { YouTubeProps, YouTubeEvent } from "react-youtube";
 import { Track } from "./music";
+
+// YouTube Player instance type
+export interface YouTubePlayer {
+  playVideo: () => void;
+  pauseVideo: () => void;
+  seekTo: (seconds: number, allowSeekAhead: boolean) => void;
+  loadVideoById: (videoId: string) => void;
+  getCurrentTime: () => number;
+  getDuration: () => number;
+  getVideoLoadedFraction: () => number;
+  getPlayerState: () => number;
+  setVolume: (volume: number) => void;
+  mute: () => void;
+  unMute: () => void;
+}
 
 export interface PlayerContextType {
   currentTrack: Track | null;
@@ -14,7 +30,7 @@ export interface PlayerContextType {
   pausePlayback: () => void;
   togglePlayPause: () => void;
   seekTo: (seconds: number) => void;
-  setPlayerRef: (player: any) => void;
+  setPlayerRef: (player: YouTubePlayer | null) => void;
   updateProgress: (current: number, total: number, buffered?: number) => void;
 }
 
@@ -34,9 +50,9 @@ export interface VideoPlayerProps {
   title: string;
   showVideo: boolean;
   onClose: () => void;
-  onReady: any;
-  onStateChange: any;
-  opts: any;
+  onReady: YouTubeProps["onReady"];
+  onStateChange: YouTubeProps["onStateChange"];
+  opts: YouTubeProps["opts"];
 }
 
 export interface VolumeControlProps {

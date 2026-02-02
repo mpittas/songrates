@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { searchArtists } from "@/lib/musicbrainz";
+import { successResponse, errorResponse } from "@/lib/api-utils";
 
 const MB_USER_AGENT = "SongRates/1.0 (mpittas@gmail.com)";
 const MB_BASE_URL = "https://musicbrainz.org/ws/2";
@@ -22,22 +23,31 @@ export async function GET(request: NextRequest) {
   // Single artist lookup
   if (id) {
     const data = await fetchMB(`artist/${id}`, {});
-    if (!data) return NextResponse.json({ artist: null });
-    return NextResponse.json({
-      artist: {
-        id: data.id,
-        name: data.name,
-        country: data.country,
-        lifeSpan: data["life-span"],
+    if (!data) {
+      return successResponse({ artist: null }, "search");
+    }
+    return successResponse(
+      {
+        artist: {
+          id: data.id,
+          name: data.name,
+          country: data.country,
+          lifeSpan: data["life-span"],
+        },
       },
-    });
+      "search",
+    );
   }
 
   // Search - returns results sorted by MusicBrainz popularity
   if (!query || query.trim().length < 2) {
-    return NextResponse.json({ artists: [] });
+    return successResponse({ artists: [] }, "search");
   }
 
-  const artists = await searchArtists(query.trim());
-  return NextResponse.json({ artists });
+  try {
+    const artists = await searchArtists(query.trim());
+    return successResponse({ artists }, "search");
+  } catch (error) {
+    return errorResponse("Failed to search artists", 500);
+  }
 }

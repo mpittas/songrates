@@ -1,37 +1,16 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { imageCache } from "@/lib/cache";
+import { successResponse, handleApiRequest } from "@/lib/api-utils";
+import { toThumbnailUrl } from "@/lib/musicbrainz";
 
-// Convert Wikimedia Commons URL to a thumbnail URL
-// Example: https://commons.wikimedia.org/wiki/Special:FilePath/Image.jpg
-// becomes: https://commons.wikimedia.org/wiki/Special:FilePath/Image.jpg?width=200
-function toThumbnailUrl(imageUrl: string, width: number = 200): string {
-  if (
-    imageUrl.includes("commons.wikimedia.org") ||
-    imageUrl.includes("upload.wikimedia.org")
-  ) {
-    // Add width parameter to get a resized thumbnail
-    const separator = imageUrl.includes("?") ? "&" : "?";
-    return `${imageUrl}${separator}width=${width}`;
-  }
-  return imageUrl;
+const MB_USER_AGENT = "SongRates/1.0 (mpittas@gmail.com)";
+
+interface WikidataBinding {
+  mbid: { value: string };
+  image: { value: string };
 }
 
-export async function GET(request: NextRequest) {
-  const searchParams = request.nextUrl.searchParams;
-  const idsParam = searchParams.get("ids");
-
-  if (!idsParam) {
-    return NextResponse.json({ images: {} });
-  }
-
-  const ids = idsParam.split(",").filter(Boolean);
-  if (ids.length === 0) {
-    return NextResponse.json({ images: {} });
-  }
-
-  // Construct SPARQL query (Wikidata)
-  // P434 is MusicBrainz Artist ID
-  // P18 is Image
+async function fetchArtistImages(ids: string[]) {
   const idsString = ids.map((id) => `"${id}"`).join(" ");
   const query = `
     SELECT ?mbid ?image WHERE {
@@ -45,46 +24,52 @@ export async function GET(request: NextRequest) {
     query,
   )}&format=json`;
 
-  try {
-    const res = await fetch(url, {
-      headers: {
-        "User-Agent": "SongRates/1.0 (mpittas@gmail.com)",
-        Accept: "application/json",
-      },
-      next: { revalidate: 86400 }, // Cache for 24 hours
-    });
+  const res = await fetch(url, {
+    headers: {
+      "User-Agent": MB_USER_AGENT,
+      Accept: "application/json",
+    },
+    next: { revalidate: 86400 },
+  });
 
-    if (!res.ok) {
-      console.error("Wikidata API Error:", res.status);
-      return NextResponse.json({ images: {} });
-    }
-
-    const data = await res.json();
-    const images: Record<string, string> = {};
-
-    data.results.bindings.forEach((binding: any) => {
-      const mbid = binding.mbid.value;
-      const imageUrl = binding.image.value;
-      // Wikidata returns http urls sometimes, prefer https if possible (though usually they handle it)
-      // Images are usually standard URLs.
-      if (mbid && imageUrl) {
-        images[mbid] = toThumbnailUrl(imageUrl);
-      }
-    });
-
-    // Cache individual image URLs for 7 days
-    Object.entries(images).forEach(([mbid, url]) => {
-      imageCache.set(`artist-image:${mbid}`, url, 604800);
-    });
-
-    const response = NextResponse.json({ images });
-    response.headers.set(
-      "Cache-Control",
-      "public, max-age=604800, s-maxage=604800, stale-while-revalidate=86400",
-    );
-    return response;
-  } catch (error) {
-    console.error("Failed to fetch images from Wikidata:", error);
-    return NextResponse.json({ images: {} });
+  if (!res.ok) {
+    throw new Error(`Wikidata API Error: ${res.status}`);
   }
+
+  const data = await res.json();
+  const images: Record<string, string> = {};
+
+  data.results.bindings.forEach((binding: WikidataBinding) => {
+    const mbid = binding.mbid.value;
+    const imageUrl = binding.image.value;
+    if (mbid && imageUrl) {
+      images[mbid] = toThumbnailUrl(imageUrl);
+    }
+  });
+
+  // Cache individual image URLs for 7 days
+  Object.entries(images).forEach(([mbid, url]) => {
+    imageCache.set(`artist-image:${mbid}`, url, 604800);
+  });
+
+  return { images };
+}
+
+export async function GET(request: NextRequest) {
+  const idsParam = request.nextUrl.searchParams.get("ids");
+
+  if (!idsParam) {
+    return successResponse({ images: {} }, "image");
+  }
+
+  const ids = idsParam.split(",").filter(Boolean);
+  if (ids.length === 0) {
+    return successResponse({ images: {} }, "image");
+  }
+
+  return handleApiRequest(
+    () => fetchArtistImages(ids),
+    "Failed to fetch artist images",
+    "image",
+  );
 }

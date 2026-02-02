@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect, useCallback } from "react";
-import { formatTimeSeconds } from "@/lib/utils";
+import { formatTime } from "@/lib/utils";
 
 import { ProgressBarProps } from "@/types/player";
 
@@ -87,7 +87,7 @@ export default function ProgressBar({
   return (
     <div className="flex items-center gap-3 flex-1 max-w-lg">
       <span className="text-[10px] text-neutral-500 font-mono w-8 text-right">
-        {formatTimeSeconds(currentTime)}
+        {formatTime(currentTime, "seconds")}
       </span>
 
       <div
@@ -115,7 +115,7 @@ export default function ProgressBar({
       </div>
 
       <span className="text-[10px] text-neutral-500 font-mono w-8">
-        {formatTimeSeconds(duration)}
+        {formatTime(duration, "seconds")}
       </span>
     </div>
   );

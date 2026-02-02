@@ -1,18 +1,20 @@
-import { NextRequest, NextResponse } from "next/server";
+/**
+ * @deprecated Use /api/artist/[id]/releases instead
+ */
+import { NextRequest } from "next/server";
 import { getOtherReleases } from "@/lib/musicbrainz";
+import { handleApiRequest, successResponse } from "@/lib/api-utils";
 
 export async function GET(request: NextRequest) {
   const artistId = request.nextUrl.searchParams.get("artistId");
-  if (!artistId) return NextResponse.json({ releases: {} });
 
-  const releases = await getOtherReleases(artistId);
+  if (!artistId) {
+    return successResponse({ releases: {} }, "album");
+  }
 
-  const response = NextResponse.json({ releases });
-
-  response.headers.set(
-    "Cache-Control",
-    "public, max-age=3600, s-maxage=86400, stale-while-revalidate=86400",
+  return handleApiRequest(
+    async () => ({ releases: await getOtherReleases(artistId) }),
+    "Failed to fetch releases",
+    "album",
   );
-
-  return response;
 }

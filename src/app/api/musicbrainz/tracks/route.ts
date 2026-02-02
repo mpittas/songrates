@@ -1,60 +1,83 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
+import { handleApiRequest, successResponse } from "@/lib/api-utils";
 
 const MB_USER_AGENT = "SongRates/1.0 (mpittas@gmail.com)";
 const MB_BASE_URL = "https://musicbrainz.org/ws/2";
 
-export async function GET(request: NextRequest) {
-  const albumId = request.nextUrl.searchParams.get("albumId"); // This is the Release Group ID
-  if (!albumId) return NextResponse.json({ tracks: [] });
+interface Track {
+  id: string;
+  title: string;
+  number: string;
+  length?: number;
+}
 
-  try {
-    // 1. Get the 'official' Release for this Release Group (usually the earliest one)
-    // We prefer releases from 'US' or 'GB' but take first available if not
-    const releasesRes = await fetch(
-      `${MB_BASE_URL}/release-group/${albumId}?inc=releases&fmt=json`,
-      {
-        headers: { "User-Agent": MB_USER_AGENT, Accept: "application/json" },
-        next: { revalidate: 3600 },
-      },
-    );
-    const releasesData = await releasesRes.json();
+interface Release {
+  id: string;
+  date?: string;
+}
 
-    // Simple heuristic: pick the oldest release to represent the "original" album
-    const release = releasesData.releases?.sort((a: any, b: any) =>
-      (a.date || "9999").localeCompare(b.date || "9999"),
-    )[0];
+interface Media {
+  tracks?: Track[];
+}
 
-    if (!release) return NextResponse.json({ tracks: [] });
+async function fetchTracks(albumId: string) {
+  // 1. Get releases for this Release Group
+  const releasesRes = await fetch(
+    `${MB_BASE_URL}/release-group/${albumId}?inc=releases&fmt=json`,
+    {
+      headers: { "User-Agent": MB_USER_AGENT, Accept: "application/json" },
+      next: { revalidate: 3600 },
+    },
+  );
+  const releasesData = await releasesRes.json();
 
-    // 2. Fetch tracks for that specific Release
-    // inc=recordings gives us the tracklist
-    const tracksRes = await fetch(
-      `${MB_BASE_URL}/release/${release.id}?inc=recordings&fmt=json`,
-      {
-        headers: { "User-Agent": MB_USER_AGENT, Accept: "application/json" },
-        next: { revalidate: 3600 },
-      },
-    );
-    const tracksData = await tracksRes.json();
+  // Pick oldest release
+  const release = (releasesData.releases as Release[])?.sort((a, b) =>
+    (a.date || "9999").localeCompare(b.date || "9999"),
+  )[0];
 
-    // Flatten media (CDs/Vinyls/Sides) into one list
-    const tracks =
-      tracksData.media
-        ?.flatMap((m: any) => m.tracks)
-        .map((t: any) => ({
-          id: t.id,
-          title: t.title,
-          number: t.number,
-          length: t.length,
-        })) || [];
-
-    return NextResponse.json({
-      id: albumId,
-      title: releasesData.title,
-      tracks,
-    });
-  } catch (e) {
-    console.error(e);
-    return NextResponse.json({ tracks: [] });
+  if (!release) {
+    return { id: albumId, title: releasesData.title, tracks: [] };
   }
+
+  // 2. Fetch tracks for that release
+  const tracksRes = await fetch(
+    `${MB_BASE_URL}/release/${release.id}?inc=recordings&fmt=json`,
+    {
+      headers: { "User-Agent": MB_USER_AGENT, Accept: "application/json" },
+      next: { revalidate: 3600 },
+    },
+  );
+  const tracksData = await tracksRes.json();
+
+  // Flatten media into one list
+  const tracks: Track[] =
+    tracksData.media
+      ?.flatMap((m: Media) => m.tracks || [])
+      .map((t: Track) => ({
+        id: t.id,
+        title: t.title,
+        number: t.number,
+        length: t.length,
+      })) || [];
+
+  return {
+    id: albumId,
+    title: releasesData.title,
+    tracks,
+  };
+}
+
+export async function GET(request: NextRequest) {
+  const albumId = request.nextUrl.searchParams.get("albumId");
+
+  if (!albumId) {
+    return successResponse({ tracks: [] }, "album");
+  }
+
+  return handleApiRequest(
+    () => fetchTracks(albumId),
+    "Failed to fetch tracks",
+    "album",
+  );
 }

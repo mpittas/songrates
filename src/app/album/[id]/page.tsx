@@ -6,7 +6,7 @@ import OptimizedImage from "@/components/OptimizedImage";
 import Link from "next/link";
 import { useRatings } from "@/hooks/useRatings";
 import { usePlayer } from "@/context/PlayerContext";
-import { formatTimeMs } from "@/lib/utils";
+import { formatTime } from "@/lib/utils";
 import { FaPlay, FaPause, FaSearch } from "react-icons/fa";
 import MySection from "@/components/MySection";
 import AlbumSkeleton from "@/components/AlbumSkeleton";
@@ -95,7 +95,7 @@ function TrackItem({
 
         <div className="flex items-center gap-4">
           <span className="text-[10px] text-neutral-600 font-mono hidden sm:block">
-            {formatTimeMs(track.length)}
+            {formatTime(track.length, "milliseconds")}
           </span>
           <div className="flex gap-1 shrink-0">
             {[1, 2, 3, 4, 5].map((star) => (
@@ -203,12 +203,12 @@ export default function AlbumPage() {
                 {album.artist?.name}
               </Link>
               <span className="text-neutral-600 font-mono text-xs">
-                {album.releaseDate?.split("-")[0]} · {album.tracks.length}{" "}
+                {album.releaseDate?.split("-")[0]} · {album.tracks?.length || 0}{" "}
                 tracks
               </span>
             </div>
 
-            {album.genres.length > 0 && (
+            {album.genres?.length > 0 && (
               <div className="flex flex-wrap gap-2 mt-4">
                 {album.genres.map((g) => (
                   <span

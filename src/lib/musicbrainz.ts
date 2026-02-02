@@ -7,7 +7,7 @@ const MB_BASE_URL = "https://musicbrainz.org/ws/2";
 import { Album, ArtistData, ArtistInfo, GroupedReleases } from "@/types/music";
 
 // Helpers
-function toThumbnailUrl(imageUrl: string, width: number = 250): string {
+export function toThumbnailUrl(imageUrl: string, width: number = 250): string {
   if (
     imageUrl.includes("commons.wikimedia.org") ||
     imageUrl.includes("upload.wikimedia.org")

@@ -1,25 +1,18 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { getArtistPopularity } from "@/lib/lastfm";
+import { handleApiRequest, errorResponse } from "@/lib/api-utils";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const artistName = searchParams.get("artistName");
 
   if (!artistName) {
-    return NextResponse.json(
-      { error: "Missing artistName parameter" },
-      { status: 400 },
-    );
+    return errorResponse("Missing artistName parameter", 400);
   }
 
-  try {
-    const scores = await getArtistPopularity(artistName);
-    return NextResponse.json(scores);
-  } catch (error) {
-    console.error("Last.fm proxy error:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch popularity data" },
-      { status: 500 },
-    );
-  }
+  return handleApiRequest(
+    () => getArtistPopularity(artistName),
+    "Failed to fetch popularity data",
+    "search",
+  );
 }

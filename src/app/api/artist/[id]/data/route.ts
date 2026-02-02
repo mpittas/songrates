@@ -1,23 +1,20 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { getArtistData } from "@/lib/musicbrainz";
+import { handleApiRequest, getRouteId } from "@/lib/api-utils";
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const { id } = await params;
+  const id = await getRouteId(params);
 
-  try {
-    const data = await getArtistData(id);
-    return NextResponse.json(data, {
-      headers: {
-        "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400",
-      },
-    });
-  } catch {
-    return NextResponse.json(
-      { error: "Failed to fetch artist" },
-      { status: 500 },
-    );
+  if (!id) {
+    return new Response("Missing artist ID", { status: 400 });
   }
+
+  return handleApiRequest(
+    () => getArtistData(id),
+    "Failed to fetch artist",
+    "artist",
+  );
 }

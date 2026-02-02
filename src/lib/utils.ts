@@ -10,26 +10,37 @@ export function cn(...classes: (string | undefined | null | false)[]) {
 }
 
 /**
- * Format seconds to MM:SS display format
- * @param seconds - Time in seconds
- * @returns Formatted time string (e.g., "3:45")
+ * Format time to MM:SS display format
+ * @param time - Time in seconds (number) or milliseconds (number), or undefined
+ * @param unit - Unit of the input time: 'seconds' or 'milliseconds'
+ * @returns Formatted time string (e.g., "3:45") or "-:--" if undefined/invalid
  */
-export function formatTimeSeconds(seconds: number): string {
-  const mins = Math.floor(seconds / 60);
-  const secs = Math.floor(seconds % 60);
+export function formatTime(
+  time?: number | null,
+  unit: "seconds" | "milliseconds" = "seconds",
+): string {
+  if (time === undefined || time === null || time < 0) return "-:--";
+
+  const totalSeconds =
+    unit === "milliseconds" ? Math.floor(time / 1000) : Math.floor(time);
+  const mins = Math.floor(totalSeconds / 60);
+  const secs = totalSeconds % 60;
+
   return `${mins}:${secs.toString().padStart(2, "0")}`;
 }
 
 /**
- * Format milliseconds to MM:SS display format
- * @param ms - Time in milliseconds (optional)
- * @returns Formatted time string (e.g., "3:45") or "-:--" if undefined
+ * @deprecated Use formatTime(seconds, 'seconds') instead
+ */
+export function formatTimeSeconds(seconds: number): string {
+  return formatTime(seconds, "seconds");
+}
+
+/**
+ * @deprecated Use formatTime(ms, 'milliseconds') instead
  */
 export function formatTimeMs(ms?: number): string {
-  if (!ms) return "-:--";
-  const minutes = Math.floor(ms / 60000);
-  const seconds = Math.floor((ms % 60000) / 1000);
-  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+  return formatTime(ms, "milliseconds");
 }
 
 /**

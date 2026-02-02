@@ -11,7 +11,7 @@ import {
 } from "react";
 
 import { Track } from "@/types/music";
-import { PlayerContextType } from "@/types/player";
+import { PlayerContextType, YouTubePlayer } from "@/types/player";
 
 const PlayerContext = createContext<PlayerContextType | null>(null);
 
@@ -24,10 +24,10 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const [duration, setDuration] = useState(0);
   const [buffered, setBuffered] = useState(0);
 
-  const playerRef = useRef<any>(null);
+  const playerRef = useRef<YouTubePlayer | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  const setPlayerRef = useCallback((player: any) => {
+  const setPlayerRef = useCallback((player: YouTubePlayer | null) => {
     playerRef.current = player;
   }, []);
 
@@ -103,9 +103,9 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
             setIsPlaying(true);
           }
         }
-      } catch (e: any) {
+      } catch (e: unknown) {
         // Ignore abort errors
-        if (e.name !== "AbortError") {
+        if (e instanceof Error && e.name !== "AbortError") {
           console.error("Failed to search YouTube:", e);
         }
       }

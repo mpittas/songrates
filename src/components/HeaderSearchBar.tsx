@@ -58,7 +58,7 @@ export default function HeaderSearchBar() {
 
   return (
     <div ref={containerRef} className="w-full max-w-md relative">
-      <form onSubmit={handleSearch} className="w-full">
+      <form onSubmit={handleSearch} className="w-full" aria-label="Search artists">
         <SearchInput
           value={query}
           onChange={setQuery}

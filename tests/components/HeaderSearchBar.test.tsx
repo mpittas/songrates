@@ -61,12 +61,8 @@ describe("HeaderSearchBar", () => {
 
     render(<HeaderSearchBar />);
 
-    const form =
-      screen.queryByRole("form") ||
-      screen.getByPlaceholderText("Search artists...").closest("form");
-    if (form) {
-      fireEvent.submit(form);
-    }
+    const form = screen.getByLabelText("Search artists");
+    fireEvent.submit(form);
 
     expect(mockPush).toHaveBeenCalledWith("/?q=test%20query");
   });
@@ -85,12 +81,8 @@ describe("HeaderSearchBar", () => {
 
     render(<HeaderSearchBar />);
 
-    const form = screen
-      .getByPlaceholderText("Search artists...")
-      .closest("form");
-    if (form) {
-      fireEvent.submit(form);
-    }
+    const form = screen.getByLabelText("Search artists");
+    fireEvent.submit(form);
 
     expect(mockPush).not.toHaveBeenCalled();
   });
