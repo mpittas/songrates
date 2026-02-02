@@ -7,7 +7,7 @@ import Link from "next/link";
 import { useRatings } from "@/hooks/useRatings";
 import { usePlayer } from "@/context/PlayerContext";
 import { formatTimeMs } from "@/lib/utils";
-import { FaPlay, FaPause } from "react-icons/fa";
+import { FaPlay, FaPause, FaSearch } from "react-icons/fa";
 import MySection from "@/components/MySection";
 import AlbumSkeleton from "@/components/AlbumSkeleton";
 
@@ -136,6 +136,7 @@ export default function AlbumPage() {
   const { id } = useParams();
   const [album, setAlbum] = useState<AlbumInfo | null>(null);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     if (!id) return;
@@ -165,6 +166,10 @@ export default function AlbumPage() {
   }
 
   const imageUrl = `https://coverartarchive.org/release-group/${album.id}/front-250`;
+
+  const filteredTracks = album.tracks.filter((track) =>
+    track.title.toLowerCase().includes(searchQuery.toLowerCase()),
+  );
 
   return (
     <main className="min-h-screen bg-[#050507] text-neutral-100">
@@ -260,13 +265,25 @@ export default function AlbumPage() {
         {/* Tracklist Section */}
         <div className="w-full">
           <div className="border border-[#1a1a1f] bg-[#0a0a0d]/30 overflow-hidden">
-            <div className="px-4 py-3 border-b border-[#1a1a1f] flex justify-between items-end">
+            <div className="px-4 py-3 border-b border-[#1a1a1f] flex justify-between items-center group/search">
               <h3 className="text-neutral-600 font-mono tracking-wide text-xs uppercase">
                 tracklist_
               </h3>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none text-neutral-600 group-focus-within/search:text-[#00f0ff] transition-colors">
+                  <FaSearch size={10} />
+                </div>
+                <input
+                  type="text"
+                  placeholder="search tracks..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="bg-[#0a0a0d] border border-[#1a1a1f] text-neutral-200 text-[10px] font-mono rounded-full py-1 pl-7 pr-3 focus:outline-none focus:border-[#00f0ff]/50 w-32 focus:w-48 transition-all"
+                />
+              </div>
             </div>
             <div>
-              {album.tracks.map((track) => (
+              {filteredTracks.map((track) => (
                 <TrackItem
                   key={track.id}
                   track={track}
