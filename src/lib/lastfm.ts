@@ -9,7 +9,9 @@ export async function getArtistPopularity(
 ): Promise<PopularityResponse> {
   const apiKey = process.env.LASTFM_API_KEY;
   if (!apiKey) {
-    console.error("Missing LASTFM_API_KEY environment variable");
+    console.error(
+      "Missing LASTFM_API_KEY environment variable. Popularity sorting will not work.",
+    );
     return {};
   }
 

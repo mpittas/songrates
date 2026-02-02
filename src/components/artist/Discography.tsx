@@ -136,10 +136,10 @@ export default function Discography({
       .catch(() => setLoading(false));
   }, [artistId, initialReleases]);
 
-  // Fetch popularity when sort is set to popularity
+  // Fetch popularity in the background after mount (delayed)
   useEffect(() => {
-    if (sortBy !== "popularity") return;
     if (hasFetchedPopularity) return; // Already fetched for this artist
+    if (!artistName) return;
 
     setIsLoadingPopularity(true);
 
@@ -156,7 +156,7 @@ export default function Discography({
       })
       .catch((err) => console.error("Error fetching popularity:", err))
       .finally(() => setIsLoadingPopularity(false));
-  }, [sortBy, artistName, hasFetchedPopularity]);
+  }, [artistName, hasFetchedPopularity]);
 
   const sortReleases = (list: Release[]) => {
     // If not popularity, we assume list is passed in default order (Newest/Oldest/etc)

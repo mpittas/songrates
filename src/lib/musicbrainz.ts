@@ -179,7 +179,12 @@ export async function getOtherReleases(
         next: { revalidate: 3600 },
       });
 
-      if (!res.ok) throw new Error("MB API Error");
+      if (!res.ok) {
+        console.error(
+          `MB API Error: ${res.status} ${res.statusText} for URL: ${url}`,
+        );
+        throw new Error(`MB API Error: ${res.status} ${res.statusText}`);
+      }
       const data = await res.json();
 
       const pageGroups = data["release-groups"] || [];
