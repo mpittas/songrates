@@ -1,6 +1,6 @@
 "use client";
 
-import { createClient } from "@/utils/supabase/client";
+import { supabase } from "@/lib/supabaseClient";
 import { useEffect, useState } from "react";
 
 export default function TestSupabase() {
@@ -13,7 +13,6 @@ export default function TestSupabase() {
   useEffect(() => {
     async function testConnection() {
       try {
-        const supabase = createClient();
         setProjectUrl(process.env.NEXT_PUBLIC_SUPABASE_URL || "Not Set");
 
         // Try to fetch something generic (auth settings or similar)
