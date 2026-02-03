@@ -9,8 +9,11 @@ interface HeaderProps {
   showSearch?: boolean;
 }
 
+import { useAuth } from "@/context/AuthContext";
+
 export default function Header({ showSearch }: HeaderProps) {
   const pathname = usePathname();
+  const { user, signOut, loading } = useAuth();
   const isHomepage = pathname === "/";
 
   // Use the prop if provided, otherwise default to hiding on homepage
@@ -47,13 +50,43 @@ export default function Header({ showSearch }: HeaderProps) {
             >
               charts
             </Link>
-            <span className="h-3 w-px bg-neutral-100"></span>
-            <Link
-              href="#"
-              className="font-mono text-xs text-neutral-100 transition-colors hover:text-neutral-300"
-            >
-              profile
-            </Link>
+            <span className="h-3 w-px bg-neutral-100/20"></span>
+
+            {!loading && (
+              <>
+                {user ? (
+                  <>
+                    <Link
+                      href="/profile"
+                      className="font-mono text-xs text-neutral-100 transition-colors hover:text-[#00f0ff]"
+                    >
+                      profile
+                    </Link>
+                    <button
+                      onClick={() => signOut()}
+                      className="font-mono text-xs text-neutral-400 transition-colors hover:text-red-400 cursor-pointer"
+                    >
+                      logout
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <Link
+                      href="/login"
+                      className="font-mono text-xs text-neutral-100 transition-colors hover:text-[#00f0ff]"
+                    >
+                      login
+                    </Link>
+                    <Link
+                      href="/login"
+                      className="font-mono text-xs border border-white/10 rounded-full px-4 py-1.5 text-neutral-100 transition-all hover:bg-white hover:text-black hover:border-white"
+                    >
+                      sign_up
+                    </Link>
+                  </>
+                )}
+              </>
+            )}
           </nav>
         </div>
       </MySection>
