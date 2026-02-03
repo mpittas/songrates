@@ -12,9 +12,11 @@ export interface Track {
 export interface Album {
   id: string;
   title: string;
+  artistName?: string;
   releaseDate?: string;
   wikipediaUrl?: string;
   wikidataId?: string;
+  rating?: number | null;
 }
 
 export interface TrackInfo extends Track {
@@ -67,4 +69,21 @@ export interface Release {
 
 export interface GroupedReleases {
   [type: string]: Release[];
+}
+
+export interface AlbumContext {
+  albumId: string;
+  title: string;
+  artistName: string;
+  releaseDate?: string;
+  totalTracks: number;
+}
+
+export interface RatedAlbumData {
+  id: string;
+  title: string;
+  artistName: string;
+  releaseDate?: string;
+  totalTracks: number;
+  ratedTrackIds: string[];
 }

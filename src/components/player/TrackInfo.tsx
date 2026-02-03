@@ -9,7 +9,7 @@ export default function TrackInfo({ currentTrack }: TrackInfoProps) {
     <div className="flex items-center gap-4 min-w-[200px] w-1/4">
       {/* Album Art */}
       <Link
-        href={currentTrack.artistId ? `/artist/${currentTrack.artistId}` : "#"}
+        href={currentTrack.albumId ? `/album/${currentTrack.albumId}` : "#"}
         className="w-10 h-10 relative shrink-0 border border-[#1a1a1f] hover:border-[#00f0ff] transition-colors overflow-hidden group/image"
       >
         <OptimizedImage

@@ -12,7 +12,7 @@ import MySection from "@/components/MySection";
 import AlbumSkeleton from "@/components/AlbumSkeleton";
 import ColorRating from "@/components/ColorRating";
 
-import { AlbumInfo, TrackInfo } from "@/types/music";
+import { AlbumInfo, TrackInfo, AlbumContext } from "@/types/music";
 
 function TrackItem({
   track,
@@ -20,12 +20,14 @@ function TrackItem({
   artistId,
   albumId,
   albumImageUrl,
+  albumContext,
 }: {
   track: TrackInfo;
   artistName: string;
   artistId: string;
   albumId: string;
   albumImageUrl: string;
+  albumContext: AlbumContext;
 }) {
   const { ratings, setRating } = useRatings();
   const { currentTrack, isPlaying, isLoading, playTrack } = usePlayer();
@@ -100,7 +102,7 @@ function TrackItem({
           </span>
           <ColorRating
             rating={rating}
-            onRate={(val) => setRating(track.id, val)}
+            onRate={(val) => setRating(track.id, val, albumContext)}
           />
         </div>
       </div>
@@ -268,6 +270,13 @@ export default function AlbumPage() {
                   artistId={album.artist?.id || ""}
                   albumId={album.id}
                   albumImageUrl={imageUrl}
+                  albumContext={{
+                    albumId: album.id,
+                    title: album.title,
+                    artistName: album.artist?.name || "Unknown Artist",
+                    releaseDate: album.releaseDate,
+                    totalTracks: album.tracks?.length || 0,
+                  }}
                 />
               ))}
             </div>

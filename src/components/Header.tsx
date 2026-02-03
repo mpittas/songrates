@@ -43,16 +43,16 @@ export default function Header() {
 
           <nav className="flex items-center gap-8 flex-shrink-0">
             <Link
-              href="#"
-              className="font-mono text-xs text-neutral-100 transition-colors hover:text-neutral-300"
+              href="/rated"
+              className="font-mono text-xs text-neutral-100 transition-colors hover:text-[#00f0ff]"
             >
-              charts
+              rated
             </Link>
             <Link
               href="#"
               className="font-mono text-xs text-neutral-100 transition-colors hover:text-neutral-300"
             >
-              lists
+              charts
             </Link>
             <span className="h-3 w-px bg-neutral-100"></span>
             <Link

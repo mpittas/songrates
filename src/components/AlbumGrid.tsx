@@ -96,13 +96,26 @@ function AlbumCard({
             <FaWikipediaW size={10} />
           </div>
         )}
+
+        {album.rating && (
+          <div className="absolute bottom-0 right-0 bg-[#050507]/90 text-[#00f0ff] px-1.5 py-0.5 border-t border-l border-[#1a1a1f] font-mono text-[10px]">
+            {album.rating}
+          </div>
+        )}
       </div>
       <h3 className="text-neutral-300 text-xs truncate group-hover:text-[#00f0ff] transition-colors">
         {album.title}
       </h3>
-      <p className="text-neutral-500 text-[10px] font-mono mt-0.5">
-        {album.releaseDate?.split("-")[0] || "—"}
-      </p>
+      <div className="flex items-center gap-2 mt-0.5 text-xs">
+        {album.artistName && (
+          <p className="text-neutral-500 truncate max-w-[70%] group-hover:text-neutral-400 transition-colors">
+            {album.artistName}
+          </p>
+        )}
+        <p className="text-neutral-500">
+          {album.releaseDate?.split("-")[0] || "—"}
+        </p>
+      </div>
     </Link>
   );
 }
