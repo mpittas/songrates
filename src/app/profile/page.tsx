@@ -50,8 +50,14 @@ export default function ProfilePage() {
                 <div className="text-[10px] font-mono uppercase tracking-[0.3em] text-white/20">
                   identity_
                 </div>
-                <div className="text-lg font-light text-white/90 tracking-tight">
-                  {user.email}
+                <div className="flex flex-col gap-1">
+                  <div className="text-lg font-light text-white/90 tracking-tight">
+                    {user.user_metadata?.first_name}{" "}
+                    {user.user_metadata?.last_name}
+                  </div>
+                  <div className="text-sm font-mono text-white/40 tracking-tight">
+                    {user.email}
+                  </div>
                 </div>
               </div>
 
