@@ -22,7 +22,6 @@ function HomeContent() {
   // Close search results when clicking outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      // Check if search query exists
       if (!searchParams.get("q")) return;
 
       const target = e.target as HTMLElement;
