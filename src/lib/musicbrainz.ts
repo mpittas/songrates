@@ -307,7 +307,7 @@ export async function searchReleaseGroups(query: string): Promise<any[]> {
   if (cached) return cached;
 
   try {
-    const url = `${MB_BASE_URL}/release-group?query=${encodeURIComponent(query)}&limit=20&fmt=json`;
+    const url = `${MB_BASE_URL}/release-group?query=${encodeURIComponent(query)}&limit=100&fmt=json`;
     const res = await fetch(url, {
       headers: { "User-Agent": MB_USER_AGENT, Accept: "application/json" },
       next: { revalidate: 3600 },
