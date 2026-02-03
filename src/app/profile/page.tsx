@@ -44,7 +44,7 @@ export default function ProfilePage() {
               </p>
             </header>
 
-            {/* Content section */}
+            {/* Content sectin */}
             <div className="space-y-12">
               <div className="space-y-2">
                 <div className="text-[10px] font-mono uppercase tracking-[0.3em] text-white/20">
