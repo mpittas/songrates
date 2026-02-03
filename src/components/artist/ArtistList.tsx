@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import PrefetchLink from "@/components/PrefetchLink";
+import { createSlug } from "@/lib/utils";
 
 import { Artist } from "@/types/artist";
 
@@ -33,7 +34,7 @@ export default function ArtistList({ artists }: { artists: Artist[] }) {
       {artists.map((artist) => (
         <PrefetchLink
           key={artist.id}
-          href={`/artist/${artist.id}`}
+          href={`/artist/${createSlug(artist.name, artist.id)}`}
           artistId={artist.id}
           className="block group p-3 hover:bg-[#0f0f12] transition-colors"
         >

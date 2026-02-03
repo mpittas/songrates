@@ -1,5 +1,7 @@
 "use client";
 
+import { createSlug } from "@/lib/utils";
+
 import OptimizedImage from "@/components/OptimizedImage";
 import { useState } from "react";
 import Link from "next/link";
@@ -26,7 +28,7 @@ function AlbumCard({
   if (layout === "list") {
     return (
       <Link
-        href={`/album/${album.id}`}
+        href={`/album/${createSlug(album.title, album.id)}`}
         className="flex items-center gap-4 p-1.5 hover:bg-[#0a0a0d] border-b border-[#1a1a1f] last:border-0 group transition-colors"
       >
         <div className="relative w-8 h-8 shrink-0 border border-[#1a1a1f] overflow-hidden bg-[#0a0a0d]">
@@ -62,7 +64,10 @@ function AlbumCard({
   }
 
   return (
-    <Link href={`/album/${album.id}`} className="group block">
+    <Link
+      href={`/album/${createSlug(album.title, album.id)}`}
+      className="group block"
+    >
       <div className="aspect-square bg-[#0a0a0d] mb-2 overflow-hidden relative border border-[#1a1a1f] group-hover:border-[#00f0ff]/30 transition-colors">
         {!imageError ? (
           <OptimizedImage

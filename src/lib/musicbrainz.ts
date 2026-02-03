@@ -298,6 +298,103 @@ export async function searchArtists(query: string): Promise<any[]> {
   }
 }
 
+/**
+ * Search for albums (release-groups)
+ */
+export async function searchReleaseGroups(query: string): Promise<any[]> {
+  const cacheKey = `search-rg:${query}`;
+  const cached = searchCache.get(cacheKey);
+  if (cached) return cached;
+
+  try {
+    const url = `${MB_BASE_URL}/release-group?query=${encodeURIComponent(query)}&limit=20&fmt=json`;
+    const res = await fetch(url, {
+      headers: { "User-Agent": MB_USER_AGENT, Accept: "application/json" },
+      next: { revalidate: 3600 },
+    });
+
+    if (!res.ok) return [];
+    const data = await res.json();
+    const releaseGroups = data["release-groups"] || [];
+
+    searchCache.set(cacheKey, releaseGroups);
+    return releaseGroups;
+  } catch (e) {
+    console.error("Search RG error:", e);
+    return [];
+  }
+}
+
+import { parseSlug } from "@/lib/utils";
+
+/**
+ * Resolve an Artist ID from a slug (e.g. "adele-75a72702" -> full UUID)
+ */
+export async function resolveArtistId(slug: string): Promise<string | null> {
+  // 1. Check if it's already a full UUID
+  if (
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug)
+  ) {
+    return slug;
+  }
+
+  // 2. Parse slug
+  const { name, shortId } = parseSlug(slug);
+  if (!shortId || shortId.length < 8) {
+    // ID too short or missing, return slug as is (might fail later)
+    return slug;
+  }
+
+  // 3. Check cache for slug mapping
+  const cacheKey = `resolve-artist:${slug}`;
+  const cachedId = searchCache.get(cacheKey);
+  if (cachedId) return cachedId as string;
+
+  // 4. Search and match
+  // We search for the name
+  const artists = await searchArtists(name);
+
+  // Look for a match where the ID starts with shortId
+  const match = artists.find((a) => a.id.startsWith(shortId));
+
+  if (match) {
+    searchCache.set(cacheKey, match.id);
+    return match.id;
+  }
+
+  // If no strict match, but shortId looks like part of a UUID, we fail?
+  // Or do we return the shortId + wildcard? No, the API needs full UUID.
+  return null;
+}
+
+/**
+ * Resolve an Album ID from a slug
+ */
+export async function resolveAlbumId(slug: string): Promise<string | null> {
+  if (
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug)
+  ) {
+    return slug;
+  }
+
+  const { name, shortId } = parseSlug(slug);
+  if (!shortId || shortId.length < 8) return slug;
+
+  const cacheKey = `resolve-album:${slug}`;
+  const cachedId = searchCache.get(cacheKey);
+  if (cachedId) return cachedId as string;
+
+  const rgs = await searchReleaseGroups(name);
+  const match = rgs.find((rg: any) => rg.id.startsWith(shortId));
+
+  if (match) {
+    searchCache.set(cacheKey, match.id);
+    return match.id;
+  }
+
+  return null;
+}
+
 async function fetchMBData(artistId: string): Promise<{
   officialSite: string | null;
   name?: string;

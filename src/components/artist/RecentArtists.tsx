@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { getArtistHistory } from "@/lib/history";
 import { ArtistVisit } from "@/types/artist";
-import { formatTimeAgo } from "@/lib/utils";
+import { formatTimeAgo, createSlug } from "@/lib/utils";
 import PrefetchLink from "@/components/PrefetchLink";
 
 export default function RecentArtists() {
@@ -38,7 +38,7 @@ export default function RecentArtists() {
         {history.map((artist) => (
           <PrefetchLink
             key={artist.id}
-            href={`/artist/${artist.id}`}
+            href={`/artist/${createSlug(artist.name, artist.id)}`}
             artistId={artist.id}
             className="flex items-center justify-between p-2 -mx-2 group hover:bg-[#0a0a0d] transition-colors"
           >

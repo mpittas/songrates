@@ -44,9 +44,8 @@ export function formatTimeMs(ms?: number): string {
 }
 
 /**
- * Format a relative time ago string from a timestamp
- * @param timestamp - Unix timestamp in milliseconds
- * @returns Human-readable relative time (e.g., "2h", "5m", "3d")
+ * @param timestamp
+ * @returns
  */
 export function formatTimeAgo(timestamp: number): string {
   const now = Date.now();
@@ -57,8 +56,40 @@ export function formatTimeAgo(timestamp: number): string {
   const hours = Math.floor(minutes / 60);
   const days = Math.floor(hours / 24);
 
-  if (minutes < 1) return "now";
   if (minutes < 60) return `${minutes}m`;
   if (hours < 24) return `${hours}h`;
   return `${days}d`;
+}
+
+/**
+ * Create a slug from a name and ID
+ * @param name - The name to slugify (e.g., "The Beatles")
+ * @param id - The ID to append (e.g., "uuid")
+ * @returns A slug string with short ID (e.g., "the-beatles-75a72702")
+ */
+export function createSlug(name: string, id: string): string {
+  if (!name) return id;
+  const slug = name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-") // Replace non-alphanumeric chars with hyphens
+    .replace(/^-+|-+$/g, ""); // Remove leading/trailing hyphens
+
+  // Use first 8 chars of ID for cleaner URLs
+  const shortId = id.split("-")[0];
+  return `${slug}-${shortId}`;
+}
+
+/**
+ * Parse a slug into name and short ID parts
+ * @param slug - The slug string (e.g., "the-beatles-75a72702")
+ * @returns Object with name and shortId, or just shortId if name parsing fails
+ */
+export function parseSlug(slug: string): { name: string; shortId: string } {
+  if (!slug) return { name: "", shortId: "" };
+
+  const parts = slug.split("-");
+  const shortId = parts.pop() || "";
+  const name = parts.join(" ");
+
+  return { name, shortId };
 }

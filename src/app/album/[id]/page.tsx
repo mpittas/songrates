@@ -6,13 +6,14 @@ import OptimizedImage from "@/components/OptimizedImage";
 import Link from "next/link";
 import { useRatings } from "@/hooks/useRatings";
 import { usePlayer } from "@/context/PlayerContext";
-import { formatTime } from "@/lib/utils";
+import { formatTime, createSlug } from "@/lib/utils";
 import { FaPlay, FaPause, FaSearch } from "react-icons/fa";
 import MySection from "@/components/MySection";
 import AlbumSkeleton from "@/components/AlbumSkeleton";
 import ColorRating from "@/components/ColorRating";
 
 import { AlbumInfo, TrackInfo, AlbumContext } from "@/types/music";
+import { resolveAlbumId } from "@/lib/musicbrainz";
 
 function TrackItem({
   track,
@@ -82,7 +83,7 @@ function TrackItem({
                     <span key={a.id}>
                       {i === 0 ? "feat. " : ""}
                       <Link
-                        href={`/artist/${a.id}`}
+                        href={`/artist/${createSlug(a.name, a.id)}`}
                         className="hover:text-[#00f0ff] hover:underline transition-colors"
                         onClick={(e) => e.stopPropagation()}
                       >
@@ -111,25 +112,32 @@ function TrackItem({
 }
 
 export default function AlbumPage() {
-  const { id } = useParams();
+  const { id: slug } = useParams();
   const [album, setAlbum] = useState<AlbumInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
-    if (!id) return;
+    if (!slug) return;
 
-    fetch(`/api/musicbrainz/album-info?id=${id}`)
-      .then((res) => res.json())
-      .then((data) => {
+    // Resolve short ID to full ID
+    const resolve = async () => {
+      try {
+        const id = await resolveAlbumId(Array.isArray(slug) ? slug[0] : slug);
+        if (!id) throw new Error("ID not found");
+
+        const res = await fetch(`/api/musicbrainz/album-info?id=${id}`);
+        const data = await res.json();
         setAlbum(data);
-        setLoading(false);
-      })
-      .catch((err) => {
+      } catch (err) {
         console.error(err);
+      } finally {
         setLoading(false);
-      });
-  }, [id]);
+      }
+    };
+
+    resolve();
+  }, [slug]);
 
   if (loading) {
     return <AlbumSkeleton />;
@@ -178,7 +186,11 @@ export default function AlbumPage() {
 
               {/* Navigation */}
               <Link
-                href={`/artist/${album.artist?.id}`}
+                href={`/artist/${
+                  album.artist?.id
+                    ? createSlug(album.artist.name, album.artist.id)
+                    : ""
+                }`}
                 className="text-neutral-600 hover:text-[#00f0ff] transition-colors inline-block font-mono text-sm"
               >
                 ← back to artist
@@ -191,7 +203,11 @@ export default function AlbumPage() {
 
             <div className="flex flex-col gap-1">
               <Link
-                href={`/artist/${album.artist?.id}`}
+                href={`/artist/${
+                  album.artist?.id
+                    ? createSlug(album.artist.name, album.artist.id)
+                    : ""
+                }`}
                 className="text-lg text-neutral-500 hover:text-[#00f0ff] transition-colors"
               >
                 {album.artist?.name}
