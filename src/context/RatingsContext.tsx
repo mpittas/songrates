@@ -26,7 +26,9 @@ const RatingsContext = createContext<RatingsContextType | undefined>(undefined);
 
 export function RatingsProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
-  const supabase = createClient();
+  // Stabilize supabase client instance to prevent effect re-runs
+  const [supabase] = useState(() => createClient());
+
   const [ratings, setRatings] = useState<Record<string, number>>({});
   const [albumRatings, setAlbumRatings] = useState<
     Record<string, RatedAlbumData>
@@ -96,6 +98,7 @@ export function RatingsProvider({ children }: { children: React.ReactNode }) {
     };
 
     fetchData();
+    // Only fetch when user changes, supabase is now stable
   }, [user, supabase]);
 
   const setRating = useCallback(
