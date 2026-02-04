@@ -1,7 +1,7 @@
 "use client";
 
 import { usePlayer } from "@/context/PlayerContext";
-import { FaTimes, FaYoutube } from "react-icons/fa";
+import { FaTimes, FaYoutube, FaList } from "react-icons/fa";
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { YouTubeProps, YouTubeEvent } from "react-youtube";
 import { YouTubePlayer } from "@/types/player";
@@ -11,6 +11,7 @@ import PlaybackControls from "./player/PlaybackControls";
 import ProgressBar from "./player/ProgressBar";
 import VolumeControl from "./player/VolumeControl";
 import VideoPlayer from "./player/VideoPlayer";
+import AlbumTracklistPopover from "./player/AlbumTracklistPopover";
 
 export default function MiniPlayer() {
   const {
@@ -31,6 +32,7 @@ export default function MiniPlayer() {
   } = usePlayer();
   const playerRef = useRef<YouTubePlayer | null>(null);
   const [showVideo, setShowVideo] = useState(false);
+  const [showTracklist, setShowTracklist] = useState(false);
 
   const [volume, setVolume] = useState(100);
   const [isMuted, setIsMuted] = useState(false);
@@ -191,6 +193,29 @@ export default function MiniPlayer() {
                */}
             </div>
 
+            {/* Tracklist Popover Trigger - Desktop Left of Controls */}
+            <div
+              className="hidden md:block relative mr-4"
+              onMouseEnter={() => setShowTracklist(true)}
+              onMouseLeave={() => setShowTracklist(false)}
+            >
+              <button
+                className={`p-2 text-neutral-500 hover:text-[#00f0ff] transition-colors ${
+                  showTracklist ? "text-[#00f0ff]" : ""
+                }`}
+              >
+                <FaList size={14} />
+              </button>
+
+              <AlbumTracklistPopover
+                albumId={currentTrack?.albumId || ""}
+                currentTrackId={currentTrack?.id || ""}
+                isVisible={showTracklist && !!currentTrack?.albumId}
+                onMouseEnter={() => setShowTracklist(true)}
+                onMouseLeave={() => setShowTracklist(false)}
+              />
+            </div>
+
             <PlaybackControls
               isPlaying={isPlaying}
               isLoading={isLoading}
@@ -230,6 +255,9 @@ export default function MiniPlayer() {
             >
               {showVideo ? "hide video" : "show video"}
             </button>
+
+            {/* Tracklist Popover Trigger */}
+
             <a
               href={
                 currentTrack
