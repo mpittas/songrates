@@ -136,7 +136,7 @@ export default function RatedAlbumsPage() {
   return (
     <main className="min-h-screen bg-[#050507] text-neutral-100">
       <MySection className="pt-6 pb-24">
-        <div className="flex flex-col gap-8 mb-12 border-b border-[#1a1a1f] pb-8">
+        <div className="flex flex-col gap-8 pb-8">
           <div>
             <h1 className="text-3xl font-light tracking-tight text-neutral-200">
               Rated Albums

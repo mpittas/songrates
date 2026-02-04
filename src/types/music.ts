@@ -10,6 +10,7 @@ export interface Track {
   totalTracks?: number;
   length?: number;
   number?: string;
+  artists?: { id: string; name: string }[];
 }
 
 export interface Album {

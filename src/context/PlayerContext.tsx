@@ -80,7 +80,11 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       setBuffered(0);
 
       try {
-        const searchQuery = `${track.artistName} ${track.title} audio`;
+        let searchQuery = `${track.artistName} ${track.title} audio`;
+        if (track.artists && track.artists.length > 0) {
+          const artistNames = track.artists.map((a) => a.name).join(" ");
+          searchQuery = `${artistNames} ${track.title} audio`;
+        }
         const res = await fetch(
           `/api/youtube-search?q=${encodeURIComponent(searchQuery)}`,
           { signal: abortControllerRef.current.signal },

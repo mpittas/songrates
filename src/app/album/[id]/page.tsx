@@ -60,6 +60,7 @@ function TrackItem({
                 albumTitle: albumContext.title,
                 releaseDate: albumContext.releaseDate,
                 totalTracks: albumContext.totalTracks,
+                artists: track.artists,
               })
             }
             className={`flex items-center justify-center w-6 h-6 border shrink-0 transition-all ${
