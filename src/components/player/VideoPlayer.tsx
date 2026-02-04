@@ -12,14 +12,12 @@ export default function VideoPlayer({
   onStateChange,
   opts,
 }: VideoPlayerProps) {
-  if (!videoId) return null;
-
   return (
     <div
       className={`fixed z-50 shadow-2xl border border-[#1a1a1f] bg-black transition-all duration-300 ${
-        showVideo
-          ? "bottom-24 right-4 opacity-100"
-          : "bottom-[-500px] right-4 opacity-0 pointer-events-none"
+        showVideo && videoId
+          ? "bottom-24 right-4 opacity-100 scale-100"
+          : "bottom-[-500px] right-4 opacity-0 scale-95 pointer-events-none"
       }`}
     >
       {/* Video Header */}

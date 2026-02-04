@@ -157,25 +157,29 @@ export default function MiniPlayer() {
     [isPlaying],
   );
 
-  if (!currentTrack) return null;
+  // No early return here to keep the YouTube instance mounted in VideoPlayer
 
   return (
     <>
       <VideoPlayer
         videoId={videoId || ""}
-        title={currentTrack.title}
-        showVideo={showVideo}
+        title={currentTrack?.title || "No track selected"}
+        showVideo={showVideo && !!currentTrack}
         onClose={() => setShowVideo(false)}
         onReady={onPlayerReady}
         onStateChange={onStateChange}
         opts={opts}
       />
 
-      <div className="fixed bottom-0 left-0 right-0 z-[60] border-t border-[#1a1a1f] bg-[#050507]/95 backdrop-blur-sm safe-area-bottom">
+      <div
+        className={`fixed bottom-0 left-0 right-0 z-[60] border-t border-[#1a1a1f] bg-[#050507]/95 backdrop-blur-sm safe-area-bottom transition-transform duration-500 ease-in-out ${
+          currentTrack ? "translate-y-0" : "translate-y-full"
+        }`}
+      >
         <div className="flex items-center justify-between gap-2 md:gap-6 px-4 py-3 w-full">
           {/* Track Info - Left */}
           <div className="flex-shrink-1 min-w-0 max-w-[40%] md:max-w-xs">
-            <TrackInfo currentTrack={currentTrack} />
+            {currentTrack && <TrackInfo currentTrack={currentTrack} />}
           </div>
 
           {/* Controls - Center (Mobile: Play/Pause only, Desktop: Full controls + bar) */}
@@ -227,9 +231,13 @@ export default function MiniPlayer() {
               {showVideo ? "hide video" : "show video"}
             </button>
             <a
-              href={`https://www.youtube.com/results?search_query=${encodeURIComponent(
-                currentTrack.artistName + " " + currentTrack.title,
-              )}`}
+              href={
+                currentTrack
+                  ? `https://www.youtube.com/results?search_query=${encodeURIComponent(
+                      currentTrack.artistName + " " + currentTrack.title,
+                    )}`
+                  : "#"
+              }
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => pausePlayback()}

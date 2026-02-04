@@ -28,6 +28,12 @@ export default function RootLayout({
   return (
     <html lang="en" className="bg-[#050507]">
       <head>
+        <link rel="preconnect" href="https://www.youtube.com" />
+        <link rel="dns-prefetch" href="https://www.youtube.com" />
+        <link rel="preconnect" href="https://s.ytimg.com" />
+        <link rel="dns-prefetch" href="https://s.ytimg.com" />
+        <link rel="preconnect" href="https://www.google.com" />
+        <link rel="dns-prefetch" href="https://www.google.com" />
         <link rel="preconnect" href="https://coverartarchive.org" />
         <link rel="dns-prefetch" href="https://coverartarchive.org" />
         <link rel="preconnect" href="https://upload.wikimedia.org" />

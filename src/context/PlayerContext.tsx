@@ -117,7 +117,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
   const stopPlayback = () => {
     setCurrentTrack(null);
-    setVideoId(null);
+    // Keep videoId to avoid unmounting the player instance
     setIsPlaying(false);
     setCurrentTime(0);
     setDuration(0);
