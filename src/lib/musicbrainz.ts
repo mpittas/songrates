@@ -6,14 +6,17 @@ const MB_BASE_URL = "https://musicbrainz.org/ws/2";
 import { Album, ArtistData, ArtistInfo, GroupedReleases } from "@/types/music";
 
 export function toThumbnailUrl(imageUrl: string, width: number = 250): string {
+  // Ensure we are using https
+  let url = imageUrl.replace(/^http:\/\//i, "https://");
+
   if (
-    imageUrl.includes("commons.wikimedia.org") ||
-    imageUrl.includes("upload.wikimedia.org")
+    url.includes("commons.wikimedia.org") ||
+    url.includes("upload.wikimedia.org")
   ) {
-    const separator = imageUrl.includes("?") ? "&" : "?";
-    return `${imageUrl}${separator}width=${width}`;
+    const separator = url.includes("?") ? "&" : "?";
+    return `${url}${separator}width=${width}`;
   }
-  return imageUrl;
+  return url;
 }
 
 export async function getArtistData(artistId: string): Promise<{
@@ -460,7 +463,9 @@ async function fetchWikidataInfo(
     return {
       image: binding.image?.value ? toThumbnailUrl(binding.image.value) : null,
       description: binding.artistDescription?.value || null,
-      wikipedia: binding.wikipediaLink?.value || null,
+      wikipedia: binding.wikipediaLink?.value
+        ? binding.wikipediaLink.value.replace(/^http:\/\//i, "https://")
+        : null,
       twitter: binding.twitter?.value
         ? `https://twitter.com/${binding.twitter.value}`
         : null,
