@@ -7,11 +7,18 @@ import Link from "next/link";
 import { useRatings } from "@/hooks/useRatings";
 import { usePlayer } from "@/context/PlayerContext";
 import { formatTime, createSlug } from "@/lib/utils";
-import { FaPlay, FaPause, FaSearch } from "react-icons/fa";
 import MySection from "@/components/MySection";
 import AlbumSkeleton from "@/components/AlbumSkeleton";
 import ColorRating from "@/components/ColorRating";
 import SearchInput from "@/components/search/SearchInput";
+import Button from "@/components/ui/Button";
+import {
+  FaPlay,
+  FaPause,
+  FaSearch,
+  FaArrowLeft,
+  FaWikipediaW,
+} from "react-icons/fa";
 
 import { AlbumInfo, TrackInfo, AlbumContext } from "@/types/music";
 import { resolveAlbumId } from "@/lib/musicbrainz";
@@ -187,16 +194,19 @@ export default function AlbumPage() {
               </div>
 
               {/* Navigation */}
-              <Link
+              <Button
                 href={`/artist/${
                   album.artist?.id
                     ? createSlug(album.artist.name, album.artist.id)
                     : ""
                 }`}
-                className="text-neutral-600 hover:text-[#00f0ff] transition-colors inline-block font-mono text-sm"
+                iconLeft={<FaArrowLeft size={10} />}
+                variant="ghost"
+                size="xs"
+                className="text-neutral-600 hover:text-[#00f0ff]"
               >
-                ← back to artist
-              </Link>
+                back to artist
+              </Button>
             </div>
 
             <h1 className="text-3xl md:text-5xl font-light tracking-tight text-neutral-200 leading-tight">
@@ -246,14 +256,16 @@ export default function AlbumPage() {
                 </div>
               )}
               {album.wikipediaUrl && (
-                <a
+                <Button
                   href={album.wikipediaUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="bg-transparent border border-[#1a1a1f] text-neutral-500 px-4 py-2 text-xs font-mono hover:border-[#00f0ff] hover:text-[#00f0ff] transition-colors"
+                  isExternal
+                  iconRight={<FaWikipediaW size={10} />}
+                  variant="border"
+                  size="sm"
+                  className="text-neutral-500 hover:border-[#00f0ff] hover:text-[#00f0ff]"
                 >
-                  wiki →
-                </a>
+                  wiki
+                </Button>
               )}
             </div>
           </div>

@@ -9,6 +9,8 @@ import Discography from "./Discography";
 import Link from "next/link";
 import { addToHistory } from "@/lib/history";
 import MySection from "@/components/MySection";
+import Button from "@/components/ui/Button";
+import { FaArrowLeft } from "react-icons/fa";
 // Types
 import {
   Album,
@@ -66,12 +68,15 @@ export default function ArtistPageContent({
       <MySection className="pt-8 pb-24">
         {/* Header */}
         <div className="flex flex-col md:flex-row items-center justify-between gap-4 pb-6">
-          <Link
+          <Button
             href="/"
-            className="px-4 py-2 border border-white/10 text-neutral-200 text-xs font-mono hover:bg-white hover:text-black transition-all self-start md:self-center"
+            iconLeft={<FaArrowLeft size={10} />}
+            variant="border"
+            size="sm"
+            className="self-start md:self-center"
           >
             Back
-          </Link>
+          </Button>
 
           <div className="flex items-center gap-2 w-full md:w-auto">
             <DropdownFilter
