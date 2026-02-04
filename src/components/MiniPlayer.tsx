@@ -171,11 +171,22 @@ export default function MiniPlayer() {
         opts={opts}
       />
 
-      <div className="fixed bottom-0 left-0 right-0 z-[60] border-t border-[#1a1a1f] bg-[#050507]/95 backdrop-blur-sm">
-        <div className="flex items-center justify-between gap-6 px-4 py-3 w-full">
-          <TrackInfo currentTrack={currentTrack} />
+      <div className="fixed bottom-0 left-0 right-0 z-[60] border-t border-[#1a1a1f] bg-[#050507]/95 backdrop-blur-sm safe-area-bottom">
+        <div className="flex items-center justify-between gap-2 md:gap-6 px-4 py-3 w-full">
+          {/* Track Info - Left */}
+          <div className="flex-shrink-1 min-w-0 max-w-[40%] md:max-w-xs">
+            <TrackInfo currentTrack={currentTrack} />
+          </div>
 
-          <div className="flex flex-1 items-center justify-center gap-6">
+          {/* Controls - Center (Mobile: Play/Pause only, Desktop: Full controls + bar) */}
+          <div className="flex flex-1 items-center justify-end md:justify-center gap-2 md:gap-6">
+            <div className="md:hidden">
+              {/* Mobile only simplified controls if needed, but PlaybackControls handles responsive inside? 
+                   Let's keep it simple: Show controls, but hide bar on very narrow screens if needed, 
+                   or actually, let's keep the bar but make it flexible.
+               */}
+            </div>
+
             <PlaybackControls
               isPlaying={isPlaying}
               isLoading={isLoading}
@@ -183,15 +194,18 @@ export default function MiniPlayer() {
               onTogglePlay={togglePlayPause}
             />
 
-            <ProgressBar
-              currentTime={currentTime}
-              duration={duration}
-              buffered={buffered}
-              onSeek={seekTo}
-            />
+            <div className="hidden md:block w-full max-w-lg">
+              <ProgressBar
+                currentTime={currentTime}
+                duration={duration}
+                buffered={buffered}
+                onSeek={seekTo}
+              />
+            </div>
           </div>
 
-          <div className="flex items-center gap-3 min-w-[200px] w-1/4 justify-end">
+          {/* Right Side - Volume & Extras (Hidden on Mobile) */}
+          <div className="hidden md:flex items-center gap-3 min-w-[200px] w-1/4 justify-end">
             <VolumeControl
               volume={volume}
               isMuted={isMuted}
@@ -208,6 +222,7 @@ export default function MiniPlayer() {
                   ? "border-[#00f0ff] text-[#00f0ff] bg-[#00f0ff]/10"
                   : "border-[#1a1a1f] text-neutral-600 hover:border-[#00f0ff]/50 hover:text-neutral-400"
               }`}
+              aria-label={showVideo ? "Hide video" : "Show video"}
             >
               {showVideo ? "hide video" : "show video"}
             </button>
@@ -220,16 +235,37 @@ export default function MiniPlayer() {
               onClick={() => pausePlayback()}
               className="text-neutral-600 hover:text-neutral-400 transition-colors"
               title="Open in YouTube"
+              aria-label="Open in YouTube"
             >
               <FaYoutube size={16} />
             </a>
             <button
               onClick={stopPlayback}
               className="text-neutral-500 hover:text-white transition-colors ml-2"
+              aria-label="Close player"
             >
               <FaTimes size={14} />
             </button>
           </div>
+
+          {/* Mobile Close Button (visible only on mobile) */}
+          <button
+            onClick={stopPlayback}
+            className="md:hidden text-neutral-500 hover:text-white transition-colors ml-2 p-2"
+            aria-label="Close player"
+          >
+            <FaTimes size={16} />
+          </button>
+        </div>
+
+        {/* Mobile Progress Bar absolute at top */}
+        <div className="md:hidden absolute top-0 left-0 right-0 h-[2px] w-full bg-[#1a1a1f]">
+          <div
+            className="h-full bg-[#00f0ff] transition-all duration-100 ease-linear"
+            style={{
+              width: `${duration > 0 ? (currentTime / duration) * 100 : 0}%`,
+            }}
+          />
         </div>
       </div>
     </>

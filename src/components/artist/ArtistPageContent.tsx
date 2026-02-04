@@ -64,18 +64,13 @@ export default function ArtistPageContent({
       <MySection className="pt-8 pb-24">
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-4">
-          <div className="flex items-baseline gap-6">
+          <div className="flex items-baseline gap-6 w-full">
             <Link
               href="/"
-              className="text-neutral-600 hover:text-[#00f0ff] transition-colors font-mono text-sm"
+              className="px-4 py-2 border border-white/10 text-neutral-200 text-xs font-mono hover:bg-white hover:text-black transition-all"
             >
-              ← back
+              Back
             </Link>
-            {artistName && (
-              <h1 className="text-3xl md:text-4xl font-light tracking-tight text-neutral-200">
-                {artistName}
-              </h1>
-            )}
           </div>
 
           <div className="flex flex-col md:flex-row items-end md:items-center gap-6">
@@ -93,7 +88,7 @@ export default function ArtistPageContent({
               />
             </div>
 
-            <div className="flex gap-4 text-xs text-neutral-600 font-mono">
+            <div className="flex items-center gap-4 text-xs text-neutral-600 font-mono whitespace-nowrap">
               <span>sort:</span>
               <button
                 onClick={() => setSortBy("newest")}

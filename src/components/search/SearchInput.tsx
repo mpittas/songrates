@@ -80,6 +80,7 @@ export default function SearchInput({
               ? "text-neutral-500 hover:text-white"
               : "text-neutral-600 hover:text-neutral-950"
           } ${isSmall ? "pr-3 pl-2" : "pr-5 pl-4"}`}
+          aria-label="Clear search"
         >
           <IoClose size={isSmall ? 16 : 20} />
         </button>

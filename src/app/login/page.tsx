@@ -106,7 +106,7 @@ export default function LoginPage() {
       </div>
 
       {/* Right Column: Form */}
-      <div className="flex flex-col justify-center p-12 bg-black relative w-[600px] mx-auto">
+      <div className="flex flex-col justify-center p-6 md:p-12 bg-black relative w-full max-w-[600px] mx-auto">
         <div className="mb-8">
           <h1 className="text-2xl text-white mb-2 tracking-tight">
             {isLogin ? "Welcome Back" : "Sign Up Account"}

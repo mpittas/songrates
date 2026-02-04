@@ -6,7 +6,7 @@ export default function TrackInfo({ currentTrack }: TrackInfoProps) {
   if (!currentTrack) return null;
 
   return (
-    <div className="flex items-center gap-4 min-w-[200px] w-1/4">
+    <div className="flex items-center gap-4 min-w-0 flex-1 md:flex-none md:w-1/4">
       {/* Album Art */}
       <Link
         href={currentTrack.albumId ? `/album/${currentTrack.albumId}` : "#"}

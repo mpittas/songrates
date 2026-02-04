@@ -19,7 +19,7 @@ export default function ProfilePage() {
     return (
       <MySection className="min-h-[calc(100vh-64px)] flex items-center justify-center">
         <div className="font-mono text-neutral-500 animate-pulse text-xs tracking-widest uppercase">
-          initializing_
+          Initializing...
         </div>
       </MySection>
     );
@@ -36,10 +36,10 @@ export default function ProfilePage() {
           <div className="space-y-10">
             {/* Header section with very minimalistic typography */}
             <header className="space-y-4">
-              <h1 className="text-6xl font-light tracking-tighter text-white">
+              <h1 className="text-4xl md:text-6xl font-light tracking-tighter text-white">
                 Profile
               </h1>
-              <p className="text-white/40 text-sm font-mono tracking-widest uppercase">
+              <p className="text-white/40 text-xs md:text-sm font-mono tracking-widest uppercase">
                 Account Information / System Settings
               </p>
             </header>
@@ -48,7 +48,7 @@ export default function ProfilePage() {
             <div className="space-y-12">
               <div className="space-y-2">
                 <div className="text-[10px] font-mono uppercase tracking-[0.3em] text-white/20">
-                  identity_
+                  Identity
                 </div>
                 <div className="flex flex-col gap-1">
                   <div className="text-lg font-light text-white/90 tracking-tight">

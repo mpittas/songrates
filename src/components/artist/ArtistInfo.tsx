@@ -1,193 +1,168 @@
-"use client";
-
-import OptimizedImage from "@/components/OptimizedImage";
-import { useEffect, useState } from "react";
+import { ArtistInfo as ArtistInfoType } from "@/types/music";
 import {
-  FaFacebook,
-  FaGlobe,
-  FaInstagram,
-  FaSpotify,
   FaTwitter,
-  FaWikipediaW,
+  FaFacebook,
+  FaInstagram,
   FaYoutube,
+  FaWikipediaW,
+  FaSpotify,
+  FaGlobe,
 } from "react-icons/fa";
 
-interface ArtistInfoProps {
+interface Props {
   artistId: string;
   artistName: string;
-  data?: ArtistInfoData | null;
+  data: ArtistInfoType;
   disableFetch?: boolean;
-}
-
-interface ArtistInfoData {
-  image: string | null;
-  description: string | null;
-  wikipedia: string | null;
-  twitter: string | null;
-  instagram: string | null;
-  facebook: string | null;
-  youtube: string | null;
-  spotify: string | null;
-  officialSite: string | null;
 }
 
 export default function ArtistInfo({
   artistId,
   artistName,
   data,
-  disableFetch = false,
-}: ArtistInfoProps) {
-  const [info, setInfo] = useState<ArtistInfoData | null>(data || null);
-  const [loading, setLoading] = useState(!data);
-
-  useEffect(() => {
-    if (data) {
-      setInfo(data);
-      setLoading(false);
-      return;
-    }
-
-    if (disableFetch) return;
-
-    if (!artistId) return;
-
-    fetch(`/api/artist-info?id=${artistId}`)
-      .then((res) => res.json())
-      .then((data) => {
-        setInfo(data.artistInfo);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, [artistId, data, disableFetch]);
-
-  if (loading) {
-    return (
-      <div className="animate-pulse">
-        <div className="w-full aspect-square bg-[#0a0a0d] mb-4" />
-        <div className="space-y-2">
-          <div className="h-3 bg-[#0a0a0d] w-3/4" />
-          <div className="h-3 bg-[#0a0a0d] w-1/2" />
-        </div>
-      </div>
-    );
-  }
-
-  if (!info) return null;
-
-  const hasLinks =
-    info.wikipedia ||
-    info.officialSite ||
-    info.spotify ||
-    info.twitter ||
-    info.instagram ||
-    info.facebook ||
-    info.youtube;
-
+  disableFetch,
+}: Props) {
   return (
-    <div className="space-y-4">
-      {/* Artist Image */}
-      <div className="w-full aspect-square bg-[#0a0a0d] border border-[#1a1a1f] overflow-hidden relative">
-        {info.image ? (
-          <OptimizedImage
-            src={info.image}
-            alt={artistName}
-            fill
-            className="object-cover transition-all duration-500"
-            priority
-            fallbackText={artistName.slice(0, 2).toUpperCase()}
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-neutral-700">
-            <span className="text-3xl font-mono">
-              {artistName.slice(0, 2).toUpperCase()}
-            </span>
-          </div>
-        )}
+    <div className="flex flex-col gap-6 text-sm">
+      {/* Artist Image & Name */}
+      <div className="space-y-4">
+        <div className="relative w-full aspect-square max-w-[140px] mx-auto lg:mx-0">
+          {data.image ? (
+            <img
+              src={data.image}
+              alt={artistName}
+              className="w-full h-full object-cover rounded-full lg:rounded-none lg:grayscale hover:grayscale-0 transition-all duration-500 border border-white/10"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center bg-white/5 border border-white/10 rounded-full lg:rounded-none">
+              <span className="text-2xl font-mono text-white/20">
+                {artistName.slice(0, 2).toUpperCase()}
+              </span>
+            </div>
+          )}
+        </div>
+
+        <div className="text-center lg:text-left">
+          <h1 className="text-xl font-bold text-white tracking-tight leading-tight">
+            {artistName}
+          </h1>
+          {data.country && (
+            <p className="text-xs text-neutral-500 mt-1 font-mono uppercase tracking-wider">
+              {data.country}
+            </p>
+          )}
+        </div>
       </div>
 
       {/* Description */}
-      {info.description && (
-        <p className="text-xs text-neutral-500 leading-relaxed line-clamp-4">
-          {info.description}
-        </p>
+      {data.description && (
+        <div className="text-neutral-400 text-xs leading-relaxed line-clamp-6 hover:line-clamp-none transition-all duration-300">
+          {data.description}
+        </div>
       )}
 
-      {/* Links */}
-      {hasLinks && (
-        <div className="space-y-1">
-          {info.wikipedia && (
-            <LinkItem
-              href={info.wikipedia}
-              icon={<FaWikipediaW className="w-3 h-3" />}
-              label="wiki"
-            />
-          )}
-          {info.officialSite && (
-            <LinkItem
-              href={info.officialSite}
-              icon={<FaGlobe className="w-3 h-3" />}
-              label="official"
-            />
-          )}
-          {info.spotify && (
-            <LinkItem
-              href={info.spotify}
-              icon={<FaSpotify className="w-3 h-3" />}
-              label="spotify"
-            />
-          )}
-          {info.twitter && (
-            <LinkItem
-              href={info.twitter}
-              icon={<FaTwitter className="w-3 h-3" />}
-              label="twitter"
-            />
-          )}
-          {info.instagram && (
-            <LinkItem
-              href={info.instagram}
-              icon={<FaInstagram className="w-3 h-3" />}
-              label="instagram"
-            />
-          )}
-          {info.facebook && (
-            <LinkItem
-              href={info.facebook}
-              icon={<FaFacebook className="w-3 h-3" />}
-              label="facebook"
-            />
-          )}
-          {info.youtube && (
-            <LinkItem
-              href={info.youtube}
-              icon={<FaYoutube className="w-3 h-3" />}
-              label="youtube"
-            />
-          )}
+      {/* Genres */}
+      {data.genres && data.genres.length > 0 && (
+        <div className="flex flex-wrap gap-2 justify-center lg:justify-start">
+          {data.genres.slice(0, 5).map((genre) => (
+            <span
+              key={genre}
+              className="px-2 py-1 bg-white/5 border border-white/5 text-[10px] text-neutral-400 hover:text-white hover:border-white/20 transition-colors uppercase tracking-wider"
+            >
+              {genre}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Social Links */}
+      <div className="flex flex-wrap gap-4 text-neutral-500 justify-center lg:justify-start pt-2 border-t border-white/5">
+        {data.spotify && (
+          <a
+            href={data.spotify}
+            target="_blank"
+            rel="noreferrer"
+            className="hover:text-[#1DB954] transition-colors"
+            title="Spotify"
+          >
+            <FaSpotify size={16} />
+          </a>
+        )}
+        {data.youtube && (
+          <a
+            href={data.youtube}
+            target="_blank"
+            rel="noreferrer"
+            className="hover:text-[#FF0000] transition-colors"
+            title="YouTube"
+          >
+            <FaYoutube size={16} />
+          </a>
+        )}
+        {data.instagram && (
+          <a
+            href={data.instagram}
+            target="_blank"
+            rel="noreferrer"
+            className="hover:text-[#E4405F] transition-colors"
+            title="Instagram"
+          >
+            <FaInstagram size={16} />
+          </a>
+        )}
+        {data.twitter && (
+          <a
+            href={data.twitter}
+            target="_blank"
+            rel="noreferrer"
+            className="hover:text-[#1DA1F2] transition-colors"
+            title="Twitter"
+          >
+            <FaTwitter size={16} />
+          </a>
+        )}
+        {data.facebook && (
+          <a
+            href={data.facebook}
+            target="_blank"
+            rel="noreferrer"
+            className="hover:text-[#1877F2] transition-colors"
+            title="Facebook"
+          >
+            <FaFacebook size={16} />
+          </a>
+        )}
+        {data.wikipedia && (
+          <a
+            href={data.wikipedia}
+            target="_blank"
+            rel="noreferrer"
+            className="hover:text-white transition-colors"
+            title="Wikipedia"
+          >
+            <FaWikipediaW size={16} />
+          </a>
+        )}
+        {data.officialSite && (
+          <a
+            href={data.officialSite}
+            target="_blank"
+            rel="noreferrer"
+            className="hover:text-cyan-400 transition-colors"
+            title="Official Site"
+          >
+            <FaGlobe size={16} />
+          </a>
+        )}
+      </div>
+
+      {/* Dates */}
+      {(data.beginDate || data.endDate) && (
+        <div className="text-[10px] text-neutral-600 font-mono pt-2 border-t border-white/5 text-center lg:text-left">
+          {data.beginDate && <span>Est. {data.beginDate.split("-")[0]}</span>}
+          {data.endDate && <span> - {data.endDate.split("-")[0]}</span>}
         </div>
       )}
     </div>
-  );
-}
-
-function LinkItem({
-  href,
-  icon,
-  label,
-}: {
-  href: string;
-  icon: React.ReactNode;
-  label: string;
-}) {
-  return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="flex items-center gap-2 py-1.5 text-xs text-neutral-600 hover:text-[#00f0ff] transition-colors font-mono"
-    >
-      {icon}
-      {label}
-    </a>
   );
 }
