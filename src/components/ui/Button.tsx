@@ -23,7 +23,7 @@ export default function Button({
   ...props
 }: ButtonProps) {
   const baseStyles =
-    "inline-flex items-center justify-center font-mono transition-all duration-200 active:scale-95";
+    "inline-flex items-center justify-center font-mono font-medium transition-all duration-200 active:scale-95";
 
   const variants = {
     primary:

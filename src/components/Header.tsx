@@ -8,6 +8,7 @@ import { usePathname } from "next/navigation";
 import { FaBars } from "react-icons/fa";
 import { IoSearch } from "react-icons/io5";
 import MobileMenu from "@/components/MobileMenu";
+import Button from "@/components/ui/Button";
 
 interface HeaderProps {
   showSearch?: boolean;
@@ -75,7 +76,7 @@ export default function Header({ showSearch }: HeaderProps) {
             )}
 
             {/* Desktop Nav */}
-            <nav className="hidden md:flex items-center gap-8 flex-shrink-0">
+            <nav className="hidden md:flex items-center gap-6 flex-shrink-0">
               <Link
                 href="/rated"
                 className="font-mono text-xs text-neutral-100 transition-colors hover:text-[#00f0ff]"
@@ -110,17 +111,18 @@ export default function Header({ showSearch }: HeaderProps) {
                   ) : (
                     <>
                       <Link
-                        href="/login"
+                        href="/login?view=login"
                         className="font-mono text-xs text-neutral-100 transition-colors hover:text-[#00f0ff]"
                       >
                         Login
                       </Link>
-                      <Link
-                        href="/login"
-                        className="font-mono text-xs border border-white/10 rounded-full px-4 py-1.5 text-neutral-100 transition-all hover:bg-white hover:text-black hover:border-white"
+                      <Button
+                        href="/login?view=signup"
+                        variant="border"
+                        size="sm"
                       >
                         Sign up
-                      </Link>
+                      </Button>
                     </>
                   )}
                 </>

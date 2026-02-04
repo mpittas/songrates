@@ -2,12 +2,20 @@
 
 import { useState } from "react";
 import { createClient } from "@/utils/supabase/client";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 import MeshGradient from "@/components/mesh/MeshGradient";
 import { MeshGradientConfig } from "@/components/mesh/types";
 import { FcGoogle } from "react-icons/fc";
-import { FaApple, FaFacebookF, FaCheck, FaTimes } from "react-icons/fa";
+import {
+  FaApple,
+  FaFacebookF,
+  FaCheck,
+  FaTimes,
+  FaEye,
+  FaEyeSlash,
+} from "react-icons/fa";
+import Button from "@/components/ui/Button";
 
 const greenMeshConfig: MeshGradientConfig = {
   speed: 0.2, // Slower for a calmer vibe
@@ -20,7 +28,10 @@ const greenMeshConfig: MeshGradientConfig = {
 };
 
 export default function LoginPage() {
-  const [isLogin, setIsLogin] = useState(false); // Default to Sign Up as per image "Sign Up Account"
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const view = searchParams.get("view");
+  const isLogin = view === "login";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [firstName, setFirstName] = useState("");
@@ -28,6 +39,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   const [passwordCriteria, setPasswordCriteria] = useState({
     length: false,
@@ -49,8 +61,13 @@ export default function LoginPage() {
   };
 
   const isPasswordValid = Object.values(passwordCriteria).every(Boolean);
-  const router = useRouter();
+
   const supabase = createClient();
+
+  const toggleView = () => {
+    const newView = isLogin ? "signup" : "login";
+    router.replace(`/login?view=${newView}`, { scroll: false });
+  };
 
   const handleSocialLogin = async (
     provider: "google" | "apple" | "facebook",
@@ -114,36 +131,13 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="w-full h-[calc(100vh-64px)] grid grid-cols-1 md:grid-cols-2 bg-black">
+    <div className="w-full h-[calc(100vh-65px)] grid grid-cols-1 md:grid-cols-2 bg-black">
       {/* Left Column: Green Gradient */}
       <div className="relative hidden md:block h-full w-full overflow-hidden">
         <MeshGradient
           config={greenMeshConfig}
           className="absolute inset-0 w-full h-full opacity-80"
         />
-        {/* Text overlay similar to image if needed, but user said "without adding any elements inside, keep it empty" for left column aside from gradient interaction? 
-               Wait, "On left column show the green gradient but without adding any elements inside, keep it empty." 
-               Okay, pure gradient.
-           */}
-        <div className="absolute bottom-10 left-10 text-white z-10 pointer-events-none">
-          <h2 className="text-3xl font-bold mb-2 tracking-tighter">
-            Get Started
-            <br />
-            with Us
-          </h2>
-          <p className="text-xs text-neutral-400 max-w-[200px]">
-            Complete these easy steps to register your account.
-          </p>
-          {/* Visual steps placeholders based on image could go here, but user said "keep it empty" after "without adding any elements inside". 
-                    This creates a conflict. 
-                    "On left column show the green gradient but without adding any elements inside, keep it empty."
-                    The image has text. The instruction says keep it empty. 
-                    I will follow the text instruction: "keep it empty".
-                */}
-        </div>
-        {/* Overriding the "keep it empty" thought: I will remove the text overlay to strictly follow "keep it empty". */}
-        <div className="absolute inset-0 bg-black/20" />{" "}
-        {/* Slight overlay for depth if needed */}
       </div>
 
       {/* Right Column: Form */}
@@ -152,7 +146,7 @@ export default function LoginPage() {
           <h1 className="text-2xl text-white mb-2 tracking-tight">
             {isLogin ? "Welcome Back" : "Sign Up Account"}
           </h1>
-          <p className="text-neutral-500 text-xs">
+          <p className="text-neutral-500 text-sm">
             {isLogin
               ? "Enter your credentials to access your account."
               : "Enter your personal data to create your account."}
@@ -161,26 +155,16 @@ export default function LoginPage() {
 
         {/* Social Login Buttons */}
         <div className="flex gap-4 mb-6">
-          <button
+          <Button
             type="button"
             onClick={() => handleSocialLogin("google")}
-            className="flex-1 flex items-center justify-center gap-2 bg-transparent border border-white/10 text-white py-2.5 hover:bg-white/5 transition-colors text-xs"
+            variant="border"
+            size="md"
+            className="flex-1"
+            iconLeft={<FcGoogle size={18} />}
           >
-            <FcGoogle size={18} /> Google
-          </button>
-          <button
-            type="button"
-            className="flex-1 flex items-center justify-center gap-2 bg-transparent border border-white/10 text-white py-2.5 hover:bg-white/5 transition-colors text-xs"
-          >
-            <FaApple size={18} /> Apple{" "}
-            {/* Github in image, user asked for Apple */}
-          </button>
-          <button
-            type="button"
-            className="flex-1 flex items-center justify-center gap-2 bg-transparent border border-white/10 text-white py-2.5 hover:bg-white/5 transition-colors text-xs"
-          >
-            <FaFacebookF size={16} className="text-blue-500" /> Facebook
-          </button>
+            Google
+          </Button>
         </div>
 
         {/* Separator */}
@@ -196,55 +180,62 @@ export default function LoginPage() {
           {!isLogin && (
             <div className="flex gap-4">
               <div className="flex-1 flex flex-col gap-1.5">
-                <label className="text-xs text-neutral-500">First Name</label>
+                <label className="text-sm text-neutral-500">First Name</label>
                 <input
                   type="text"
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
                   placeholder="eg. John"
-                  className="w-full bg-[#1A1A1A] border-none text-white text-xs px-4 py-3 placeholder:text-neutral-600 focus:ring-1 focus:ring-emerald-500/50 outline-none rounded-none"
+                  className="w-full bg-[#1A1A1A] border-none text-white text-sm px-4 py-3 placeholder:text-neutral-600 focus:ring-1 focus:ring-emerald-500/50 outline-none rounded-none"
                 />
               </div>
               <div className="flex-1 flex flex-col gap-1.5">
-                <label className="text-xs text-neutral-500">Last Name</label>
+                <label className="text-sm text-neutral-500">Last Name</label>
                 <input
                   type="text"
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
                   placeholder="eg. Francisco"
-                  className="w-full bg-[#1A1A1A] border-none text-white text-xs px-4 py-3 placeholder:text-neutral-600 focus:ring-1 focus:ring-emerald-500/50 outline-none rounded-none"
+                  className="w-full bg-[#1A1A1A] border-none text-white text-sm px-4 py-3 placeholder:text-neutral-600 focus:ring-1 focus:ring-emerald-500/50 outline-none rounded-none"
                 />
               </div>
             </div>
           )}
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs text-neutral-500">Email</label>
+            <label className="text-sm text-neutral-500">Email</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="eg. johnfrans@gmail.com"
               required
-              className="w-full bg-[#1A1A1A] border-none text-white text-xs px-4 py-3 placeholder:text-neutral-600 focus:ring-1 focus:ring-emerald-500/50 outline-none rounded-none"
+              className="w-full bg-[#1A1A1A] border-none text-white text-sm px-4 py-3 placeholder:text-neutral-600 focus:ring-1 focus:ring-emerald-500/50 outline-none rounded-none"
             />
           </div>
 
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs text-neutral-500">Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => updatePassword(e.target.value)}
-              placeholder="Enter your password"
-              required
-              className="w-full bg-[#1A1A1A] border-none text-white text-xs px-4 py-3 placeholder:text-neutral-600 focus:ring-1 focus:ring-emerald-500/50 outline-none rounded-none"
-            />
+          <div className="flex flex-col gap-1.5 relative">
+            <label className="text-sm text-neutral-500">Password</label>
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => updatePassword(e.target.value)}
+                placeholder="Enter your password"
+                required
+                className="w-full bg-[#1A1A1A] border-none text-white text-sm px-4 py-3 pr-10 placeholder:text-neutral-600 focus:ring-1 focus:ring-emerald-500/50 outline-none rounded-none"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-300 transition-colors"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
+              </button>
+            </div>
             {!isLogin && password.length > 0 && (
               <div className="mt-2 space-y-1">
-                <p className="text-[10px] text-neutral-500 mb-1">
-                  Password requirements:
-                </p>
                 <ul className="space-y-1">
                   {[
                     { key: "length", label: "At least 8 characters" },
@@ -253,7 +244,7 @@ export default function LoginPage() {
                     { key: "number", label: "One number" },
                     { key: "specialChar", label: "One special char (@$!%*?&)" },
                   ].map(({ key, label }) => (
-                    <li key={key} className="flex items-center gap-2 text-xs">
+                    <li key={key} className="flex items-center gap-2 text-sm">
                       {passwordCriteria[
                         key as keyof typeof passwordCriteria
                       ] ? (
@@ -278,29 +269,31 @@ export default function LoginPage() {
           </div>
 
           {error && (
-            <div className="text-red-500 text-xs bg-red-500/10 p-2 border border-red-500/20 rounded-none">
+            <div className="text-red-500 text-sm bg-red-500/10 p-2 border border-red-500/20 rounded-none">
               {error}
             </div>
           )}
           {success && (
-            <div className="text-emerald-500 text-xs bg-emerald-500/10 p-2 border border-emerald-500/20 rounded-none">
+            <div className="text-emerald-500 text-sm bg-emerald-500/10 p-2 border border-emerald-500/20 rounded-none">
               {success}
             </div>
           )}
 
-          <button
+          <Button
             type="submit"
             disabled={loading || (!isLogin && !isPasswordValid)}
-            className="mt-4 w-full bg-white text-black font-medium text-xs py-3.5 hover:bg-neutral-200 transition-colors disabled:opacity-50 rounded-none"
+            variant="secondary"
+            size="md"
+            className="mt-4 w-full"
           >
             {loading ? "Processing..." : isLogin ? "Login" : "Sign Up"}
-          </button>
+          </Button>
         </form>
 
-        <p className="mt-6 text-xs text-neutral-500 text-center">
+        <p className="mt-6 text-sm text-neutral-500 text-center">
           {isLogin ? "Don't have an account? " : "Already have an account? "}
           <button
-            onClick={() => setIsLogin(!isLogin)}
+            onClick={toggleView}
             className="text-white hover:underline font-medium"
           >
             {isLogin ? "Sign Up" : "Log in"}

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { createPortal } from "react-dom";
 import { FaTimes } from "react-icons/fa";
 import { useAuth } from "@/context/AuthContext";
+import Button from "@/components/ui/Button";
 
 interface MobileMenuProps {
   isOpen: boolean;
@@ -105,19 +106,21 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
           ) : (
             <>
               <Link
-                href="/login"
+                href="/login?view=login"
                 onClick={onClose}
                 className="text-xl font-mono text-neutral-100 hover:text-[#00f0ff] transition-colors"
               >
                 Login
               </Link>
-              <Link
-                href="/login"
+              <Button
+                href="/login?view=signup"
                 onClick={onClose}
-                className="text-xl font-mono text-center border border-white/10 rounded-full px-4 py-3 text-neutral-100 hover:bg-white hover:text-black transition-all"
+                variant="border"
+                size="md"
+                className="w-full"
               >
                 Sign up
-              </Link>
+              </Button>
             </>
           )}
         </nav>
