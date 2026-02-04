@@ -44,7 +44,7 @@ export default function ArtistSkeleton() {
               </div>
 
               {/* Grid of Albums - Matching AlbumGrid.tsx: 2 cols mobile, 3 sm, 4 md */}
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
+              <div className="grid grid-cols-2 gap-8 sm:grid-cols-3 md:grid-cols-4">
                 {[...Array(8)].map((_, i) => (
                   <div key={i} className="space-y-2">
                     <div className="aspect-square bg-[#1a1a1f] border border-[#1a1a1f]"></div>{" "}

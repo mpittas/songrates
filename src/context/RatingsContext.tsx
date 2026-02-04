@@ -140,6 +140,7 @@ export function RatingsProvider({ children }: { children: React.ReactNode }) {
               releaseDate: albumContext.releaseDate,
               totalTracks: albumContext.totalTracks,
               ratedTrackIds: newRatedTrackIds,
+              ratedAt: currentAlbum.ratedAt || new Date().toISOString(),
             },
           };
         });
