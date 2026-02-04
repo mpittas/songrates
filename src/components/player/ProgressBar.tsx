@@ -84,7 +84,7 @@ export default function ProgressBar({
         : 0;
 
   return (
-    <div className="flex items-center gap-3 flex-1 max-w-lg">
+    <div className="flex items-center gap-3 flex-1">
       <span className="text-[10px] text-neutral-500 font-mono w-8 text-right">
         {formatTime(currentTime, "seconds")}
       </span>

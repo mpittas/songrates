@@ -31,8 +31,20 @@ export default function MiniPlayer() {
     setIsPlaying,
   } = usePlayer();
   const playerRef = useRef<YouTubePlayer | null>(null);
+  const showTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [showVideo, setShowVideo] = useState(false);
   const [showTracklist, setShowTracklist] = useState(false);
+
+  const handleMouseEnterTracklist = () => {
+    if (showTimeoutRef.current) clearTimeout(showTimeoutRef.current);
+    setShowTracklist(true);
+  };
+
+  const handleMouseLeaveTracklist = () => {
+    showTimeoutRef.current = setTimeout(() => {
+      setShowTracklist(false);
+    }, 100);
+  };
 
   const [volume, setVolume] = useState(100);
   const [isMuted, setIsMuted] = useState(false);
@@ -180,12 +192,12 @@ export default function MiniPlayer() {
       >
         <div className="flex items-center justify-between gap-2 md:gap-6 px-4 py-3 w-full">
           {/* Track Info - Left */}
-          <div className="flex-shrink-1 min-w-0 max-w-[40%] md:max-w-xs">
+          <div className="flex-1 basis-0 min-w-0">
             {currentTrack && <TrackInfo currentTrack={currentTrack} />}
           </div>
 
-          {/* Controls - Center (Mobile: Play/Pause only, Desktop: Full controls + bar) */}
-          <div className="flex flex-1 items-center justify-end md:justify-center gap-2 md:gap-6">
+          {/* Controls - Center */}
+          <div className="flex-[3] flex items-center justify-center gap-2 md:gap-6">
             <div className="md:hidden">
               {/* Mobile only simplified controls if needed, but PlaybackControls handles responsive inside? 
                    Let's keep it simple: Show controls, but hide bar on very narrow screens if needed, 
@@ -195,9 +207,9 @@ export default function MiniPlayer() {
 
             {/* Tracklist Popover Trigger - Desktop Left of Controls */}
             <div
-              className="hidden md:block relative mr-4"
-              onMouseEnter={() => setShowTracklist(true)}
-              onMouseLeave={() => setShowTracklist(false)}
+              className="hidden md:block relative"
+              onMouseEnter={handleMouseEnterTracklist}
+              onMouseLeave={handleMouseLeaveTracklist}
             >
               <button
                 className={`p-2 text-neutral-500 hover:text-[#00f0ff] transition-colors ${
@@ -211,8 +223,6 @@ export default function MiniPlayer() {
                 albumId={currentTrack?.albumId || ""}
                 currentTrackId={currentTrack?.id || ""}
                 isVisible={showTracklist && !!currentTrack?.albumId}
-                onMouseEnter={() => setShowTracklist(true)}
-                onMouseLeave={() => setShowTracklist(false)}
               />
             </div>
 
@@ -223,7 +233,7 @@ export default function MiniPlayer() {
               onTogglePlay={togglePlayPause}
             />
 
-            <div className="hidden md:block w-full max-w-lg">
+            <div className="hidden md:flex items-center gap-4 w-[500px]">
               <ProgressBar
                 currentTime={currentTime}
                 duration={duration}
@@ -231,17 +241,16 @@ export default function MiniPlayer() {
                 onSeek={seekTo}
               />
             </div>
-          </div>
-
-          {/* Right Side - Volume & Extras (Hidden on Mobile) */}
-          <div className="hidden md:flex items-center gap-3 min-w-[200px] w-1/4 justify-end">
             <VolumeControl
               volume={volume}
               isMuted={isMuted}
               onVolumeChange={handleVolumeChange}
               onToggleMute={toggleMute}
             />
+          </div>
 
+          {/* Right Side - Extras (Hidden on Mobile) */}
+          <div className="hidden md:flex flex-1 basis-0 items-center gap-3 justify-end">
             <div className="h-4 w-px bg-[#1a1a1f] mx-2" />
 
             <button

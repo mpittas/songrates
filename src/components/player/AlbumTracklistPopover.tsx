@@ -6,23 +6,34 @@ import { formatTime } from "@/lib/utils";
 import { useEffect, useRef } from "react";
 import { FaPlay, FaPause } from "react-icons/fa";
 import { usePlayer } from "@/context/PlayerContext";
+import { useRatings } from "@/hooks/useRatings";
+
+const COLORS = [
+  "#a31616", // 1
+  "#b8441a", // 2
+  "#ca7a23", // 3
+  "#bb9920", // 4
+  "#b3c022", // 5
+  "#8ec227", // 6
+  "#65c227", // 7
+  "#3ec227", // 8
+  "#21b691", // 9
+  "#14bba5", // 10
+];
 
 interface AlbumTracklistPopoverProps {
   albumId: string;
   currentTrackId: string;
   isVisible: boolean;
-  onMouseEnter: () => void;
-  onMouseLeave: () => void;
 }
 
 export default function AlbumTracklistPopover({
   albumId,
   currentTrackId,
   isVisible,
-  onMouseEnter,
-  onMouseLeave,
 }: AlbumTracklistPopoverProps) {
-  const { playTrack, isPlaying, currentTrack } = usePlayer();
+  const { playTrack, isPlaying } = usePlayer();
+  const { ratings } = useRatings();
   const listRef = useRef<HTMLDivElement>(null);
 
   const { data: album, isLoading } = useQuery({
@@ -50,12 +61,8 @@ export default function AlbumTracklistPopover({
   if (!isVisible) return null;
 
   return (
-    <div
-      className="absolute bottom-full left-1/2 -translate-x-1/2 translate-y-2 pb-4 z-50 group/popover"
-      onMouseEnter={onMouseEnter}
-      onMouseLeave={onMouseLeave}
-    >
-      <div className="w-80 max-h-96 bg-[#050507] border border-[#1a1a1f] shadow-2xl overflow-hidden flex flex-col animate-in fade-in slide-in-from-bottom-2 duration-300 origin-bottom">
+    <div className="absolute bottom-full left-1/2 -translate-x-1/2 translate-y-1 pb-1 z-50 group/popover">
+      <div className="w-80 max-h-96 bg-[#050507] backdrop-blur-md border border-[#1a1a1f] shadow-2xl overflow-hidden flex flex-col animate-in fade-in slide-in-from-bottom-2 duration-300 origin-bottom">
         {/* Header */}
         <div className="p-3 border-b border-[#1a1a1f] bg-[#0a0a0d]">
           <h3 className="text-neutral-200 text-xs font-mono font-bold truncate">
@@ -85,7 +92,7 @@ export default function AlbumTracklistPopover({
                 <div
                   key={track.id}
                   data-track-id={track.id}
-                  className={`group flex items-center gap-3 px-3 py-2 text-xs transition-colors cursor-pointer ${
+                  className={`group flex items-center gap-2 px-3 py-2 text-xs transition-colors cursor-pointer ${
                     isCurrent
                       ? "bg-[#00f0ff]/10 text-[#00f0ff]"
                       : "text-neutral-400 hover:bg-white/5 hover:text-white"
@@ -110,7 +117,9 @@ export default function AlbumTracklistPopover({
                         <FaPlay size={8} />
                       )
                     ) : (
-                      <span className="group-hover:hidden">{track.number}</span>
+                      <span className="group-hover:hidden text-neutral-600">
+                        {track.number}
+                      </span>
                     )}
                     <span className="hidden group-hover:block text-neutral-300">
                       {!isCurrent && <FaPlay size={8} />}
@@ -124,8 +133,21 @@ export default function AlbumTracklistPopover({
 
                   {/* Duration */}
                   {track.length && (
-                    <span className="text-[10px] font-mono opacity-60">
+                    <span className="text-[10px] font-mono opacity-60 text-neutral-400">
                       {formatTime(track.length, "milliseconds")}
+                    </span>
+                  )}
+
+                  {/* Rating */}
+                  {ratings[track.id] && (
+                    <span
+                      className="text-[9px] font-mono px-1 py-0.5 shrink-0"
+                      style={{
+                        backgroundColor: `${COLORS[ratings[track.id] - 1]}22`,
+                        color: COLORS[ratings[track.id] - 1],
+                      }}
+                    >
+                      {ratings[track.id]}
                     </span>
                   )}
                 </div>
