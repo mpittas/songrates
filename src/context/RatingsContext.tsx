@@ -86,6 +86,7 @@ export function RatingsProvider({ children }: { children: React.ReactNode }) {
               releaseDate: a.release_date,
               totalTracks: a.total_tracks,
               ratedTrackIds: albumTracksMap[a.album_id] || [],
+              ratedAt: a.created_at,
             };
           });
         }

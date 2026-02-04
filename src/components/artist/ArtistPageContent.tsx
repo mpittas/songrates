@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { FaSearch } from "react-icons/fa";
+import DropdownFilter from "@/components/ui/DropdownFilter";
+import SearchInput from "@/components/search/SearchInput";
 
 import ArtistInfo from "./ArtistInfo";
 import Discography from "./Discography";
@@ -34,6 +35,7 @@ export default function ArtistPageContent({
     "newest" | "oldest" | "title" | "popularity"
   >("newest");
   const [searchQuery, setSearchQuery] = useState("");
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
 
   // Track sorting
   const sortedAlbums = [...albums].sort((a, b) => {
@@ -63,65 +65,37 @@ export default function ArtistPageContent({
     <main className="min-h-screen bg-[#050507] text-neutral-100">
       <MySection className="pt-8 pb-24">
         {/* Header */}
-        <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-4">
-          <div className="flex items-baseline gap-6 w-full">
-            <Link
-              href="/"
-              className="px-4 py-2 border border-white/10 text-neutral-200 text-xs font-mono hover:bg-white hover:text-black transition-all"
-            >
-              Back
-            </Link>
-          </div>
+        <div className="flex flex-col md:flex-row items-center justify-between gap-4 pb-6">
+          <Link
+            href="/"
+            className="px-4 py-2 border border-white/10 text-neutral-200 text-xs font-mono hover:bg-white hover:text-black transition-all self-start md:self-center"
+          >
+            Back
+          </Link>
 
-          <div className="flex flex-col md:flex-row items-end md:items-center gap-6">
-            {/* Search Input */}
-            <div className="relative group">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-neutral-600 group-focus-within:text-[#00f0ff] transition-colors">
-                <FaSearch size={12} />
-              </div>
-              <input
-                type="text"
-                placeholder="search discography..."
+          <div className="flex items-center gap-2 w-full md:w-auto">
+            <DropdownFilter
+              label="sort:"
+              options={[
+                { label: "Newest First", value: "newest" },
+                { label: "Oldest First", value: "oldest" },
+                { label: "Title (A-Z)", value: "title" },
+                { label: "Popularity", value: "popularity" },
+              ]}
+              value={sortBy}
+              onChange={(val) => setSortBy(val as any)}
+            />
+            <div className="w-full md:w-48">
+              <SearchInput
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="bg-[#0a0a0d] border border-[#1a1a1f] text-neutral-200 text-xs font-mono rounded-full py-1.5 pl-9 pr-4 focus:outline-none focus:border-[#00f0ff]/50 w-48 transition-all"
+                onChange={setSearchQuery}
+                onClear={() => setSearchQuery("")}
+                placeholder="search discography..."
+                onFocus={() => setIsSearchFocused(true)}
+                onBlur={() => setIsSearchFocused(false)}
+                isFocused={isSearchFocused}
+                size="compact"
               />
-            </div>
-
-            <div className="flex items-center gap-4 text-xs text-neutral-600 font-mono whitespace-nowrap">
-              <span>sort:</span>
-              <button
-                onClick={() => setSortBy("newest")}
-                className={`hover:text-[#00f0ff] transition-colors ${
-                  sortBy === "newest" ? "text-[#00f0ff]" : ""
-                }`}
-              >
-                new
-              </button>
-              <button
-                onClick={() => setSortBy("oldest")}
-                className={`hover:text-[#00f0ff] transition-colors ${
-                  sortBy === "oldest" ? "text-[#00f0ff]" : ""
-                }`}
-              >
-                old
-              </button>
-              <button
-                onClick={() => setSortBy("title")}
-                className={`hover:text-[#00f0ff] transition-colors ${
-                  sortBy === "title" ? "text-[#00f0ff]" : ""
-                }`}
-              >
-                a-z
-              </button>
-              <button
-                onClick={() => setSortBy("popularity")}
-                className={`hover:text-[#00f0ff] transition-colors ${
-                  sortBy === "popularity" ? "text-[#00f0ff]" : ""
-                }`}
-              >
-                popularity
-              </button>
             </div>
           </div>
         </div>

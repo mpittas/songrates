@@ -1,7 +1,7 @@
 import { Artist } from "./artist";
 import { Album } from "./music";
 
-export type SearchInputSize = "small" | "large";
+export type SearchInputSize = "small" | "large" | "compact";
 export type SearchInputVariant = "light" | "dark";
 
 export interface SearchResultsProps {

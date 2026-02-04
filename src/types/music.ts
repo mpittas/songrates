@@ -86,4 +86,5 @@ export interface RatedAlbumData {
   releaseDate?: string;
   totalTracks: number;
   ratedTrackIds: string[];
+  ratedAt?: string;
 }

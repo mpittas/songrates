@@ -18,6 +18,7 @@ export default function SearchInput({
   variant = "dark",
 }: SearchInputProps) {
   const isSmall = size === "small";
+  const isCompact = size === "compact";
   const isDark = variant === "dark";
 
   return (
@@ -27,14 +28,14 @@ export default function SearchInput({
         transition-all duration-200
         ${
           isDark
-            ? "bg-neutral-900 hover:bg-neutral-800"
+            ? "bg-[#0a0a0d] border border-[#1a1a1f]"
             : "bg-neutral-300 hover:border-[#2a2a35]"
         }
         ${
           isFocused
-            ? "shadow-[0_0_0px_5px_rgba(0,240,255,0.2)]"
+            ? "border-[#00f0ff]/50"
             : isDark
-              ? "hover:border-[#2a2a35]"
+              ? "hover:border-[#00f0ff]/50"
               : "hover:border-[#2a2a35]"
         }
       `}
@@ -44,14 +45,14 @@ export default function SearchInput({
         className={`transition-colors duration-200 ${
           isDark
             ? isFocused
-              ? "text-white"
-              : "text-neutral-400"
+              ? "text-[#00f0ff]"
+              : "text-neutral-500"
             : isFocused
               ? "text-neutral-950"
               : "text-neutral-600"
-        } ${isSmall ? "pl-3 pr-2" : "pl-5 pr-4"}`}
+        } ${isCompact ? "pl-2 pr-1.5" : isSmall ? "pl-3 pr-2" : "pl-5 pr-4"}`}
       >
-        <IoSearch size={isSmall ? 16 : 20} />
+        <IoSearch size={isCompact ? 12 : isSmall ? 16 : 20} />
       </div>
 
       {/* Input */}
@@ -63,11 +64,11 @@ export default function SearchInput({
         onBlur={onBlur}
         placeholder={placeholder}
         style={{ outline: "none" }}
-        className={`flex-1 bg-transparent focus:outline-none ${
+        className={`flex-1 bg-transparent focus:outline-none font-mono ${
           isDark
-            ? "text-white placeholder:text-neutral-500"
+            ? "text-neutral-200 placeholder:text-neutral-600"
             : "text-neutral-950 placeholder:text-neutral-600"
-        } ${isSmall ? "py-2 text-sm" : "py-3 text-lg"}`}
+        } ${isCompact ? "py-1.5 text-xs" : isSmall ? "py-2 text-sm" : "py-3 text-lg"}`}
       />
 
       {/* Clear Button */}
@@ -77,12 +78,12 @@ export default function SearchInput({
           onClick={onClear}
           className={`transition-colors ${
             isDark
-              ? "text-neutral-500 hover:text-white"
+              ? "text-neutral-600 hover:text-white"
               : "text-neutral-600 hover:text-neutral-950"
-          } ${isSmall ? "pr-3 pl-2" : "pr-5 pl-4"}`}
+          } ${isCompact ? "pr-2 pl-1.5" : isSmall ? "pr-3 pl-2" : "pr-5 pl-4"}`}
           aria-label="Clear search"
         >
-          <IoClose size={isSmall ? 16 : 20} />
+          <IoClose size={isCompact ? 12 : isSmall ? 16 : 20} />
         </button>
       )}
     </div>

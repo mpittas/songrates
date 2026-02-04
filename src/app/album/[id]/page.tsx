@@ -11,6 +11,7 @@ import { FaPlay, FaPause, FaSearch } from "react-icons/fa";
 import MySection from "@/components/MySection";
 import AlbumSkeleton from "@/components/AlbumSkeleton";
 import ColorRating from "@/components/ColorRating";
+import SearchInput from "@/components/search/SearchInput";
 
 import { AlbumInfo, TrackInfo, AlbumContext } from "@/types/music";
 import { resolveAlbumId } from "@/lib/musicbrainz";
@@ -116,6 +117,7 @@ export default function AlbumPage() {
   const [album, setAlbum] = useState<AlbumInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
 
   useEffect(() => {
     if (!slug) return;
@@ -262,18 +264,18 @@ export default function AlbumPage() {
           <div className="border border-[#1a1a1f] bg-[#0a0a0d]/30 overflow-hidden">
             <div className="px-4 py-3 border-b border-[#1a1a1f] flex justify-between items-center group/search">
               <h3 className="text-neutral-600 font-mono tracking-wide text-xs uppercase">
-                tracklist_
+                tracklist
               </h3>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none text-neutral-600 group-focus-within/search:text-[#00f0ff] transition-colors">
-                  <FaSearch size={10} />
-                </div>
-                <input
-                  type="text"
-                  placeholder="search tracks..."
+              <div className="w-32 focus-within:w-48 transition-all duration-300">
+                <SearchInput
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="bg-[#0a0a0d] border border-[#1a1a1f] text-neutral-200 text-[10px] font-mono rounded-full py-1 pl-7 pr-3 focus:outline-none focus:border-[#00f0ff]/50 w-32 focus:w-48 transition-all"
+                  onChange={setSearchQuery}
+                  onClear={() => setSearchQuery("")}
+                  onFocus={() => setIsSearchFocused(true)}
+                  onBlur={() => setIsSearchFocused(false)}
+                  isFocused={isSearchFocused}
+                  placeholder="search tracks..."
+                  size="compact"
                 />
               </div>
             </div>
