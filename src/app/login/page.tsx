@@ -31,6 +31,26 @@ export default function LoginPage() {
   const router = useRouter();
   const supabase = createClient();
 
+  const handleSocialLogin = async (
+    provider: "google" | "apple" | "facebook",
+  ) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+      if (error) throw error;
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -122,6 +142,7 @@ export default function LoginPage() {
         <div className="flex gap-4 mb-6">
           <button
             type="button"
+            onClick={() => handleSocialLogin("google")}
             className="flex-1 flex items-center justify-center gap-2 bg-transparent border border-white/10 text-white py-2.5 hover:bg-white/5 transition-colors text-xs"
           >
             <FcGoogle size={18} /> Google
