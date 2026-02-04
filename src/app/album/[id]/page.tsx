@@ -57,6 +57,9 @@ function TrackItem({
                 artistId: artistId,
                 albumId: albumId,
                 albumImageUrl: albumImageUrl || "/vinyl-placeholder.svg",
+                albumTitle: albumContext.title,
+                releaseDate: albumContext.releaseDate,
+                totalTracks: albumContext.totalTracks,
               })
             }
             className={`flex items-center justify-center w-6 h-6 border shrink-0 transition-all ${

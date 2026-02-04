@@ -6,6 +6,10 @@ import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { YouTubeProps, YouTubeEvent } from "react-youtube";
 import { YouTubePlayer } from "@/types/player";
 
+import { useRatings } from "@/hooks/useRatings";
+import ColorRating from "@/components/ColorRating";
+import { AlbumContext } from "@/types/music";
+
 import TrackInfo from "./player/TrackInfo";
 import PlaybackControls from "./player/PlaybackControls";
 import ProgressBar from "./player/ProgressBar";
@@ -30,10 +34,38 @@ export default function MiniPlayer() {
     updateProgress,
     setIsPlaying,
   } = usePlayer();
+
+  const { ratings, setRating } = useRatings();
   const playerRef = useRef<YouTubePlayer | null>(null);
   const showTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [showVideo, setShowVideo] = useState(false);
   const [showTracklist, setShowTracklist] = useState(false);
+
+  const rating = currentTrack ? ratings[currentTrack.id] || 0 : 0;
+
+  const handleRate = useCallback(
+    (val: number) => {
+      if (!currentTrack) return;
+
+      if (
+        currentTrack.albumId &&
+        currentTrack.albumTitle &&
+        currentTrack.totalTracks !== undefined
+      ) {
+        const albumContext: AlbumContext = {
+          albumId: currentTrack.albumId,
+          title: currentTrack.albumTitle,
+          artistName: currentTrack.artistName || "Unknown Artist",
+          releaseDate: currentTrack.releaseDate,
+          totalTracks: currentTrack.totalTracks,
+        };
+        setRating(currentTrack.id, val, albumContext);
+      } else {
+        setRating(currentTrack.id, val);
+      }
+    },
+    [currentTrack, setRating],
+  );
 
   const handleMouseEnterTracklist = () => {
     if (showTimeoutRef.current) clearTimeout(showTimeoutRef.current);
@@ -203,6 +235,11 @@ export default function MiniPlayer() {
                    Let's keep it simple: Show controls, but hide bar on very narrow screens if needed, 
                    or actually, let's keep the bar but make it flexible.
                */}
+            </div>
+
+            {/* Rating Component - Desktop */}
+            <div className="hidden md:block">
+              <ColorRating rating={rating} onRate={handleRate} />
             </div>
 
             {/* Tracklist Popover Trigger - Desktop Left of Controls */}

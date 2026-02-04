@@ -105,6 +105,9 @@ export default function AlbumTracklistPopover({
                       artistId: album.artist.id,
                       albumId: album.id,
                       albumImageUrl: `https://coverartarchive.org/release-group/${album.id}/front-250`,
+                      albumTitle: album.title,
+                      releaseDate: album.releaseDate,
+                      totalTracks: album.tracks?.length,
                     });
                   }}
                 >

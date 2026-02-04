@@ -47,7 +47,11 @@ export default function ColorRating({
           <button
             key={value}
             onMouseEnter={() => setHovered(value)}
-            onClick={() => onRate(value)}
+            onClick={() => {
+              const nextRating = value === rating ? 0 : value;
+              onRate(nextRating);
+              if (nextRating === 0) setHovered(null);
+            }}
             className={`w-2 h-full transition-all duration-150 relative group`}
             style={{
               backgroundColor: isActive ? color : "#1a1a1f",

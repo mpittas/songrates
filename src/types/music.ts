@@ -5,6 +5,9 @@ export interface Track {
   artistId?: string;
   albumId?: string;
   albumImageUrl?: string;
+  albumTitle?: string;
+  releaseDate?: string;
+  totalTracks?: number;
   length?: number;
   number?: string;
 }
