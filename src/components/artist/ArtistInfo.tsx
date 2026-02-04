@@ -23,7 +23,7 @@ export default function ArtistInfo({
   disableFetch,
 }: Props) {
   return (
-    <div className="flex flex-col gap-6 text-sm">
+    <div className="flex flex-col gap-2 text-sm">
       {/* Artist Image & Name */}
       <div className="space-y-4">
         <div className="relative w-full aspect-square max-w-[140px] mx-auto lg:mx-0">
@@ -43,11 +43,11 @@ export default function ArtistInfo({
         </div>
 
         <div className="text-center lg:text-left">
-          <h1 className="text-xl font-bold text-white tracking-tight leading-tight">
+          <h1 className="text-lg text-white tracking-tight leading-tight">
             {artistName}
           </h1>
           {data.country && (
-            <p className="text-xs text-neutral-500 mt-1 font-mono uppercase tracking-wider">
+            <p className="text-xs text-neutral-500 font-mono uppercase tracking-wider">
               {data.country}
             </p>
           )}
@@ -56,7 +56,7 @@ export default function ArtistInfo({
 
       {/* Description */}
       {data.description && (
-        <div className="text-neutral-400 text-xs leading-relaxed line-clamp-6 hover:line-clamp-none transition-all duration-300">
+        <div className="text-neutral-400 text-xs line-clamp-6 hover:line-clamp-none transition-all duration-300">
           {data.description}
         </div>
       )}
@@ -76,7 +76,7 @@ export default function ArtistInfo({
       )}
 
       {/* Social Links */}
-      <div className="flex flex-wrap gap-4 text-neutral-500 justify-center lg:justify-start pt-2 border-t border-white/5">
+      <div className="flex flex-wrap gap-4 text-neutral-500 justify-center lg:justify-start pt-4 mt-2 border-t border-white/5">
         {data.spotify && (
           <a
             href={data.spotify}
