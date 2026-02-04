@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import MeshGradient from "@/components/mesh/MeshGradient";
 import { MeshGradientConfig } from "@/components/mesh/types";
 import { FcGoogle } from "react-icons/fc";
-import { FaApple, FaFacebookF } from "react-icons/fa";
+import { FaApple, FaFacebookF, FaCheck, FaTimes } from "react-icons/fa";
 
 const greenMeshConfig: MeshGradientConfig = {
   speed: 0.2, // Slower for a calmer vibe
@@ -28,6 +28,27 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+
+  const [passwordCriteria, setPasswordCriteria] = useState({
+    length: false,
+    uppercase: false,
+    lowercase: false,
+    number: false,
+    specialChar: false,
+  });
+
+  const updatePassword = (value: string) => {
+    setPassword(value);
+    setPasswordCriteria({
+      length: value.length >= 8,
+      uppercase: /[A-Z]/.test(value),
+      lowercase: /[a-z]/.test(value),
+      number: /[0-9]/.test(value),
+      specialChar: /[@$!%*?&]/.test(value),
+    });
+  };
+
+  const isPasswordValid = Object.values(passwordCriteria).every(Boolean);
   const router = useRouter();
   const supabase = createClient();
 
@@ -165,7 +186,7 @@ export default function LoginPage() {
         {/* Separator */}
         <div className="relative flex items-center py-2 mb-6">
           <div className="flex-grow border-t border-white/10"></div>
-          <span className="flex-shrink-0 mx-4 text-neutral-600 text-[10px] uppercase">
+          <span className="flex-shrink-0 mx-4 text-neutral-600 text-xs uppercase">
             Or
           </span>
           <div className="flex-grow border-t border-white/10"></div>
@@ -175,9 +196,7 @@ export default function LoginPage() {
           {!isLogin && (
             <div className="flex gap-4">
               <div className="flex-1 flex flex-col gap-1.5">
-                <label className="text-[10px] text-neutral-500">
-                  First Name
-                </label>
+                <label className="text-xs text-neutral-500">First Name</label>
                 <input
                   type="text"
                   value={firstName}
@@ -187,9 +206,7 @@ export default function LoginPage() {
                 />
               </div>
               <div className="flex-1 flex flex-col gap-1.5">
-                <label className="text-[10px] text-neutral-500">
-                  Last Name
-                </label>
+                <label className="text-xs text-neutral-500">Last Name</label>
                 <input
                   type="text"
                   value={lastName}
@@ -202,7 +219,7 @@ export default function LoginPage() {
           )}
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-[10px] text-neutral-500">Email</label>
+            <label className="text-xs text-neutral-500">Email</label>
             <input
               type="email"
               value={email}
@@ -214,19 +231,49 @@ export default function LoginPage() {
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-[10px] text-neutral-500">Password</label>
+            <label className="text-xs text-neutral-500">Password</label>
             <input
               type="password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => updatePassword(e.target.value)}
               placeholder="Enter your password"
               required
               className="w-full bg-[#1A1A1A] border-none text-white text-xs px-4 py-3 placeholder:text-neutral-600 focus:ring-1 focus:ring-emerald-500/50 outline-none rounded-none"
             />
-            {!isLogin && (
-              <p className="text-[9px] text-neutral-600">
-                Must be at least 8 characters.
-              </p>
+            {!isLogin && password.length > 0 && (
+              <div className="mt-2 space-y-1">
+                <p className="text-[10px] text-neutral-500 mb-1">
+                  Password requirements:
+                </p>
+                <ul className="space-y-1">
+                  {[
+                    { key: "length", label: "At least 8 characters" },
+                    { key: "uppercase", label: "One uppercase letter" },
+                    { key: "lowercase", label: "One lowercase letter" },
+                    { key: "number", label: "One number" },
+                    { key: "specialChar", label: "One special char (@$!%*?&)" },
+                  ].map(({ key, label }) => (
+                    <li key={key} className="flex items-center gap-2 text-xs">
+                      {passwordCriteria[
+                        key as keyof typeof passwordCriteria
+                      ] ? (
+                        <FaCheck className="text-emerald-500" size={10} />
+                      ) : (
+                        <div className="w-2.5 h-2.5 rounded-full border border-neutral-600" />
+                      )}
+                      <span
+                        className={
+                          passwordCriteria[key as keyof typeof passwordCriteria]
+                            ? "text-emerald-500"
+                            : "text-neutral-500"
+                        }
+                      >
+                        {label}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             )}
           </div>
 
@@ -243,7 +290,7 @@ export default function LoginPage() {
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || (!isLogin && !isPasswordValid)}
             className="mt-4 w-full bg-white text-black font-medium text-xs py-3.5 hover:bg-neutral-200 transition-colors disabled:opacity-50 rounded-none"
           >
             {loading ? "Processing..." : isLogin ? "Login" : "Sign Up"}
