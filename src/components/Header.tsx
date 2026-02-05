@@ -9,6 +9,7 @@ import { FaBars } from "react-icons/fa";
 import { IoSearch } from "react-icons/io5";
 import MobileMenu from "@/components/MobileMenu";
 import Button from "@/components/ui/Button";
+import UserMenu from "@/components/UserMenu";
 
 interface HeaderProps {
   showSearch?: boolean;
@@ -78,12 +79,6 @@ export default function Header({ showSearch }: HeaderProps) {
             {/* Desktop Nav */}
             <nav className="hidden md:flex items-center gap-6 flex-shrink-0">
               <Link
-                href="/rated"
-                className="font-mono text-xs text-neutral-100 transition-colors hover:text-[#00f0ff]"
-              >
-                Rated
-              </Link>
-              <Link
                 href="#"
                 className="font-mono text-xs text-neutral-100 transition-colors hover:text-neutral-300"
               >
@@ -94,20 +89,7 @@ export default function Header({ showSearch }: HeaderProps) {
               {!loading && (
                 <>
                   {user ? (
-                    <>
-                      <Link
-                        href="/profile"
-                        className="font-mono text-xs text-neutral-100 transition-colors hover:text-[#00f0ff]"
-                      >
-                        Profile
-                      </Link>
-                      <button
-                        onClick={() => signOut()}
-                        className="font-mono text-xs text-neutral-400 transition-colors hover:text-red-400 cursor-pointer"
-                      >
-                        Logout
-                      </button>
-                    </>
+                    <UserMenu user={user} onSignOut={signOut} />
                   ) : (
                     <>
                       <Link

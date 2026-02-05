@@ -31,6 +31,10 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "*.wikipedia.org",
       },
+      {
+        protocol: "https",
+        hostname: "*.googleusercontent.com",
+      },
     ],
     // Enable modern formats for better compression (30-50% smaller than JPEG)
     formats: ["image/avif", "image/webp"],
