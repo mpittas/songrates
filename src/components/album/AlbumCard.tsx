@@ -1,7 +1,7 @@
 "use client";
 
 import { createSlug } from "@/lib/utils";
-import OptimizedImage from "@/components/OptimizedImage";
+import OptimizedImage from "@/components/ui/OptimizedImage";
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { FaWikipediaW, FaEllipsisV } from "react-icons/fa";

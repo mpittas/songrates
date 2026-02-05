@@ -4,7 +4,7 @@ import SearchResults from "@/components/search/SearchResults";
 import ArtistList from "@/components/artist/ArtistList";
 import RecentArtists from "@/components/artist/RecentArtists";
 import MeshGradientBackground from "@/components/mesh/MeshGradientWrap";
-import MySection from "@/components/MySection";
+import MySection from "@/components/ui/MySection";
 import { Suspense, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 

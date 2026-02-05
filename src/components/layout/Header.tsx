@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import MySection from "@/components/MySection";
+import MySection from "@/components/ui/MySection";
 import HeaderSearchBar from "@/components/search/HeaderSearchBar";
 import { usePathname } from "next/navigation";
 import { FaBars, FaBell } from "react-icons/fa";

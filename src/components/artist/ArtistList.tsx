@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import PrefetchLink from "@/components/PrefetchLink";
+import PrefetchLink from "@/components/ui/PrefetchLink";
 import { createSlug } from "@/lib/utils";
 
 import { Artist } from "@/types/artist";

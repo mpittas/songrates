@@ -3,7 +3,7 @@
 import { useState } from "react";
 import AlbumGrid from "@/components/album/AlbumGrid";
 import { FaChevronDown, FaChevronUp, FaInfoCircle } from "react-icons/fa";
-import Tooltip from "@/components/Tooltip";
+import Tooltip from "@/components/ui/Tooltip";
 import { Release } from "@/types/music";
 
 export type AlbumType = Release & {

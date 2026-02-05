@@ -8,7 +8,7 @@ import ArtistInfo from "./ArtistInfo";
 import Discography from "./Discography";
 import Link from "next/link";
 import { addToHistory } from "@/lib/history";
-import MySection from "@/components/MySection";
+import MySection from "@/components/ui/MySection";
 import Button from "@/components/ui/Button";
 import { FaArrowLeft } from "react-icons/fa";
 // Types

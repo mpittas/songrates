@@ -1,7 +1,7 @@
 "use client";
 
 import { useAuth } from "@/context/AuthContext";
-import MySection from "@/components/MySection";
+import MySection from "@/components/ui/MySection";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 

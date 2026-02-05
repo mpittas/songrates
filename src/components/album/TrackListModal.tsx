@@ -1,7 +1,6 @@
 "use client";
 
 import { useRatings } from "@/hooks/useRatings";
-
 import { Track } from "@/types/music";
 import ColorRating from "@/components/rating/ColorRating";
 
@@ -39,7 +38,7 @@ function TrackItem({
   );
 }
 
-export default function TrackList({
+export default function TrackListModal({
   tracks,
   albumTitle,
   artistName,

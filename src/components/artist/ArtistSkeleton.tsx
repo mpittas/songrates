@@ -1,4 +1,4 @@
-import MySection from "@/components/MySection";
+import MySection from "@/components/ui/MySection";
 
 export default function ArtistSkeleton() {
   return (

@@ -4,7 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { getQueryClient } from "@/lib/queryClient";
 import { PlayerProvider } from "@/context/PlayerContext";
 import { RatingsProvider } from "@/context/RatingsContext";
-import MiniPlayer from "@/components/MiniPlayer";
+import MiniPlayer from "@/components/player/MiniPlayer";
 
 import { AuthProvider } from "@/context/AuthContext";
 

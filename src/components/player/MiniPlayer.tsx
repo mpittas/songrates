@@ -10,12 +10,12 @@ import { useRatings } from "@/hooks/useRatings";
 import ColorRating from "@/components/rating/ColorRating";
 import { AlbumContext } from "@/types/music";
 
-import TrackInfo from "./player/TrackInfo";
-import PlaybackControls from "./player/PlaybackControls";
-import ProgressBar from "./player/ProgressBar";
-import VolumeControl from "./player/VolumeControl";
-import VideoPlayer from "./player/VideoPlayer";
-import AlbumTracklistPopover from "./player/AlbumTracklistPopover";
+import TrackInfo from "./TrackInfo";
+import PlaybackControls from "./PlaybackControls";
+import ProgressBar from "./ProgressBar";
+import VolumeControl from "./VolumeControl";
+import VideoPlayer from "./VideoPlayer";
+import AlbumTracklistPopover from "./AlbumTracklistPopover";
 
 export default function MiniPlayer() {
   const {

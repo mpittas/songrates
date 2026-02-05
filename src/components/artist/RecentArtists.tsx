@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { getArtistHistory } from "@/lib/history";
 import { ArtistVisit } from "@/types/artist";
 import { formatTimeAgo, createSlug } from "@/lib/utils";
-import PrefetchLink from "@/components/PrefetchLink";
+import PrefetchLink from "@/components/ui/PrefetchLink";
 
 export default function RecentArtists() {
   const [history, setHistory] = useState<ArtistVisit[]>([]);
