@@ -111,14 +111,17 @@ export default function Header({ showSearch }: HeaderProps) {
               )}
             </nav>
 
-            {/* Mobile Menu Button */}
-            <button
-              className="md:hidden text-neutral-100 p-2"
-              onClick={() => setIsMobileMenuOpen(true)}
-              aria-label="Open menu"
-            >
-              <FaBars size={20} />
-            </button>
+            <div className="flex items-center gap-4 md:hidden">
+              {!loading && user && <UserMenu user={user} onSignOut={signOut} />}
+              {/* Mobile Menu Button */}
+              <button
+                className="text-neutral-100 p-2"
+                onClick={() => setIsMobileMenuOpen(true)}
+                aria-label="Open menu"
+              >
+                <FaBars size={20} />
+              </button>
+            </div>
           </div>
         </MySection>
       </header>

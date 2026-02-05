@@ -61,20 +61,6 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
 
         <nav className="flex flex-col gap-6">
           <Link
-            href="/"
-            onClick={onClose}
-            className="text-2xl font-light text-neutral-100 hover:text-[#00f0ff] transition-colors"
-          >
-            Home
-          </Link>
-          <Link
-            href="/rated"
-            onClick={onClose}
-            className="text-2xl font-light text-neutral-100 hover:text-[#00f0ff] transition-colors"
-          >
-            Rated
-          </Link>
-          <Link
             href="#"
             onClick={onClose}
             className="text-2xl font-light text-neutral-100 hover:text-neutral-300 transition-colors"
@@ -84,26 +70,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
 
           <div className="h-px w-full bg-white/10 my-2" />
 
-          {user ? (
-            <>
-              <Link
-                href="/profile"
-                onClick={onClose}
-                className="text-xl font-mono text-neutral-100 hover:text-[#00f0ff] transition-colors"
-              >
-                Profile
-              </Link>
-              <button
-                onClick={() => {
-                  signOut();
-                  onClose();
-                }}
-                className="text-xl font-mono text-left text-neutral-400 hover:text-red-400 transition-colors"
-              >
-                Logout
-              </button>
-            </>
-          ) : (
+          {!user && (
             <>
               <Link
                 href="/login?view=login"
