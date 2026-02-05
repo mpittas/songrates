@@ -63,7 +63,7 @@ export default function HeaderSearchBar() {
       <form
         onSubmit={handleSearch}
         className="w-full"
-        aria-label="Search artists"
+        aria-label="Search music"
       >
         <SearchInput
           value={query}
@@ -71,7 +71,7 @@ export default function HeaderSearchBar() {
           onClear={handleClear}
           onFocus={() => setIsFocused(true)}
           isFocused={isFocused}
-          placeholder="Search artists..."
+          placeholder="Search artists, albums, songs..."
           size="small"
           variant="dark"
         />

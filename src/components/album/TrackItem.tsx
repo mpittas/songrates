@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { FaPlay, FaPause, FaGlobe, FaLock } from "react-icons/fa";
 import { useRatings } from "@/hooks/useRatings";
@@ -19,6 +19,8 @@ interface TrackItemProps {
   publicRating?: number;
   publicCount?: number;
   forcedRating?: number;
+  /** When true, scroll into view and pulse-highlight this track */
+  highlighted?: boolean;
 }
 
 export default function TrackItem({
@@ -31,7 +33,9 @@ export default function TrackItem({
   publicRating,
   publicCount,
   forcedRating,
+  highlighted = false,
 }: TrackItemProps) {
+  const trackRef = useRef<HTMLDivElement>(null);
   const { ratings, setRating } = useRatings();
   const { currentTrack, isPlaying, isLoading, playTrack } = usePlayer();
   const rating =
@@ -39,8 +43,29 @@ export default function TrackItem({
   const isCurrentTrack = currentTrack?.id === track.id;
   const isReadOnly = forcedRating !== undefined;
 
+  // Auto-scroll and highlight when this track is the search target
+  useEffect(() => {
+    if (highlighted && trackRef.current) {
+      // Small delay to ensure DOM is rendered and album page has loaded
+      const timer = setTimeout(() => {
+        trackRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [highlighted]);
+
   return (
-    <div className="border-b border-[#1a1a1f]">
+    <div
+      ref={trackRef}
+      className={`border-b border-[#1a1a1f] ${
+        highlighted
+          ? "animate-highlight-track bg-[#00f0ff]/5 ring-1 ring-inset ring-[#00f0ff]/20"
+          : ""
+      }`}
+    >
       <div className="flex items-center justify-between py-3 group hover:bg-[#0a0a0d] px-4 transition-colors">
         <div className="flex items-center gap-4 min-w-0 flex-1">
           <span className="text-neutral-600 font-mono text-xs w-2 shrink-0 text-left">

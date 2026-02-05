@@ -28,6 +28,7 @@ export default function AlbumPage() {
   const { id: slug } = useParams();
   const searchParams = useSearchParams();
   const userId = searchParams.get("userId");
+  const highlightTrackId = searchParams.get("track");
 
   const [album, setAlbum] = useState<AlbumInfo | null>(null);
   const { ratings: myRatings, publicAlbumRatings } = useRatings();
@@ -473,6 +474,7 @@ export default function AlbumPage() {
                       ? viewingUserRatings[track.id] || 0
                       : undefined
                   }
+                  highlighted={track.id === highlightTrackId}
                 />
               ))}
             </div>

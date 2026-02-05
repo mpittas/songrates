@@ -54,7 +54,7 @@ export default function SearchBar() {
             setTimeout(() => setIsFocused(false), 200);
           }}
           isFocused={isFocused}
-          placeholder="Search for artists..."
+          placeholder="Search artists, albums, songs..."
           size="large"
           variant="light"
         />
