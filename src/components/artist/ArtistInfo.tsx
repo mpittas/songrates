@@ -14,6 +14,7 @@ interface Props {
   artistName: string;
   data: ArtistInfoType;
   disableFetch?: boolean;
+  className?: string;
 }
 
 export default function ArtistInfo({
@@ -21,17 +22,18 @@ export default function ArtistInfo({
   artistName,
   data,
   disableFetch,
+  className = "",
 }: Props) {
   return (
-    <div className="flex flex-col gap-2 text-sm">
+    <div className={`flex flex-col gap-2 text-sm ${className}`}>
       {/* Artist Image & Name */}
       <div className="space-y-4">
-        <div className="relative w-full aspect-square max-w-[140px] mx-auto lg:mx-0">
+        <div className="relative w-full aspect-square max-w-[100px]  mx-auto lg:mx-0">
           {data.image ? (
             <img
               src={data.image}
               alt={artistName}
-              className="w-full h-full object-cover rounded-full lg:rounded-none lg:grayscale hover:grayscale-0 transition-all duration-500 border border-white/10"
+              className="w-full h-full object-cover rounded-full"
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-white/5 border border-white/10 rounded-full lg:rounded-none">
@@ -76,84 +78,71 @@ export default function ArtistInfo({
       )}
 
       {/* Social Links */}
-      <div className="flex flex-wrap gap-4 text-neutral-500 justify-center lg:justify-start pt-4 mt-2 border-t border-white/5">
-        {data.spotify && (
-          <a
-            href={data.spotify}
-            target="_blank"
-            rel="noreferrer"
-            className="hover:text-[#1DB954] transition-colors"
-            title="Spotify"
-          >
-            <FaSpotify size={16} />
-          </a>
-        )}
-        {data.youtube && (
-          <a
-            href={data.youtube}
-            target="_blank"
-            rel="noreferrer"
-            className="hover:text-[#FF0000] transition-colors"
-            title="YouTube"
-          >
-            <FaYoutube size={16} />
-          </a>
-        )}
-        {data.instagram && (
-          <a
-            href={data.instagram}
-            target="_blank"
-            rel="noreferrer"
-            className="hover:text-[#E4405F] transition-colors"
-            title="Instagram"
-          >
-            <FaInstagram size={16} />
-          </a>
-        )}
-        {data.twitter && (
-          <a
-            href={data.twitter}
-            target="_blank"
-            rel="noreferrer"
-            className="hover:text-[#1DA1F2] transition-colors"
-            title="Twitter"
-          >
-            <FaTwitter size={16} />
-          </a>
-        )}
-        {data.facebook && (
-          <a
-            href={data.facebook}
-            target="_blank"
-            rel="noreferrer"
-            className="hover:text-[#1877F2] transition-colors"
-            title="Facebook"
-          >
-            <FaFacebook size={16} />
-          </a>
-        )}
-        {data.wikipedia && (
-          <a
-            href={data.wikipedia}
-            target="_blank"
-            rel="noreferrer"
-            className="hover:text-white transition-colors"
-            title="Wikipedia"
-          >
-            <FaWikipediaW size={16} />
-          </a>
-        )}
-        {data.officialSite && (
-          <a
-            href={data.officialSite}
-            target="_blank"
-            rel="noreferrer"
-            className="hover:text-cyan-400 transition-colors"
-            title="Official Site"
-          >
-            <FaGlobe size={16} />
-          </a>
-        )}
+      <div className="flex flex-col gap-2.5 justify-center lg:justify-start pt-4 mt-2 border-t border-white/5 font-mono text-[10px] uppercase tracking-wider">
+        {[
+          {
+            key: "officialSite",
+            label: "Website",
+            icon: FaGlobe,
+            hover: "hover:text-cyan-400",
+          },
+          {
+            key: "spotify",
+            label: "Spotify",
+            icon: FaSpotify,
+            hover: "hover:text-[#1DB954]",
+          },
+          {
+            key: "twitter",
+            label: "Twitter",
+            icon: FaTwitter,
+            hover: "hover:text-[#1DA1F2]",
+          },
+          {
+            key: "instagram",
+            label: "Instagram",
+            icon: FaInstagram,
+            hover: "hover:text-[#E4405F]",
+          },
+          {
+            key: "facebook",
+            label: "Facebook",
+            icon: FaFacebook,
+            hover: "hover:text-[#1877F2]",
+          },
+          {
+            key: "youtube",
+            label: "YouTube",
+            icon: FaYoutube,
+            hover: "hover:text-[#FF0000]",
+          },
+          {
+            key: "wikipedia",
+            label: "Wikipedia",
+            icon: FaWikipediaW,
+            hover: "hover:text-white",
+          },
+        ].map((social) => {
+          const url = data[social.key as keyof ArtistInfoType];
+          if (!url || typeof url !== "string") return null;
+
+          const Icon = social.icon;
+          return (
+            <a
+              key={social.key}
+              href={url}
+              target="_blank"
+              rel="noreferrer"
+              className={`flex items-center gap-2 text-neutral-400 ${social.hover} transition-colors group`}
+            >
+              <Icon
+                size={12}
+                className="group-hover:scale-110 transition-transform"
+              />
+              <span>{social.label}</span>
+            </a>
+          );
+        })}
       </div>
 
       {/* Dates */}

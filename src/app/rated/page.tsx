@@ -199,6 +199,7 @@ export default function RatedAlbumsPage() {
             albums={filteredAlbums}
             onSelectAlbum={() => {}}
             layout="grid"
+            gridCols={4}
           />
         )}
       </MySection>

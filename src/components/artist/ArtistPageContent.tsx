@@ -105,7 +105,7 @@ export default function ArtistPageContent({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-12 items-start lg:grid-cols-[140px_1fr]">
+        <div className="grid grid-cols-1 gap-10 items-start lg:grid-cols-[150px_1fr]">
           {/* Sidebar */}
           <div className="lg:sticky lg:top-20">
             <ArtistInfo
@@ -113,6 +113,7 @@ export default function ArtistPageContent({
               artistName={artistName}
               data={artistInfo}
               disableFetch={true}
+              className="w-full"
             />
           </div>
 

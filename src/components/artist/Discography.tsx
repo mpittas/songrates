@@ -138,7 +138,7 @@ export default function Discography({
   );
 
   return (
-    <div className="bg-[#222]/40 p-4 space-y-2">
+    <div className="space-y-2">
       {/* Main Albums */}
       {processedMainAlbums.length > 0 && (
         <CollapsibleSection
@@ -148,6 +148,7 @@ export default function Discography({
           layout="grid"
           defaultOpen={true}
           tooltipText="Full-length studio albums, typically containing 7+ tracks."
+          gridCols={3}
         />
       )}
 
@@ -160,6 +161,7 @@ export default function Discography({
           layout="grid"
           defaultOpen={true}
           tooltipText="Extended Plays. Shorter than albums but longer than singles (usually 3-6 tracks)."
+          gridCols={3}
         />
       )}
 
@@ -172,6 +174,7 @@ export default function Discography({
           layout="grid"
           defaultOpen={true}
           tooltipText="Live albums, compilations, remixes, and soundtracks."
+          gridCols={3}
         />
       )}
 
@@ -207,6 +210,7 @@ export default function Discography({
               layout="list"
               defaultOpen={true}
               tooltipText="Miscellaneous releases not fitting into standard categories."
+              gridCols={3}
             />
           ))}
         </>

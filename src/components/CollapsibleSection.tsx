@@ -19,6 +19,8 @@ export default function CollapsibleSection({
   layout = "list",
   defaultOpen = true,
   tooltipText,
+  gridClassName,
+  gridCols,
 }: {
   title: string;
   releases: AlbumType[];
@@ -26,6 +28,8 @@ export default function CollapsibleSection({
   layout?: "grid" | "list";
   defaultOpen?: boolean;
   tooltipText?: string;
+  gridClassName?: string;
+  gridCols?: number;
 }) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
   const [isExpanded, setIsExpanded] = useState(false); // For "Show More" (>10 items)
@@ -71,11 +75,13 @@ export default function CollapsibleSection({
       </button>
 
       {isOpen && (
-        <div className="border-t border-[#1a1a1f] p-4">
+        <div className="bg-neutral-900/50 border-t border-[#1a1a1f] p-4">
           <AlbumGrid
             albums={visibleReleases}
             onSelectAlbum={onSelectAlbum}
             layout={layout}
+            className={gridClassName}
+            gridCols={gridCols}
           />
 
           {hasMore && (
