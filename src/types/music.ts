@@ -38,6 +38,13 @@ export interface AlbumInfo {
   genres: string[];
   rating: number | null;
   wikipediaUrl: string | null;
+  links?: {
+    discogs?: string;
+    allmusic?: string;
+    bandcamp?: string;
+    spotify?: string;
+    description?: string;
+  };
   tracks: TrackInfo[];
 }
 

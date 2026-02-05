@@ -18,7 +18,11 @@ import {
   FaSearch,
   FaArrowLeft,
   FaWikipediaW,
+  FaSpotify,
+  FaGlobe,
 } from "react-icons/fa";
+import { SiDiscogs, SiBandcamp, SiGenius } from "react-icons/si";
+import AlbumRatingBadge from "@/components/AlbumRatingBadge";
 
 import { AlbumInfo, TrackInfo, AlbumContext } from "@/types/music";
 import { resolveAlbumId } from "@/lib/musicbrainz";
@@ -126,6 +130,7 @@ function TrackItem({
 export default function AlbumPage() {
   const { id: slug } = useParams();
   const [album, setAlbum] = useState<AlbumInfo | null>(null);
+  const { ratings } = useRatings();
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
@@ -170,106 +175,198 @@ export default function AlbumPage() {
     track.title.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
+  // Rating Stats
+  const tracks = album.tracks || [];
+  const totalTracks = tracks.length;
+  const ratedTracksCount = tracks.filter((t) => ratings[t.id] > 0).length;
+  const isFullyRated = totalTracks > 0 && ratedTracksCount === totalTracks;
+  const currentTotalScore = tracks.reduce(
+    (acc, t) => acc + (ratings[t.id] || 0),
+    0,
+  );
+  const averageScore =
+    ratedTracksCount > 0
+      ? (currentTotalScore / ratedTracksCount).toFixed(1)
+      : 0;
+
   return (
     <main className="min-h-screen bg-[#050507] text-neutral-100">
-      <MySection className="pt-7 pb-24">
-        {/* Hero Section */}
-        <div className="flex flex-col md:flex-row gap-10 items-start mb-16">
+      <MySection className="pt-8 pb-24">
+        <div className="mb-4">
+          <Button
+            href={`/artist/${
+              album.artist?.id
+                ? createSlug(album.artist.name, album.artist.id)
+                : ""
+            }`}
+            iconLeft={<FaArrowLeft size={10} />}
+            variant="ghost"
+            size="xs"
+            className="text-neutral-500 hover:text-white pl-0"
+          >
+            Back to Artist
+          </Button>
+        </div>
+
+        {/* New Hero Section */}
+        <div className="flex flex-col md:flex-row gap-8 md:gap-12 items-start mb-16 relative">
+          {/* Background Gradient/Blur Effect could go here if desired */}
+
           {/* Album Cover */}
-          <div className="w-full md:w-64 shrink-0 aspect-square relative bg-[#0a0a0d] border border-[#1a1a1f]">
-            <OptimizedImage
-              src={imageUrl}
-              alt={album.title}
-              fill
-              className="object-cover transition-all duration-500"
-              priority
-              fallbackText={album.title?.slice(0, 2).toUpperCase() || "??"}
-              fallbackSrc="/vinyl-placeholder.svg"
-            />
+          <div className="w-52 md:w-72 shrink-0 relative group mx-auto md:mx-0">
+            <div className="aspect-square relative">
+              <OptimizedImage
+                src={imageUrl}
+                alt={album.title}
+                fill
+                className="object-cover"
+                priority
+                fallbackText={album.title?.slice(0, 2).toUpperCase() || "??"}
+                fallbackSrc="/vinyl-placeholder.svg"
+              />
+            </div>
+
+            <span className=" absolute -bottom-2 left-2 text-[10px] font-bold font-mono text-neutral-400 uppercase tracking-widest px-2 py-1 bg-neutral-900">
+              {album.type}
+            </span>
           </div>
 
           {/* Album Details */}
-          <div className="flex-1 space-y-4 pt-2">
-            <div className="flex items-center justify-between">
-              <div>
-                <span className="text-[10px] font-mono text-neutral-600 uppercase tracking-widest border border-[#1a1a1f] px-2 py-1">
-                  {album.type}
-                </span>
-              </div>
-
-              {/* Navigation */}
-              <Button
-                href={`/artist/${
-                  album.artist?.id
-                    ? createSlug(album.artist.name, album.artist.id)
-                    : ""
-                }`}
-                iconLeft={<FaArrowLeft size={10} />}
-                variant="ghost"
-                size="xs"
-                className="text-neutral-600 hover:text-[#00f0ff]"
-              >
-                back to artist
-              </Button>
+          <div className="flex-1 min-w-0 pt-2 w-full text-center md:text-left">
+            {/* Genres */}
+            <div className="flex items-center gap-2 mb-6 pb-3 border-b border-neutral-900">
+              <div className="text-xs">Genres:</div>
+              {album.genres?.length > 0 && (
+                <div className="flex flex-wrap justify-center md:justify-start gap-x-1">
+                  {album.genres.slice(0, 5).map((g, i, arr) => (
+                    <span
+                      key={g}
+                      className="text-xs text-neutral-500 capitalize"
+                    >
+                      <span className="hover:text-neutral-300 transition-colors cursor-default">
+                        {g}
+                      </span>
+                      {i < arr.length - 1 && ","}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
 
-            <h1 className="text-3xl md:text-5xl font-light tracking-tight text-neutral-200 leading-tight">
-              {album.title}
-            </h1>
+            <div className="flex flex-wrap items-center gap-1.5 text-xs text-neutral-600 mb-2">
+              <span className="font-mono">
+                {album.releaseDate?.split("-")[0]}
+              </span>
+              <span className="text-neutral-600">•</span>
+              <span className="font-mono">
+                {album.tracks?.length || 0} tracks
+              </span>
+            </div>
 
-            <div className="flex flex-col gap-1">
+            <div className="mb-5">
+              <h1 className="text-2xl md:text-4xl font-light  tracking-tight text-neutral-200 mb-1">
+                {album.title}
+              </h1>
+
               <Link
                 href={`/artist/${
                   album.artist?.id
                     ? createSlug(album.artist.name, album.artist.id)
                     : ""
                 }`}
-                className="text-lg text-neutral-500 hover:text-[#00f0ff] transition-colors"
+                className="block text-neutral-500 hover:text-[#00f0ff] transition-colors text-md mb-1"
               >
                 {album.artist?.name}
               </Link>
-              <span className="text-neutral-600 font-mono text-xs">
-                {album.releaseDate?.split("-")[0]} · {album.tracks?.length || 0}{" "}
-                tracks
-              </span>
             </div>
 
-            {album.genres?.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-4">
-                {album.genres.map((g) => (
-                  <span
-                    key={g}
-                    className="text-[10px] text-neutral-600 font-mono border border-[#1a1a1f] px-2 py-1"
-                  >
-                    {g}
-                  </span>
-                ))}
-              </div>
-            )}
-
-            <div className="flex items-center gap-4 pt-4">
-              {album.rating && (
-                <div className="flex flex-col">
-                  <span className="text-[10px] text-neutral-600 uppercase tracking-wider font-mono">
-                    rating
-                  </span>
-                  <span className="text-lg text-neutral-400 font-mono">
-                    {album.rating}{" "}
-                    <span className="text-neutral-600 text-xs">/ 10</span>
-                  </span>
-                </div>
-              )}
+            {/* Actions / Links */}
+            <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mb-8">
+              {/* External Links */}
               {album.wikipediaUrl && (
                 <Button
                   href={album.wikipediaUrl}
                   isExternal
-                  iconRight={<FaWikipediaW size={10} />}
+                  iconLeft={<FaWikipediaW size={12} />}
                   variant="border"
-                  size="sm"
-                  className="text-neutral-500 hover:border-[#00f0ff] hover:text-[#00f0ff]"
+                  size="xs"
                 >
-                  wiki
+                  Wiki
                 </Button>
+              )}
+              {album.links?.discogs && (
+                <Button
+                  href={album.links.discogs}
+                  isExternal
+                  iconLeft={<SiDiscogs size={12} />}
+                  variant="border"
+                  size="xs"
+                >
+                  Discogs
+                </Button>
+              )}
+              {album.links?.bandcamp && (
+                <Button
+                  href={album.links.bandcamp}
+                  isExternal
+                  iconLeft={<SiBandcamp size={12} />}
+                  variant="border"
+                  size="xs"
+                  className="text-neutral-400 hover:text-[#00f0ff] hover:border-neutral-800 hover:bg-neutral-800 h-8 transition-colors"
+                >
+                  Bandcamp
+                </Button>
+              )}
+              {album.links?.allmusic && (
+                <Button
+                  href={album.links.allmusic}
+                  isExternal
+                  iconLeft={<FaGlobe size={12} />} // Fallback icon
+                  variant="border"
+                  size="xs"
+                >
+                  AllMusic
+                </Button>
+              )}
+              {album.links?.spotify && (
+                <Button
+                  href={album.links.spotify}
+                  isExternal
+                  iconLeft={<FaSpotify size={12} />}
+                  variant="border"
+                  size="xs"
+                  className="text-neutral-400 hover:text-[#1DB954] hover:border-neutral-800 hover:bg-neutral-800 h-8 transition-colors"
+                >
+                  Spotify
+                </Button>
+              )}
+            </div>
+
+            {/* Rating Badge Display */}
+            <div className="flex flex-col md:flex-row items-center gap-6 mb-8">
+              <div className="w-full max-w-[240px]">
+                <AlbumRatingBadge
+                  score={averageScore}
+                  ratedCount={ratedTracksCount}
+                  totalTracks={totalTracks}
+                  isFull={isFullyRated}
+                  position="static"
+                  variant="minimal"
+                  className="rounded-md"
+                />
+              </div>
+
+              {/* MB Rating if available */}
+              {album.rating && (
+                <div className="flex flex-col items-center md:items-start">
+                  <span className="text-[10px] text-neutral-600 uppercase tracking-wider font-mono mb-0.5">
+                    MB Rating
+                  </span>
+                  <span className="text-neutral-300 font-mono text-sm">
+                    <span className="text-white font-bold">{album.rating}</span>{" "}
+                    / 10
+                  </span>
+                </div>
               )}
             </div>
           </div>

@@ -59,8 +59,22 @@ async function fetchAlbumInfo(albumId: string) {
       .slice(0, 5)
       .map((t: Tag) => t.name) || [];
 
-  // 2. Fetch Wikipedia URL via Wikidata
+  // 2. Fetch Links
   let wikipediaUrl = null;
+  const links: Record<string, string> = {};
+
+  if (rgData.relations) {
+    rgData.relations.forEach(
+      (rel: { type: string; url?: { resource: string } }) => {
+        if (rel.url?.resource) {
+          if (rel.type === "discogs") links.discogs = rel.url.resource;
+          if (rel.type === "allmusic") links.allmusic = rel.url.resource;
+          if (rel.type === "bandcamp") links.bandcamp = rel.url.resource;
+        }
+      },
+    );
+  }
+
   const wikidataRel = rgData.relations?.find(
     (rel: { type: string; url?: { resource?: string } }) =>
       rel.type === "wikidata",
@@ -136,6 +150,7 @@ async function fetchAlbumInfo(albumId: string) {
     genres,
     rating,
     wikipediaUrl,
+    links,
     tracks,
   };
 }
