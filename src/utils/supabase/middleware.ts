@@ -37,6 +37,14 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  // If the user's session is invalid (e.g. refresh token not found), clears the
+  // cookies so that the user is forced to log in again.
+  // This prevents the "refresh_token_not_found" error from persisting.
+  if (!user && request.cookies.get("sb-access-token")) {
+    supabaseResponse.cookies.delete("sb-access-token");
+    supabaseResponse.cookies.delete("sb-refresh-token");
+  }
+
   if (
     !user &&
     !request.nextUrl.pathname.startsWith("/login") &&
