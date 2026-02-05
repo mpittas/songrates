@@ -20,6 +20,7 @@ interface RatingsContextType {
     albumContext?: AlbumContext,
   ) => void;
   getAlbumRating: (albumId: string) => number | null;
+  removeAlbumRating: (albumId: string) => Promise<void>;
 }
 
 const RatingsContext = createContext<RatingsContextType | undefined>(undefined);
@@ -216,9 +217,81 @@ export function RatingsProvider({ children }: { children: React.ReactNode }) {
     [albumRatings, ratings],
   );
 
+  const removeAlbumRating = useCallback(
+    async (albumId: string) => {
+      // Optimistic Update
+      const album = albumRatings[albumId];
+      if (!album) return;
+
+      const trackIdsToRemove = album.ratedTrackIds;
+
+      setRatings((prev) => {
+        const next = { ...prev };
+        trackIdsToRemove.forEach((id) => delete next[id]);
+        return next;
+      });
+
+      setAlbumRatings((prev) => {
+        const next = { ...prev };
+        // We might want to keep the album data but clear rating info,
+        // OR completely remove it from "user_albums" if that's the intention.
+        // Based on "fully remove rating", removing it from our tracked albums makes sense
+        // if it has no ratings left.
+        // However, user_albums is "albums the user has interacted with".
+        // Let's keep the album record but clear its rated tracks.
+        // Actually, if we remove all ratings, it shouldn't show up in "Rated" page anymore.
+        // The "Rated" page filters by `ratiodTrackIds.length > 0`.
+        if (next[albumId]) {
+          next[albumId] = {
+            ...next[albumId],
+            ratedTrackIds: [],
+          };
+        }
+        return next;
+      });
+
+      if (!user) return;
+
+      try {
+        // Delete ratings from Supabase
+        const { error: rError } = await supabase
+          .from("ratings")
+          .delete()
+          .match({ album_id: albumId, user_id: user.id });
+
+        if (rError) {
+          console.error("Error deleting album ratings from Supabase", rError);
+        }
+
+        // We might also want to update or delete the user_albums entry depending on logic.
+        // If the album has no other significance (like "listened to" or "owned"),
+        // we might leave it or update its stats.
+        // For now, let's just update the user_albums entry to have 0 rated tracks?
+        // Actually, trigger in DB might handle it, or we should update it.
+        // Simplest is to just delete the ratings.
+
+        // Let's also update the user_albums "manual" fields if we track them manually.
+        // It seems user_albums is upserted on rating.
+        // If we remove all ratings, we might want to delete the user_albums entry
+        // OR keep it but with different status.
+        // To strictly "remove rating", ensuring track_ids are gone is enough
+        // relative to the "Rated" page logic I saw earlier.
+      } catch (e) {
+        console.error("Failed to remove album rating", e);
+      }
+    },
+    [user, supabase, albumRatings],
+  );
+
   return (
     <RatingsContext.Provider
-      value={{ ratings, setRating, albumRatings, getAlbumRating }}
+      value={{
+        ratings,
+        setRating,
+        albumRatings,
+        getAlbumRating,
+        removeAlbumRating,
+      }}
     >
       {children}
     </RatingsContext.Provider>
