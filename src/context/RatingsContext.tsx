@@ -110,8 +110,21 @@ export function RatingsProvider({ children }: { children: React.ReactNode }) {
         }
       });
 
-    // 3. Fetch Personal Ratings (Only if logged in)
-    if (!user) {
+    // 3. Fetch Personal Ratings (User or Guest)
+    const activeUserId = user?.id || localStorage.getItem("songrates_guest_id");
+
+    // Generate guest ID if needed
+    if (!user && !activeUserId) {
+      const newGuestId = crypto.randomUUID();
+      localStorage.setItem("songrates_guest_id", newGuestId);
+    }
+
+    // Stabilize the ID we use for this effect run
+    const effectiveUserId =
+      user?.id || localStorage.getItem("songrates_guest_id");
+
+    if (!effectiveUserId) {
+      // Should not happen if we just set it, but safety
       setRatings({});
       setAlbumRatings({});
       setIsLoaded(true);
@@ -125,14 +138,16 @@ export function RatingsProvider({ children }: { children: React.ReactNode }) {
         // Fetch ratings
         const { data: dbRatings, error: rError } = await supabase
           .from("ratings")
-          .select("track_id, album_id, rating");
+          .select("track_id, album_id, rating")
+          .eq("user_id", effectiveUserId);
 
         if (rError) throw rError;
 
         // Fetch albums
         const { data: dbAlbums, error: aError } = await supabase
           .from("user_albums")
-          .select("*");
+          .select("*")
+          .eq("user_id", effectiveUserId);
 
         if (aError) throw aError;
 
@@ -227,7 +242,14 @@ export function RatingsProvider({ children }: { children: React.ReactNode }) {
         });
       }
 
-      if (!user) return;
+      // Determine Target User ID (Auth or Guest)
+      const targetUserId =
+        user?.id || localStorage.getItem("songrates_guest_id");
+
+      if (!targetUserId) {
+        console.error("No user ID or guest ID found, cannot save rating.");
+        return;
+      }
 
       // Supabase Calls
       if (rating > 0) {
@@ -239,7 +261,7 @@ export function RatingsProvider({ children }: { children: React.ReactNode }) {
         }
 
         const { error: rError } = await supabase.from("ratings").upsert({
-          user_id: user.id,
+          user_id: targetUserId,
           track_id: trackId,
           album_id: albumContext.albumId,
           rating: rating,
@@ -250,7 +272,7 @@ export function RatingsProvider({ children }: { children: React.ReactNode }) {
         }
 
         const { error: aError } = await supabase.from("user_albums").upsert({
-          user_id: user.id,
+          user_id: targetUserId,
           album_id: albumContext.albumId,
           title: albumContext.title,
           artist_name: albumContext.artistName,
@@ -264,7 +286,7 @@ export function RatingsProvider({ children }: { children: React.ReactNode }) {
       } else {
         // Delete rating
         const { error } = await supabase.from("ratings").delete().match({
-          user_id: user.id,
+          user_id: targetUserId,
           track_id: trackId,
         });
 
