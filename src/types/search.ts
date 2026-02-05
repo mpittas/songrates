@@ -55,18 +55,26 @@ export interface SongSearchResult extends SearchResultBase {
   type: "song";
   artistName?: string;
   artistId?: string;
-  /** Number of releases this recording appears on (Fame Index) */
+  /** Total number of releases this recording appears on (Fame Index) */
   releaseCount: number;
+  /** Number of *official* releases only (status: "Official") */
+  officialReleaseCount: number;
+  /** Whether this recording appears on an Album-type release-group */
+  hasAlbumRelease: boolean;
   /** First release date */
   firstReleaseDate?: string;
   /** Duration in milliseconds */
   length?: number;
   /** ListenBrainz total listen count (optional enrichment) */
   listenCount?: number;
-  /** The release-group (album/EP/single) this recording belongs to */
+  /** The best-matching release-group (album/EP/single) this recording belongs to */
   releaseGroupId?: string;
-  /** Title of the release-group */
+  /** Title of the best-matching release-group */
   releaseGroupTitle?: string;
+  /** The original album title (earliest official Album release-group) */
+  originalAlbumTitle?: string;
+  /** The original album's release date */
+  originalAlbumDate?: string;
 }
 
 export type SearchResult =

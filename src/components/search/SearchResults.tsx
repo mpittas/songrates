@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import Link from "next/link";
 import { IoMusicalNotes, IoDisc, IoPerson, IoFlame } from "react-icons/io5";
 
@@ -169,6 +169,13 @@ function SongRow({
 
   const effectiveListenCount = listenCount ?? result.listenCount;
 
+  // Display the original album title if available, otherwise the release group title
+  const displayAlbumTitle =
+    result.originalAlbumTitle || result.releaseGroupTitle;
+  // Show the year from original album date, or fall back to first release date
+  const displayYear =
+    (result.originalAlbumDate || result.firstReleaseDate)?.slice(0, 4) || "";
+
   const content = (
     <>
       <div className="w-10 h-10 overflow-hidden bg-[#0f0f12] border border-[#1a1a1f] group-hover:border-[#00f0ff]/30 flex items-center justify-center flex-shrink-0">
@@ -183,22 +190,28 @@ function SongRow({
         </h3>
         <p className="text-[11px] text-neutral-600 truncate mt-0.5">
           {result.artistName || "Unknown Artist"}
-          {result.releaseGroupTitle ? ` · ${result.releaseGroupTitle}` : ""}
-          {result.firstReleaseDate
-            ? ` · ${result.firstReleaseDate.slice(0, 4)}`
-            : ""}
+          {displayAlbumTitle ? ` · ${displayAlbumTitle}` : ""}
+          {displayYear ? ` · ${displayYear}` : ""}
           {result.length
             ? ` · ${formatTime(result.length, "milliseconds")}`
             : ""}
         </p>
       </div>
       <div className="flex items-center gap-2 flex-shrink-0">
-        {result.releaseCount > 0 && (
+        {result.officialReleaseCount > 0 && (
           <span
             className="text-[10px] font-mono px-1.5 py-0.5 rounded-sm bg-[#00f0ff]/5 text-[#00f0ff]/70 border border-[#00f0ff]/10"
-            title={`Appears on ${result.releaseCount} releases (Fame Index)`}
+            title={`Appears on ${result.officialReleaseCount} official releases out of ${result.releaseCount} total (Fame Index)`}
           >
-            {result.releaseCount} rel
+            {result.officialReleaseCount} rel
+          </span>
+        )}
+        {result.hasAlbumRelease && (
+          <span
+            className="text-[10px] font-mono px-1 py-0.5 rounded-sm bg-emerald-500/10 text-emerald-400/70 border border-emerald-500/15"
+            title="Appears on an official Album"
+          >
+            LP
           </span>
         )}
         {effectiveListenCount != null && effectiveListenCount > 0 && (
@@ -355,6 +368,7 @@ export default function SearchResults({
 
   // ─── Lazy ListenBrainz enrichment ──────────────────────────────────
   // Fires AFTER main results are rendered, enriches songs with listen counts.
+  // Does NOT mutate results/grouped state — re-sorting is via useMemo below.
   useEffect(() => {
     if (results.length === 0) return;
 
@@ -365,7 +379,7 @@ export default function SearchResults({
 
     // Only enrich songs that aren't already cached
     const toEnrich = songResults
-      .slice(0, 5)
+      .slice(0, 10)
       .map((s) => s.id)
       .filter((id) => !listenCountCache.has(id));
 
@@ -411,6 +425,34 @@ export default function SearchResults({
       });
   }, [results]);
 
+  // ─── Re-sort by ListenBrainz popularity (True Popularity) ─────────
+  // Once listen counts arrive, re-rank songs so the most-listened-to
+  // version surfaces first. Uses useMemo to avoid state mutation loops.
+  const sortedResults = useMemo(() => {
+    if (listenCounts.size === 0) return results;
+
+    const nonSongs = results.filter((r) => r.type !== "song");
+    const songs = results
+      .filter((r): r is SongSearchResult => r.type === "song")
+      .sort((a, b) => {
+        const aCount = listenCounts.get(a.id) ?? a.listenCount ?? 0;
+        const bCount = listenCounts.get(b.id) ?? b.listenCount ?? 0;
+        return bCount - aCount;
+      });
+    return [...nonSongs, ...songs];
+  }, [results, listenCounts]);
+
+  const sortedGrouped = useMemo(() => {
+    if (!grouped || listenCounts.size === 0) return grouped;
+
+    const sortedSongs = [...grouped.songs].sort((a, b) => {
+      const aCount = listenCounts.get(a.id) ?? a.listenCount ?? 0;
+      const bCount = listenCounts.get(b.id) ?? b.listenCount ?? 0;
+      return bCount - aCount;
+    });
+    return { ...grouped, songs: sortedSongs };
+  }, [grouped, listenCounts]);
+
   // ─── History when focused and empty ────────────────────────────────
   useEffect(() => {
     if (isFocused && !query) {
@@ -443,18 +485,18 @@ export default function SearchResults({
         </div>
       )}
 
-      {/* Results */}
-      {query && !loading && results.length > 0 && (
+      {/* Results — uses sortedResults/sortedGrouped for ListenBrainz re-ranking */}
+      {query && !loading && sortedResults.length > 0 && (
         <div className="divide-y divide-[#1a1a1f]/50">
-          {category === "all" && grouped ? (
+          {category === "all" && sortedGrouped ? (
             <>
-              {grouped.artists.length > 0 && (
+              {sortedGrouped.artists.length > 0 && (
                 <>
                   <SectionHeader
                     label="Artists"
-                    count={grouped.artists.length}
+                    count={sortedGrouped.artists.length}
                   />
-                  {grouped.artists.slice(0, 3).map((r) => (
+                  {sortedGrouped.artists.slice(0, 3).map((r) => (
                     <ResultRow
                       key={r.id}
                       result={r}
@@ -463,10 +505,13 @@ export default function SearchResults({
                   ))}
                 </>
               )}
-              {grouped.albums.length > 0 && (
+              {sortedGrouped.albums.length > 0 && (
                 <>
-                  <SectionHeader label="Albums" count={grouped.albums.length} />
-                  {grouped.albums.slice(0, 3).map((r) => (
+                  <SectionHeader
+                    label="Albums"
+                    count={sortedGrouped.albums.length}
+                  />
+                  {sortedGrouped.albums.slice(0, 3).map((r) => (
                     <ResultRow
                       key={r.id}
                       result={r}
@@ -475,10 +520,13 @@ export default function SearchResults({
                   ))}
                 </>
               )}
-              {grouped.songs.length > 0 && (
+              {sortedGrouped.songs.length > 0 && (
                 <>
-                  <SectionHeader label="Songs" count={grouped.songs.length} />
-                  {grouped.songs.slice(0, 8).map((r) => (
+                  <SectionHeader
+                    label="Songs"
+                    count={sortedGrouped.songs.length}
+                  />
+                  {sortedGrouped.songs.slice(0, 8).map((r) => (
                     <ResultRow
                       key={r.id}
                       result={r}
@@ -489,7 +537,7 @@ export default function SearchResults({
               )}
             </>
           ) : (
-            results.map((r) => (
+            sortedResults.map((r) => (
               <ResultRow key={r.id} result={r} listenCounts={listenCounts} />
             ))
           )}
@@ -497,7 +545,7 @@ export default function SearchResults({
       )}
 
       {/* No results */}
-      {query && !loading && results.length === 0 && (
+      {query && !loading && sortedResults.length === 0 && (
         <div className="text-center py-8 text-neutral-600 font-mono text-sm">
           no results found for &ldquo;{query}&rdquo;
         </div>

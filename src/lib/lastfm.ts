@@ -4,6 +4,56 @@ interface PopularityResponse {
   [titleKey: string]: number;
 }
 
+// ─── Last.fm Track Search Result ───────────────────────────────────────────────
+
+export interface LastFmTrack {
+  name: string;
+  artist: string;
+  /** Last.fm listener count — the real popularity signal */
+  listeners: number;
+  /** MusicBrainz recording ID (may be empty string) */
+  mbid: string;
+}
+
+/**
+ * Search Last.fm for tracks. Returns results sorted by popularity (listener count).
+ * This is the key to surfacing famous songs like "Billie Jean" by MJ over covers.
+ *
+ * @param query   Search query (e.g., "Billie Jean")
+ * @param limit   Max results to return (default 30)
+ * @returns       Array of LastFmTrack sorted by listener count (descending)
+ */
+export async function searchLastFmTracks(
+  query: string,
+  limit: number = 30,
+): Promise<LastFmTrack[]> {
+  const apiKey = process.env.LASTFM_API_KEY;
+  if (!apiKey) return [];
+
+  try {
+    const url = `${LASTFM_BASE_URL}?method=track.search&track=${encodeURIComponent(
+      query,
+    )}&api_key=${apiKey}&format=json&limit=${limit}`;
+
+    const res = await fetch(url, { next: { revalidate: 1800 } });
+    if (!res.ok) return [];
+
+    const data = await res.json();
+    const tracks = data?.results?.trackmatches?.track;
+    if (!Array.isArray(tracks)) return [];
+
+    return tracks.map((t: any) => ({
+      name: t.name || "",
+      artist: t.artist || "",
+      listeners: parseInt(t.listeners, 10) || 0,
+      mbid: t.mbid || "",
+    }));
+  } catch (err) {
+    console.error("Last.fm track search error:", err);
+    return [];
+  }
+}
+
 export async function getArtistPopularity(
   artistName: string,
 ): Promise<PopularityResponse> {
