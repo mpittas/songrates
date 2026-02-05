@@ -3,6 +3,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSearchInput } from "@/hooks/useSearchInput";
 import SearchInput from "@/components/search/SearchInput";
+import SearchResults from "@/components/search/SearchResults";
 
 export default function SearchBar() {
   const router = useRouter();
@@ -42,17 +43,27 @@ export default function SearchBar() {
 
   return (
     <form onSubmit={handleSearch} className="w-full">
-      <SearchInput
-        value={query}
-        onChange={setQuery}
-        onClear={handleClear}
-        onFocus={() => setIsFocused(true)}
-        onBlur={() => setIsFocused(false)}
-        isFocused={isFocused}
-        placeholder="Search for artists..."
-        size="large"
-        variant="light"
-      />
+      <div className="relative">
+        <SearchInput
+          value={query}
+          onChange={setQuery}
+          onClear={handleClear}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => {
+            // Small delay to allow clicking on results
+            setTimeout(() => setIsFocused(false), 200);
+          }}
+          isFocused={isFocused}
+          placeholder="Search for artists..."
+          size="large"
+          variant="light"
+        />
+        <SearchResults
+          query={query}
+          isFocused={isFocused}
+          onClose={() => setIsFocused(false)}
+        />
+      </div>
     </form>
   );
 }

@@ -1,42 +1,10 @@
 "use client";
 import SearchBar from "@/components/search/SearchBar";
-import SearchResults from "@/components/search/SearchResults";
-import ArtistList from "@/components/artist/ArtistList";
-import RecentArtists from "@/components/artist/RecentArtists";
 import MeshGradientBackground from "@/components/mesh/MeshGradientWrap";
 import MySection from "@/components/ui/MySection";
-import { Suspense, useEffect } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
-
-function SearchResultsWrapper() {
-  const searchParams = useSearchParams();
-  const query = searchParams.get("q") || "";
-
-  return <SearchResults query={query} />;
-}
+import { Suspense } from "react";
 
 function HomeContent() {
-  const searchParams = useSearchParams();
-  const router = useRouter();
-
-  // Close search results when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (!searchParams.get("q")) return;
-
-      const target = e.target as HTMLElement;
-      // If click is NOT inside the search container (z-[100] div)
-      if (!target.closest(".z-\\[100\\]")) {
-        const newParams = new URLSearchParams(searchParams.toString());
-        newParams.delete("q");
-        router.replace(`/?${newParams.toString()}`);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [searchParams, router]);
-
   return (
     <main className="min-h-screen text-neutral-100 flex flex-col relative">
       <div className="absolute top-0 left-0 right-0 h-[400px] z-0 overflow-hidden -mt-17">
@@ -60,16 +28,7 @@ function HomeContent() {
             <Suspense fallback={null}>
               <SearchBar />
             </Suspense>
-            <Suspense fallback={null}>
-              <SearchResultsWrapper />
-            </Suspense>
           </div>
-        </div>
-      </MySection>
-
-      <MySection className="pb-20 relative z-0">
-        <div>
-          <RecentArtists />
         </div>
       </MySection>
     </main>

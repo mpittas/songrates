@@ -20,9 +20,9 @@ export default function HeaderSearchBar() {
     clearQuery,
   } = useSearchInput();
 
-  // Show results when we have a debounced query and input is focused
+  // Show results when input is focused (SearchResults handles empty query logic)
   useEffect(() => {
-    setShowResults(!!debouncedQuery && isFocused);
+    setShowResults(isFocused);
   }, [debouncedQuery, isFocused]);
 
   // Click outside handler
@@ -53,7 +53,9 @@ export default function HeaderSearchBar() {
 
   const handleClear = () => {
     clearQuery();
-    setShowResults(false);
+    // Keep focus and results open when clearing
+    setShowResults(true);
+    setIsFocused(true);
   };
 
   return (
@@ -76,7 +78,13 @@ export default function HeaderSearchBar() {
       </form>
 
       {/* Search Results */}
-      {showResults && <SearchResults query={debouncedQuery} />}
+      {showResults && (
+        <SearchResults
+          query={debouncedQuery}
+          isFocused={isFocused}
+          onClose={() => setIsFocused(false)}
+        />
+      )}
     </div>
   );
 }
