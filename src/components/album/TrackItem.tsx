@@ -108,13 +108,15 @@ export default function TrackItem({
           {/* Public Rating Display */}
           {publicRating && (
             <div
-              className="hidden md:flex items-center gap-1.5 opacity-60 hover:opacity-100 transition-opacity mr-2"
-              title={`Public: ${publicRating} (${publicCount})`}
+              className="hidden md:flex items-center gap-1.5 opacity-60 hover:opacity-100 transition-opacity"
+              title={`Public: ${publicRating} (${publicCount}) users`}
             >
-              <FaGlobe size={10} className="text-neutral-500" />
-              <span className="text-[10px] font-mono text-neutral-400">
-                {publicRating}
+              <span className="text-[11px] text-neutral-50 font-medium">
+                {publicRating.toFixed(2)}
+                <span className="text-neutral-500 font-light ml-1">/ 10</span>
               </span>
+
+              <FaGlobe size={10} className="text-neutral-500" />
             </div>
           )}
 

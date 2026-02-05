@@ -48,7 +48,7 @@ export default function AlbumRatingRow({
               Public Rating
             </span>
             <div className="flex items-baseline gap-2">
-              <span className="text-xl font-bold text-neutral-200">
+              <span className="text-xl font-bold text-neutral-100">
                 {publicRating ? publicRating : "--"}
               </span>
               <span className="text-xs text-neutral-700 font-mono">/ 10</span>

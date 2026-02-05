@@ -65,7 +65,7 @@ export default function AlbumRatingBadge({
           >
             <FaGlobe size={10} className="text-neutral-500" />
             <span className="text-[10px] font-mono text-neutral-300">
-              {publicRating}
+              {publicRating.toFixed(2)}
             </span>
           </div>
         )}
