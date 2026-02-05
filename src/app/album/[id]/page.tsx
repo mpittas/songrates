@@ -34,6 +34,8 @@ function TrackItem({
   albumId,
   albumImageUrl,
   albumContext,
+  publicRating,
+  publicCount,
 }: {
   track: TrackInfo;
   artistName: string;
@@ -41,6 +43,8 @@ function TrackItem({
   albumId: string;
   albumImageUrl: string;
   albumContext: AlbumContext;
+  publicRating?: number;
+  publicCount?: number;
 }) {
   const { ratings, setRating } = useRatings();
   const { currentTrack, isPlaying, isLoading, playTrack } = usePlayer();
@@ -52,6 +56,10 @@ function TrackItem({
     <div className="border-b border-[#1a1a1f]">
       <div className="flex items-center justify-between py-3 group hover:bg-[#0a0a0d] px-4 transition-colors">
         <div className="flex items-center gap-4 min-w-0 flex-1">
+          <span className="text-neutral-600 font-mono text-xs w-2 shrink-0 text-left">
+            {track.number}
+          </span>
+
           <button
             onClick={() =>
               playTrack({
@@ -83,8 +91,8 @@ function TrackItem({
             )}
           </button>
 
-          <span className="text-neutral-600 font-mono text-xs w-6 shrink-0 text-left">
-            {track.number}
+          <span className="text-[10px] text-neutral-600 font-mono hidden sm:block w-5 shrink-0 text-right mr-4">
+            {formatTime(track.length, "milliseconds")}
           </span>
 
           <div className="flex flex-col min-w-0">
@@ -114,9 +122,19 @@ function TrackItem({
         </div>
 
         <div className="flex items-center gap-4">
-          <span className="text-[10px] text-neutral-600 font-mono hidden sm:block">
-            {formatTime(track.length, "milliseconds")}
-          </span>
+          {/* Public Rating Display */}
+          {publicRating && (
+            <div
+              className="hidden md:flex items-center gap-1.5 opacity-60 hover:opacity-100 transition-opacity mr-2"
+              title={`Public: ${publicRating} (${publicCount})`}
+            >
+              <FaGlobe size={10} className="text-neutral-500" />
+              <span className="text-[10px] font-mono text-neutral-400">
+                {publicRating}
+              </span>
+            </div>
+          )}
+
           <ColorRating
             rating={rating}
             onRate={(val) => setRating(track.id, val, albumContext)}
@@ -130,7 +148,10 @@ function TrackItem({
 export default function AlbumPage() {
   const { id: slug } = useParams();
   const [album, setAlbum] = useState<AlbumInfo | null>(null);
-  const { ratings } = useRatings();
+  const { ratings, publicAlbumRatings } = useRatings();
+  const [publicTrackRatings, setPublicTrackRatings] = useState<
+    Record<string, { average_rating: number; rating_count: number }>
+  >({});
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
@@ -156,6 +177,87 @@ export default function AlbumPage() {
 
     resolve();
   }, [slug]);
+
+  // Fetch Public Track Ratings
+  useEffect(() => {
+    if (!album) return;
+
+    const fetchTrackRatings = async () => {
+      const { createClient } = await import("@/utils/supabase/client");
+      const supabase = createClient();
+
+      const { data, error } = await supabase
+        .from("public_track_ratings")
+        .select("*")
+        .eq("album_id", album.id);
+
+      if (data) {
+        const map: Record<
+          string,
+          { average_rating: number; rating_count: number }
+        > = {};
+        data.forEach((r) => {
+          map[r.track_id] = {
+            average_rating: Number(r.average_rating),
+            rating_count: r.rating_count,
+          };
+        });
+        setPublicTrackRatings(map);
+      }
+    };
+
+    fetchTrackRatings();
+
+    // Realtime Subscription
+    const subscribeToTrackRatings = async () => {
+      const { createClient } = await import("@/utils/supabase/client");
+      const supabase = createClient();
+
+      const channel = supabase
+        .channel(`public_track_ratings:${album.id}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "public_track_ratings",
+            filter: `album_id=eq.${album.id}`,
+          },
+          (payload) => {
+            if (
+              payload.eventType === "INSERT" ||
+              payload.eventType === "UPDATE"
+            ) {
+              const newRecord = payload.new as any;
+              setPublicTrackRatings((prev) => ({
+                ...prev,
+                [newRecord.track_id]: {
+                  average_rating: Number(newRecord.average_rating),
+                  rating_count: newRecord.rating_count,
+                },
+              }));
+            } else if (payload.eventType === "DELETE") {
+              const oldRecord = payload.old as any;
+              setPublicTrackRatings((prev) => {
+                const next = { ...prev };
+                delete next[oldRecord.track_id];
+                return next;
+              });
+            }
+          },
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    };
+
+    const unsub = subscribeToTrackRatings();
+    return () => {
+      unsub.then((fn) => fn());
+    };
+  }, [album]);
 
   if (loading) {
     return <AlbumSkeleton />;
@@ -188,6 +290,8 @@ export default function AlbumPage() {
     ratedTracksCount > 0
       ? (currentTotalScore / ratedTracksCount).toFixed(1)
       : 0;
+
+  const publicData = album ? publicAlbumRatings[album.id] : null;
 
   return (
     <main className="min-h-screen bg-[#050507] text-neutral-100">
@@ -352,6 +456,8 @@ export default function AlbumPage() {
                   isFull={isFullyRated}
                   position="static"
                   className="rounded-md border-[#1a1a1f] bg-[#1a1a1f]/50"
+                  publicRating={publicData?.averageRating}
+                  publicCount={publicData?.ratingCount}
                 />
               </div>
 
@@ -407,6 +513,8 @@ export default function AlbumPage() {
                     releaseDate: album.releaseDate,
                     totalTracks: album.tracks?.length || 0,
                   }}
+                  publicRating={publicTrackRatings[track.id]?.average_rating}
+                  publicCount={publicTrackRatings[track.id]?.rating_count}
                 />
               ))}
             </div>

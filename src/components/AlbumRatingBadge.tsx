@@ -15,6 +15,8 @@ const COLORS = [
   "#14bba5", // 10
 ];
 
+import { FaGlobe } from "react-icons/fa";
+
 interface AlbumRatingBadgeProps {
   score: number | string;
   ratedCount: number;
@@ -22,6 +24,8 @@ interface AlbumRatingBadgeProps {
   isFull: boolean;
   className?: string;
   position?: "absolute" | "static" | "relative";
+  publicRating?: number | null;
+  publicCount?: number;
 }
 
 export default function AlbumRatingBadge({
@@ -31,6 +35,8 @@ export default function AlbumRatingBadge({
   isFull,
   className = "",
   position = "absolute",
+  publicRating,
+  publicCount,
 }: AlbumRatingBadgeProps) {
   // Determine color based on score
   const numericScore =
@@ -54,14 +60,28 @@ export default function AlbumRatingBadge({
     <div
       className={`${positionClasses} py-1 px-2 text-xs flex justify-between items-center backdrop-blur-md bg-[#050507]/80 border-t border-[#1a1a1f] ${className}`}
     >
-      <span
-        className="font-bold text-xs text-white p-0.5 min-w-[24px] text-center"
-        style={{
-          backgroundColor: baseColor,
-        }}
-      >
-        {score}
-      </span>
+      <div className="flex items-center gap-3">
+        <span
+          className="font-bold text-xs text-white p-0.5 min-w-[24px] text-center"
+          style={{
+            backgroundColor: baseColor,
+          }}
+        >
+          {score}
+        </span>
+
+        {publicRating && (
+          <div
+            className="flex items-center gap-1.5 border-l border-white/10 pl-3"
+            title={`Public Rating: ${publicRating} (${publicCount} users)`}
+          >
+            <FaGlobe size={10} className="text-neutral-500" />
+            <span className="text-[10px] font-mono text-neutral-300">
+              {publicRating}
+            </span>
+          </div>
+        )}
+      </div>
 
       {isFull ? (
         <span className="text-[10px] text-neutral-400 font-medium tracking-wide">

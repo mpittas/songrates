@@ -110,12 +110,18 @@ function AlbumOptionsMenu({ albumId }: { albumId: string }) {
 }
 
 function RatingBadge({ album }: { album: Album }) {
-  const { albumRatings, ratings } = useRatingsContext();
+  const { albumRatings, ratings, publicAlbumRatings } = useRatingsContext();
   const localAlbumData = albumRatings[album.id];
+  const publicData = publicAlbumRatings[album.id];
+
+  let personalScore: number | string | null = null;
+  let ratedCount = 0;
+  let totalTracks = 0;
+  let isFull = false;
 
   if (localAlbumData && localAlbumData.ratedTrackIds.length > 0) {
-    const ratedCount = localAlbumData.ratedTrackIds.length;
-    const totalTracks = localAlbumData.totalTracks || 0;
+    ratedCount = localAlbumData.ratedTrackIds.length;
+    totalTracks = localAlbumData.totalTracks || 0;
 
     let sum = 0;
     let count = 0;
@@ -126,23 +132,26 @@ function RatingBadge({ album }: { album: Album }) {
       }
     });
 
-    return (
-      <AlbumRatingBadge
-        score={count > 0 ? (sum / count).toFixed(1) : "—"}
-        ratedCount={ratedCount}
-        totalTracks={totalTracks}
-        isFull={totalTracks > 0 && ratedCount >= totalTracks}
-      />
-    );
+    if (count > 0) {
+      personalScore = (sum / count).toFixed(1);
+    }
+    isFull = totalTracks > 0 && ratedCount >= totalTracks;
+  } else if (album.rating) {
+    // MB Rating fallback if no local rating
+    personalScore = album.rating;
+    isFull = true;
   }
 
-  if (album.rating) {
+  // If we have either personal or public rating, show badge
+  if (personalScore || publicData) {
     return (
       <AlbumRatingBadge
-        score={album.rating}
-        ratedCount={0}
-        totalTracks={0}
-        isFull={true}
+        score={personalScore || "—"}
+        ratedCount={ratedCount}
+        totalTracks={totalTracks}
+        isFull={isFull}
+        publicRating={publicData?.averageRating}
+        publicCount={publicData?.ratingCount}
       />
     );
   }

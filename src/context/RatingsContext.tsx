@@ -9,11 +9,12 @@ import React, {
 } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/utils/supabase/client";
-import { AlbumContext, RatedAlbumData } from "@/types/music";
+import { AlbumContext, RatedAlbumData, PublicAlbumRating } from "@/types/music";
 
 interface RatingsContextType {
   ratings: Record<string, number>;
   albumRatings: Record<string, RatedAlbumData>;
+  publicAlbumRatings: Record<string, PublicAlbumRating>;
   setRating: (
     trackId: string,
     rating: number,
@@ -34,18 +35,92 @@ export function RatingsProvider({ children }: { children: React.ReactNode }) {
   const [albumRatings, setAlbumRatings] = useState<
     Record<string, RatedAlbumData>
   >({});
+  const [publicAlbumRatings, setPublicAlbumRatings] = useState<
+    Record<string, PublicAlbumRating>
+  >({});
   const [isLoaded, setIsLoaded] = useState(false);
 
   // Fetch from Supabase
   useEffect(() => {
+    // 1. Fetch Public Ratings (Always, or at least independent of user)
+    const fetchPublicRatings = async () => {
+      const { data: dbPublicRatings, error: pError } = await supabase
+        .from("public_album_ratings")
+        .select("*");
+
+      if (pError) {
+        console.error("Error fetching public ratings:", pError);
+      } else {
+        const newPublicRatings: Record<string, PublicAlbumRating> = {};
+        if (dbPublicRatings) {
+          dbPublicRatings.forEach((r) => {
+            newPublicRatings[r.album_id] = {
+              albumId: r.album_id,
+              averageRating: Number(r.average_rating),
+              ratingCount: Number(r.rating_count),
+            };
+          });
+        }
+        setPublicAlbumRatings(newPublicRatings);
+      }
+    };
+
+    fetchPublicRatings();
+
+    // 2. Subscribe to Realtime Changes for Public Ratings
+    const channel = supabase
+      .channel("public_ratings_changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "public_album_ratings",
+        },
+        (payload) => {
+          // console.log("Realtime event received:", payload);
+          if (
+            payload.eventType === "INSERT" ||
+            payload.eventType === "UPDATE"
+          ) {
+            const newRecord = payload.new as any;
+            setPublicAlbumRatings((prev) => ({
+              ...prev,
+              [newRecord.album_id]: {
+                albumId: newRecord.album_id,
+                averageRating: Number(newRecord.average_rating),
+                ratingCount: Number(newRecord.rating_count),
+              },
+            }));
+          } else if (payload.eventType === "DELETE") {
+            const oldRecord = payload.old as any;
+            if (oldRecord && oldRecord.album_id) {
+              setPublicAlbumRatings((prev) => {
+                const next = { ...prev };
+                delete next[oldRecord.album_id];
+                return next;
+              });
+            }
+          }
+        },
+      )
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") {
+          // console.log("Subscribed to public ratings changes");
+        }
+      });
+
+    // 3. Fetch Personal Ratings (Only if logged in)
     if (!user) {
       setRatings({});
       setAlbumRatings({});
       setIsLoaded(true);
-      return;
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
 
-    const fetchData = async () => {
+    const fetchPersonalData = async () => {
       try {
         // Fetch ratings
         const { data: dbRatings, error: rError } = await supabase
@@ -99,7 +174,12 @@ export function RatingsProvider({ children }: { children: React.ReactNode }) {
       }
     };
 
-    fetchData();
+    fetchPersonalData();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+
     // Only fetch when user changes, supabase is now stable
   }, [user, supabase]);
 
@@ -289,6 +369,7 @@ export function RatingsProvider({ children }: { children: React.ReactNode }) {
         ratings,
         setRating,
         albumRatings,
+        publicAlbumRatings,
         getAlbumRating,
         removeAlbumRating,
       }}

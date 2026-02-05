@@ -99,3 +99,9 @@ export interface RatedAlbumData {
   ratedTrackIds: string[];
   ratedAt?: string;
 }
+
+export interface PublicAlbumRating {
+  albumId: string;
+  averageRating: number;
+  ratingCount: number;
+}
