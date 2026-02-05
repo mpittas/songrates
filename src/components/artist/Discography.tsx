@@ -37,8 +37,7 @@ export default function Discography({
   );
 
   useEffect(() => {
-    if (Object.keys(initialReleases).length > 0) return;
-    if (!artistId) return;
+    if (Object.keys(initialReleases).length > 0 || !artistId) return;
 
     fetch(`/api/musicbrainz/other-releases?artistId=${artistId}`)
       .then((res) => res.json())
@@ -51,7 +50,6 @@ export default function Discography({
 
   const { getAlbumRating } = useRatings();
 
-  // key: "artist-popularity", artistName
   const { data: popularityScores = {} } = useQuery({
     queryKey: ["artist-popularity", artistName],
     queryFn: async () => {
@@ -59,161 +57,112 @@ export default function Discography({
       const res = await fetch(
         `/api/lastfm/popularity?artistName=${encodeURIComponent(artistName)}`,
       );
-      if (!res.ok) throw new Error("Popularity fetch failed");
-      return res.json() as Promise<Record<string, number>>;
+      return res.ok ? res.json() : {};
     },
     enabled: !!artistName,
-    staleTime: Infinity, // Popularity doesn't change often in a session
+    staleTime: Infinity,
   });
 
-  const sortReleases = (list: Release[]) => {
-    const sorted = [...list];
+  const processList = (list: Release[]) => {
+    let result = [...list];
 
-    if (sortBy === "popularity") {
-      return sorted.sort((a, b) => {
-        const titleA = a.title.toLowerCase().trim();
-        const titleB = b.title.toLowerCase().trim();
-        const scoreA = popularityScores[titleA] || 0;
-        const scoreB = popularityScores[titleB] || 0;
-
-        // Secondary sort by date if scores are equal?
-        if (scoreB === scoreA) {
-          return (b.releaseDate || "").localeCompare(a.releaseDate || "");
-        }
-        return scoreB - scoreA;
-      });
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter((r) => r.title.toLowerCase().includes(q));
     }
 
-    // If we want to support other sorts for the "other releases" (which are fetched internally):
-    if (sortBy === "newest") {
-      return sorted.sort((a, b) =>
-        (b.releaseDate || "").localeCompare(a.releaseDate || ""),
-      );
-    }
-    if (sortBy === "oldest") {
-      return sorted.sort((a, b) =>
-        (a.releaseDate || "").localeCompare(b.releaseDate || ""),
-      );
-    }
-    if (sortBy === "title") {
-      return sorted.sort((a, b) => a.title.localeCompare(b.title));
-    }
+    result.sort((a, b) => {
+      if (sortBy === "popularity") {
+        const scoreA = popularityScores[a.title.toLowerCase().trim()] || 0;
+        const scoreB = popularityScores[b.title.toLowerCase().trim()] || 0;
+        if (scoreB !== scoreA) return scoreB - scoreA;
+      }
+      if (sortBy === "title") return a.title.localeCompare(b.title);
+      if (sortBy === "oldest")
+        return (a.releaseDate || "").localeCompare(b.releaseDate || "");
+      // Default to newest
+      return (b.releaseDate || "").localeCompare(a.releaseDate || "");
+    });
 
-    return sorted;
+    return result.map((r) => ({ ...r, rating: getAlbumRating(r.id) }));
   };
 
-  const filterReleases = (list: Release[]) => {
-    if (!searchQuery) return list;
-    const lowerQuery = searchQuery.toLowerCase();
-    return list.filter((r) => r.title.toLowerCase().includes(lowerQuery));
-  };
+  const sections = [
+    {
+      key: "Albums",
+      data: processList(mainAlbums),
+      layout: "grid" as const,
+      tooltip: "Full-length studio albums.",
+    },
+    {
+      key: "EPs",
+      data: processList(releases["EPs"] || []),
+      layout: "grid" as const,
+      tooltip: "Extended Plays.",
+    },
+    {
+      key: "Other Albums",
+      data: processList(releases["Other Albums"] || []),
+      layout: "grid" as const,
+      tooltip: "Live, compilations, remixes.",
+    },
+    {
+      key: "Singles & Features",
+      data: processList(releases["Singles"] || []),
+      layout: "list" as const,
+      tooltip: "Individual songs and guest appearances.",
+    },
+  ];
 
-  const getReleases = (key: string) => {
-    const filtered = filterReleases(releases[key] || []);
-    const sorted = sortReleases(filtered);
-    return sorted.map((r) => ({ ...r, rating: getAlbumRating(r.id) }));
-  };
-
-  const eps = getReleases("EPs");
-  const otherAlbums = getReleases("Other Albums");
-  const singles = getReleases("Singles");
-
-  // Collect other miscellaneous categories
-  const miscCategories = Object.keys(releases).filter(
-    (key) =>
-      !["EPs", "Other Albums", "Singles", "Other"].includes(key) &&
-      !FILTER_OUT_CATEGORIES.some(
-        (filter) => key.includes(filter) || key === filter,
-      ) &&
-      getReleases(key).length > 0,
-  );
-
-  // Apply popularity sort to mainAlbums as well (if popularity is selected)
-  // For other sorts, mainAlbums is already passed sorted from parent, but doing it here again doesn't hurt.
-  const processedMainAlbums = sortReleases(filterReleases(mainAlbums)).map(
-    (r) => ({
-      ...r,
-      rating: getAlbumRating(r.id),
-    }),
-  );
+  const miscCategories = Object.keys(releases)
+    .filter(
+      (k) =>
+        !["EPs", "Other Albums", "Singles", "Other"].includes(k) &&
+        !FILTER_OUT_CATEGORIES.some((f) => k.includes(f)),
+    )
+    .map((k) => ({
+      key: k,
+      data: processList(releases[k]),
+      layout: "list" as const,
+    }));
 
   return (
-    <div className="space-y-2">
-      {/* Main Albums */}
-      {processedMainAlbums.length > 0 && (
-        <CollapsibleSection
-          title="Albums"
-          releases={processedMainAlbums}
-          onSelectAlbum={onSelectAlbum}
-          layout="grid"
-          defaultOpen={true}
-          tooltipText="Full-length studio albums, typically containing 7+ tracks."
-          gridCols={3}
-        />
-      )}
-
-      {/* EPs */}
-      {!loading && eps.length > 0 && (
-        <CollapsibleSection
-          title="EPs"
-          releases={eps as AlbumType[]}
-          onSelectAlbum={onSelectAlbum}
-          layout="grid"
-          defaultOpen={true}
-          tooltipText="Extended Plays. Shorter than albums but longer than singles (usually 3-6 tracks)."
-          gridCols={3}
-        />
-      )}
-
-      {/* Other Albums */}
-      {!loading && otherAlbums.length > 0 && (
-        <CollapsibleSection
-          title="Other Albums"
-          releases={otherAlbums as AlbumType[]}
-          onSelectAlbum={onSelectAlbum}
-          layout="grid"
-          defaultOpen={true}
-          tooltipText="Live albums, compilations, remixes, and soundtracks."
-          gridCols={3}
-        />
+    <div className="space-y-4">
+      {sections.map(
+        (s) =>
+          s.data.length > 0 && (
+            <CollapsibleSection
+              key={s.key}
+              title={s.key}
+              releases={s.data}
+              onSelectAlbum={onSelectAlbum}
+              layout={s.layout}
+              tooltipText={s.tooltip}
+              gridCols={3}
+            />
+          ),
       )}
 
       {loading && (
         <div className="py-12 flex justify-center">
-          <div className="text-neutral-600 text-xs font-mono animate-pulse">
-            loading_more_releases...
+          <div className="text-neutral-700 text-[10px] font-mono animate-pulse uppercase tracking-widest">
+            loading_releases...
           </div>
         </div>
       )}
 
-      {!loading && (
-        <>
-          {/* Singles */}
-          {singles.length > 0 && (
+      {miscCategories.map(
+        (s) =>
+          s.data.length > 0 && (
             <CollapsibleSection
-              title="Singles & Features"
-              releases={singles as AlbumType[]}
+              key={s.key}
+              title={s.key}
+              releases={s.data}
               onSelectAlbum={onSelectAlbum}
-              layout="list"
-              defaultOpen={true}
-              tooltipText="Individual songs, guest appearances, and stand-alone releases."
-            />
-          )}
-
-          {/* Misc Categories */}
-          {miscCategories.map((category) => (
-            <CollapsibleSection
-              key={category}
-              title={category}
-              releases={getReleases(category) as AlbumType[]}
-              onSelectAlbum={onSelectAlbum}
-              layout="list"
-              defaultOpen={true}
-              tooltipText="Miscellaneous releases not fitting into standard categories."
+              layout={s.layout}
               gridCols={3}
             />
-          ))}
-        </>
+          ),
       )}
     </div>
   );

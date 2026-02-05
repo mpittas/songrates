@@ -39,17 +39,12 @@ export default function ArtistPageContent({
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
 
-  // Track sorting
   const sortedAlbums = [...albums].sort((a, b) => {
-    if (sortBy === "newest") {
+    if (sortBy === "newest")
       return (b.releaseDate || "").localeCompare(a.releaseDate || "");
-    }
-    if (sortBy === "oldest") {
+    if (sortBy === "oldest")
       return (a.releaseDate || "").localeCompare(b.releaseDate || "");
-    }
-    if (sortBy === "title") {
-      return a.title.localeCompare(b.title);
-    }
+    if (sortBy === "title") return a.title.localeCompare(b.title);
     return 0;
   });
 
@@ -58,16 +53,13 @@ export default function ArtistPageContent({
   );
 
   useEffect(() => {
-    if (artistId && artistName) {
-      addToHistory(artistId, artistName);
-    }
+    if (artistId && artistName) addToHistory(artistId, artistName);
   }, [artistId, artistName]);
 
   return (
     <main className="min-h-screen bg-[#050507] text-neutral-100">
       <MySection className="pt-8 pb-24">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4 pb-6">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-4 pb-12">
           <Button
             href="/"
             iconLeft={<FaArrowLeft size={10} />}
@@ -105,20 +97,17 @@ export default function ArtistPageContent({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-10 items-start lg:grid-cols-[150px_1fr]">
-          {/* Sidebar */}
+        <div className="grid grid-cols-1 gap-12 items-start lg:grid-cols-[150px_1fr]">
           <div className="lg:sticky lg:top-20">
             <ArtistInfo
               artistId={artistId}
               artistName={artistName}
               data={artistInfo}
-              disableFetch={true}
               className="w-full"
             />
           </div>
 
-          {/* Discography */}
-          <div className="min-w-0 space-y-16">
+          <div className="min-w-0">
             <Discography
               artistId={artistId}
               artistName={artistName}

@@ -12,7 +12,6 @@ import Button from "@/components/ui/Button";
 
 interface AlbumCardProps {
   album: Album;
-  onSelect: (id: string) => void;
   isPriority?: boolean;
   layout?: "grid" | "list";
 }
@@ -43,7 +42,7 @@ function AlbumOptionsMenu({ albumId }: { albumId: string }) {
       <Button
         variant="ghost"
         size="xs"
-        className="rounded-full w-8 h-8 p-0 bg-black/60 hover:bg-black/80 text-white border border-white/10 backdrop-blur-sm"
+        className="w-8 h-8 p-0 bg-black/60 hover:bg-black/80 text-white border border-white/10 backdrop-blur-sm"
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
@@ -56,7 +55,7 @@ function AlbumOptionsMenu({ albumId }: { albumId: string }) {
       </Button>
 
       {isOpen && (
-        <div className="absolute top-full right-0 mt-1 w-40 bg-neutral-900 border border-[#1a1a1f] shadow-xl z-30 flex flex-col py-1 animate-in fade-in zoom-in-95 duration-100 origin-top-right rounded-md overflow-hidden">
+        <div className="absolute top-full right-0 mt-1 w-40 bg-neutral-900 border border-white/5 shadow-xl z-30 flex flex-col py-1 animate-in fade-in zoom-in-95 duration-100 origin-top-right rounded-md overflow-hidden">
           {hasAnyRating ? (
             !showConfirm ? (
               <button
@@ -65,13 +64,13 @@ function AlbumOptionsMenu({ albumId }: { albumId: string }) {
                   e.stopPropagation();
                   setShowConfirm(true);
                 }}
-                className="text-left px-3 py-2 text-xs font-mono text-neutral-300 hover:bg-red-500/10 hover:text-red-400 transition-colors flex items-center gap-2 w-full"
+                className="text-left px-3 py-2 text-xs font-mono text-neutral-400 hover:bg-white/5 hover:text-white transition-colors flex items-center gap-2 w-full"
               >
                 Remove Rating
               </button>
             ) : (
               <div className="px-3 py-2 bg-red-500/5">
-                <p className="text-[10px] text-red-400 mb-2 font-mono">
+                <p className="text-[10px] text-red-400 mb-2 font-mono uppercase tracking-wider">
                   Are you sure?
                 </p>
                 <div className="flex gap-2">
@@ -82,7 +81,7 @@ function AlbumOptionsMenu({ albumId }: { albumId: string }) {
                       removeAlbumRating(albumId);
                       setIsOpen(false);
                     }}
-                    className="flex-1 bg-red-500/20 hover:bg-red-500/30 text-red-300 text-[10px] py-1 rounded border border-red-500/20 font-mono transition-colors"
+                    className="flex-1 bg-red-500/20 hover:bg-red-500/30 text-red-300 text-[10px] py-1 rounded-sm border border-red-500/20 font-mono transition-colors"
                   >
                     Yes
                   </button>
@@ -92,7 +91,7 @@ function AlbumOptionsMenu({ albumId }: { albumId: string }) {
                       e.stopPropagation();
                       setShowConfirm(false);
                     }}
-                    className="flex-1 bg-neutral-800 hover:bg-neutral-700 text-neutral-400 text-[10px] py-1 rounded border border-neutral-700 font-mono transition-colors"
+                    className="flex-1 bg-neutral-800 hover:bg-neutral-700 text-neutral-400 text-[10px] py-1 rounded-sm border border-neutral-700 font-mono transition-colors"
                   >
                     No
                   </button>
@@ -100,8 +99,8 @@ function AlbumOptionsMenu({ albumId }: { albumId: string }) {
               </div>
             )
           ) : (
-            <div className="px-3 py-2 text-xs text-neutral-500 italic font-mono text-center">
-              No options
+            <div className="px-3 py-2 text-xs text-neutral-600 italic font-mono text-center">
+              no_options
             </div>
           )}
         </div>
@@ -110,23 +109,64 @@ function AlbumOptionsMenu({ albumId }: { albumId: string }) {
   );
 }
 
+function RatingBadge({ album }: { album: Album }) {
+  const { albumRatings, ratings } = useRatingsContext();
+  const localAlbumData = albumRatings[album.id];
+
+  if (localAlbumData && localAlbumData.ratedTrackIds.length > 0) {
+    const ratedCount = localAlbumData.ratedTrackIds.length;
+    const totalTracks = localAlbumData.totalTracks || 0;
+
+    let sum = 0;
+    let count = 0;
+    localAlbumData.ratedTrackIds.forEach((tId) => {
+      if (ratings[tId]) {
+        sum += ratings[tId];
+        count++;
+      }
+    });
+
+    return (
+      <AlbumRatingBadge
+        score={count > 0 ? (sum / count).toFixed(1) : "—"}
+        ratedCount={ratedCount}
+        totalTracks={totalTracks}
+        isFull={totalTracks > 0 && ratedCount >= totalTracks}
+      />
+    );
+  }
+
+  if (album.rating) {
+    return (
+      <AlbumRatingBadge
+        score={album.rating}
+        ratedCount={0}
+        totalTracks={0}
+        isFull={true}
+      />
+    );
+  }
+
+  return null;
+}
+
 export default function AlbumCard({
   album,
-  onSelect,
   isPriority = false,
   layout = "grid",
 }: AlbumCardProps) {
   const imageUrl = `https://coverartarchive.org/release-group/${album.id}/front-250`;
   const [imageError, setImageError] = useState(false);
 
+  const slug = createSlug(album.title, album.id);
+
   if (layout === "list") {
-    // List layout implementation remains the same
     return (
       <Link
-        href={`/album/${createSlug(album.title, album.id)}`}
-        className="flex items-center gap-4 p-2 hover:bg-[#0a0a0d] border-b border-[#1a1a1f] last:border-0 group transition-colors"
+        href={`/album/${slug}`}
+        className="flex items-center gap-4 p-2 hover:bg-neutral-900 border-b border-white/5 last:border-0 group transition-colors"
       >
-        <div className="relative w-12 h-12 shrink-0 border border-[#1a1a1f] overflow-hidden bg-[#0a0a0d]">
+        <div className="relative w-12 h-12 shrink-0 overflow-hidden bg-neutral-950">
           {!imageError ? (
             <OptimizedImage
               src={imageUrl}
@@ -137,10 +177,10 @@ export default function AlbumCard({
               fallbackText="·"
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center bg-[#0a0a0d] p-2 opacity-40">
+            <div className="w-full h-full flex items-center justify-center p-2 opacity-40">
               <img
                 src="/vinyl-placeholder.svg"
-                alt="No art"
+                alt=""
                 className="w-full h-full object-contain invert"
               />
             </div>
@@ -148,7 +188,7 @@ export default function AlbumCard({
         </div>
         <div className="flex bg-transparent min-w-0 flex-1 justify-between items-center gap-4">
           <div>
-            <h3 className="text-neutral-200 text-base truncate group-hover:text-[#00f0ff] transition-colors font-medium">
+            <h3 className="text-neutral-200 truncate group-hover:text-cyan-400 transition-colors font-medium">
               {album.title}
             </h3>
             <p className="text-neutral-500 text-sm truncate">
@@ -165,11 +205,8 @@ export default function AlbumCard({
 
   return (
     <div className="group block">
-      <Link
-        href={`/album/${createSlug(album.title, album.id)}`}
-        className="block relative mb-3"
-      >
-        <div className="aspect-square bg-[#0a0a0d] overflow-hidden relative border border-[#1a1a1f] group-hover:border-[#00f0ff]/30 transition-colors">
+      <Link href={`/album/${slug}`} className="block relative mb-3">
+        <div className="aspect-square bg-neutral-950 overflow-hidden relative border border-white/5 group-hover:border-cyan-400/30 transition-colors">
           {!imageError ? (
             <OptimizedImage
               src={imageUrl}
@@ -181,10 +218,10 @@ export default function AlbumCard({
               fallbackText="·"
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center bg-[#0a0a0d] p-10 opacity-20 group-hover:opacity-30 transition-opacity">
+            <div className="w-full h-full flex items-center justify-center p-10 opacity-20 group-hover:opacity-30 transition-opacity">
               <img
                 src="/vinyl-placeholder.svg"
-                alt="No art"
+                alt=""
                 className="w-full h-full object-contain invert"
               />
             </div>
@@ -195,7 +232,7 @@ export default function AlbumCard({
               <Button
                 variant="ghost"
                 size="xs"
-                className="rounded-full w-8 h-8 p-0 bg-black/60 hover:bg-black/80 text-white border border-white/10 backdrop-blur-sm"
+                className="w-8 h-8 p-0 bg-black/60 hover:bg-black/80 text-white border border-white/10 backdrop-blur-sm"
                 onClick={(e) => {
                   e.preventDefault();
                   window.open(album.wikipediaUrl, "_blank");
@@ -208,69 +245,20 @@ export default function AlbumCard({
             <AlbumOptionsMenu albumId={album.id} />
           </div>
 
-          {/* Rating Badge */}
-          {(() => {
-            const { albumRatings, ratings } = useRatingsContext();
-            const localAlbumData = albumRatings[album.id];
-
-            if (localAlbumData && localAlbumData.ratedTrackIds.length > 0) {
-              const ratedCount = localAlbumData.ratedTrackIds.length;
-              const totalTracks = localAlbumData.totalTracks || 0;
-
-              let sum = 0;
-              let count = 0;
-              localAlbumData.ratedTrackIds.forEach((tId) => {
-                if (ratings[tId]) {
-                  sum += ratings[tId];
-                  count++;
-                }
-              });
-              const avg = count > 0 ? (sum / count).toFixed(1) : "—";
-              const isFull = totalTracks > 0 && ratedCount >= totalTracks;
-
-              return (
-                <AlbumRatingBadge
-                  score={avg}
-                  ratedCount={ratedCount}
-                  totalTracks={totalTracks}
-                  isFull={isFull}
-                />
-              );
-            }
-
-            if (album.rating) {
-              return (
-                <AlbumRatingBadge
-                  score={album.rating}
-                  ratedCount={0}
-                  totalTracks={0}
-                  isFull={true}
-                />
-              );
-            }
-            return null;
-          })()}
+          <RatingBadge album={album} />
         </div>
       </Link>
 
       <div className="flex justify-between items-start gap-2">
-        <Link
-          href={`/album/${createSlug(album.title, album.id)}`}
-          className="flex-1 min-w-0 block"
-        >
-          <h3 className="text-neutral-200 text-sm font-medium truncate group-hover:text-[#00f0ff] transition-colors leading-tight mb-0.5">
+        <Link href={`/album/${slug}`} className="flex-1 min-w-0 block">
+          <h3 className="text-neutral-200 text-sm font-medium truncate group-hover:text-cyan-400 transition-colors leading-tight mb-0.5">
             {album.title}
           </h3>
-          <div className="flex flex-col gap-0 text-xs">
-            {album.artistName ? (
-              <p className="text-neutral-500 truncate group-hover:text-neutral-300 transition-colors">
-                {album.artistName} • {album.releaseDate?.split("-")[0] || "—"}
-              </p>
-            ) : (
-              <p className="text-neutral-500 truncate group-hover:text-neutral-300 transition-colors">
-                {album.releaseDate?.split("-")[0] || "—"}
-              </p>
-            )}
+          <div className="flex flex-col gap-0 text-xs text-neutral-500">
+            <p className="truncate group-hover:text-neutral-300 transition-colors">
+              {album.artistName ? `${album.artistName} • ` : ""}
+              {album.releaseDate?.split("-")[0] || "—"}
+            </p>
           </div>
         </Link>
       </div>

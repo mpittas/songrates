@@ -19,7 +19,6 @@ export default function CollapsibleSection({
   layout = "list",
   defaultOpen = true,
   tooltipText,
-  gridClassName,
   gridCols,
 }: {
   title: string;
@@ -28,71 +27,57 @@ export default function CollapsibleSection({
   layout?: "grid" | "list";
   defaultOpen?: boolean;
   tooltipText?: string;
-  gridClassName?: string;
   gridCols?: number;
 }) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
-  const [isExpanded, setIsExpanded] = useState(false); // For "Show More" (>10 items)
+  const [isExpanded, setIsExpanded] = useState(false);
 
-  const handleToggleAccordion = () => {
-    setIsOpen(!isOpen);
-  };
-
-  const handleToggleShowMore = () => {
-    setIsExpanded(!isExpanded);
-  };
-
-  // Limit initial items mostly for list view or to save DOM elements
-  // For grid view, we might want to show more or all, but let's keep consistency
-  const displayCount = isExpanded ? releases.length : 12; // 12 fits well in grids (2, 3, 4, 6)
+  // 12 is a good grid multiple
+  const displayCount = isExpanded ? releases.length : 12;
   const visibleReleases = releases.slice(0, displayCount);
   const hasMore = releases.length > 12;
 
   return (
-    <div className="border border-[#1a1a1f] bg-[#0a0a0d]/50">
+    <div className="border border-white/5 bg-neutral-900/20">
       <button
-        onClick={handleToggleAccordion}
-        className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-[#0f0f12] transition-colors group"
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-white/5 transition-colors group"
       >
-        <span className="text-sm text-neutral-400 group-hover:text-neutral-200 transition-colors font-mono flex items-center gap-1">
-          <div className="uppercase">{title}</div>
-
-          <span className="text-neutral-600 text-xs normal-case">
-            ({releases.length})
-          </span>
+        <span className="text-xs text-neutral-500 group-hover:text-neutral-300 transition-colors font-mono flex items-center gap-1 uppercase tracking-wider">
+          {title}
+          <span className="text-neutral-600 ml-1">({releases.length})</span>
 
           {tooltipText && (
             <Tooltip content={tooltipText}>
-              <span className="block p-1 hover:text-neutral-100 transition-colors cursor-help opacity-50 hover:opacity-100">
+              <span className="block p-1 hover:text-white transition-colors cursor-help opacity-50">
                 <FaInfoCircle size={10} />
               </span>
             </Tooltip>
           )}
         </span>
-        <span className="text-neutral-600 text-xs font-mono">
+        <span className="text-neutral-600">
           {isOpen ? <FaChevronUp size={10} /> : <FaChevronDown size={10} />}
         </span>
       </button>
 
       {isOpen && (
-        <div className="bg-neutral-900/50 border-t border-[#1a1a1f] p-4">
+        <div className="bg-black/20 border-t border-white/5 p-4">
           <AlbumGrid
             albums={visibleReleases}
             onSelectAlbum={onSelectAlbum}
             layout={layout}
-            className={gridClassName}
             gridCols={gridCols}
           />
 
           {hasMore && (
-            <div className="mt-4 pt-4 border-t border-[#1a1a1f]/30 flex justify-center">
+            <div className="mt-4 pt-4 border-t border-white/5 flex justify-center">
               <button
-                onClick={handleToggleShowMore}
-                className="text-xs text-neutral-500 hover:text-[#00f0ff] transition-colors font-mono"
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="text-[10px] text-neutral-600 hover:text-cyan-400 transition-colors font-mono uppercase tracking-widest"
               >
                 {isExpanded
-                  ? "show less"
-                  : `show all ${releases.length} releases`}
+                  ? "show_less"
+                  : `show_all_${releases.length}_releases`}
               </button>
             </div>
           )}
