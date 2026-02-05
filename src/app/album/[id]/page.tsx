@@ -420,6 +420,13 @@ export default function AlbumPage() {
             isFull={isFullyRated}
             publicRating={publicData?.averageRating}
             publicCount={publicData?.ratingCount}
+            userLabel={
+              viewingUserRatings
+                ? viewingUserName
+                  ? `${viewingUserName.toUpperCase()}'S RATING`
+                  : "USER RATING"
+                : "MY AVERAGE"
+            }
           />
         </div>
 
