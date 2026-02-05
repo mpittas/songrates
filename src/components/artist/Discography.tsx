@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import AlbumGrid from "@/components/AlbumGrid";
+import AlbumGrid from "@/components/album/AlbumGrid";
 import CollapsibleSection from "@/components/CollapsibleSection";
 import { useQuery } from "@tanstack/react-query";
 import { useRatings } from "@/hooks/useRatings";

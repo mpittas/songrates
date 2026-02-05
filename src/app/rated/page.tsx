@@ -3,7 +3,7 @@
 import { useRatings } from "@/hooks/useRatings";
 import { useMemo, useState } from "react";
 import MySection from "@/components/MySection";
-import AlbumGrid from "@/components/AlbumGrid";
+import AlbumGrid from "@/components/album/AlbumGrid";
 import DropdownFilter from "@/components/ui/DropdownFilter";
 import SearchInput from "@/components/search/SearchInput";
 import { Album } from "@/types/music";

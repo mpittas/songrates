@@ -7,7 +7,7 @@ import { YouTubeProps, YouTubeEvent } from "react-youtube";
 import { YouTubePlayer } from "@/types/player";
 
 import { useRatings } from "@/hooks/useRatings";
-import ColorRating from "@/components/ColorRating";
+import ColorRating from "@/components/rating/ColorRating";
 import { AlbumContext } from "@/types/music";
 
 import TrackInfo from "./player/TrackInfo";

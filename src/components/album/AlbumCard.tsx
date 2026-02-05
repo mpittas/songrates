@@ -6,7 +6,7 @@ import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { FaWikipediaW, FaEllipsisV } from "react-icons/fa";
 import { useRatingsContext } from "@/context/RatingsContext";
-import AlbumRatingBadge from "@/components/AlbumRatingBadge";
+import AlbumRatingBadge from "@/components/rating/AlbumRatingBadge";
 import { Album } from "@/types/music";
 import Button from "@/components/ui/Button";
 

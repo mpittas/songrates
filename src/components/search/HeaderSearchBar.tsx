@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useSearchInput } from "@/hooks/useSearchInput";
 import SearchInput from "@/components/search/SearchInput";
-import SearchResults from "@/components/SearchResults";
+import SearchResults from "@/components/search/SearchResults";
 
 export default function HeaderSearchBar() {
   const router = useRouter();
@@ -58,7 +58,11 @@ export default function HeaderSearchBar() {
 
   return (
     <div ref={containerRef} className="w-full max-w-md relative">
-      <form onSubmit={handleSearch} className="w-full" aria-label="Search artists">
+      <form
+        onSubmit={handleSearch}
+        className="w-full"
+        aria-label="Search artists"
+      >
         <SearchInput
           value={query}
           onChange={setQuery}

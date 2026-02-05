@@ -1,7 +1,7 @@
 "use client";
 
 import { Album } from "@/types/music";
-import AlbumCard from "@/components/AlbumCard";
+import AlbumCard from "@/components/album/AlbumCard";
 
 export default function AlbumGrid({
   albums,

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Space_Mono, Inter } from "next/font/google";
 import "./globals.css";
-import Header from "@/components/Header";
+import Header from "@/components/layout/Header";
 import Providers from "@/components/Providers";
 
 const spaceMono = Space_Mono({

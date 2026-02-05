@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import AlbumGrid from "@/components/AlbumGrid";
+import AlbumGrid from "@/components/album/AlbumGrid";
 import { FaChevronDown, FaChevronUp, FaInfoCircle } from "react-icons/fa";
 import Tooltip from "@/components/Tooltip";
 import { Release } from "@/types/music";

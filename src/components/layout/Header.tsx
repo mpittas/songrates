@@ -3,13 +3,13 @@
 import { useState } from "react";
 import Link from "next/link";
 import MySection from "@/components/MySection";
-import HeaderSearchBar from "@/components/HeaderSearchBar";
+import HeaderSearchBar from "@/components/search/HeaderSearchBar";
 import { usePathname } from "next/navigation";
-import { FaBars } from "react-icons/fa";
+import { FaBars, FaBell } from "react-icons/fa";
 import { IoSearch } from "react-icons/io5";
-import MobileMenu from "@/components/MobileMenu";
+import MobileMenu from "@/components/layout/MobileMenu";
 import Button from "@/components/ui/Button";
-import UserMenu from "@/components/UserMenu";
+import UserMenu from "@/components/layout/UserMenu";
 
 interface HeaderProps {
   showSearch?: boolean;

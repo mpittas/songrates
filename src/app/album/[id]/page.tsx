@@ -8,8 +8,8 @@ import { useRatings } from "@/hooks/useRatings";
 import { usePlayer } from "@/context/PlayerContext";
 import { formatTime, createSlug } from "@/lib/utils";
 import MySection from "@/components/MySection";
-import AlbumSkeleton from "@/components/AlbumSkeleton";
-import ColorRating from "@/components/ColorRating";
+import AlbumSkeleton from "@/components/album/AlbumSkeleton";
+import ColorRating from "@/components/rating/ColorRating";
 import SearchInput from "@/components/search/SearchInput";
 import Button from "@/components/ui/Button";
 import {
@@ -22,7 +22,8 @@ import {
   FaGlobe,
 } from "react-icons/fa";
 import { SiDiscogs, SiBandcamp, SiGenius } from "react-icons/si";
-import AlbumRatingBadge from "@/components/AlbumRatingBadge";
+import AlbumRatingBadge from "@/components/rating/AlbumRatingBadge";
+import AlbumRatingRow from "@/components/rating/AlbumRatingRow";
 
 import { AlbumInfo, TrackInfo, AlbumContext } from "@/types/music";
 import { resolveAlbumId } from "@/lib/musicbrainz";
@@ -313,7 +314,7 @@ export default function AlbumPage() {
         </div>
 
         {/* New Hero Section */}
-        <div className="flex flex-col md:flex-row gap-8 md:gap-12 items-start mb-16 relative">
+        <div className="flex flex-col md:flex-row gap-8 md:gap-12 items-start mb-8 relative">
           {/* Background Gradient/Blur Effect could go here if desired */}
 
           {/* Album Cover */}
@@ -445,36 +446,19 @@ export default function AlbumPage() {
                 </Button>
               )}
             </div>
-
-            {/* Rating Badge Display */}
-            <div className="flex flex-col md:flex-row items-center gap-6 mb-8">
-              <div className="w-full max-w-[240px]">
-                <AlbumRatingBadge
-                  score={averageScore}
-                  ratedCount={ratedTracksCount}
-                  totalTracks={totalTracks}
-                  isFull={isFullyRated}
-                  position="static"
-                  className="rounded-md border-[#1a1a1f] bg-[#1a1a1f]/50"
-                  publicRating={publicData?.averageRating}
-                  publicCount={publicData?.ratingCount}
-                />
-              </div>
-
-              {/* MB Rating if available */}
-              {album.rating && (
-                <div className="flex flex-col items-center md:items-start">
-                  <span className="text-[10px] text-neutral-600 uppercase tracking-wider font-mono mb-0.5">
-                    MB Rating
-                  </span>
-                  <span className="text-neutral-300 font-mono text-sm">
-                    <span className="text-white font-bold">{album.rating}</span>{" "}
-                    / 10
-                  </span>
-                </div>
-              )}
-            </div>
           </div>
+        </div>
+
+        {/* Rating Row Section */}
+        <div className="w-full mb-8">
+          <AlbumRatingRow
+            score={averageScore}
+            ratedCount={ratedTracksCount}
+            totalTracks={totalTracks}
+            isFull={isFullyRated}
+            publicRating={publicData?.averageRating}
+            publicCount={publicData?.ratingCount}
+          />
         </div>
 
         {/* Tracklist Section */}

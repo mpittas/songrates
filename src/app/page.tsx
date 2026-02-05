@@ -1,6 +1,6 @@
 "use client";
-import SearchBar from "@/components/SearchBar";
-import SearchResults from "@/components/SearchResults";
+import SearchBar from "@/components/search/SearchBar";
+import SearchResults from "@/components/search/SearchResults";
 import ArtistList from "@/components/artist/ArtistList";
 import RecentArtists from "@/components/artist/RecentArtists";
 import MeshGradientBackground from "@/components/mesh/MeshGradientWrap";
