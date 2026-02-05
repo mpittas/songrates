@@ -57,7 +57,7 @@ export default function SearchResults({
   if (!query && (!isFocused || history.length === 0)) return null;
 
   return (
-    <div className="absolute top-full left-0 right-0 mt-0 bg-[#0a0a0d] border-x border-b border-[#1a1a1f] z-[100] max-h-[320px] overflow-y-auto shadow-2xl">
+    <div className="absolute top-full left-0 right-0 mt-0 bg-[#0a0a0d] border-x border-b border-[#1a1a1f] z-[9999] max-h-[320px] overflow-y-auto shadow-2xl">
       {/* Search Loading State */}
       {query && loading && (
         <div className="flex items-center justify-center py-12 text-neutral-600 font-mono text-sm tracking-widest uppercase">

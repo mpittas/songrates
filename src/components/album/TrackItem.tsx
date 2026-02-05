@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { FaPlay, FaPause, FaGlobe } from "react-icons/fa";
+import { FaPlay, FaPause, FaGlobe, FaLock } from "react-icons/fa";
 import { useRatings } from "@/hooks/useRatings";
 import { usePlayer } from "@/context/PlayerContext";
 import { formatTime, createSlug } from "@/lib/utils";
@@ -18,6 +18,7 @@ interface TrackItemProps {
   albumContext: AlbumContext;
   publicRating?: number;
   publicCount?: number;
+  forcedRating?: number;
 }
 
 export default function TrackItem({
@@ -29,11 +30,14 @@ export default function TrackItem({
   albumContext,
   publicRating,
   publicCount,
+  forcedRating,
 }: TrackItemProps) {
   const { ratings, setRating } = useRatings();
   const { currentTrack, isPlaying, isLoading, playTrack } = usePlayer();
-  const rating = ratings[track.id] || 0;
+  const rating =
+    forcedRating !== undefined ? forcedRating : ratings[track.id] || 0;
   const isCurrentTrack = currentTrack?.id === track.id;
+  const isReadOnly = forcedRating !== undefined;
 
   return (
     <div className="border-b border-[#1a1a1f]">
@@ -120,10 +124,19 @@ export default function TrackItem({
             </div>
           )}
 
-          <ColorRating
-            rating={rating}
-            onRate={(val) => setRating(track.id, val, albumContext)}
-          />
+          <div
+            className={`flex items-center gap-2 ${isReadOnly ? "opacity-60" : ""}`}
+          >
+            {isReadOnly && <FaLock size={10} className="text-neutral-600" />}
+            <div className={isReadOnly ? "pointer-events-none" : ""}>
+              <ColorRating
+                rating={rating}
+                onRate={(val) =>
+                  !isReadOnly && setRating(track.id, val, albumContext)
+                }
+              />
+            </div>
+          </div>
         </div>
       </div>
     </div>

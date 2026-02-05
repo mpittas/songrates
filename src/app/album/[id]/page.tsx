@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import OptimizedImage from "@/components/ui/OptimizedImage";
 import Link from "next/link";
 import { useRatings } from "@/hooks/useRatings";
@@ -10,7 +10,13 @@ import MySection from "@/components/ui/MySection";
 import AlbumSkeleton from "@/components/album/AlbumSkeleton";
 import SearchInput from "@/components/search/SearchInput";
 import Button from "@/components/ui/Button";
-import { FaArrowLeft, FaWikipediaW, FaSpotify, FaGlobe } from "react-icons/fa";
+import {
+  FaArrowLeft,
+  FaWikipediaW,
+  FaSpotify,
+  FaGlobe,
+  FaLock,
+} from "react-icons/fa";
 import { SiDiscogs, SiBandcamp, SiGenius } from "react-icons/si";
 import AlbumRatingRow from "@/components/rating/AlbumRatingRow";
 import TrackItem from "@/components/album/TrackItem";
@@ -20,8 +26,19 @@ import { resolveAlbumId } from "@/lib/musicbrainz";
 
 export default function AlbumPage() {
   const { id: slug } = useParams();
+  const searchParams = useSearchParams();
+  const userId = searchParams.get("userId");
+
   const [album, setAlbum] = useState<AlbumInfo | null>(null);
-  const { ratings, publicAlbumRatings } = useRatings();
+  const { ratings: myRatings, publicAlbumRatings } = useRatings();
+
+  // State for "viewing other user's ratings"
+  const [viewingUserRatings, setViewingUserRatings] = useState<Record<
+    string,
+    number
+  > | null>(null);
+  const [viewingUserName, setViewingUserName] = useState<string | null>(null);
+
   const [publicTrackRatings, setPublicTrackRatings] = useState<
     Record<string, { average_rating: number; rating_count: number }>
   >({});
@@ -50,6 +67,45 @@ export default function AlbumPage() {
 
     resolve();
   }, [slug]);
+
+  // Fetch target user ratings if userId is present
+  useEffect(() => {
+    if (!album || !userId) {
+      setViewingUserRatings(null);
+      setViewingUserName(null);
+      return;
+    }
+
+    const fetchUserRatings = async () => {
+      const { createClient } = await import("@/utils/supabase/client");
+      const supabase = createClient();
+
+      // Fetch user profile (name) - Requires Service Role usually if no public profiles,
+      // but here we are client side. We might get 403 fetching auth.users.
+      // However, we only need the ratings mostly.
+      // If we can't get the name easily client-side without public profiles,
+      // we might just show "User's Ratings".
+      // NOTE: We cannot fetch auth.users from client.
+      // We will skip name fetching for now or assume we can't get it easily.
+
+      // Fetch ratings
+      const { data: userRatings, error } = await supabase
+        .from("ratings")
+        .select("track_id, rating")
+        .eq("user_id", userId)
+        .eq("album_id", album.id);
+
+      if (userRatings) {
+        const map: Record<string, number> = {};
+        userRatings.forEach((r) => {
+          map[r.track_id] = Number(r.rating);
+        });
+        setViewingUserRatings(map);
+      }
+    };
+
+    fetchUserRatings();
+  }, [album, userId]);
 
   // Fetch Public Track Ratings
   useEffect(() => {
@@ -150,13 +206,15 @@ export default function AlbumPage() {
     track.title.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
-  // Rating Stats
+  // Rating Stats Logic (Toggle between My Ratings and Viewing User Ratings)
+  const activeRatings = viewingUserRatings || myRatings;
+
   const tracks = album.tracks || [];
   const totalTracks = tracks.length;
-  const ratedTracksCount = tracks.filter((t) => ratings[t.id] > 0).length;
+  const ratedTracksCount = tracks.filter((t) => activeRatings[t.id] > 0).length;
   const isFullyRated = totalTracks > 0 && ratedTracksCount === totalTracks;
   const currentTotalScore = tracks.reduce(
-    (acc, t) => acc + (ratings[t.id] || 0),
+    (acc, t) => acc + (activeRatings[t.id] || 0),
     0,
   );
   const averageScore =
@@ -169,7 +227,39 @@ export default function AlbumPage() {
   return (
     <main className="min-h-screen bg-[#050507] text-neutral-100">
       <MySection className="pt-8 pb-24">
-        <div className="mb-4">
+        {userId && (
+          <div className="w-full bg-neutral-900/40 border border-[#00f0ff]/20 p-4 mb-6 flex flex-col sm:flex-row items-center justify-between gap-4 relative overflow-hidden">
+            <div className="absolute inset-0 bg-[#00f0ff]/5 pointer-events-none" />
+
+            <div className="flex items-center gap-5 relative z-10">
+              <div className="flex items-center gap-2 text-[#00f0ff] bg-[#00f0ff]/10 px-3 py-1.5">
+                <FaLock size={10} />
+                <span className="text-[10px] font-mono uppercase tracking-widest">
+                  Read Only
+                </span>
+              </div>
+
+              {searchParams.get("userName") && (
+                <div className="flex flex-col">
+                  <span className="text-[10px] uppercase tracking-widest text-[#00f0ff]/50 font-mono mb-1">
+                    Viewing Ratings By
+                  </span>
+                  <span className="text-md text-white leading-none">
+                    {searchParams.get("userName")}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center gap-4 relative z-10">
+              <Button href={`/album/${album.id}`} variant="secondary" size="sm">
+                My Ratings
+              </Button>
+            </div>
+          </div>
+        )}
+
+        <div className="mb-4 flex items-center justify-between">
           <Button
             href={`/artist/${
               album.artist?.id
@@ -371,6 +461,11 @@ export default function AlbumPage() {
                   }}
                   publicRating={publicTrackRatings[track.id]?.average_rating}
                   publicCount={publicTrackRatings[track.id]?.rating_count}
+                  forcedRating={
+                    viewingUserRatings
+                      ? viewingUserRatings[track.id] || 0
+                      : undefined
+                  }
                 />
               ))}
             </div>
