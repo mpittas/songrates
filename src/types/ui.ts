@@ -26,10 +26,14 @@ export interface OptimizedImageProps {
   onError?: () => void;
 }
 
-export interface PrefetchLinkProps {
-  href: string;
+import { LinkProps } from "next/link";
+import { AnchorHTMLAttributes } from "react";
+
+export interface PrefetchLinkProps
+  extends
+    LinkProps,
+    Omit<AnchorHTMLAttributes<HTMLAnchorElement>, keyof LinkProps> {
   artistId: string;
   children: ReactNode;
-  className?: string;
   prefetchDelay?: number;
 }

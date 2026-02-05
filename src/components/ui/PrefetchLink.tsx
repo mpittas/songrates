@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useRef } from "react";
+import { useCallback, useRef, MouseEvent } from "react";
 import { usePrefetchArtist } from "@/hooks/useArtistData";
 
 import { PrefetchLinkProps } from "@/types/ui";
@@ -16,28 +16,38 @@ export default function PrefetchLink({
   children,
   className,
   prefetchDelay = 100,
+  ...props
 }: PrefetchLinkProps) {
   const prefetchArtist = usePrefetchArtist();
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const hasPrefetched = useRef(false);
 
-  const handleMouseEnter = useCallback(() => {
-    // Only prefetch once per component instance
-    if (hasPrefetched.current) return;
+  const handleMouseEnter = useCallback(
+    (e: MouseEvent<HTMLAnchorElement>) => {
+      // Only prefetch once per component instance
+      if (hasPrefetched.current) return;
 
-    // Slight delay to avoid prefetching on quick mouse passes
-    timeoutRef.current = setTimeout(() => {
-      prefetchArtist(artistId);
-      hasPrefetched.current = true;
-    }, prefetchDelay);
-  }, [artistId, prefetchArtist, prefetchDelay]);
+      // Slight delay to avoid prefetching on quick mouse passes
+      timeoutRef.current = setTimeout(() => {
+        prefetchArtist(artistId);
+        hasPrefetched.current = true;
+      }, prefetchDelay);
 
-  const handleMouseLeave = useCallback(() => {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-      timeoutRef.current = null;
-    }
-  }, []);
+      props.onMouseEnter?.(e);
+    },
+    [artistId, prefetchArtist, prefetchDelay, props.onMouseEnter],
+  );
+
+  const handleMouseLeave = useCallback(
+    (e: MouseEvent<HTMLAnchorElement>) => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+      props.onMouseLeave?.(e);
+    },
+    [props.onMouseLeave],
+  );
 
   return (
     <Link
@@ -45,6 +55,7 @@ export default function PrefetchLink({
       className={className}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
+      {...props}
     >
       {children}
     </Link>
