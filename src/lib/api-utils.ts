@@ -55,16 +55,3 @@ export async function getRouteId(
     return null;
   }
 }
-
-export function validateRequiredParam(
-  param: string | null,
-  paramName: string = "id",
-): { valid: boolean; error?: NextResponse } {
-  if (!param) {
-    return {
-      valid: false,
-      error: errorResponse(`Missing required parameter: ${paramName}`, 400),
-    };
-  }
-  return { valid: true };
-}

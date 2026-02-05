@@ -30,20 +30,6 @@ export function formatTime(
 }
 
 /**
- * @deprecated Use formatTime(seconds, 'seconds') instead
- */
-export function formatTimeSeconds(seconds: number): string {
-  return formatTime(seconds, "seconds");
-}
-
-/**
- * @deprecated Use formatTime(ms, 'milliseconds') instead
- */
-export function formatTimeMs(ms?: number): string {
-  return formatTime(ms, "milliseconds");
-}
-
-/**
  * @param timestamp
  * @returns
  */

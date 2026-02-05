@@ -1,6 +1,6 @@
 const LASTFM_BASE_URL = "http://ws.audioscrobbler.com/2.0/";
 
-export interface PopularityResponse {
+interface PopularityResponse {
   [titleKey: string]: number;
 }
 
