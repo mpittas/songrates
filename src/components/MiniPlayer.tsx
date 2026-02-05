@@ -193,12 +193,14 @@ export default function MiniPlayer() {
     () => ({
       height: "100%",
       width: "100%",
+      host: "https://www.youtube-nocookie.com",
       playerVars: {
         autoplay: isPlaying ? 1 : 0,
         controls: 0,
         rel: 0,
         iv_load_policy: 3,
         modestbranding: 1,
+        enablejsapi: 1,
         origin:
           typeof window !== "undefined" ? window.location.origin : undefined,
       },
