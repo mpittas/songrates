@@ -196,6 +196,9 @@ export default function MiniPlayer() {
       playerVars: {
         autoplay: isPlaying ? 1 : 0,
         controls: 0,
+        rel: 0,
+        iv_load_policy: 3,
+        modestbranding: 1,
         origin:
           typeof window !== "undefined" ? window.location.origin : undefined,
       },
@@ -207,15 +210,17 @@ export default function MiniPlayer() {
 
   return (
     <>
-      <VideoPlayer
-        videoId={videoId || ""}
-        title={currentTrack?.title || "No track selected"}
-        showVideo={showVideo && !!currentTrack}
-        onClose={() => setShowVideo(false)}
-        onReady={onPlayerReady}
-        onStateChange={onStateChange}
-        opts={opts}
-      />
+      {videoId && (
+        <VideoPlayer
+          videoId={videoId}
+          title={currentTrack?.title || "No track selected"}
+          showVideo={showVideo && !!currentTrack}
+          onClose={() => setShowVideo(false)}
+          onReady={onPlayerReady}
+          onStateChange={onStateChange}
+          opts={opts}
+        />
+      )}
 
       <div
         className={`fixed bottom-0 left-0 right-0 z-[60] border-t border-[#1a1a1f] bg-[#050507]/95 backdrop-blur-sm safe-area-bottom transition-transform duration-500 ease-in-out ${
