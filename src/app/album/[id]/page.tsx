@@ -351,8 +351,7 @@ export default function AlbumPage() {
                   totalTracks={totalTracks}
                   isFull={isFullyRated}
                   position="static"
-                  variant="minimal"
-                  className="rounded-md"
+                  className="rounded-md border-[#1a1a1f] bg-[#1a1a1f]/50"
                 />
               </div>
 

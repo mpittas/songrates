@@ -22,7 +22,6 @@ interface AlbumRatingBadgeProps {
   isFull: boolean;
   className?: string;
   position?: "absolute" | "static" | "relative";
-  variant?: "badge" | "minimal";
 }
 
 export default function AlbumRatingBadge({
@@ -32,7 +31,6 @@ export default function AlbumRatingBadge({
   isFull,
   className = "",
   position = "absolute",
-  variant = "badge",
 }: AlbumRatingBadgeProps) {
   // Determine color based on score
   const numericScore =
@@ -46,43 +44,6 @@ export default function AlbumRatingBadge({
     safeScore > 0 ? Math.min(Math.max(Math.round(safeScore), 1), 10) - 1 : 9;
 
   const baseColor = COLORS[colorIndex] || COLORS[COLORS.length - 1];
-
-  if (variant === "minimal") {
-    // Only show progress line style
-    return (
-      <div className={`flex flex-col gap-1 w-full ${className}`}>
-        <div className="flex items-end justify-between text-xs mb-1">
-          <div className="flex items-baseline gap-1">
-            <span
-              className="text-xl font-normal leading-none"
-              style={{ color: baseColor }}
-            >
-              {score}
-            </span>
-            <span className="text-[10px] text-neutral-500 font-mono uppercase">
-              / 10
-            </span>
-          </div>
-
-          <span className="text-[10px] text-neutral-500 font-mono">
-            {isFull ? "Fully Rated" : `${ratedCount}/${totalTracks}`}
-          </span>
-        </div>
-
-        {/* Progress Bar Container */}
-        <div className="h-1 w-full bg-[#1a1a1f] overflow-hidden">
-          <div
-            className="h-full transition-all duration-500 ease-out"
-            style={{
-              width: `${safeScore * 10}%`,
-              backgroundColor: baseColor,
-              boxShadow: `0 0 10px ${baseColor}40`,
-            }}
-          />
-        </div>
-      </div>
-    );
-  }
 
   const positionClasses =
     position === "absolute"
