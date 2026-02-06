@@ -8,11 +8,15 @@ import { OptimizedImageProps } from "@/types/ui";
 
 /**
  * Optimized image component using react-lazy-load-image-component
- * - Uses LazyLoadImage with blur effect for smooth loading
- * - Supports priority loading for above-the-fold images
+ * - Blur-in effect for smooth perceived loading
+ * - Priority images use native <img> with fetchPriority="high" (no lazy overhead)
+ * - Low threshold triggers loading before images enter viewport
  * - Error handling with fallback placeholder
- * - Uses native loading="eager" for priority images
  */
+
+const PLACEHOLDER_SRC =
+  "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMSIgaGVpZ2h0PSIxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiMwYTBhMGQiLz48L3N2Zz4=";
+
 export default function OptimizedImage({
   src,
   alt,
@@ -39,10 +43,6 @@ export default function OptimizedImage({
 
   // Generate fallback initials from alt text
   const initials = fallbackText || alt.slice(0, 2).toUpperCase();
-
-  // Placeholder color matching the theme
-  const placeholderSrc =
-    "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMSIgaGVpZ2h0PSIxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiMwYTBhMGQiLz48L3N2Zz4=";
 
   if (hasError) {
     if (fallbackSrc) {
@@ -76,11 +76,11 @@ export default function OptimizedImage({
     );
   }
 
-  const imageStyles: React.CSSProperties = fill
+  const fillStyles: React.CSSProperties = fill
     ? { position: "absolute", inset: 0, width: "100%", height: "100%" }
     : {};
 
-  // For priority images, skip lazy loading
+  // Priority images: skip lazy loading entirely for instant above-the-fold rendering
   if (priority) {
     return (
       <img
@@ -93,12 +93,12 @@ export default function OptimizedImage({
         fetchPriority="high"
         onError={handleError}
         className={className}
-        style={imageStyles}
+        style={fillStyles}
       />
     );
   }
 
-  // For non-priority images, use LazyLoadImage with blur effect
+  // Non-priority images: lazy load with blur-in effect
   return (
     <LazyLoadImage
       src={src}
@@ -106,11 +106,11 @@ export default function OptimizedImage({
       width={fill ? "100%" : width}
       height={fill ? "100%" : height}
       effect="blur"
-      placeholderSrc={placeholderSrc}
+      placeholderSrc={PLACEHOLDER_SRC}
       onError={handleError}
       className={className}
-      style={imageStyles}
-      threshold={100}
+      style={fillStyles}
+      threshold={200}
       wrapperClassName={fill ? "absolute inset-0 w-full h-full" : undefined}
     />
   );

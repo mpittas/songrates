@@ -35,14 +35,25 @@ export async function handleApiRequest<T>(
   fetcher: () => Promise<T>,
   errorMessage: string,
   cacheType: keyof typeof CACHE_HEADERS = "artist",
+  retries: number = 2,
 ): Promise<NextResponse> {
-  try {
-    const data = await fetcher();
-    return successResponse(data, cacheType);
-  } catch (error) {
-    console.error(`${errorMessage}:`, error);
-    return errorResponse(errorMessage, 500);
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const data = await fetcher();
+      return successResponse(data, cacheType);
+    } catch (error) {
+      lastError = error;
+      if (attempt < retries) {
+        // Exponential backoff: 300ms, 900ms
+        await new Promise((r) => setTimeout(r, 300 * Math.pow(3, attempt)));
+      }
+    }
   }
+
+  console.error(`${errorMessage} (after ${retries + 1} attempts):`, lastError);
+  return errorResponse(errorMessage, 500);
 }
 
 export async function getRouteId(

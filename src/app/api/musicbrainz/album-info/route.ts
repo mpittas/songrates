@@ -103,6 +103,8 @@ async function fetchAlbumInfo(albumId: string) {
       next: { revalidate: 3600 },
     },
   );
+  if (!releasesRes.ok)
+    throw new Error(`MB Releases Fetch Error: ${releasesRes.status}`);
   const releasesData = await releasesRes.json();
 
   // Pick oldest release
@@ -120,6 +122,8 @@ async function fetchAlbumInfo(albumId: string) {
         next: { revalidate: 3600 },
       },
     );
+    if (!tracksRes.ok)
+      throw new Error(`MB Tracks Fetch Error: ${tracksRes.status}`);
     const tracksData = await tracksRes.json();
 
     tracks =
