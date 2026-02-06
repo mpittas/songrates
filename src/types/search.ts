@@ -41,6 +41,7 @@ export interface ArtistSearchResult extends SearchResultBase {
   country?: string;
   disambiguation?: string;
   artistType?: string; // "Group", "Person", etc.
+  tags?: string[]; // Top genre/style tags from MusicBrainz
 }
 
 export interface AlbumSearchResult extends SearchResultBase {

@@ -13,7 +13,7 @@ import {
   collapseSpaces,
   escapeLuceneValue,
 } from "@/lib/smartSearch";
-import { searchLastFmTracks } from "@/lib/lastfm";
+import { searchLastFmTracks, searchLastFmAlbums } from "@/lib/lastfm";
 import { createSlug } from "@/lib/utils";
 import type {
   SearchCategory,
@@ -31,8 +31,8 @@ const USER_AGENT = "SongRates/1.0 (mpittas@gmail.com)";
 
 /** Fetch limits */
 const LIMITS = {
-  single: { artists: 80, albums: 25, songs: 60 }, // MB limit lowered for songs as we rely on ranking
-  all: { artists: 50, albums: 12, songs: 25 },
+  single: { artists: 80, albums: 60, songs: 60 }, // MB limit lowered for songs as we rely on ranking
+  all: { artists: 50, albums: 25, songs: 25 },
 } as const;
 
 /** How many final results to return per type */
@@ -109,7 +109,48 @@ function cleanString(str: string): string {
   return collapseSpaces(normalizeText(str));
 }
 
-// ─── Artist Search (Unchanged) ─────────────────────────────────────────────────
+// ─── Artist Metadata Enrichment ─────────────────────────────────────────────────
+
+interface ArtistMeta {
+  country?: string;
+  type?: string;
+  disambiguation?: string;
+  tags?: string[];
+}
+
+/**
+ * Batch-fetch artist metadata (country, type, disambiguation, tags) from MB.
+ * Uses a single artist search query to avoid N+1 lookups.
+ */
+async function fetchArtistMetadata(
+  artistIds: string[],
+): Promise<Map<string, ArtistMeta>> {
+  const metaMap = new Map<string, ArtistMeta>();
+  if (artistIds.length === 0) return metaMap;
+
+  // Fetch up to 10 artists in parallel using individual lookups (fast, cached)
+  const promises = artistIds.slice(0, 10).map(async (id) => {
+    const data = await fetchMB<any>(`artist/${id}?inc=tags&fmt=json`);
+    if (!data) return;
+
+    const tags = (data.tags || [])
+      .sort((a: any, b: any) => (b.count || 0) - (a.count || 0))
+      .slice(0, 3)
+      .map((t: any) => t.name);
+
+    metaMap.set(id, {
+      country: data.area?.name || data.country || undefined,
+      type: data.type || undefined,
+      disambiguation: data.disambiguation || undefined,
+      tags: tags.length > 0 ? tags : undefined,
+    });
+  });
+
+  await Promise.all(promises);
+  return metaMap;
+}
+
+// ─── Artist Search ──────────────────────────────────────────────────────────────
 
 async function searchArtists(
   query: string,
@@ -175,18 +216,29 @@ async function searchArtists(
       existing.score = Math.max(existing.score, rgScore);
     }
 
-    const results: ArtistSearchResult[] = Array.from(artistMap.values())
+    const topArtists = Array.from(artistMap.values())
       .sort(
         (a, b) =>
           b.score - a.score || b.releaseGroupCount - a.releaseGroupCount,
       )
-      .slice(0, RETURN_LIMITS.artists)
-      .map((a) => ({
+      .slice(0, RETURN_LIMITS.artists);
+
+    // Enrich with country, type, disambiguation, and genre tags
+    const metaMap = await fetchArtistMetadata(topArtists.map((a) => a.id));
+
+    const results: ArtistSearchResult[] = topArtists.map((a) => {
+      const meta = metaMap.get(a.id);
+      return {
         id: a.id,
         type: "artist" as const,
         title: a.name,
         score: a.score,
-      }));
+        country: meta?.country,
+        artistType: meta?.type,
+        disambiguation: meta?.disambiguation,
+        tags: meta?.tags,
+      };
+    });
 
     const reranked = smartRerank(results, query);
     searchCache.set(cacheKey, reranked, 1800);
@@ -201,39 +253,125 @@ async function searchArtists(
   });
 }
 
-// ─── Album Search (Unchanged) ──────────────────────────────────────────────────
+// ─── Hybrid Album Search ────────────────────────────────────────────────────────
+// Fetches MB candidates AND Last.fm popularity ranking in parallel.
+// Merges them to ensure the most popular albums are surfaced first.
 
 async function searchAlbums(
   query: string,
   limit: number = LIMITS.single.albums,
+  quick: boolean = false,
 ): Promise<AlbumSearchResult[]> {
-  const cacheKey = `search:album:${normalizeText(query)}:${limit}`;
+  const cacheKey = `search:album:hybrid:${normalizeText(query)}:${limit}${quick ? ":quick" : ""}`;
   const cached = searchCache.get(cacheKey);
   if (cached) return cached as AlbumSearchResult[];
 
   return deduplicatedFetch(cacheKey, async () => {
+    // 1. Parallel Fetch: MB candidates + Last.fm popularity ranking
     const luceneQuery = buildSmartLuceneQuery("releasegroup", query);
-    const path = `release-group?query=${encodeURIComponent(luceneQuery)}&limit=${limit}&fmt=json`;
+    const mbPromise = fetchMB<any>(
+      `release-group?query=${encodeURIComponent(luceneQuery)}&limit=${limit}&fmt=json`,
+    );
+    const lastFmPromise = searchLastFmAlbums(
+      query,
+      quick ? 15 : 30,
+      quick ? 0 : 10,
+    );
 
-    const data = await fetchMB<any>(path);
+    const [data, lastFmAlbums] = await Promise.all([mbPromise, lastFmPromise]);
     if (!data) return [];
 
-    const results: AlbumSearchResult[] = (data["release-groups"] || [])
-      .filter((rg: any) =>
-        ["Album", "EP", "Single"].includes(rg["primary-type"]),
-      )
-      .slice(0, RETURN_LIMITS.albums)
-      .map((rg: any) => ({
-        id: rg.id,
-        type: "album" as const,
-        title: rg.title,
-        subtitle: rg["artist-credit"]?.[0]?.name,
-        score: rg.score ?? 0,
-        artistName: rg["artist-credit"]?.[0]?.name,
-        artistId: rg["artist-credit"]?.[0]?.artist?.id,
-        releaseDate: rg["first-release-date"],
-        primaryType: rg["primary-type"],
-      }));
+    // 2. Build Popularity Lookup Map from Last.fm
+    // Key: "artist:title" (normalized) -> listeners
+    const popularityMap = new Map<string, number>();
+    lastFmAlbums.forEach((album, index) => {
+      const key = `${cleanString(album.artist)}:${cleanString(album.name)}`;
+      const existing = popularityMap.get(key) || 0;
+      // Use listeners if available, otherwise use rank-based score
+      const score =
+        album.listeners > 0 ? album.listeners : Math.max(1000 - index * 30, 10);
+      popularityMap.set(key, Math.max(existing, score));
+    });
+
+    // 3. Filter and deduplicate MB results
+    // Only show studio Albums, other Albums, and EPs — exclude Singles and Compilations
+    const releaseGroups = (data["release-groups"] || []).filter((rg: any) => {
+      const primaryType = rg["primary-type"];
+      if (!["Album", "EP"].includes(primaryType)) return false;
+      const secondaryTypes: string[] = rg["secondary-types"] || [];
+      if (secondaryTypes.includes("Compilation")) return false;
+      return true;
+    });
+
+    // Deduplicate by normalized artist:title
+    const dedupMap = new Map<string, any>();
+    for (const rg of releaseGroups) {
+      const title = cleanString(rg.title || "");
+      const artist = cleanString(rg["artist-credit"]?.[0]?.name || "");
+      const key = `${artist}:${title}`;
+      if (!dedupMap.has(key)) {
+        dedupMap.set(key, rg);
+      }
+    }
+
+    // 4. Score and Sort by popularity with release-type boost
+    const scored = Array.from(dedupMap.values()).map((rg: any) => {
+      const title = cleanString(rg.title || "");
+      const artist = cleanString(rg["artist-credit"]?.[0]?.name || "");
+      const key = `${artist}:${title}`;
+
+      const popularity = popularityMap.get(key) || 0;
+      const mbScore = rg.score ?? 0;
+
+      // Release type boost: prioritize main studio Albums > EPs > others
+      const primaryType = rg["primary-type"];
+      const secondaryTypes: string[] = rg["secondary-types"] || [];
+      const isMain = !secondaryTypes.some((t: string) =>
+        [
+          "Compilation",
+          "Soundtrack",
+          "Live",
+          "Remix",
+          "DJ-mix",
+          "Mixtape/Street",
+          "Spokenword",
+          "Interview",
+          "Audiobook",
+          "Audio drama",
+          "Demo",
+        ].includes(t),
+      );
+
+      let typeBoost = 1.0;
+      if (primaryType === "Album" && isMain) typeBoost = 1.5;
+      else if (primaryType === "EP" && isMain) typeBoost = 1.2;
+      else if (primaryType === "Album") typeBoost = 1.1;
+      else if (primaryType === "EP") typeBoost = 1.05;
+      // Singles get no boost (1.0)
+
+      // Composite: popularity is dominant when available, MB score as tiebreaker
+      const baseScore = popularity > 0 ? popularity + mbScore : mbScore;
+      const compositeScore = baseScore * typeBoost;
+
+      return { rg, compositeScore, popularity };
+    });
+
+    scored.sort((a, b) => b.compositeScore - a.compositeScore);
+
+    const top = scored.slice(0, RETURN_LIMITS.albums);
+
+    // 5. Map to Result
+    const results: AlbumSearchResult[] = top.map(({ rg, popularity }) => ({
+      id: rg.id,
+      type: "album" as const,
+      title: rg.title,
+      subtitle: rg["artist-credit"]?.[0]?.name,
+      score: rg.score ?? 0,
+      artistName: rg["artist-credit"]?.[0]?.name,
+      artistId: rg["artist-credit"]?.[0]?.artist?.id,
+      releaseDate: rg["first-release-date"],
+      primaryType: rg["primary-type"],
+    }));
 
     const reranked = smartRerank(results, query);
     searchCache.set(cacheKey, reranked, 1800);
@@ -248,8 +386,9 @@ async function searchAlbums(
 async function searchSongs(
   query: string,
   limit: number = LIMITS.single.songs,
+  quick: boolean = false,
 ): Promise<SongSearchResult[]> {
-  const cacheKey = `search:song:hybrid:${normalizeText(query)}:${limit}`;
+  const cacheKey = `search:song:hybrid:${normalizeText(query)}:${limit}${quick ? ":quick" : ""}`;
   const cached = searchCache.get(cacheKey);
   if (cached) return cached as SongSearchResult[];
 
@@ -262,33 +401,46 @@ async function searchSongs(
     );
 
     // 2. Fetch Last.fm to find "True Popularity" targets
-    const lastFmTracks = await searchLastFmTracks(query, 50);
-
-    // 3. Identification & Targeted Injection
-    // The broad search might miss the #1 hit if it's buried (e.g. "Beat It" by MJ).
-    // We explicitly fetch metadata for the Top 3 Last.fm tracks to guarantee they exist.
-    const topHits = lastFmTracks.slice(0, 3);
-
-    const targetedPromises = topHits.map(async (hit) => {
-      // Build a specific query: recording:"Beat It" AND artist:"Michael Jackson"
-      const targetQuery = `recording:"${escapeLuceneValue(hit.name)}" AND artist:"${escapeLuceneValue(hit.artist)}"`;
-      const path = `recording?query=${encodeURIComponent(targetQuery)}&limit=10&fmt=json`; // limit 10 to capture originals amidst compilations
-      return fetchMB<any>(path);
-    });
-
-    const [broadData, ...targetedResults] = await Promise.all([
-      broadMbPromise,
-      ...targetedPromises,
-    ]);
-
-    if (!broadData && targetedResults.length === 0) return [];
-
-    // Merge all recordings
-    const broadRecordings = broadData?.recordings || [];
-    const targetedRecordings = targetedResults.flatMap(
-      (r) => r?.recordings || [],
+    const lastFmTracks = await searchLastFmTracks(
+      query,
+      quick ? 15 : 50,
+      quick ? 0 : 10,
     );
-    const recordings: any[] = [...broadRecordings, ...targetedRecordings];
+
+    let recordings: any[];
+
+    if (quick) {
+      // Quick mode: skip targeted MB injection, just use broad search
+      const broadData = await broadMbPromise;
+      if (!broadData) return [];
+      recordings = broadData.recordings || [];
+    } else {
+      // 3. Identification & Targeted Injection
+      // The broad search might miss the #1 hit if it's buried (e.g. "Beat It" by MJ).
+      // We explicitly fetch metadata for the Top 3 Last.fm tracks to guarantee they exist.
+      const topHits = lastFmTracks.slice(0, 3);
+
+      const targetedPromises = topHits.map(async (hit) => {
+        // Build a specific query: recording:"Beat It" AND artist:"Michael Jackson"
+        const targetQuery = `recording:"${escapeLuceneValue(hit.name)}" AND artist:"${escapeLuceneValue(hit.artist)}"`;
+        const path = `recording?query=${encodeURIComponent(targetQuery)}&limit=10&fmt=json`; // limit 10 to capture originals amidst compilations
+        return fetchMB<any>(path);
+      });
+
+      const [broadData, ...targetedResults] = await Promise.all([
+        broadMbPromise,
+        ...targetedPromises,
+      ]);
+
+      if (!broadData && targetedResults.length === 0) return [];
+
+      // Merge all recordings
+      const broadRecordings = broadData?.recordings || [];
+      const targetedRecordings = targetedResults.flatMap(
+        (r) => r?.recordings || [],
+      );
+      recordings = [...broadRecordings, ...targetedRecordings];
+    }
 
     // 2. Build Popularity Lookup Map
     // Key: "artist:title" (normalized) -> playcount/listeners
@@ -579,8 +731,8 @@ export async function searchByCategory(
 export async function searchAll(query: string): Promise<GroupedSearchResults> {
   const [artists, albums, songs] = await Promise.all([
     searchArtists(query, LIMITS.all.artists),
-    searchAlbums(query, LIMITS.all.albums),
-    searchSongs(query, LIMITS.all.songs),
+    searchAlbums(query, LIMITS.all.albums, true),
+    searchSongs(query, LIMITS.all.songs, true),
   ]);
 
   return { artists, albums, songs };

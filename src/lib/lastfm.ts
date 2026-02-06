@@ -84,6 +84,7 @@ async function fetchTrackPlaycounts(
 export async function searchLastFmTracks(
   query: string,
   limit: number = 30,
+  maxEnrich: number = 10,
 ): Promise<LastFmTrack[]> {
   const apiKey = process.env.LASTFM_API_KEY;
   if (!apiKey) return [];
@@ -113,7 +114,8 @@ export async function searchLastFmTracks(
     }));
 
     // Fetch playcounts for top results only (to avoid slowing down search)
-    const playcounts = await fetchTrackPlaycounts(results.slice(0, 10));
+    if (maxEnrich <= 0) return results;
+    const playcounts = await fetchTrackPlaycounts(results.slice(0, maxEnrich));
 
     // Merge playcounts back into results
     return results.map((track) => {
@@ -125,6 +127,127 @@ export async function searchLastFmTracks(
     });
   } catch (err) {
     console.error("Last.fm track search error:", err);
+    return [];
+  }
+}
+
+// ─── Last.fm Album Search Result ──────────────────────────────────────────────
+
+export interface LastFmAlbum {
+  name: string;
+  artist: string;
+  /** Last.fm listener count — popularity signal (from album.getInfo) */
+  listeners: number;
+  /** MusicBrainz release-group ID (may be empty string) */
+  mbid: string;
+}
+
+/**
+ * Fetch listener counts for a limited number of albums using album.getInfo.
+ * Only called for top results to avoid slowing down search.
+ */
+async function fetchAlbumListeners(
+  albums: { name: string; artist: string }[],
+): Promise<Map<string, number>> {
+  const apiKey = process.env.LASTFM_API_KEY;
+  if (!apiKey || albums.length === 0) return new Map();
+
+  const listeners = new Map<string, number>();
+  const limitedAlbums = albums.slice(0, 10);
+
+  const batchSize = 5;
+  for (let i = 0; i < limitedAlbums.length; i += batchSize) {
+    const batch = limitedAlbums.slice(i, i + batchSize);
+
+    const promises = batch.map(async (album) => {
+      try {
+        const url = `${LASTFM_BASE_URL}?method=album.getInfo&artist=${encodeURIComponent(
+          album.artist,
+        )}&album=${encodeURIComponent(album.name)}&api_key=${apiKey}&format=json`;
+
+        const fetchInit: any = {};
+        if (process.env.NODE_ENV !== "test") {
+          fetchInit.next = { revalidate: 1800 };
+        }
+
+        const res = await fetch(url, fetchInit);
+        if (!res.ok) return;
+
+        const data = await res.json();
+        const listenerCount = parseInt(data?.album?.listeners, 10);
+        if (listenerCount > 0) {
+          const key = `${album.artist}:${album.name}`;
+          listeners.set(key, listenerCount);
+        }
+      } catch (err) {
+        // Silently fail - listener count is optional enrichment
+      }
+    });
+
+    await Promise.all(promises);
+
+    if (i + batchSize < limitedAlbums.length) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+  }
+
+  return listeners;
+}
+
+/**
+ * Search Last.fm for albums. Returns results with popularity signals.
+ * Last.fm album.search doesn't return listeners directly, so we enrich
+ * top results with album.getInfo to get actual listener counts.
+ *
+ * @param query   Search query (e.g., "Thriller")
+ * @param limit   Max results to return (default 30)
+ * @returns       Array of LastFmAlbum with listener counts
+ */
+export async function searchLastFmAlbums(
+  query: string,
+  limit: number = 30,
+  maxEnrich: number = 10,
+): Promise<LastFmAlbum[]> {
+  const apiKey = process.env.LASTFM_API_KEY;
+  if (!apiKey) return [];
+
+  try {
+    const url = `${LASTFM_BASE_URL}?method=album.search&album=${encodeURIComponent(
+      query,
+    )}&api_key=${apiKey}&format=json&limit=${limit}`;
+
+    const fetchInit: any = {};
+    if (process.env.NODE_ENV !== "test") {
+      fetchInit.next = { revalidate: 1800 };
+    }
+
+    const res = await fetch(url, fetchInit);
+    if (!res.ok) return [];
+
+    const data = await res.json();
+    const albums = data?.results?.albummatches?.album;
+    if (!Array.isArray(albums)) return [];
+
+    const results = albums.map((a: any) => ({
+      name: a.name || "",
+      artist: a.artist || "",
+      listeners: 0,
+      mbid: a.mbid || "",
+    }));
+
+    // Fetch listener counts for top results
+    if (maxEnrich <= 0) return results;
+    const listenerMap = await fetchAlbumListeners(results.slice(0, maxEnrich));
+
+    return results.map((album) => {
+      const key = `${album.artist}:${album.name}`;
+      return {
+        ...album,
+        listeners: listenerMap.get(key) || 0,
+      };
+    });
+  } catch (err) {
+    console.error("Last.fm album search error:", err);
     return [];
   }
 }

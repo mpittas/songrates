@@ -61,7 +61,51 @@ function CategoryTabs({
 
 // ─── Individual Result Row Components ──────────────────────────────────────────
 
-function ArtistRow({ result }: { result: ArtistSearchResult }) {
+// ─── Cover Art Archive helper ────────────────────────────────────────────────
+
+function CoverArtImage({
+  releaseGroupId,
+  alt,
+  rounded = false,
+}: {
+  releaseGroupId: string;
+  alt: string;
+  rounded?: boolean;
+}) {
+  const [hasError, setHasError] = useState(false);
+
+  if (hasError || !releaseGroupId) {
+    return (
+      <IoDisc
+        className="text-neutral-600 group-hover:text-[#00f0ff]/60"
+        size={18}
+      />
+    );
+  }
+
+  return (
+    <img
+      src={`https://coverartarchive.org/release-group/${releaseGroupId}/front-250`}
+      alt={alt}
+      width={40}
+      height={40}
+      loading="lazy"
+      decoding="async"
+      onError={() => setHasError(true)}
+      className={`w-full h-full object-cover transition-all grayscale group-hover:grayscale-0 ${rounded ? "rounded-full" : ""}`}
+    />
+  );
+}
+
+function ArtistRow({
+  result,
+  imageUrl,
+}: {
+  result: ArtistSearchResult;
+  imageUrl?: string;
+}) {
+  const [imgError, setImgError] = useState(false);
+
   return (
     <PrefetchLink
       href={`/artist/${createSlug(result.title, result.id)}`}
@@ -69,10 +113,23 @@ function ArtistRow({ result }: { result: ArtistSearchResult }) {
       className="flex items-center gap-3 p-3 hover:bg-[#0f0f12] transition-colors group"
     >
       <div className="w-10 h-10 rounded-full overflow-hidden bg-[#0f0f12] border border-[#1a1a1f] group-hover:border-[#00f0ff]/30 flex items-center justify-center flex-shrink-0">
-        <IoPerson
-          className="text-neutral-600 group-hover:text-[#00f0ff]/60"
-          size={18}
-        />
+        {imageUrl && !imgError ? (
+          <img
+            src={imageUrl}
+            alt={result.title}
+            width={40}
+            height={40}
+            loading="lazy"
+            decoding="async"
+            onError={() => setImgError(true)}
+            className="w-full h-full object-cover transition-all grayscale group-hover:grayscale-0 rounded-full"
+          />
+        ) : (
+          <IoPerson
+            className="text-neutral-600 group-hover:text-[#00f0ff]/60"
+            size={18}
+          />
+        )}
       </div>
       <div className="flex-1 min-w-0">
         <h3 className="text-sm text-neutral-300 group-hover:text-[#00f0ff] transition-colors truncate">
@@ -81,6 +138,9 @@ function ArtistRow({ result }: { result: ArtistSearchResult }) {
         <p className="text-[11px] text-neutral-600 truncate mt-0.5">
           {result.artistType || "Artist"}
           {result.country ? ` · ${result.country}` : ""}
+          {result.tags && result.tags.length > 0
+            ? ` · ${result.tags.join(", ")}`
+            : ""}
           {result.disambiguation ? ` · ${result.disambiguation}` : ""}
         </p>
       </div>
@@ -98,10 +158,7 @@ function AlbumRow({ result }: { result: AlbumSearchResult }) {
       className="flex items-center gap-3 p-3 hover:bg-[#0f0f12] transition-colors group"
     >
       <div className="w-10 h-10 overflow-hidden bg-[#0f0f12] border border-[#1a1a1f] group-hover:border-[#00f0ff]/30 flex items-center justify-center flex-shrink-0">
-        <IoDisc
-          className="text-neutral-600 group-hover:text-[#00f0ff]/60"
-          size={18}
-        />
+        <CoverArtImage releaseGroupId={result.id} alt={result.title} />
       </div>
       <div className="flex-1 min-w-0">
         <h3 className="text-sm text-neutral-300 group-hover:text-[#00f0ff] transition-colors truncate">
@@ -147,10 +204,17 @@ function SongRow({
   const content = (
     <>
       <div className="w-10 h-10 overflow-hidden bg-[#0f0f12] border border-[#1a1a1f] group-hover:border-[#00f0ff]/30 flex items-center justify-center flex-shrink-0">
-        <IoMusicalNotes
-          className="text-neutral-600 group-hover:text-[#00f0ff]/60"
-          size={18}
-        />
+        {result.releaseGroupId ? (
+          <CoverArtImage
+            releaseGroupId={result.releaseGroupId}
+            alt={result.releaseGroupTitle || result.title}
+          />
+        ) : (
+          <IoMusicalNotes
+            className="text-neutral-600 group-hover:text-[#00f0ff]/60"
+            size={18}
+          />
+        )}
       </div>
       <div className="flex-1 min-w-0">
         <h3 className="text-sm text-neutral-300 group-hover:text-[#00f0ff] transition-colors truncate">
@@ -218,13 +282,15 @@ function SectionHeader({ label, count }: { label: string; count: number }) {
 function ResultRow({
   result,
   listenCounts,
+  artistImages,
 }: {
   result: SearchResult;
   listenCounts: Record<string, number>;
+  artistImages: Record<string, string>;
 }) {
   switch (result.type) {
     case "artist":
-      return <ArtistRow result={result} />;
+      return <ArtistRow result={result} imageUrl={artistImages[result.id]} />;
     case "album":
       return <AlbumRow result={result} />;
     case "song":
@@ -260,6 +326,26 @@ export default function SearchResults({
   // ─── No client-side re-sort needed ────────────────────────────────
   // The server now handles hybrid search ranking (Last.fm + MusicBrainz)
   // so results arrive pre-sorted by popularity.
+
+  // ─── Fetch artist images when search results change ───────────────
+  useEffect(() => {
+    const artistIds = results
+      .filter((r) => r.type === "artist")
+      .map((r) => r.id);
+    if (artistIds.length === 0) return;
+
+    const newIds = artistIds.filter((id) => !images[id]);
+    if (newIds.length === 0) return;
+
+    fetch(`/api/images/artists?ids=${newIds.join(",")}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.images) {
+          setImages((prev) => ({ ...prev, ...data.images }));
+        }
+      })
+      .catch((e) => console.error(e));
+  }, [results]);
 
   // ─── History when focused and empty ────────────────────────────────
   const loadHistory = useCallback(() => {
@@ -340,6 +426,7 @@ export default function SearchResults({
                       key={r.id}
                       result={r}
                       listenCounts={listenCounts}
+                      artistImages={images}
                     />
                   ))}
                 </>
@@ -352,6 +439,7 @@ export default function SearchResults({
                       key={r.id}
                       result={r}
                       listenCounts={listenCounts}
+                      artistImages={images}
                     />
                   ))}
                 </>
@@ -364,6 +452,7 @@ export default function SearchResults({
                       key={r.id}
                       result={r}
                       listenCounts={listenCounts}
+                      artistImages={images}
                     />
                   ))}
                 </>
@@ -371,7 +460,12 @@ export default function SearchResults({
             </>
           ) : (
             results.map((r) => (
-              <ResultRow key={r.id} result={r} listenCounts={listenCounts} />
+              <ResultRow
+                key={r.id}
+                result={r}
+                listenCounts={listenCounts}
+                artistImages={images}
+              />
             ))
           )}
         </div>
