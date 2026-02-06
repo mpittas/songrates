@@ -349,10 +349,22 @@ export default function AlbumPage() {
                     ? createSlug(album.artist.name, album.artist.id)
                     : ""
                 }`}
-                className="block text-neutral-500 hover:text-[#00f0ff] transition-colors text-md mb-1"
+                className="block text-neutral-500 hover:text-[#00f0ff] transition-colors text-md mb-3"
               >
                 {album.artist?.name}
               </Link>
+
+              {/* Album Type Badge */}
+              <div className="flex items-center gap-2 mb-3">
+                <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-[#00f0ff]/10 text-[#00f0ff] border border-[#00f0ff]/20">
+                  {album.primaryType || album.type}
+                </span>
+                {album.secondaryTypes && album.secondaryTypes.length > 0 && (
+                  <span className="text-xs text-neutral-500">
+                    / {album.secondaryTypes.join(" / ")}
+                  </span>
+                )}
+              </div>
             </div>
 
             {/* Actions / Links */}

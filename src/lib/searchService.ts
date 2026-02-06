@@ -240,7 +240,7 @@ async function searchSongs(
       popularityMap.set(key, Math.max(existing, count));
     });
 
-    // 3. Deduplicate MB results
+    // 3. Deduplicate MB results — merge releases from all duplicate recordings
     const dedupMap = new Map<string, any>();
     recordings.forEach((rec) => {
       const title = cleanString(rec.title || "");
@@ -248,34 +248,40 @@ async function searchSongs(
       const key = `${artist}:${title}`;
 
       const existing = dedupMap.get(key);
-      const recOfficial = countOfficialReleases(rec.releases || []);
-      const existingOfficial = existing
-        ? countOfficialReleases(existing.releases || [])
-        : 0;
 
-      // Prefer the recording with the EARLIEST release date (Original)
-      // If dates are missing or equal, fall back to structural fame (release count)
-      const recDate = rec["first-release-date"] || "9999-99-99";
-      const existingDate = existing
-        ? existing["first-release-date"] || "9999-99-99"
-        : "9999-99-99";
+      if (!existing) {
+        // Clone so we don't mutate the original
+        dedupMap.set(key, { ...rec, releases: [...(rec.releases || [])] });
+        return;
+      }
 
-      let shouldReplace = !existing;
-
-      if (existing) {
-        if (recDate < existingDate) {
-          shouldReplace = true; // Older is better
-        } else if (recDate === existingDate) {
-          shouldReplace = recOfficial > existingOfficial; // Tie-break: more releases
+      // Merge releases from this recording into the existing one (dedup by release id)
+      const seenReleaseIds = new Set(
+        (existing.releases || []).map((r: any) => r.id),
+      );
+      for (const r of rec.releases || []) {
+        if (r.id && !seenReleaseIds.has(r.id)) {
+          existing.releases.push(r);
+          seenReleaseIds.add(r.id);
         }
       }
 
-      if (shouldReplace) {
-        dedupMap.set(key, rec);
+      // Keep the recording metadata with the earliest release date
+      const recDate = rec["first-release-date"] || "9999-99-99";
+      const existingDate = existing["first-release-date"] || "9999-99-99";
+
+      if (recDate < existingDate) {
+        // Preserve merged releases, update everything else
+        const mergedReleases = existing.releases;
+        Object.assign(existing, rec);
+        existing.releases = mergedReleases;
       }
     });
 
-    const deduped = Array.from(dedupMap.values());
+    // Filter: only keep recordings that appear on Album, EP, or Single
+    const deduped = Array.from(dedupMap.values()).filter((rec) =>
+      hasAllowedReleaseType(rec.releases || []),
+    );
 
     // 4. Score and Sort
     const scored = deduped.map((rec) => {
@@ -296,7 +302,10 @@ async function searchSongs(
       const popularityScore =
         popularity > 0 ? popularity : officialCount * 1000; // 1 release ~= 1000 plays fallback
 
-      return { rec, score: popularityScore, popularity };
+      // Boost recordings that appear on main studio albums or EPs
+      const releaseBoost = getReleaseTypeBoost(rec.releases || []);
+
+      return { rec, score: popularityScore * releaseBoost, popularity };
     });
 
     // Sort descending by score
@@ -392,36 +401,96 @@ function countOfficialReleases(releases: any[]): number {
   return releases.filter((r: any) => r.status === "Official").length;
 }
 
+function isMainRelease(rg: any): boolean {
+  const secondaryTypes: string[] =
+    rg["secondary-types"] || rg["secondary-type-list"] || [];
+  const dominated = [
+    "Compilation",
+    "Soundtrack",
+    "Live",
+    "Remix",
+    "DJ-mix",
+    "Mixtape/Street",
+  ];
+  return !secondaryTypes.some((t: string) => dominated.includes(t));
+}
+
+function getReleaseTypeBoost(releases: any[]): number {
+  let bestBoost = 1.0;
+
+  for (const r of releases) {
+    const rg = r["release-group"];
+    if (!rg) continue;
+    if (r.status && r.status !== "Official") continue;
+
+    const primaryType = rg["primary-type"];
+    const main = isMainRelease(rg);
+
+    if (primaryType === "Album" && main) {
+      return 1.5; // Best: main studio album
+    } else if (primaryType === "EP" && main) {
+      bestBoost = Math.max(bestBoost, 1.3);
+    } else if (primaryType === "Album" || primaryType === "EP") {
+      bestBoost = Math.max(bestBoost, 1.1); // Compilation/soundtrack album or EP
+    }
+  }
+
+  return bestBoost;
+}
+
 function hasAlbumTypeRelease(releases: any[]): boolean {
   return releases.some(
     (r: any) => r["release-group"]?.["primary-type"] === "Album",
   );
 }
 
+const ALLOWED_RELEASE_TYPES = new Set(["Album", "EP", "Single"]);
+
+function hasAllowedReleaseType(releases: any[]): boolean {
+  return releases.some((r: any) =>
+    ALLOWED_RELEASE_TYPES.has(r["release-group"]?.["primary-type"]),
+  );
+}
+
 function findOriginalAlbum(
   releases: any[],
 ): { id: string; title: string; date: string } | undefined {
-  const albumReleases = releases
+  // Prioritize: main studio albums > main EPs > compilation albums > other
+  const typePriority = (r: any): number => {
+    const rg = r["release-group"];
+    const primary = rg?.["primary-type"];
+    const main = isMainRelease(rg || {});
+    if (primary === "Album" && main) return 0;
+    if (primary === "EP" && main) return 1;
+    if (primary === "Album") return 2;
+    if (primary === "EP") return 3;
+    return 4;
+  };
+
+  const candidates = releases
     .filter((r: any) => {
       const rg = r["release-group"];
       return (
         rg?.id &&
-        rg["primary-type"] === "Album" &&
+        ["Album", "EP"].includes(rg["primary-type"]) &&
         (!r.status || r.status === "Official")
       );
     })
     .sort((a: any, b: any) => {
+      const prioA = typePriority(a);
+      const prioB = typePriority(b);
+      if (prioA !== prioB) return prioA - prioB;
       const dateA = a.date || "9999";
       const dateB = b.date || "9999";
       return dateA.localeCompare(dateB);
     });
 
-  if (albumReleases.length > 0) {
-    const rg = albumReleases[0]["release-group"];
+  if (candidates.length > 0) {
+    const rg = candidates[0]["release-group"];
     return {
       id: rg.id,
       title: rg.title,
-      date: albumReleases[0].date || "",
+      date: candidates[0].date || "",
     };
   }
   return undefined;

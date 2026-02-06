@@ -36,6 +36,8 @@ export interface AlbumInfo {
   title: string;
   artist: { name: string; id: string };
   type: string;
+  primaryType?: string;
+  secondaryTypes?: string[];
   releaseDate: string;
   genres: string[];
   rating: number | null;

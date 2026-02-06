@@ -147,6 +147,8 @@ async function fetchAlbumInfo(albumId: string) {
     title,
     artist: { name: artistName, id: artistId },
     type,
+    primaryType,
+    secondaryTypes,
     releaseDate,
     genres,
     rating,
