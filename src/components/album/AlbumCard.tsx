@@ -165,7 +165,7 @@ export default function AlbumCard({
   isPriority = false,
   layout = "grid",
 }: AlbumCardProps) {
-  const imageUrl = getCoverArtUrl(album.id);
+  const imageUrl = getCoverArtUrl(album.id, album.title, album.artistName);
   const [imageError, setImageError] = useState(false);
 
   const slug = createSlug(album.title, album.id);

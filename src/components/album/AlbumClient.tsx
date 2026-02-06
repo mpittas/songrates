@@ -26,13 +26,9 @@ import { getCoverArtUrl } from "@/lib/cover-art";
 
 interface AlbumClientProps {
   album: AlbumInfo;
-  initialPopularityMap?: Record<string, number>;
 }
 
-export default function AlbumClient({
-  album,
-  initialPopularityMap,
-}: AlbumClientProps) {
+export default function AlbumClient({ album }: AlbumClientProps) {
   const searchParams = useSearchParams();
   const userId = searchParams.get("userId");
   const highlightTrackId = searchParams.get("track");
@@ -52,11 +48,8 @@ export default function AlbumClient({
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
 
-  // 1. Last.fm: Use server-fetched data as initialData so counts render instantly
-  const { data: popularityMap } = useLastFmPopularity(
-    album.artist?.name,
-    initialPopularityMap,
-  );
+  // 1. Last.fm: Fetch client-side via React Query
+  const { data: popularityMap } = useLastFmPopularity(album.artist?.name);
 
   // Fetch target user ratings if userId is present
   useEffect(() => {
@@ -168,7 +161,7 @@ export default function AlbumClient({
     };
   }, [album]);
 
-  const imageUrl = getCoverArtUrl(album.id);
+  const imageUrl = getCoverArtUrl(album.id, album.title, album.artist?.name);
   const [imageError, setImageError] = useState(false);
 
   const filteredTracks = (album.tracks || []).filter((track) =>

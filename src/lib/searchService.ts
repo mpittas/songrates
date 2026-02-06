@@ -35,8 +35,8 @@ const USER_AGENT = "SongRates/1.0 (mpittas@gmail.com)"; // Replace with config v
 
 /** Fetch limits */
 const LIMITS = {
-  single: { artists: 20, albums: 25, songs: 60 },
-  all: { artists: 10, albums: 12, songs: 25 },
+  single: { artists: 20, albums: 25, songs: 40 },
+  all: { artists: 10, albums: 12, songs: 15 },
 } as const;
 
 /** How many final results to return per type */
@@ -215,18 +215,23 @@ async function fetchSongCandidates(
   recordings: MBRecording[];
   popularityMap: Map<string, number>;
 }> {
-  // A. Start Broad Search
+  // A. Start Broad MB Search + Last.fm in TRUE parallel
   const luceneQuery = buildSmartLuceneQuery("recording", query);
   const broadPromise = fetchMB<MBSearchResponse<MBRecording>>(
     `recording?query=${encodeURIComponent(luceneQuery)}&limit=${limit}`,
   );
+  const lastFmPromise = searchLastFmTracks(query, 20);
 
-  // B. Fetch Last.fm Popularity (Parallel)
-  const lastFmTracks = await searchLastFmTracks(query, 30); // Reduced limit for speed
+  // B. Await both in parallel
+  const [broadData, lastFmTracks] = await Promise.all([
+    broadPromise,
+    lastFmPromise,
+  ]);
 
-  // C. Build Popularity Map immediately
+  const broadRecordings = broadData?.recordings || [];
+
+  // C. Build Popularity Map
   const popularityMap = new Map<string, number>();
-  // Identify top hits for targeted injection
   const topHits: { name: string; artist: string }[] = [];
 
   lastFmTracks.forEach((track, index) => {
@@ -234,16 +239,12 @@ async function fetchSongCandidates(
     const existing = popularityMap.get(key) || 0;
     popularityMap.set(key, Math.max(existing, track.listeners));
 
-    // Take top 5 for targeted injection
-    if (index < 5) {
+    if (index < 3) {
       topHits.push({ name: track.name, artist: track.artist });
     }
   });
 
-  // D. Perform Batched Targeted Injection
-  // If we have top hits, we construct a SINGLE queries to fetch them
-  let targetedRecordings: MBRecording[] = [];
-
+  // D. Targeted injection — only if we have top hits AND broad results might miss them
   if (topHits.length > 0) {
     const batchParts = topHits.map((hit) => {
       const rQuery = escapeLuceneValue(hit.name);
@@ -252,28 +253,19 @@ async function fetchSongCandidates(
     });
 
     const batchQuery = batchParts.join(" OR ");
-    const targetedPromise = fetchMB<MBSearchResponse<MBRecording>>(
-      `recording?query=${encodeURIComponent(batchQuery)}&limit=15`,
+    const targetedData = await fetchMB<MBSearchResponse<MBRecording>>(
+      `recording?query=${encodeURIComponent(batchQuery)}&limit=10`,
     );
 
-    const [broadData, targetedData] = await Promise.all([
-      broadPromise,
-      targetedPromise,
-    ]);
-
-    targetedRecordings = targetedData?.recordings || [];
-    const broadRecordings = broadData?.recordings || [];
-
+    const targetedRecordings = targetedData?.recordings || [];
     return {
       recordings: [...broadRecordings, ...targetedRecordings],
       popularityMap,
     };
   }
 
-  // If no top hits (rare), just await broad
-  const broadData = await broadPromise;
   return {
-    recordings: broadData?.recordings || [],
+    recordings: broadRecordings,
     popularityMap,
   };
 }

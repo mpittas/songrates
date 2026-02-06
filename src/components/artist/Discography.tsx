@@ -84,7 +84,11 @@ export default function Discography({
       return (b.releaseDate || "").localeCompare(a.releaseDate || "");
     });
 
-    return result.map((r) => ({ ...r, rating: getAlbumRating(r.id) }));
+    return result.map((r) => ({
+      ...r,
+      artistName,
+      rating: getAlbumRating(r.id),
+    }));
   };
 
   const sections = [

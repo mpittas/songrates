@@ -1,6 +1,5 @@
 import { AlbumInfo } from "@/types/music";
 import { resolveAlbumId } from "@/lib/musicbrainz";
-import { getArtistTrackPopularity } from "@/lib/lastfm";
 import AlbumClient from "@/components/album/AlbumClient";
 import { albumCache } from "@/lib/cache";
 
@@ -175,10 +174,5 @@ export default async function AlbumPage({ params }: PageProps) {
     );
   }
 
-  // Fetch Last.fm track popularity server-side (non-blocking — don't let it fail the page)
-  const trackPopularity = album.artist?.name
-    ? await getArtistTrackPopularity(album.artist.name).catch(() => ({}))
-    : {};
-
-  return <AlbumClient album={album} initialPopularityMap={trackPopularity} />;
+  return <AlbumClient album={album} />;
 }

@@ -105,7 +105,11 @@ export default function AlbumTracklistPopover({
                       artistName: album.artist.name,
                       artistId: album.artist.id,
                       albumId: album.id,
-                      albumImageUrl: getCoverArtUrl(album.id),
+                      albumImageUrl: getCoverArtUrl(
+                        album.id,
+                        album.title,
+                        album.artist.name,
+                      ),
                       albumTitle: album.title,
                       releaseDate: album.releaseDate,
                       totalTracks: album.tracks?.length,

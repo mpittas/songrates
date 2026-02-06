@@ -83,7 +83,11 @@ export default async function LatestRatedAlbums() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 w-full">
           {ratedAlbums.map((album) => {
-            const imageUrl = getCoverArtUrl(album.albumId);
+            const imageUrl = getCoverArtUrl(
+              album.albumId,
+              album.albumTitle,
+              album.artistName,
+            );
 
             return (
               <Link
