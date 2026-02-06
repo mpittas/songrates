@@ -229,13 +229,15 @@ async function searchSongs(
     const recordings: any[] = [...broadRecordings, ...targetedRecordings];
 
     // 2. Build Popularity Lookup Map
-    // Key: "artist:title" (normalized) -> listeners
+    // Key: "artist:title" (normalized) -> playcount/listeners
     const popularityMap = new Map<string, number>();
 
     lastFmTracks.forEach((track) => {
       const key = `${cleanString(track.artist)}:${cleanString(track.name)}`;
       const existing = popularityMap.get(key) || 0;
-      popularityMap.set(key, Math.max(existing, track.listeners));
+      // Use playcount if available, otherwise fall back to listeners
+      const count = track.playcount ?? track.listeners;
+      popularityMap.set(key, Math.max(existing, count));
     });
 
     // 3. Deduplicate MB results
@@ -281,19 +283,20 @@ async function searchSongs(
       const artist = cleanString(rec["artist-credit"]?.[0]?.name || "");
       const key = `${artist}:${title}`;
 
-      // Get popularity from Last.fm
-      const listeners = popularityMap.get(key) || 0;
+      // Get popularity from Last.fm (playcount or listeners)
+      const popularity = popularityMap.get(key) || 0;
 
       // Fallback: Use official release count as a proxy if no Last.fm data
       const officialCount = countOfficialReleases(rec.releases || []);
 
       // Composite Score:
-      // If we have listeners, that's the dominant factor.
+      // If we have popularity, that's the dominant factor.
       // If not, we rely on release count.
-      // We normalize listeners roughly (1M listeners = high score)
-      const popularityScore = listeners > 0 ? listeners : officialCount * 1000; // 1 release ~= 1000 listeners fallback
+      // We normalize popularity roughly (1M plays = high score)
+      const popularityScore =
+        popularity > 0 ? popularity : officialCount * 1000; // 1 release ~= 1000 plays fallback
 
-      return { rec, score: popularityScore, listeners };
+      return { rec, score: popularityScore, popularity };
     });
 
     // Sort descending by score
@@ -302,7 +305,7 @@ async function searchSongs(
     const top = scored.slice(0, RETURN_LIMITS.songs);
 
     // 5. Map to Result
-    const results: SongSearchResult[] = top.map(({ rec, listeners }) => {
+    const results: SongSearchResult[] = top.map(({ rec, popularity }) => {
       const releases = rec.releases || [];
       const originalAlbum = findOriginalAlbum(releases);
       const bestRG = originalAlbum ||
@@ -325,14 +328,62 @@ async function searchSongs(
         releaseGroupTitle: bestRG.title,
         originalAlbumTitle: originalAlbum?.title,
         originalAlbumDate: originalAlbum?.date,
-        // We can pass listen count (from Last.fm) if we want to display it immediately
-        listenCount: listeners > 0 ? listeners : undefined,
+        // Use Last.fm playcount (or listeners as fallback)
+        listenCount: popularity > 0 ? popularity : undefined,
       };
     });
 
     searchCache.set(cacheKey, results, 1800);
     return results;
   });
+}
+
+// ─── ListenBrainz Enrichment ────────────────────────────────────────────────────
+
+const LISTENBRAINZ_BASE_URL = "https://api.listenbrainz.org/1";
+
+/**
+ * Fetch total listen counts from ListenBrainz for a batch of recording MBIDs.
+ * Same data source as the album tracklist, ensuring numbers match.
+ */
+async function fetchListenBrainzCounts(
+  recordingMbids: string[],
+): Promise<Record<string, number>> {
+  if (recordingMbids.length === 0) return {};
+
+  try {
+    const res = await fetch(`${LISTENBRAINZ_BASE_URL}/popularity/recording`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "User-Agent": USER_AGENT,
+      },
+      body: JSON.stringify({ recording_mbids: recordingMbids.slice(0, 50) }),
+    });
+
+    if (!res.ok) return {};
+
+    const data = await res.json();
+    const items = Array.isArray(data)
+      ? data
+      : Array.isArray(data?.payload)
+        ? data.payload
+        : [];
+
+    const counts: Record<string, number> = {};
+    for (const entry of items) {
+      if (
+        entry.recording_mbid &&
+        typeof entry.total_listen_count === "number"
+      ) {
+        counts[entry.recording_mbid] = entry.total_listen_count;
+      }
+    }
+    return counts;
+  } catch (err) {
+    console.error("ListenBrainz enrichment error:", err);
+    return {};
+  }
 }
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────

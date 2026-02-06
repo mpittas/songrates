@@ -20,7 +20,7 @@ import {
 import { SiDiscogs, SiBandcamp, SiGenius } from "react-icons/si";
 import AlbumRatingRow from "@/components/rating/AlbumRatingRow";
 import TrackItem from "@/components/album/TrackItem";
-import { useListenBrainzPopularity } from "@/hooks/useListenBrainzPopularity";
+import { useLastFmPlaycounts } from "@/hooks/useLastFmPlaycounts";
 
 import { AlbumInfo, TrackInfo, AlbumContext } from "@/types/music";
 import { resolveAlbumId } from "@/lib/musicbrainz";
@@ -48,8 +48,8 @@ export default function AlbumPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
 
-  // ListenBrainz popularity — single batch request for all tracks, non-blocking
-  const { data: listenCounts } = useListenBrainzPopularity(album?.tracks || []);
+  // Last.fm playcounts — single batch request for all tracks, non-blocking
+  const { data: playcounts } = useLastFmPlaycounts(album?.tracks || []);
 
   useEffect(() => {
     if (!slug) return;
@@ -473,11 +473,7 @@ export default function AlbumPage() {
                   }}
                   publicRating={publicTrackRatings[track.id]?.average_rating}
                   publicCount={publicTrackRatings[track.id]?.rating_count}
-                  listenCount={
-                    track.recordingId
-                      ? listenCounts?.[track.recordingId]
-                      : undefined
-                  }
+                  listenCount={playcounts?.[track.title]}
                   forcedRating={
                     viewingUserRatings
                       ? viewingUserRatings[track.id] || 0

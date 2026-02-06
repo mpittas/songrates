@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback } from "react";
 import Link from "next/link";
-import { IoMusicalNotes, IoDisc, IoPerson, IoFlame } from "react-icons/io5";
+import { IoMusicalNotes, IoDisc, IoPerson } from "react-icons/io5";
 
 import { useSearchQuery } from "@/hooks/useSearchQuery";
 
@@ -19,6 +19,8 @@ import { ArtistVisit } from "@/types/artist";
 import { getArtistHistory } from "@/lib/history";
 import { formatTimeAgo, createSlug, formatTime } from "@/lib/utils";
 import PrefetchLink from "@/components/ui/PrefetchLink";
+import ListenCountBadge from "@/components/ui/ListenCountBadge";
+import Badge from "@/components/ui/Badge";
 
 // ─── Category Filter Tabs ──────────────────────────────────────────────────────
 
@@ -164,32 +166,13 @@ function SongRow({
         </p>
       </div>
       <div className="flex items-center gap-2 flex-shrink-0">
-        {result.officialReleaseCount > 0 && (
-          <span
-            className="text-[10px] font-mono px-1.5 py-0.5 rounded-sm bg-[#00f0ff]/5 text-[#00f0ff]/70 border border-[#00f0ff]/10"
-            title={`Appears on ${result.officialReleaseCount} official releases out of ${result.releaseCount} total (Fame Index)`}
-          >
-            {result.officialReleaseCount} rel
-          </span>
-        )}
         {result.hasAlbumRelease && (
-          <span
-            className="text-[10px] font-mono px-1 py-0.5 rounded-sm bg-emerald-500/10 text-emerald-400/70 border border-emerald-500/15"
-            title="Appears on an official Album"
-          >
+          <Badge variant="green" title="Appears on an official Album">
             LP
-          </span>
+          </Badge>
         )}
         {effectiveListenCount != null && effectiveListenCount > 0 && (
-          <span
-            className="text-[10px] font-mono px-1.5 py-0.5 rounded-sm bg-orange-500/10 text-orange-400/80 border border-orange-500/20 flex items-center gap-0.5"
-            title={`${effectiveListenCount.toLocaleString()} total listens on ListenBrainz`}
-          >
-            <IoFlame size={10} />
-            {effectiveListenCount >= 1000
-              ? `${Math.round(effectiveListenCount / 1000)}k`
-              : effectiveListenCount}
-          </span>
+          <ListenCountBadge listenCount={effectiveListenCount} />
         )}
         <span className="text-[10px] text-neutral-600 font-mono uppercase tracking-wider">
           Song
