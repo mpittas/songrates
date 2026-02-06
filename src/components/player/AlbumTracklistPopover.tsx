@@ -7,6 +7,7 @@ import { useEffect, useRef } from "react";
 import { FaPlay, FaPause } from "react-icons/fa";
 import { usePlayer } from "@/context/PlayerContext";
 import { useRatings } from "@/hooks/useRatings";
+import { getCoverArtUrl } from "@/lib/cover-art";
 
 const COLORS = [
   "#a31616", // 1
@@ -104,7 +105,7 @@ export default function AlbumTracklistPopover({
                       artistName: album.artist.name,
                       artistId: album.artist.id,
                       albumId: album.id,
-                      albumImageUrl: `https://coverartarchive.org/release-group/${album.id}/front-250`,
+                      albumImageUrl: getCoverArtUrl(album.id),
                       albumTitle: album.title,
                       releaseDate: album.releaseDate,
                       totalTracks: album.tracks?.length,

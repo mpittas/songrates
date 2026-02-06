@@ -20,13 +20,46 @@ async function getAlbumInfo(id: string): Promise<AlbumInfo | null> {
     const rgUrl = `${MB_BASE_URL}/release-group/${id}?inc=artists+url-rels+genres&fmt=json`;
     const releasesUrl = `${MB_BASE_URL}/release?release-group=${id}&inc=media+recordings+artist-credits&limit=100&fmt=json`;
 
+    // Helper function with retry logic
+    const fetchWithRetry = async (url: string): Promise<Response | null> => {
+      let retryCount = 0;
+      const maxRetries = 2;
+
+      while (true) {
+        const res = await fetch(url, { headers, next: { revalidate: 3600 } });
+
+        if (res.ok) return res;
+
+        // Don't retry on client errors (4xx)
+        if (res.status < 500) {
+          console.error(
+            `MB API Error: ${res.status} ${res.statusText} for URL: ${url}`,
+          );
+          return null;
+        }
+
+        // Retry on server errors (5xx)
+        if (retryCount >= maxRetries) {
+          console.error(
+            `MB API Error: ${res.status} ${res.statusText} for URL: ${url} (after ${maxRetries} retries)`,
+          );
+          return null;
+        }
+
+        retryCount++;
+        console.log(
+          `MB API ${res.status}, retrying in ${1000 * retryCount}ms...`,
+        );
+        await new Promise((resolve) => setTimeout(resolve, 1000 * retryCount));
+      }
+    };
+
     const [rgRes, releasesRes] = await Promise.all([
-      fetch(rgUrl, { headers, next: { revalidate: 3600 } }),
-      fetch(releasesUrl, { headers, next: { revalidate: 3600 } }),
+      fetchWithRetry(rgUrl),
+      fetchWithRetry(releasesUrl),
     ]);
 
-    if (!rgRes.ok) return null;
-    if (!releasesRes.ok) return null;
+    if (!rgRes || !releasesRes) return null;
 
     const [rgData, releasesData] = await Promise.all([
       rgRes.json(),

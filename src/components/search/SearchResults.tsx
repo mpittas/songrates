@@ -22,6 +22,7 @@ import { formatTimeAgo, createSlug, formatTime } from "@/lib/utils";
 import ListenCountBadge from "@/components/shared/ListenCountBadge";
 import Badge from "@/components/shared/Badge";
 import PrefetchLink from "@/components/ui/PrefetchLink";
+import { getCoverArtUrl } from "@/lib/cover-art";
 
 // ─── Category Filter Tabs ──────────────────────────────────────────────────────
 
@@ -158,7 +159,7 @@ const SongRow = memo(function SongRow({
       <div className="w-10 h-10 overflow-hidden bg-[#0f0f12] border border-[#1a1a1f] group-hover:border-[#00f0ff]/30 flex items-center justify-center flex-shrink-0 relative rounded-sm">
         {result.releaseGroupId ? (
           <OptimizedImage
-            src={`https://coverartarchive.org/release-group/${result.releaseGroupId}/front-250`}
+            src={getCoverArtUrl(result.releaseGroupId)}
             alt={result.title}
             fill
             className="object-cover"

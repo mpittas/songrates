@@ -67,15 +67,45 @@ export async function getArtistAlbums(artistId: string): Promise<Album[]> {
   const cached = albumCache.get(cacheKey);
   if (cached && cached.albums) return cached.albums;
 
-  const url = `${MB_BASE_URL}/release-group?artist=${artistId}&type=album&release-group-status=website-default&fmt=json&limit=100&inc=url-rels`;
-
   try {
-    const res = await fetch(url, {
-      headers: { "User-Agent": MB_USER_AGENT, Accept: "application/json" },
-      next: { revalidate: 3600 },
-    });
+    const url = `${MB_BASE_URL}/release-group?artist=${artistId}&type=album&release-group-status=website-default&fmt=json&limit=100&inc=url-rels`;
 
-    if (!res.ok) throw new Error("MB API Error");
+    let res: Response;
+    let retryCount = 0;
+    const maxRetries = 2;
+
+    // Retry logic for 503/502/500 errors
+    while (true) {
+      res = await fetch(url, {
+        headers: { "User-Agent": MB_USER_AGENT, Accept: "application/json" },
+        next: { revalidate: 3600 },
+      });
+
+      if (res.ok) break;
+
+      // Don't retry on client errors (4xx)
+      if (res.status < 500) {
+        console.error(
+          `MB API Error: ${res.status} ${res.statusText} for URL: ${url}`,
+        );
+        return [];
+      }
+
+      // Retry on server errors (5xx)
+      if (retryCount >= maxRetries) {
+        console.error(
+          `MB API Error: ${res.status} ${res.statusText} for URL: ${url} (after ${maxRetries} retries)`,
+        );
+        return [];
+      }
+
+      retryCount++;
+      console.log(
+        `MB API ${res.status}, retrying in ${1000 * retryCount}ms...`,
+      );
+      await new Promise((resolve) => setTimeout(resolve, 1000 * retryCount));
+    }
+
     const data = await res.json();
 
     const excludedSecondaryTypes = [
@@ -177,17 +207,42 @@ export async function getOtherReleases(
     while (hasMore && pageCount < maxPages) {
       const url = `${MB_BASE_URL}/release-group?artist=${artistId}&release-group-status=website-default&fmt=json&limit=${limit}&offset=${offset}`;
 
-      const res = await fetch(url, {
-        headers: { "User-Agent": MB_USER_AGENT, Accept: "application/json" },
-        next: { revalidate: 3600 },
-      });
+      let res: Response;
+      let retryCount = 0;
+      const maxRetries = 2;
 
-      if (!res.ok) {
-        console.error(
-          `MB API Error: ${res.status} ${res.statusText} for URL: ${url}`,
+      // Retry logic for 503/502/500 errors
+      while (true) {
+        res = await fetch(url, {
+          headers: { "User-Agent": MB_USER_AGENT, Accept: "application/json" },
+          next: { revalidate: 3600 },
+        });
+
+        if (res.ok) break;
+
+        // Don't retry on client errors (4xx)
+        if (res.status < 500) {
+          console.error(
+            `MB API Error: ${res.status} ${res.statusText} for URL: ${url}`,
+          );
+          throw new Error(`MB API Error: ${res.status} ${res.statusText}`);
+        }
+
+        // Retry on server errors (5xx)
+        if (retryCount >= maxRetries) {
+          console.error(
+            `MB API Error: ${res.status} ${res.statusText} for URL: ${url} (after ${maxRetries} retries)`,
+          );
+          throw new Error(`MB API Error: ${res.status} ${res.statusText}`);
+        }
+
+        retryCount++;
+        console.log(
+          `MB API ${res.status}, retrying in ${1000 * retryCount}ms...`,
         );
-        throw new Error(`MB API Error: ${res.status} ${res.statusText}`);
+        await new Promise((resolve) => setTimeout(resolve, 1000 * retryCount));
       }
+
       const data = await res.json();
 
       const pageGroups = data["release-groups"] || [];
@@ -276,12 +331,42 @@ export async function searchArtists(query: string): Promise<any[]> {
 
   try {
     const url = `${MB_BASE_URL}/artist?query=${encodeURIComponent(query)}&limit=10&fmt=json`;
-    const res = await fetch(url, {
-      headers: { "User-Agent": MB_USER_AGENT, Accept: "application/json" },
-      next: { revalidate: 3600 },
-    });
 
-    if (!res.ok) return [];
+    let res: Response;
+    let retryCount = 0;
+    const maxRetries = 2;
+
+    // Retry logic for 503/502/500 errors
+    while (true) {
+      res = await fetch(url, {
+        headers: { "User-Agent": MB_USER_AGENT, Accept: "application/json" },
+        next: { revalidate: 3600 },
+      });
+
+      if (res.ok) break;
+
+      // Don't retry on client errors (4xx)
+      if (res.status < 500) {
+        console.error(
+          `MB API Error: ${res.status} ${res.statusText} for URL: ${url}`,
+        );
+        return [];
+      }
+
+      // Retry on server errors (5xx)
+      if (retryCount >= maxRetries) {
+        console.error(
+          `MB API Error: ${res.status} ${res.statusText} for URL: ${url} (after ${maxRetries} retries)`,
+        );
+        return [];
+      }
+
+      retryCount++;
+      console.log(
+        `MB API ${res.status}, retrying in ${1000 * retryCount}ms...`,
+      );
+      await new Promise((resolve) => setTimeout(resolve, 1000 * retryCount));
+    }
 
     const data = await res.json();
     const artists = (data.artists || []).map((artist: any) => ({
@@ -311,12 +396,43 @@ export async function searchReleaseGroups(query: string): Promise<any[]> {
 
   try {
     const url = `${MB_BASE_URL}/release-group?query=${encodeURIComponent(query)}&limit=100&fmt=json`;
-    const res = await fetch(url, {
-      headers: { "User-Agent": MB_USER_AGENT, Accept: "application/json" },
-      next: { revalidate: 3600 },
-    });
 
-    if (!res.ok) return [];
+    let res: Response;
+    let retryCount = 0;
+    const maxRetries = 2;
+
+    // Retry logic for 503/502/500 errors
+    while (true) {
+      res = await fetch(url, {
+        headers: { "User-Agent": MB_USER_AGENT, Accept: "application/json" },
+        next: { revalidate: 3600 },
+      });
+
+      if (res.ok) break;
+
+      // Don't retry on client errors (4xx)
+      if (res.status < 500) {
+        console.error(
+          `MB API Error: ${res.status} ${res.statusText} for URL: ${url}`,
+        );
+        return [];
+      }
+
+      // Retry on server errors (5xx)
+      if (retryCount >= maxRetries) {
+        console.error(
+          `MB API Error: ${res.status} ${res.statusText} for URL: ${url} (after ${maxRetries} retries)`,
+        );
+        return [];
+      }
+
+      retryCount++;
+      console.log(
+        `MB API ${res.status}, retrying in ${1000 * retryCount}ms...`,
+      );
+      await new Promise((resolve) => setTimeout(resolve, 1000 * retryCount));
+    }
+
     const data = await res.json();
     const releaseGroups = data["release-groups"] || [];
 
@@ -344,8 +460,8 @@ export async function resolveArtistId(slug: string): Promise<string | null> {
   // 2. Parse slug
   const { name, shortId } = parseSlug(slug);
   if (!shortId || shortId.length < 8) {
-    // ID too short or missing, return slug as is (might fail later)
-    return slug;
+    // ID too short or missing, return slug as is (might be a valid ID)
+    return slug || null;
   }
 
   // 3. Check cache for slug mapping
@@ -353,21 +469,35 @@ export async function resolveArtistId(slug: string): Promise<string | null> {
   const cachedId = searchCache.get(cacheKey);
   if (cachedId) return cachedId as string;
 
-  // 4. Search and match
-  // We search for the name
-  const artists = await searchArtists(name);
+  try {
+    // 4. Search and match
+    const artists = await searchArtists(name);
 
-  // Look for a match where the ID starts with shortId
-  const match = artists.find((a) => a.id.startsWith(shortId));
+    // Look for a match where the ID starts with shortId
+    const match = artists.find((a) => a.id.startsWith(shortId));
 
-  if (match) {
-    searchCache.set(cacheKey, match.id);
-    return match.id;
+    if (match) {
+      searchCache.set(cacheKey, match.id);
+      return match.id;
+    }
+
+    // Fallback: if shortId looks like a UUID prefix (8+ hex chars), return slug as-is
+    if (/^[0-9a-f]{8,}$/i.test(shortId)) {
+      console.log(
+        `[resolveArtistId] Search failed for "${slug}", returning slug as fallback`,
+      );
+      return slug;
+    }
+
+    return null;
+  } catch (error) {
+    console.error(`[resolveArtistId] Error resolving "${slug}":`, error);
+    // On error, if shortId looks valid, return slug as fallback
+    if (/^[0-9a-f]{8,}$/i.test(shortId)) {
+      return slug;
+    }
+    return null;
   }
-
-  // If no strict match, but shortId looks like part of a UUID, we fail?
-  // Or do we return the shortId + wildcard? No, the API needs full UUID.
-  return null;
 }
 
 /**
@@ -381,21 +511,42 @@ export async function resolveAlbumId(slug: string): Promise<string | null> {
   }
 
   const { name, shortId } = parseSlug(slug);
-  if (!shortId || shortId.length < 8) return slug;
+  if (!shortId || shortId.length < 8) {
+    // If shortId is too short, try returning the slug as-is (might be a valid ID)
+    return slug || null;
+  }
 
   const cacheKey = `resolve-album:${slug}`;
   const cachedId = searchCache.get(cacheKey);
   if (cachedId) return cachedId as string;
 
-  const rgs = await searchReleaseGroups(name);
-  const match = rgs.find((rg: any) => rg.id.startsWith(shortId));
+  try {
+    const rgs = await searchReleaseGroups(name);
+    const match = rgs.find((rg: any) => rg.id.startsWith(shortId));
 
-  if (match) {
-    searchCache.set(cacheKey, match.id);
-    return match.id;
+    if (match) {
+      searchCache.set(cacheKey, match.id);
+      return match.id;
+    }
+
+    // Fallback: if shortId looks like a UUID prefix (8+ hex chars), return slug as-is
+    // This handles cases where the search fails but the slug might still be valid
+    if (/^[0-9a-f]{8,}$/i.test(shortId)) {
+      console.log(
+        `[resolveAlbumId] Search failed for "${slug}", returning slug as fallback`,
+      );
+      return slug;
+    }
+
+    return null;
+  } catch (error) {
+    console.error(`[resolveAlbumId] Error resolving "${slug}":`, error);
+    // On error, if shortId looks valid, return slug as fallback
+    if (/^[0-9a-f]{8,}$/i.test(shortId)) {
+      return slug;
+    }
+    return null;
   }
-
-  return null;
 }
 
 async function fetchMBData(artistId: string): Promise<{

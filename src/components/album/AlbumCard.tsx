@@ -8,6 +8,7 @@ import { FaWikipediaW, FaEllipsisV } from "react-icons/fa";
 import { useRatingsContext } from "@/context/RatingsContext";
 import AlbumRatingBadge from "@/components/rating/AlbumRatingBadge";
 import { Album } from "@/types/music";
+import { getCoverArtUrl } from "@/lib/cover-art";
 import Button from "@/components/ui/Button";
 
 interface AlbumCardProps {
@@ -164,7 +165,7 @@ export default function AlbumCard({
   isPriority = false,
   layout = "grid",
 }: AlbumCardProps) {
-  const imageUrl = `https://coverartarchive.org/release-group/${album.id}/front-250`;
+  const imageUrl = getCoverArtUrl(album.id);
   const [imageError, setImageError] = useState(false);
 
   const slug = createSlug(album.title, album.id);

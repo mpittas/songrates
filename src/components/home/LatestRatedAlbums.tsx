@@ -2,6 +2,7 @@ import { createAdminClient } from "@/utils/supabase/admin";
 
 import Link from "next/link";
 import OptimizedImage from "@/components/ui/OptimizedImage";
+import { getCoverArtUrl } from "@/lib/cover-art";
 
 interface RatedAlbum {
   userId: string;
@@ -82,7 +83,7 @@ export default async function LatestRatedAlbums() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 w-full">
           {ratedAlbums.map((album) => {
-            const imageUrl = `https://coverartarchive.org/release-group/${album.albumId}/front-250`;
+            const imageUrl = getCoverArtUrl(album.albumId);
 
             return (
               <Link

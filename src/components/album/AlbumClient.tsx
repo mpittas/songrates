@@ -22,6 +22,7 @@ import AlbumRatingRow from "@/components/rating/AlbumRatingRow";
 import TrackItem from "@/components/album/TrackItem";
 import { useRatings } from "@/hooks/useRatings";
 import { useLastFmPopularity } from "@/hooks/useLastFmPopularity";
+import { getCoverArtUrl } from "@/lib/cover-art";
 
 interface AlbumClientProps {
   album: AlbumInfo;
@@ -167,7 +168,7 @@ export default function AlbumClient({
     };
   }, [album]);
 
-  const imageUrl = `https://coverartarchive.org/release-group/${album.id}/front-250`; // Use 250 for better reliability
+  const imageUrl = getCoverArtUrl(album.id);
   const [imageError, setImageError] = useState(false);
 
   const filteredTracks = (album.tracks || []).filter((track) =>
