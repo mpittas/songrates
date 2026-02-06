@@ -13,6 +13,6 @@ export async function GET(request: NextRequest) {
   return handleApiRequest(
     () => getOtherReleases(id),
     "Failed to fetch other releases",
-    "releases",
+    "album",
   );
 }
