@@ -5,7 +5,7 @@ import Link from "next/link";
 import { IoMusicalNotes, IoDisc, IoPerson, IoFlame } from "react-icons/io5";
 
 import { useSearchQuery } from "@/hooks/useSearchQuery";
-import { useSearchEnrich } from "@/hooks/useSearchEnrich";
+
 import type {
   SearchCategory,
   SearchResult,
@@ -274,43 +274,9 @@ export default function SearchResults({
   const results = searchData?.results ?? [];
   const grouped = searchData?.grouped ?? null;
 
-  // ─── TanStack Query: lazy ListenBrainz enrichment ──────────────────
-  const songResults = useMemo(
-    () => results.filter((r): r is SongSearchResult => r.type === "song"),
-    [results],
-  );
-
-  const { data: listenCounts = {} } = useSearchEnrich(songResults);
-
-  // ─── Re-sort by ListenBrainz popularity (True Popularity) ─────────
-  // Once listen counts arrive, re-rank songs so the most-listened-to
-  // version surfaces first. Uses useMemo to avoid unnecessary recalcs.
-  const sortedResults = useMemo(() => {
-    const hasListenData = Object.keys(listenCounts).length > 0;
-    if (!hasListenData) return results;
-
-    const nonSongs = results.filter((r) => r.type !== "song");
-    const songs = results
-      .filter((r): r is SongSearchResult => r.type === "song")
-      .sort((a, b) => {
-        const aCount = listenCounts[a.id] ?? a.listenCount ?? 0;
-        const bCount = listenCounts[b.id] ?? b.listenCount ?? 0;
-        return bCount - aCount;
-      });
-    return [...nonSongs, ...songs];
-  }, [results, listenCounts]);
-
-  const sortedGrouped = useMemo(() => {
-    const hasListenData = Object.keys(listenCounts).length > 0;
-    if (!grouped || !hasListenData) return grouped;
-
-    const sortedSongs = [...grouped.songs].sort((a, b) => {
-      const aCount = listenCounts[a.id] ?? a.listenCount ?? 0;
-      const bCount = listenCounts[b.id] ?? b.listenCount ?? 0;
-      return bCount - aCount;
-    });
-    return { ...grouped, songs: sortedSongs };
-  }, [grouped, listenCounts]);
+  // ─── No client-side re-sort needed ────────────────────────────────
+  // The server now handles hybrid search ranking (Last.fm + MusicBrainz)
+  // so results arrive pre-sorted by popularity.
 
   // ─── History when focused and empty ────────────────────────────────
   const loadHistory = useCallback(() => {
@@ -354,73 +320,55 @@ export default function SearchResults({
       )}
 
       {/* Fetching indicator — subtle, shown when refreshing with existing data */}
-      {query && isFetching && !showLoading && sortedResults.length > 0 && (
+      {query && isFetching && !showLoading && results.length > 0 && (
         <div className="h-0.5 bg-[#00f0ff]/20 overflow-hidden">
           <div className="h-full bg-[#00f0ff]/60 animate-pulse w-full" />
         </div>
       )}
 
-      {/* Results — uses sortedResults/sortedGrouped for ListenBrainz re-ranking */}
-      {query && !showLoading && sortedResults.length > 0 && (
+      {/* Results — uses server-ranked results directly */}
+      {query && !showLoading && results.length > 0 && (
         <div className="divide-y divide-[#1a1a1f]/50">
-          {category === "all" && sortedGrouped ? (
+          {category === "all" && grouped ? (
             <>
-              {sortedGrouped.artists.length > 0 && (
+              {grouped.artists.length > 0 && (
                 <>
                   <SectionHeader
                     label="Artists"
-                    count={sortedGrouped.artists.length}
+                    count={grouped.artists.length}
                   />
-                  {sortedGrouped.artists.slice(0, 3).map((r) => (
-                    <ResultRow
-                      key={r.id}
-                      result={r}
-                      listenCounts={listenCounts}
-                    />
+                  {grouped.artists.slice(0, 3).map((r) => (
+                    <ResultRow key={r.id} result={r} listenCounts={{}} />
                   ))}
                 </>
               )}
-              {sortedGrouped.albums.length > 0 && (
+              {grouped.albums.length > 0 && (
                 <>
-                  <SectionHeader
-                    label="Albums"
-                    count={sortedGrouped.albums.length}
-                  />
-                  {sortedGrouped.albums.slice(0, 3).map((r) => (
-                    <ResultRow
-                      key={r.id}
-                      result={r}
-                      listenCounts={listenCounts}
-                    />
+                  <SectionHeader label="Albums" count={grouped.albums.length} />
+                  {grouped.albums.slice(0, 3).map((r) => (
+                    <ResultRow key={r.id} result={r} listenCounts={{}} />
                   ))}
                 </>
               )}
-              {sortedGrouped.songs.length > 0 && (
+              {grouped.songs.length > 0 && (
                 <>
-                  <SectionHeader
-                    label="Songs"
-                    count={sortedGrouped.songs.length}
-                  />
-                  {sortedGrouped.songs.slice(0, 8).map((r) => (
-                    <ResultRow
-                      key={r.id}
-                      result={r}
-                      listenCounts={listenCounts}
-                    />
+                  <SectionHeader label="Songs" count={grouped.songs.length} />
+                  {grouped.songs.slice(0, 8).map((r) => (
+                    <ResultRow key={r.id} result={r} listenCounts={{}} />
                   ))}
                 </>
               )}
             </>
           ) : (
-            sortedResults.map((r) => (
-              <ResultRow key={r.id} result={r} listenCounts={listenCounts} />
+            results.map((r) => (
+              <ResultRow key={r.id} result={r} listenCounts={{}} />
             ))
           )}
         </div>
       )}
 
       {/* No results */}
-      {query && !isFetching && sortedResults.length === 0 && (
+      {query && !isFetching && results.length === 0 && (
         <div className="text-center py-8 text-neutral-600 font-mono text-sm">
           no results found for &ldquo;{query}&rdquo;
         </div>
