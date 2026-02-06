@@ -1,5 +1,6 @@
 import { AlbumInfo } from "@/types/music";
 import { resolveAlbumId } from "@/lib/musicbrainz";
+import { getArtistTrackPopularity } from "@/lib/lastfm";
 import AlbumClient from "@/components/album/AlbumClient";
 import { albumCache } from "@/lib/cache";
 
@@ -17,7 +18,7 @@ async function getAlbumInfo(id: string): Promise<AlbumInfo | null> {
   try {
     // 1. Fetch Release Group + Releases in parallel
     const rgUrl = `${MB_BASE_URL}/release-group/${id}?inc=artists+url-rels+genres&fmt=json`;
-    const releasesUrl = `${MB_BASE_URL}/release?release-group=${id}&inc=media+recordings&limit=100&fmt=json`;
+    const releasesUrl = `${MB_BASE_URL}/release?release-group=${id}&inc=media+recordings+artist-credits&limit=100&fmt=json`;
 
     const [rgRes, releasesRes] = await Promise.all([
       fetch(rgUrl, { headers, next: { revalidate: 3600 } }),
@@ -61,9 +62,14 @@ async function getAlbumInfo(id: string): Promise<AlbumInfo | null> {
         position: t.position,
         number: t.number,
         recordingId: t.recording?.id,
-        artists: t["artist-credit"]?.map((ac: any) => ({
+        artists: (
+          t["artist-credit"] ||
+          t.recording?.["artist-credit"] ||
+          []
+        ).map((ac: any) => ({
           id: ac.artist?.id,
           name: ac.name,
+          joinPhrase: ac.joinphrase,
         })),
       })),
     );
@@ -136,8 +142,10 @@ export default async function AlbumPage({ params }: PageProps) {
     );
   }
 
-  // Check for Wiki link if not found on RG (sometimes it's on the artist?)
-  // ... (Simplification: skipping complex relationship digging for performance)
+  // Fetch Last.fm track popularity server-side (non-blocking — don't let it fail the page)
+  const trackPopularity = album.artist?.name
+    ? await getArtistTrackPopularity(album.artist.name).catch(() => ({}))
+    : {};
 
-  return <AlbumClient album={album} />;
+  return <AlbumClient album={album} initialPopularityMap={trackPopularity} />;
 }

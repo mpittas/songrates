@@ -110,7 +110,7 @@ export default function OptimizedImage({
       onError={handleError}
       className={className}
       style={fillStyles}
-      threshold={200}
+      threshold={600}
       wrapperClassName={fill ? "absolute inset-0 w-full h-full" : undefined}
     />
   );

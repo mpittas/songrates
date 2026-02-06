@@ -139,6 +139,7 @@ export default function Discography({
               layout={s.layout}
               tooltipText={s.tooltip}
               gridCols={3}
+              priorityCount={s.key === "Albums" ? 6 : 0}
             />
           ),
       )}

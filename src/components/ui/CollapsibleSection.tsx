@@ -20,6 +20,7 @@ export default function CollapsibleSection({
   defaultOpen = true,
   tooltipText,
   gridCols,
+  priorityCount = 0,
 }: {
   title: string;
   releases: AlbumType[];
@@ -28,6 +29,7 @@ export default function CollapsibleSection({
   defaultOpen?: boolean;
   tooltipText?: string;
   gridCols?: number;
+  priorityCount?: number;
 }) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -67,6 +69,7 @@ export default function CollapsibleSection({
             onSelectAlbum={onSelectAlbum}
             layout={layout}
             gridCols={gridCols}
+            priorityCount={priorityCount}
           />
 
           {hasMore && (

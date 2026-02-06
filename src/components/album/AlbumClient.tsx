@@ -25,9 +25,13 @@ import { useLastFmPopularity } from "@/hooks/useLastFmPopularity";
 
 interface AlbumClientProps {
   album: AlbumInfo;
+  initialPopularityMap?: Record<string, number>;
 }
 
-export default function AlbumClient({ album }: AlbumClientProps) {
+export default function AlbumClient({
+  album,
+  initialPopularityMap,
+}: AlbumClientProps) {
   const searchParams = useSearchParams();
   const userId = searchParams.get("userId");
   const highlightTrackId = searchParams.get("track");
@@ -47,8 +51,11 @@ export default function AlbumClient({ album }: AlbumClientProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
 
-  // 1. Last.fm Optimization: This now runs IMMEDIATELY on mount because we have the artist name from props
-  const { data: popularityMap } = useLastFmPopularity(album.artist?.name);
+  // 1. Last.fm: Use server-fetched data as initialData so counts render instantly
+  const { data: popularityMap } = useLastFmPopularity(
+    album.artist?.name,
+    initialPopularityMap,
+  );
 
   // Fetch target user ratings if userId is present
   useEffect(() => {

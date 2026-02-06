@@ -1,6 +1,11 @@
 "use client";
 
-import { useQuery, keepPreviousData } from "@tanstack/react-query";
+import { useEffect } from "react";
+import {
+  useQuery,
+  useQueryClient,
+  keepPreviousData,
+} from "@tanstack/react-query";
 import type {
   SearchCategory,
   SearchResult,
@@ -59,7 +64,9 @@ async function fetchSearchResults(
  *   - Structural sharing prevents unnecessary re-renders
  */
 export function useSearchQuery(query: string, category: SearchCategory) {
-  return useQuery<SearchApiData>({
+  const queryClient = useQueryClient();
+
+  const queryResult = useQuery<SearchApiData>({
     // Query key includes both query and category for proper cache separation
     queryKey: ["search", query, category] as const,
 
@@ -84,4 +91,31 @@ export function useSearchQuery(query: string, category: SearchCategory) {
     retry: 1,
     retryDelay: 1000,
   });
+
+  // ─── Cache Seeding ────────────────────────────────────────────────
+  // When "all" results arrive with grouped data, seed the cache for
+  // individual categories so tab switches are instant (no new API call).
+  const { data } = queryResult;
+  useEffect(() => {
+    if (category !== "all" || !data?.grouped) return;
+
+    const { grouped } = data;
+    const seedCategory = (cat: SearchCategory, results: SearchResult[]) => {
+      const key = ["search", query, cat] as const;
+      // Only seed if not already cached (don't overwrite fresher data)
+      if (!queryClient.getQueryData(key)) {
+        queryClient.setQueryData<SearchApiData>(key, {
+          results,
+          grouped: null,
+          meta: { query, category: cat, totalResults: results.length, took: 0 },
+        });
+      }
+    };
+
+    seedCategory("artist", grouped.artists);
+    seedCategory("album", grouped.albums);
+    seedCategory("song", grouped.songs);
+  }, [category, data, query, queryClient]);
+
+  return queryResult;
 }

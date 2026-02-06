@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback, memo } from "react";
 import Link from "next/link";
-import { IoMusicalNotes, IoDisc, IoPerson, IoFlame } from "react-icons/io5";
+import { IoMusicalNotes, IoDisc, IoPerson } from "react-icons/io5";
 import OptimizedImage from "@/components/ui/OptimizedImage";
 
 import { useSearchQuery } from "@/hooks/useSearchQuery";
@@ -32,7 +32,7 @@ const CATEGORIES: { key: SearchCategory; label: string }[] = [
   { key: "song", label: "Songs" },
 ];
 
-function CategoryTabs({
+const CategoryTabs = memo(function CategoryTabs({
   active,
   onChange,
 }: {
@@ -58,11 +58,15 @@ function CategoryTabs({
       ))}
     </div>
   );
-}
+});
 
 // ─── Individual Result Row Components ──────────────────────────────────────────
 
-function ArtistRow({ result }: { result: ArtistSearchResult }) {
+const ArtistRow = memo(function ArtistRow({
+  result,
+}: {
+  result: ArtistSearchResult;
+}) {
   return (
     <PrefetchLink
       href={`/artist/${createSlug(result.title, result.id)}`}
@@ -90,9 +94,13 @@ function ArtistRow({ result }: { result: ArtistSearchResult }) {
       </span>
     </PrefetchLink>
   );
-}
+});
 
-function AlbumRow({ result }: { result: AlbumSearchResult }) {
+const AlbumRow = memo(function AlbumRow({
+  result,
+}: {
+  result: AlbumSearchResult;
+}) {
   return (
     <Link
       href={`/album/${createSlug(result.title, result.id)}`}
@@ -119,9 +127,9 @@ function AlbumRow({ result }: { result: AlbumSearchResult }) {
       </span>
     </Link>
   );
-}
+});
 
-function SongRow({
+const SongRow = memo(function SongRow({
   result,
   listenCount,
 }: {
@@ -206,7 +214,7 @@ function SongRow({
       {content}
     </div>
   );
-}
+});
 
 // ─── Section Header ────────────────────────────────────────────────────────────
 
@@ -224,7 +232,7 @@ function SectionHeader({ label, count }: { label: string; count: number }) {
 
 // ─── Result Renderer ───────────────────────────────────────────────────────────
 
-function ResultRow({
+const ResultRow = memo(function ResultRow({
   result,
   listenCounts,
 }: {
@@ -241,7 +249,7 @@ function ResultRow({
     default:
       return null;
   }
-}
+});
 
 // ─── Main Component ────────────────────────────────────────────────────────────
 
@@ -251,6 +259,20 @@ export default function SearchResults({
   isFocused,
 }: SearchResultsProps) {
   const [category, setCategory] = useState<SearchCategory>("all");
+  const prevQueryRef = useRef(query);
+
+  // Reset to "all" tab when the search query changes
+  useEffect(() => {
+    if (query !== prevQueryRef.current) {
+      prevQueryRef.current = query;
+      setCategory("all");
+    }
+  }, [query]);
+
+  // Stable callback for CategoryTabs to prevent re-renders
+  const handleCategoryChange = useCallback((cat: SearchCategory) => {
+    setCategory(cat);
+  }, []);
 
   // History state
   const [history, setHistory] = useState<ArtistVisit[]>([]);
@@ -302,7 +324,9 @@ export default function SearchResults({
   return (
     <div className="absolute top-full left-0 right-0 mt-0 bg-[#0a0a0d] border-x border-b border-[#1a1a1f] z-[9999] max-h-[420px] overflow-y-auto shadow-2xl">
       {/* Category Filter Tabs */}
-      {query && <CategoryTabs active={category} onChange={setCategory} />}
+      {query && (
+        <CategoryTabs active={category} onChange={handleCategoryChange} />
+      )}
 
       {/* Loading — only shown when no previous data available */}
       {query && showLoading && (

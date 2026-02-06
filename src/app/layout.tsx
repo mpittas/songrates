@@ -36,6 +36,8 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="https://www.google.com" />
         <link rel="preconnect" href="https://coverartarchive.org" />
         <link rel="dns-prefetch" href="https://coverartarchive.org" />
+        <link rel="preconnect" href="https://archive.org" />
+        <link rel="dns-prefetch" href="https://archive.org" />
         <link rel="preconnect" href="https://upload.wikimedia.org" />
         <link rel="dns-prefetch" href="https://upload.wikimedia.org" />
         <link rel="preconnect" href="https://commons.wikimedia.org" />

@@ -23,11 +23,17 @@ async function fetchLastFmCounts(
  * Fetches Last.fm listener counts for an album's tracks by fetching the artist's top tracks.
  * Returns a map of normalized track title -> listener count.
  */
-export function useLastFmPopularity(artistName: string | undefined) {
+export function useLastFmPopularity(
+  artistName: string | undefined,
+  initialData?: Record<string, number>,
+) {
+  const hasInitialData = initialData && Object.keys(initialData).length > 0;
+
   return useQuery<Record<string, number>>({
     queryKey: ["lastfm-popularity", artistName],
-    enabled: !!artistName,
+    enabled: !!artistName && !hasInitialData,
     queryFn: () => fetchLastFmCounts(artistName!),
+    initialData: hasInitialData ? initialData : undefined,
     staleTime: 1000 * 60 * 60, // 1 hour
     gcTime: 1000 * 60 * 60 * 24, // 24 hours
     refetchOnWindowFocus: false,
