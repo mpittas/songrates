@@ -37,7 +37,7 @@ const USER_AGENT = "SongRates/1.0 (mpittas@gmail.com)"; // Replace with config v
 /** Fetch limits */
 const LIMITS = {
   single: { artists: 20, albums: 25, songs: 40 },
-  all: { artists: 10, albums: 12, songs: 15 },
+  all: { artists: 5, albums: 5, songs: 10 },
 } as const;
 
 /** How many final results to return per type */
@@ -118,7 +118,19 @@ function deduplicatedFetch<T>(
 
 // ─── MusicBrainz Fetch Helper ──────────────────────────────────────────────────
 
+// App-level cache for MB API responses — bypasses the throttle on cache hits.
+// This is critical: without it, even cached responses wait 1s per request
+// due to the throttle firing BEFORE fetch().
+const mbResponseCache = new Map<string, { data: unknown; expiresAt: number }>();
+const MB_CACHE_TTL = 30 * 60 * 1000; // 30 minutes
+
 async function fetchMB<T>(path: string): Promise<T | null> {
+  // Check app-level cache BEFORE the throttle — instant return, no 1s delay
+  const cached = mbResponseCache.get(path);
+  if (cached && Date.now() < cached.expiresAt) {
+    return cached.data as T;
+  }
+
   try {
     // Ensure we always request JSON format
     const separator = path.includes("?") ? "&" : "?";
@@ -130,6 +142,7 @@ async function fetchMB<T>(path: string): Promise<T | null> {
         Accept: "application/json",
       },
       next: { revalidate: 1800 }, // 30 min revalidation
+      signal: AbortSignal.timeout(8000), // 8s timeout to prevent hanging
     });
 
     if (!res.ok) {
@@ -138,7 +151,20 @@ async function fetchMB<T>(path: string): Promise<T | null> {
       }
       return null;
     }
-    return (await res.json()) as T;
+    const data = (await res.json()) as T;
+
+    // Cache the parsed response to skip throttle on next hit
+    mbResponseCache.set(path, { data, expiresAt: Date.now() + MB_CACHE_TTL });
+
+    // Evict old entries periodically
+    if (mbResponseCache.size > 200) {
+      const now = Date.now();
+      for (const [key, entry] of mbResponseCache) {
+        if (now > entry.expiresAt) mbResponseCache.delete(key);
+      }
+    }
+
+    return data;
   } catch (err) {
     console.error("MB fetch error:", err);
     return null;
@@ -212,6 +238,7 @@ function findOriginalAlbum(
 async function fetchSongCandidates(
   query: string,
   limit: number,
+  skipTargeted: boolean = false,
 ): Promise<{
   recordings: MBRecording[];
   popularityMap: Map<string, number>;
@@ -245,8 +272,8 @@ async function fetchSongCandidates(
     }
   });
 
-  // D. Targeted injection — only if we have top hits AND broad results might miss them
-  if (topHits.length > 0) {
+  // D. Targeted injection — skip in "all" mode to save an MB request (1s throttle)
+  if (!skipTargeted && topHits.length > 0) {
     const batchParts = topHits.map((hit) => {
       const rQuery = escapeLuceneValue(hit.name);
       const aQuery = escapeLuceneValue(hit.artist);
@@ -345,6 +372,7 @@ function calculateSongScore(
 async function searchSongs(
   query: string,
   limit: number = LIMITS.single.songs,
+  skipTargeted: boolean = false,
 ): Promise<SongSearchResult[]> {
   const cacheKey = `search:song:v2:${normalizeText(query)}:${limit}`;
   const cached = searchCache.get(cacheKey);
@@ -355,6 +383,7 @@ async function searchSongs(
     const { recordings, popularityMap } = await fetchSongCandidates(
       query,
       limit,
+      skipTargeted,
     );
 
     if (recordings.length === 0) return [];
@@ -368,10 +397,13 @@ async function searchSongs(
       return { rec, score, listeners };
     });
 
-    scored.sort((a, b) => b.score - a.score);
+    const scoredWithListeners = scored.filter(({ listeners }) => listeners > 0);
+    if (scoredWithListeners.length === 0) return [];
+
+    scoredWithListeners.sort((a, b) => b.score - a.score);
 
     // 4. Map to DTO
-    const results: SongSearchResult[] = scored
+    const results: SongSearchResult[] = scoredWithListeners
       .slice(0, RETURN_LIMITS.songs)
       .map(({ rec, listeners }) => {
         const releases = rec.releases || [];
@@ -409,7 +441,8 @@ async function searchSongs(
         };
       });
 
-    searchCache.set(cacheKey, results, 1800);
+    // Only cache non-empty results — transient MB failures shouldn't poison cache
+    if (results.length > 0) searchCache.set(cacheKey, results, 1800);
     return results;
   });
 }
@@ -454,7 +487,8 @@ async function searchArtists(
       }));
 
     const reranked = smartRerank(results, query);
-    searchCache.set(cacheKey, reranked, 1800);
+    // Only cache non-empty results — transient MB failures shouldn't poison cache
+    if (reranked.length > 0) searchCache.set(cacheKey, reranked, 1800);
     return reranked;
   });
 }
@@ -493,7 +527,8 @@ async function searchAlbums(
       }));
 
     const reranked = smartRerank(results, query);
-    searchCache.set(cacheKey, reranked, 1800);
+    // Only cache non-empty results — transient MB failures shouldn't poison cache
+    if (reranked.length > 0) searchCache.set(cacheKey, reranked, 1800);
     return reranked;
   });
 }
@@ -520,7 +555,7 @@ export async function searchAll(query: string): Promise<GroupedSearchResults> {
   const [artists, albums, songs] = await Promise.all([
     searchArtists(query, LIMITS.all.artists),
     searchAlbums(query, LIMITS.all.albums),
-    searchSongs(query, LIMITS.all.songs),
+    searchSongs(query, LIMITS.all.songs, true), // skip targeted to save 1s throttle
   ]);
 
   return { artists, albums, songs };
@@ -536,6 +571,17 @@ export async function searchMusicBrainz(
 
   const trimmed = query.trim();
 
+  // Top-level cache: entire search result for this query+category
+  const topCacheKey = `searchMB:${category}:${normalizeText(trimmed)}`;
+  const topCached = searchCache.get(topCacheKey);
+  if (topCached)
+    return topCached as {
+      results: SearchResult[];
+      grouped?: GroupedSearchResults;
+    };
+
+  let result: { results: SearchResult[]; grouped?: GroupedSearchResults };
+
   if (category === "all") {
     const grouped = await searchAll(trimmed);
     const flat: SearchResult[] = [
@@ -543,9 +589,13 @@ export async function searchMusicBrainz(
       ...grouped.albums.slice(0, RETURN_LIMITS.allAlbums),
       ...grouped.songs.slice(0, RETURN_LIMITS.allSongs),
     ];
-    return { results: flat, grouped };
+    result = { results: flat, grouped };
+  } else {
+    const results = await searchByCategory(trimmed, category);
+    result = { results };
   }
 
-  const results = await searchByCategory(trimmed, category);
-  return { results };
+  // Only cache non-empty results — transient MB failures shouldn't poison cache
+  if (result.results.length > 0) searchCache.set(topCacheKey, result, 1800);
+  return result;
 }

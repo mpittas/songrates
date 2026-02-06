@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo, useCallback, memo } from "react";
+import { useState, useEffect, useRef, useCallback, memo } from "react";
 import Link from "next/link";
 import { IoMusicalNotes, IoDisc, IoPerson } from "react-icons/io5";
-import OptimizedImage from "@/components/ui/OptimizedImage";
 
 import { useSearchQuery } from "@/hooks/useSearchQuery";
 
@@ -22,7 +21,6 @@ import { formatTimeAgo, createSlug, formatTime } from "@/lib/utils";
 import ListenCountBadge from "@/components/shared/ListenCountBadge";
 import Badge from "@/components/shared/Badge";
 import PrefetchLink from "@/components/ui/PrefetchLink";
-import { getCoverArtUrl } from "@/lib/cover-art";
 
 // ─── Category Filter Tabs ──────────────────────────────────────────────────────
 
@@ -65,10 +63,8 @@ const CategoryTabs = memo(function CategoryTabs({
 
 const ArtistRow = memo(function ArtistRow({
   result,
-  imageUrl,
 }: {
   result: ArtistSearchResult;
-  imageUrl?: string;
 }) {
   return (
     <PrefetchLink
@@ -77,19 +73,10 @@ const ArtistRow = memo(function ArtistRow({
       className="flex items-center gap-3 p-3 hover:bg-[#0f0f12] transition-colors group"
     >
       <div className="w-10 h-10 rounded-full overflow-hidden bg-[#0f0f12] border border-[#1a1a1f] group-hover:border-[#00f0ff]/30 flex items-center justify-center flex-shrink-0 relative">
-        {imageUrl ? (
-          <OptimizedImage
-            src={imageUrl}
-            alt={result.title}
-            fill
-            className="object-cover"
-          />
-        ) : (
-          <IoPerson
-            className="text-neutral-600 group-hover:text-[#00f0ff]/60"
-            size={18}
-          />
-        )}
+        <IoPerson
+          className="text-neutral-600 group-hover:text-[#00f0ff]/60"
+          size={18}
+        />
       </div>
       <div className="flex-1 min-w-0">
         <h3 className="text-sm text-neutral-300 group-hover:text-[#00f0ff] transition-colors truncate">
@@ -119,12 +106,9 @@ const AlbumRow = memo(function AlbumRow({
       className="flex items-center gap-3 p-3 hover:bg-[#0f0f12] transition-colors group"
     >
       <div className="w-10 h-10 overflow-hidden bg-[#0f0f12] border border-[#1a1a1f] group-hover:border-[#00f0ff]/30 flex items-center justify-center flex-shrink-0 relative">
-        <OptimizedImage
-          src={getCoverArtUrl(result.id, result.title, result.artistName)}
-          alt={result.title}
-          fill
-          className="object-cover"
-          fallbackSrc="/vinyl-placeholder.svg"
+        <IoDisc
+          className="text-neutral-600 group-hover:text-[#00f0ff]/60"
+          size={18}
         />
       </div>
       <div className="flex-1 min-w-0">
@@ -171,24 +155,10 @@ const SongRow = memo(function SongRow({
   const content = (
     <>
       <div className="w-10 h-10 overflow-hidden bg-[#0f0f12] border border-[#1a1a1f] group-hover:border-[#00f0ff]/30 flex items-center justify-center flex-shrink-0 relative">
-        {result.releaseGroupId ? (
-          <OptimizedImage
-            src={getCoverArtUrl(
-              result.releaseGroupId,
-              result.releaseGroupTitle,
-              result.artistName,
-            )}
-            alt={result.title}
-            fill
-            className="object-cover"
-            fallbackSrc="/vinyl-placeholder.svg"
-          />
-        ) : (
-          <IoMusicalNotes
-            className="text-neutral-600 group-hover:text-[#00f0ff]/60"
-            size={18}
-          />
-        )}
+        <IoMusicalNotes
+          className="text-neutral-600 group-hover:text-[#00f0ff]/60"
+          size={18}
+        />
       </div>
       <div className="flex-1 min-w-0">
         <h3 className="text-sm text-neutral-300 group-hover:text-[#00f0ff] transition-colors truncate">
@@ -235,6 +205,63 @@ const SongRow = memo(function SongRow({
   );
 });
 
+// ─── Skeleton Loading UI ──────────────────────────────────────────────────────
+
+function SkeletonRow({ variant = "song" }: { variant?: "artist" | "song" }) {
+  return (
+    <div className="flex items-center gap-3 p-3 animate-pulse">
+      <div
+        className={`w-10 h-10 bg-[#141418] flex-shrink-0 ${
+          variant === "artist" ? "rounded-full" : ""
+        }`}
+      />
+      <div className="flex-1 min-w-0 space-y-2">
+        <div className="h-3.5 bg-[#141418] rounded w-2/5" />
+        <div className="h-2.5 bg-[#0f0f12] rounded w-3/5" />
+      </div>
+      <div className="h-3 bg-[#0f0f12] rounded w-10 flex-shrink-0" />
+    </div>
+  );
+}
+
+function SkeletonSectionHeader() {
+  return (
+    <div className="px-4 py-1.5 border-b border-[#1a1a1f] animate-pulse">
+      <div className="h-2.5 bg-[#141418] rounded w-16" />
+    </div>
+  );
+}
+
+function SearchSkeleton() {
+  return (
+    <div className="divide-y divide-[#1a1a1f]/50">
+      {/* Artists section */}
+      <SkeletonSectionHeader />
+      <SkeletonRow variant="artist" />
+      <SkeletonRow variant="artist" />
+      {/* Albums section */}
+      <SkeletonSectionHeader />
+      <SkeletonRow />
+      <SkeletonRow />
+      {/* Songs section */}
+      <SkeletonSectionHeader />
+      <SkeletonRow />
+      <SkeletonRow />
+      <SkeletonRow />
+    </div>
+  );
+}
+
+// ─── Progress Bar ─────────────────────────────────────────────────────────────
+
+function SearchProgressBar() {
+  return (
+    <div className="h-0.5 bg-[#00f0ff]/10 overflow-hidden">
+      <div className="h-full bg-[#00f0ff]/60 w-1/3 animate-[shimmer_1s_ease-in-out_infinite]" />
+    </div>
+  );
+}
+
 // ─── Section Header ────────────────────────────────────────────────────────────
 
 function SectionHeader({ label, count }: { label: string; count: number }) {
@@ -254,15 +281,13 @@ function SectionHeader({ label, count }: { label: string; count: number }) {
 const ResultRow = memo(function ResultRow({
   result,
   listenCounts,
-  artistImages,
 }: {
   result: SearchResult;
   listenCounts: Record<string, number>;
-  artistImages: Record<string, string>;
 }) {
   switch (result.type) {
     case "artist":
-      return <ArtistRow result={result} imageUrl={artistImages[result.id]} />;
+      return <ArtistRow result={result} />;
     case "album":
       return <AlbumRow result={result} />;
     case "song":
@@ -297,12 +322,6 @@ export default function SearchResults({
 
   // History state
   const [history, setHistory] = useState<ArtistVisit[]>([]);
-  const [images, setImages] = useState<Record<string, string>>({});
-
-  // Artist images for search results (fetched via Wikidata)
-  const [artistImages, setArtistImages] = useState<Record<string, string>>({});
-  const artistImagesRef = useRef(artistImages);
-  artistImagesRef.current = artistImages;
 
   // ─── TanStack Query: main search ───────────────────────────────────
   const {
@@ -318,46 +337,10 @@ export default function SearchResults({
   // The server now handles hybrid search ranking (Last.fm + MusicBrainz)
   // so results arrive pre-sorted by popularity.
 
-  // ─── Fetch artist images when results contain artists ─────────────
-  useEffect(() => {
-    const artists =
-      category === "all" && grouped
-        ? grouped.artists
-        : results.filter((r) => r.type === "artist");
-
-    if (artists.length === 0) return;
-
-    // Only fetch IDs we don't already have
-    const newIds = artists
-      .map((a) => a.id)
-      .filter((id) => !(id in artistImagesRef.current));
-
-    if (newIds.length === 0) return;
-
-    fetch(`/api/images/artists?ids=${newIds.join(",")}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.images) {
-          setArtistImages((prev) => ({ ...prev, ...data.images }));
-        }
-      })
-      .catch(() => {});
-  }, [results, grouped, category]);
-
   // ─── History when focused and empty ────────────────────────────────
   const loadHistory = useCallback(() => {
     const data = getArtistHistory();
     setHistory(data);
-
-    if (data.length > 0) {
-      const ids = data.map((a) => a.id).join(",");
-      fetch(`/api/images/artists?ids=${ids}`)
-        .then((res) => res.json())
-        .then((data) => {
-          setImages((prev) => ({ ...prev, ...data.images }));
-        })
-        .catch((e) => console.error(e));
-    }
   }, []);
 
   useEffect(() => {
@@ -380,23 +363,19 @@ export default function SearchResults({
         <CategoryTabs active={category} onChange={handleCategoryChange} />
       )}
 
-      {/* Loading — only shown when no previous data available */}
-      {query && showLoading && (
-        <div className="flex items-center justify-center py-12 text-neutral-600 font-mono text-sm tracking-widest uppercase">
-          <span>Searching...</span>
-        </div>
-      )}
+      {/* Progress bar — always visible during any fetch */}
+      {query && isFetching && <SearchProgressBar />}
 
-      {/* Fetching indicator — subtle, shown when refreshing with existing data */}
-      {query && isFetching && !showLoading && results.length > 0 && (
-        <div className="h-0.5 bg-[#00f0ff]/20 overflow-hidden">
-          <div className="h-full bg-[#00f0ff]/60 animate-pulse w-full" />
-        </div>
-      )}
+      {/* Loading skeleton — shown when no previous data available */}
+      {query && showLoading && <SearchSkeleton />}
 
       {/* Results — uses server-ranked results directly */}
       {query && !showLoading && results.length > 0 && (
-        <div className="divide-y divide-[#1a1a1f]/50">
+        <div
+          className={`divide-y divide-[#1a1a1f]/50 transition-opacity duration-200 ${
+            isFetching && isPlaceholderData ? "opacity-40" : "opacity-100"
+          }`}
+        >
           {category === "all" && grouped ? (
             <>
               {grouped.artists.length > 0 && (
@@ -406,12 +385,7 @@ export default function SearchResults({
                     count={grouped.artists.length}
                   />
                   {grouped.artists.slice(0, 3).map((r) => (
-                    <ResultRow
-                      key={r.id}
-                      result={r}
-                      listenCounts={{}}
-                      artistImages={artistImages}
-                    />
+                    <ResultRow key={r.id} result={r} listenCounts={{}} />
                   ))}
                 </>
               )}
@@ -419,12 +393,7 @@ export default function SearchResults({
                 <>
                   <SectionHeader label="Albums" count={grouped.albums.length} />
                   {grouped.albums.slice(0, 3).map((r) => (
-                    <ResultRow
-                      key={r.id}
-                      result={r}
-                      listenCounts={{}}
-                      artistImages={artistImages}
-                    />
+                    <ResultRow key={r.id} result={r} listenCounts={{}} />
                   ))}
                 </>
               )}
@@ -432,24 +401,14 @@ export default function SearchResults({
                 <>
                   <SectionHeader label="Songs" count={grouped.songs.length} />
                   {grouped.songs.slice(0, 8).map((r) => (
-                    <ResultRow
-                      key={r.id}
-                      result={r}
-                      listenCounts={{}}
-                      artistImages={artistImages}
-                    />
+                    <ResultRow key={r.id} result={r} listenCounts={{}} />
                   ))}
                 </>
               )}
             </>
           ) : (
             results.map((r) => (
-              <ResultRow
-                key={r.id}
-                result={r}
-                listenCounts={{}}
-                artistImages={artistImages}
-              />
+              <ResultRow key={r.id} result={r} listenCounts={{}} />
             ))
           )}
         </div>
@@ -481,23 +440,11 @@ export default function SearchResults({
               >
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 overflow-hidden bg-[#0a0a0d] border border-[#1a1a1f] flex-shrink-0 group-hover:border-[#00f0ff]/30">
-                    {images[artist.id] ? (
-                      <img
-                        src={images[artist.id]}
-                        alt={artist.name}
-                        width={32}
-                        height={32}
-                        loading="lazy"
-                        decoding="async"
-                        className="w-full h-full object-cover transition-all grayscale group-hover:grayscale-0"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-neutral-600">
-                        <span className="text-[10px] font-mono">
-                          {artist.name.slice(0, 2).toUpperCase()}
-                        </span>
-                      </div>
-                    )}
+                    <div className="w-full h-full flex items-center justify-center text-neutral-600">
+                      <span className="text-[10px] font-mono">
+                        {artist.name.slice(0, 2).toUpperCase()}
+                      </span>
+                    </div>
                   </div>
                   <span className="text-sm text-neutral-400 group-hover:text-[#00f0ff] transition-colors">
                     {artist.name}

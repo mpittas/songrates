@@ -35,6 +35,10 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "*.googleusercontent.com",
       },
+      {
+        protocol: "https",
+        hostname: "cdn-images.dzcdn.net",
+      },
     ],
     // Enable modern formats for better compression (30-50% smaller than JPEG)
     formats: ["image/avif", "image/webp"],

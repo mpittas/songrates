@@ -108,3 +108,13 @@ footer {
 .animate-highlight-track {
   animation: highlight-track-pulse 3s ease-out forwards;
 }
+
+/* Search progress bar shimmer */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(400%);
+  }
+}

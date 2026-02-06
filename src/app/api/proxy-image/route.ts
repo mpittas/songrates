@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 
-// ─── Cover Art Archive (primary) + iTunes (fallback) ────────────────────────────
+// ─── Cover Art Archive (primary) + Deezer (fallback) ────────────────────────────
 // CAA has NO rate limits (https://wiki.musicbrainz.org/Cover_Art_Archive/API).
 // archive.org CDN returns 401 on direct browser requests (hotlink protection),
 // so we proxy bytes server-side with a proper User-Agent.
 //
-// Strategy: Start CAA immediately. If title+artist are available, start iTunes
-// after a short delay as a race fallback. Take whichever resolves first.
-// This ensures fast loads even when archive.org is slow.
+// Fallback: Deezer API (free, no auth, works server-side).
+// iTunes is NOT used — Apple blocks server-side requests with 403.
+//
+// Strategy: Try CAA first (best database). If CAA returns 404 and we have
+// title+artist, fall back to Deezer immediately. Deezer CDN images are
+// fetched directly (no hotlink issues) so we redirect instead of proxying.
 
 type ImageResult = { buffer: ArrayBuffer; contentType: string; source: string };
 
@@ -15,6 +18,8 @@ const IMAGE_CACHE = new Map<
   string,
   { buffer: ArrayBuffer; contentType: string; timestamp: number }
 >();
+// Cache Deezer redirect URLs (lightweight — just strings)
+const URL_CACHE = new Map<string, { url: string; timestamp: number }>();
 // Cache 404s so we don't re-fetch known missing art every page load
 const NEGATIVE_CACHE = new Map<string, number>();
 const CACHE_TTL = 86400 * 1000; // 24 hours
@@ -40,7 +45,6 @@ async function fetchFromCAA(
     );
 
     if (res.status === 404) {
-      // Definitively no art — cache this to avoid re-fetching
       NEGATIVE_CACHE.set(`caa:${releaseGroupId}`, Date.now());
       return null;
     }
@@ -60,34 +64,22 @@ async function fetchFromCAA(
   }
 }
 
-async function fetchFromiTunes(
+async function fetchDeezerUrl(
   title: string,
   artist: string,
-): Promise<ImageResult | null> {
+): Promise<string | null> {
   try {
     const query = encodeURIComponent(`${title} ${artist}`);
-    const searchRes = await fetch(
-      `https://itunes.apple.com/search?term=${query}&entity=album&limit=1`,
+    const res = await fetch(
+      `https://api.deezer.com/search/album?q=${query}&limit=1`,
       { signal: AbortSignal.timeout(4000) },
     );
 
-    if (!searchRes.ok) return null;
+    if (!res.ok) return null;
 
-    const data = await searchRes.json();
-    const artworkUrl = data.results?.[0]?.artworkUrl100;
-    if (!artworkUrl) return null;
-
-    const highResUrl = artworkUrl.replace("100x100bb", "600x600bb");
-    const imgRes = await fetch(highResUrl, {
-      signal: AbortSignal.timeout(5000),
-    });
-
-    if (!imgRes.ok) return null;
-
-    const contentType = imgRes.headers.get("content-type") || "image/jpeg";
-    const buffer = await imgRes.arrayBuffer();
-
-    return { buffer, contentType, source: "iTunes" };
+    const data = await res.json();
+    const cover = data.data?.[0]?.cover_big || data.data?.[0]?.cover_medium;
+    return cover || null;
   } catch {
     return null;
   }
@@ -114,108 +106,47 @@ async function resolveImage(
   title: string | null,
   artist: string | null,
 ): Promise<Response> {
-  const hasItunesParams = !!(title && artist);
+  const hasFallbackParams = !!(title && artist);
 
-  // If CAA already returned 404 for this ID recently, skip straight to iTunes
+  // If CAA already returned 404 for this ID recently, skip straight to Deezer
   const negativeEntry = NEGATIVE_CACHE.get(`caa:${id}`);
   const caaCached404 =
     negativeEntry && Date.now() - negativeEntry < NEGATIVE_TTL;
 
-  if (caaCached404 && hasItunesParams) {
-    const itunesResult = await fetchFromiTunes(title!, artist!);
-    if (itunesResult) {
-      IMAGE_CACHE.set(id, {
-        buffer: itunesResult.buffer,
-        contentType: itunesResult.contentType,
-        timestamp: Date.now(),
+  if (caaCached404 && hasFallbackParams) {
+    const deezerUrl = await fetchDeezerUrl(title!, artist!);
+    if (deezerUrl) {
+      URL_CACHE.set(id, { url: deezerUrl, timestamp: Date.now() });
+      return NextResponse.redirect(deezerUrl, {
+        status: 302,
+        headers: CACHE_HEADERS,
       });
-      evictCacheIfNeeded();
-      return makeImageResponse(itunesResult);
     }
     return new NextResponse(null, { status: 404 });
   }
 
-  // Race strategy: Start CAA immediately. If we have iTunes params, start
-  // iTunes after 2s as a fallback race. Take whichever resolves first with data.
-  if (hasItunesParams) {
-    const result = await new Promise<ImageResult | null>((resolve) => {
-      let settled = false;
-      let caaFinished = false;
-      let itunesFinished = false;
-      let itunesStarted = false;
-
-      const settleWith = (r: ImageResult | null) => {
-        if (settled) return;
-        // If we got a result, resolve immediately
-        if (r) {
-          settled = true;
-          resolve(r);
-          return;
-        }
-        // If both finished with no result, resolve null
-        if (caaFinished && itunesFinished) {
-          settled = true;
-          resolve(null);
-        }
-      };
-
-      // Start CAA immediately (primary)
-      fetchFromCAA(id).then((r) => {
-        caaFinished = true;
-        if (r) {
-          settleWith(r);
-        } else if (!itunesStarted) {
-          // CAA failed fast — start iTunes immediately, don't wait for 2s delay
-          itunesStarted = true;
-          fetchFromiTunes(title!, artist!).then((ir) => {
-            itunesFinished = true;
-            settleWith(ir);
-          });
-        } else {
-          settleWith(null);
-        }
-      });
-
-      // Start iTunes after 2s delay (gives CAA a head start)
-      setTimeout(() => {
-        if (!settled && !itunesStarted) {
-          itunesStarted = true;
-          fetchFromiTunes(title!, artist!).then((ir) => {
-            itunesFinished = true;
-            settleWith(ir);
-          });
-        }
-      }, 2000);
-
-      // Final safety timeout: resolve null after 10s total
-      setTimeout(() => {
-        if (!settled) {
-          settled = true;
-          resolve(null);
-        }
-      }, 10000);
+  // 1. Try Cover Art Archive (primary — no rate limits, best database)
+  const caaResult = await fetchFromCAA(id);
+  if (caaResult) {
+    IMAGE_CACHE.set(id, {
+      buffer: caaResult.buffer,
+      contentType: caaResult.contentType,
+      timestamp: Date.now(),
     });
+    evictCacheIfNeeded();
+    return makeImageResponse(caaResult);
+  }
 
-    if (result) {
-      IMAGE_CACHE.set(id, {
-        buffer: result.buffer,
-        contentType: result.contentType,
-        timestamp: Date.now(),
+  // 2. Fallback: Deezer (needs title+artist)
+  //    Deezer CDN has no hotlink protection, so we redirect (fast, no proxy)
+  if (hasFallbackParams) {
+    const deezerUrl = await fetchDeezerUrl(title!, artist!);
+    if (deezerUrl) {
+      URL_CACHE.set(id, { url: deezerUrl, timestamp: Date.now() });
+      return NextResponse.redirect(deezerUrl, {
+        status: 302,
+        headers: CACHE_HEADERS,
       });
-      evictCacheIfNeeded();
-      return makeImageResponse(result);
-    }
-  } else {
-    // No iTunes params — CAA only
-    const caaResult = await fetchFromCAA(id);
-    if (caaResult) {
-      IMAGE_CACHE.set(id, {
-        buffer: caaResult.buffer,
-        contentType: caaResult.contentType,
-        timestamp: Date.now(),
-      });
-      evictCacheIfNeeded();
-      return makeImageResponse(caaResult);
     }
   }
 
@@ -231,7 +162,7 @@ export async function GET(request: NextRequest) {
     return new NextResponse(null, { status: 400 });
   }
 
-  // Check in-memory cache — instant response
+  // Check in-memory image cache — instant response (CAA proxied bytes)
   const cached = IMAGE_CACHE.get(id);
   if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
     return new NextResponse(cached.buffer, {
@@ -240,7 +171,16 @@ export async function GET(request: NextRequest) {
     });
   }
 
-  // Check negative cache — instant 404
+  // Check URL cache — instant redirect (Deezer CDN URLs)
+  const urlCached = URL_CACHE.get(id);
+  if (urlCached && Date.now() - urlCached.timestamp < CACHE_TTL) {
+    return NextResponse.redirect(urlCached.url, {
+      status: 302,
+      headers: CACHE_HEADERS,
+    });
+  }
+
+  // Check negative cache — instant 404 (no art anywhere)
   const negEntry = NEGATIVE_CACHE.get(`caa:${id}`);
   if (negEntry && Date.now() - negEntry < NEGATIVE_TTL && !title && !artist) {
     return new NextResponse(null, { status: 404 });

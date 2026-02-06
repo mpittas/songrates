@@ -70,8 +70,8 @@ export function useSearchQuery(query: string, category: SearchCategory) {
     // Query key includes both query and category for proper cache separation
     queryKey: ["search", query, category] as const,
 
-    // Only fetch when we have a non-empty query
-    enabled: query.trim().length > 0,
+    // Only fetch when query is at least 2 characters (single chars return poor results)
+    enabled: query.trim().length >= 2,
 
     queryFn: ({ signal }) => fetchSearchResults(query, category, signal),
 
@@ -79,10 +79,10 @@ export function useSearchQuery(query: string, category: SearchCategory) {
     placeholderData: keepPreviousData,
 
     // Cache configuration tuned for search:
-    // - staleTime: 5 min — results are fresh for 5 min, no refetch needed
-    // - gcTime: 30 min — cached results stay in memory for 30 min
-    staleTime: 5 * 60 * 1000,
-    gcTime: 30 * 60 * 1000,
+    // - staleTime: 2 min — results are fresh for 2 min, no refetch needed
+    // - gcTime: 10 min — cached results stay in memory for 10 min
+    staleTime: 2 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
 
     // Don't refetch on window focus for search (user expects stable results)
     refetchOnWindowFocus: false,

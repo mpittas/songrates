@@ -42,6 +42,8 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="https://upload.wikimedia.org" />
         <link rel="preconnect" href="https://commons.wikimedia.org" />
         <link rel="dns-prefetch" href="https://commons.wikimedia.org" />
+        <link rel="preconnect" href="https://cdn-images.dzcdn.net" />
+        <link rel="dns-prefetch" href="https://cdn-images.dzcdn.net" />
       </head>
       <body
         className={`${inter.variable} ${spaceMono.variable} antialiased bg-[#050507]`}
