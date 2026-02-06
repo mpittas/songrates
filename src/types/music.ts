@@ -27,6 +27,8 @@ export interface TrackInfo extends Track {
   number: string;
   length?: number;
   artists?: { id: string; name: string; joinPhrase?: string }[];
+  /** MusicBrainz recording MBID — used for ListenBrainz lookups */
+  recordingId?: string;
 }
 
 export interface AlbumInfo {

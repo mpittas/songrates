@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { FaPlay, FaPause, FaGlobe, FaLock } from "react-icons/fa";
+import { FaPlay, FaPause, FaGlobe, FaLock, FaHeadphones } from "react-icons/fa";
 import { useRatings } from "@/hooks/useRatings";
 import { usePlayer } from "@/context/PlayerContext";
 import { formatTime, createSlug } from "@/lib/utils";
@@ -19,6 +19,8 @@ interface TrackItemProps {
   publicRating?: number;
   publicCount?: number;
   forcedRating?: number;
+  /** ListenBrainz total listen count */
+  listenCount?: number;
   /** When true, scroll into view and pulse-highlight this track */
   highlighted?: boolean;
 }
@@ -33,6 +35,7 @@ export default function TrackItem({
   publicRating,
   publicCount,
   forcedRating,
+  listenCount,
   highlighted = false,
 }: TrackItemProps) {
   const trackRef = useRef<HTMLDivElement>(null);
@@ -134,6 +137,23 @@ export default function TrackItem({
         </div>
 
         <div className="flex items-center gap-4">
+          {/* ListenBrainz Total Plays */}
+          {listenCount != null && listenCount > 0 && (
+            <div
+              className="hidden sm:flex items-center gap-1 opacity-50 hover:opacity-100 transition-opacity"
+              title={`${listenCount.toLocaleString()} total plays on ListenBrainz`}
+            >
+              <FaHeadphones size={9} className="text-orange-400/80" />
+              <span className="text-[10px] font-mono text-orange-400/80">
+                {listenCount >= 1_000_000
+                  ? `${(listenCount / 1_000_000).toFixed(1)}M`
+                  : listenCount >= 1_000
+                    ? `${Math.round(listenCount / 1_000)}k`
+                    : listenCount}
+              </span>
+            </div>
+          )}
+
           {/* Public Rating Display */}
           {publicRating && (
             <div

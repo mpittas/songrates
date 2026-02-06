@@ -125,11 +125,12 @@ async function fetchAlbumInfo(albumId: string) {
     tracks =
       tracksData.media
         ?.flatMap((m: { tracks?: Track[] }) => m.tracks || [])
-        .map((t: Track) => ({
+        .map((t: any) => ({
           id: t.id,
           title: t.title,
           number: t.number,
           length: t.length,
+          recordingId: t.recording?.id,
           artists:
             (t["artist-credit"] || t.recording?.["artist-credit"])?.map(
               (ac: ArtistCredit) => ({
