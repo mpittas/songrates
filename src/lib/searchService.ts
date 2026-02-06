@@ -13,7 +13,8 @@ import {
   collapseSpaces,
   escapeLuceneValue,
 } from "@/lib/smartSearch";
-import { searchLastFmTracks } from "@/lib/lastfm"; // New import
+import { searchLastFmTracks } from "@/lib/lastfm";
+import { createSlug } from "@/lib/utils";
 import type {
   SearchCategory,
   SearchResult,
@@ -30,8 +31,8 @@ const USER_AGENT = "SongRates/1.0 (mpittas@gmail.com)";
 
 /** Fetch limits */
 const LIMITS = {
-  single: { artists: 20, albums: 25, songs: 60 }, // MB limit lowered for songs as we rely on ranking
-  all: { artists: 10, albums: 12, songs: 25 },
+  single: { artists: 80, albums: 25, songs: 60 }, // MB limit lowered for songs as we rely on ranking
+  all: { artists: 50, albums: 12, songs: 25 },
 } as const;
 
 /** How many final results to return per type */
@@ -67,13 +68,18 @@ function deduplicatedFetch<T>(
 
 async function fetchMB<T>(path: string): Promise<T | null> {
   try {
-    const res = await fetch(`${MB_BASE_URL}/${path}`, {
+    const fetchInit: any = {
       headers: {
         "User-Agent": USER_AGENT,
         Accept: "application/json",
       },
-      next: { revalidate: 1800 },
-    });
+    };
+
+    if (process.env.NODE_ENV !== "test") {
+      fetchInit.next = { revalidate: 1800 };
+    }
+
+    const res = await fetch(`${MB_BASE_URL}/${path}`, fetchInit);
     if (!res.ok) {
       console.error(`MB API ${res.status} for ${path}`);
       return null;
@@ -115,26 +121,82 @@ async function searchArtists(
 
   return deduplicatedFetch(cacheKey, async () => {
     const luceneQuery = buildSmartLuceneQuery("artist", query);
-    const path = `artist?query=${encodeURIComponent(luceneQuery)}&limit=${limit}&fmt=json`;
+    const path = `release-group?query=${encodeURIComponent(luceneQuery)}&limit=${limit}&fmt=json`;
 
     const data = await fetchMB<any>(path);
     if (!data) return [];
 
-    const results: ArtistSearchResult[] = (data.artists || [])
+    const artistMap = new Map<
+      string,
+      { id: string; name: string; score: number; releaseGroupCount: number }
+    >();
+
+    // Only count release-groups that represent real discography
+    // (Album, EP, Single) and exclude compilations / live / etc.
+    const ALLOWED_PRIMARY = new Set(["Album", "EP", "Single"]);
+    const EXCLUDED_SECONDARY = new Set([
+      "Compilation",
+      "Live",
+      "Remix",
+      "DJ-mix",
+      "Mixtape/Street",
+      "Spokenword",
+      "Interview",
+      "Audiobook",
+      "Audio drama",
+      "Demo",
+      "Field recording",
+    ]);
+
+    for (const rg of data["release-groups"] || []) {
+      // Skip release-groups that won't appear on the artist page
+      if (!ALLOWED_PRIMARY.has(rg["primary-type"])) continue;
+      const secondaryTypes: string[] = rg["secondary-types"] || [];
+      if (secondaryTypes.some((t) => EXCLUDED_SECONDARY.has(t))) continue;
+
+      const credit0 = rg["artist-credit"]?.[0];
+      const artistId = credit0?.artist?.id;
+      const artistName = credit0?.name || credit0?.artist?.name;
+      if (!artistId || !artistName) continue;
+
+      const rgScore = rg.score ?? 0;
+      const existing = artistMap.get(artistId);
+      if (!existing) {
+        artistMap.set(artistId, {
+          id: artistId,
+          name: artistName,
+          score: rgScore,
+          releaseGroupCount: 1,
+        });
+        continue;
+      }
+
+      existing.releaseGroupCount += 1;
+      existing.score = Math.max(existing.score, rgScore);
+    }
+
+    const results: ArtistSearchResult[] = Array.from(artistMap.values())
+      .sort(
+        (a, b) =>
+          b.score - a.score || b.releaseGroupCount - a.releaseGroupCount,
+      )
       .slice(0, RETURN_LIMITS.artists)
-      .map((a: any) => ({
+      .map((a) => ({
         id: a.id,
         type: "artist" as const,
         title: a.name,
-        subtitle: a.disambiguation || a.country || undefined,
-        score: a.score ?? 0,
-        country: a.country,
-        disambiguation: a.disambiguation,
-        artistType: a.type,
+        score: a.score,
       }));
 
     const reranked = smartRerank(results, query);
     searchCache.set(cacheKey, reranked, 1800);
+
+    // Pre-populate slug resolution cache so artist pages load instantly
+    for (const r of reranked) {
+      const slug = createSlug(r.title, r.id);
+      searchCache.set(`resolve-artist:${slug}`, r.id, 86400);
+    }
+
     return reranked;
   });
 }

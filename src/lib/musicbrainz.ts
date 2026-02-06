@@ -332,6 +332,11 @@ import { parseSlug } from "@/lib/utils";
 
 /**
  * Resolve an Artist ID from a slug (e.g. "adele-75a72702" -> full UUID)
+ *
+ * Resolution strategy (in order):
+ *   1. Cache hit (pre-populated by searchService when results are generated)
+ *   2. MB artist name search with retry + backoff (handles rate limiting)
+ *   3. Returns null only if all attempts fail
  */
 export async function resolveArtistId(slug: string): Promise<string | null> {
   // 1. Check if it's already a full UUID
@@ -344,29 +349,48 @@ export async function resolveArtistId(slug: string): Promise<string | null> {
   // 2. Parse slug
   const { name, shortId } = parseSlug(slug);
   if (!shortId || shortId.length < 8) {
-    // ID too short or missing, return slug as is (might fail later)
     return slug;
   }
 
-  // 3. Check cache for slug mapping
+  // 3. Check cache for slug mapping (pre-populated by searchService)
   const cacheKey = `resolve-artist:${slug}`;
   const cachedId = searchCache.get(cacheKey);
   if (cachedId) return cachedId as string;
 
-  // 4. Search and match
-  // We search for the name
-  const artists = await searchArtists(name);
+  // 4. Search with retry + backoff (MusicBrainz rate-limits at 1 req/sec)
+  const MAX_RETRIES = 3;
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    if (attempt > 0) {
+      await new Promise((r) => setTimeout(r, 1100 * attempt));
+    }
 
-  // Look for a match where the ID starts with shortId
-  const match = artists.find((a) => a.id.startsWith(shortId));
+    try {
+      const url = `${MB_BASE_URL}/artist?query=${encodeURIComponent(name)}&limit=25&fmt=json`;
+      const res = await fetch(url, {
+        headers: { "User-Agent": MB_USER_AGENT, Accept: "application/json" },
+        next: { revalidate: 3600 },
+      });
 
-  if (match) {
-    searchCache.set(cacheKey, match.id);
-    return match.id;
+      if (res.status === 503 || res.status === 429) {
+        continue; // Rate limited — retry after backoff
+      }
+      if (!res.ok) break;
+
+      const data = await res.json();
+      const match = (data.artists || []).find((a: any) =>
+        a.id.startsWith(shortId),
+      );
+
+      if (match) {
+        searchCache.set(cacheKey, match.id, 86400);
+        return match.id;
+      }
+      break; // Got a valid response but no match — don't retry
+    } catch (e) {
+      console.error(`resolveArtistId attempt ${attempt + 1} failed:`, e);
+    }
   }
 
-  // If no strict match, but shortId looks like part of a UUID, we fail?
-  // Or do we return the shortId + wildcard? No, the API needs full UUID.
   return null;
 }
 

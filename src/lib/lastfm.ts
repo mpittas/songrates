@@ -43,7 +43,12 @@ async function fetchTrackPlaycounts(
           track.artist,
         )}&track=${encodeURIComponent(track.name)}&api_key=${apiKey}&format=json`;
 
-        const res = await fetch(url, { next: { revalidate: 1800 } });
+        const fetchInit: any = {};
+        if (process.env.NODE_ENV !== "test") {
+          fetchInit.next = { revalidate: 1800 };
+        }
+
+        const res = await fetch(url, fetchInit);
         if (!res.ok) return;
 
         const data = await res.json();
@@ -88,7 +93,12 @@ export async function searchLastFmTracks(
       query,
     )}&api_key=${apiKey}&format=json&limit=${limit}`;
 
-    const res = await fetch(url, { next: { revalidate: 1800 } });
+    const fetchInit: any = {};
+    if (process.env.NODE_ENV !== "test") {
+      fetchInit.next = { revalidate: 1800 };
+    }
+
+    const res = await fetch(url, fetchInit);
     if (!res.ok) return [];
 
     const data = await res.json();
@@ -139,7 +149,12 @@ export async function getArtistPopularity(
       artistName,
     )}&api_key=${apiKey}&format=json&limit=500`;
 
-    const res = await fetch(url, { next: { revalidate: 86400 } });
+    const fetchInit: any = {};
+    if (process.env.NODE_ENV !== "test") {
+      fetchInit.next = { revalidate: 86400 };
+    }
+
+    const res = await fetch(url, fetchInit);
     const data = await res.json();
 
     if (!data.topalbums || !data.topalbums.album) {
