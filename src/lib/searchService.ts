@@ -11,6 +11,7 @@
  */
 
 import { searchCache } from "@/lib/cache";
+import { throttledMBFetch } from "@/lib/mb-throttle";
 import {
   buildSmartLuceneQuery,
   smartRerank,
@@ -123,7 +124,7 @@ async function fetchMB<T>(path: string): Promise<T | null> {
     const separator = path.includes("?") ? "&" : "?";
     const url = `${MB_BASE_URL}/${path}${separator}fmt=json`;
 
-    const res = await fetch(url, {
+    const res = await throttledMBFetch(url, {
       headers: {
         "User-Agent": USER_AGENT,
         Accept: "application/json",

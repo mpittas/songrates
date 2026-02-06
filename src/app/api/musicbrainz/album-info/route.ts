@@ -4,6 +4,7 @@ import {
   successResponse,
   errorResponse,
 } from "@/lib/api-utils";
+import { throttledMBFetch } from "@/lib/mb-throttle";
 
 const MB_USER_AGENT = "SongRates/1.0 (mpittas@gmail.com)";
 const MB_BASE_URL = "https://musicbrainz.org/ws/2";
@@ -32,7 +33,7 @@ async function fetchAlbumInfo(albumId: string) {
   // 1. Fetch Release Group Info
   const url = `${MB_BASE_URL}/release-group/${albumId}?inc=artist-credits+tags+url-rels+ratings&fmt=json`;
 
-  const rgRes = await fetch(url, {
+  const rgRes = await throttledMBFetch(url, {
     headers: { "User-Agent": MB_USER_AGENT, Accept: "application/json" },
     next: { revalidate: 3600 },
   });
@@ -96,7 +97,7 @@ async function fetchAlbumInfo(albumId: string) {
   }
 
   // 3. Fetch Tracks
-  const releasesRes = await fetch(
+  const releasesRes = await throttledMBFetch(
     `${MB_BASE_URL}/release-group/${albumId}?inc=releases&fmt=json`,
     {
       headers: { "User-Agent": MB_USER_AGENT, Accept: "application/json" },
@@ -115,7 +116,7 @@ async function fetchAlbumInfo(albumId: string) {
 
   let tracks: Track[] = [];
   if (release) {
-    const tracksRes = await fetch(
+    const tracksRes = await throttledMBFetch(
       `${MB_BASE_URL}/release/${release.id}?inc=recordings+artist-credits&fmt=json`,
       {
         headers: { "User-Agent": MB_USER_AGENT, Accept: "application/json" },

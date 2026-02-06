@@ -1,4 +1,5 @@
 import { albumCache, artistCache, searchCache, withCache } from "@/lib/cache";
+import { throttledMBFetch } from "@/lib/mb-throttle";
 
 const MB_USER_AGENT = "SongRates/1.0 (mpittas@gmail.com)";
 const MB_BASE_URL = "https://musicbrainz.org/ws/2";
@@ -76,7 +77,7 @@ export async function getArtistAlbums(artistId: string): Promise<Album[]> {
 
     // Retry logic for 503/502/500 errors
     while (true) {
-      res = await fetch(url, {
+      res = await throttledMBFetch(url, {
         headers: { "User-Agent": MB_USER_AGENT, Accept: "application/json" },
         next: { revalidate: 3600 },
       });
@@ -213,7 +214,7 @@ export async function getOtherReleases(
 
       // Retry logic for 503/502/500 errors
       while (true) {
-        res = await fetch(url, {
+        res = await throttledMBFetch(url, {
           headers: { "User-Agent": MB_USER_AGENT, Accept: "application/json" },
           next: { revalidate: 3600 },
         });
@@ -338,7 +339,7 @@ export async function searchArtists(query: string): Promise<any[]> {
 
     // Retry logic for 503/502/500 errors
     while (true) {
-      res = await fetch(url, {
+      res = await throttledMBFetch(url, {
         headers: { "User-Agent": MB_USER_AGENT, Accept: "application/json" },
         next: { revalidate: 3600 },
       });
@@ -403,7 +404,7 @@ export async function searchReleaseGroups(query: string): Promise<any[]> {
 
     // Retry logic for 503/502/500 errors
     while (true) {
-      res = await fetch(url, {
+      res = await throttledMBFetch(url, {
         headers: { "User-Agent": MB_USER_AGENT, Accept: "application/json" },
         next: { revalidate: 3600 },
       });
@@ -557,7 +558,7 @@ async function fetchMBData(artistId: string): Promise<{
 }> {
   const url = `${MB_BASE_URL}/artist/${artistId}?inc=url-rels&fmt=json`;
   try {
-    const res = await fetch(url, {
+    const res = await throttledMBFetch(url, {
       headers: { "User-Agent": MB_USER_AGENT, Accept: "application/json" },
       next: { revalidate: 86400 },
     });

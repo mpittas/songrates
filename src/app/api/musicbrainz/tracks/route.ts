@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { handleApiRequest, successResponse } from "@/lib/api-utils";
+import { throttledMBFetch } from "@/lib/mb-throttle";
 
 const MB_USER_AGENT = "SongRates/1.0 (mpittas@gmail.com)";
 const MB_BASE_URL = "https://musicbrainz.org/ws/2";
@@ -22,7 +23,7 @@ interface Media {
 
 async function fetchTracks(albumId: string) {
   // 1. Get releases for this Release Group
-  const releasesRes = await fetch(
+  const releasesRes = await throttledMBFetch(
     `${MB_BASE_URL}/release-group/${albumId}?inc=releases&fmt=json`,
     {
       headers: { "User-Agent": MB_USER_AGENT, Accept: "application/json" },
@@ -43,7 +44,7 @@ async function fetchTracks(albumId: string) {
   }
 
   // 2. Fetch tracks for that release
-  const tracksRes = await fetch(
+  const tracksRes = await throttledMBFetch(
     `${MB_BASE_URL}/release/${release.id}?inc=recordings&fmt=json`,
     {
       headers: { "User-Agent": MB_USER_AGENT, Accept: "application/json" },

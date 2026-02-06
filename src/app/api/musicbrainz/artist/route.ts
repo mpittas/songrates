@@ -1,16 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { searchArtists } from "@/lib/musicbrainz";
 import { successResponse, errorResponse } from "@/lib/api-utils";
+import { throttledMBFetch } from "@/lib/mb-throttle";
 
 const MB_USER_AGENT = "SongRates/1.0 (mpittas@gmail.com)";
 const MB_BASE_URL = "https://musicbrainz.org/ws/2";
 
 async function fetchMB(endpoint: string, params: Record<string, string>) {
   const searchParams = new URLSearchParams({ ...params, fmt: "json" });
-  const res = await fetch(`${MB_BASE_URL}/${endpoint}?${searchParams}`, {
-    headers: { "User-Agent": MB_USER_AGENT, Accept: "application/json" },
-    next: { revalidate: 3600 },
-  });
+  const res = await throttledMBFetch(
+    `${MB_BASE_URL}/${endpoint}?${searchParams}`,
+    {
+      headers: { "User-Agent": MB_USER_AGENT, Accept: "application/json" },
+      next: { revalidate: 3600 },
+    },
+  );
   if (!res.ok) return null;
   return res.json();
 }

@@ -65,8 +65,10 @@ const CategoryTabs = memo(function CategoryTabs({
 
 const ArtistRow = memo(function ArtistRow({
   result,
+  imageUrl,
 }: {
   result: ArtistSearchResult;
+  imageUrl?: string;
 }) {
   return (
     <PrefetchLink
@@ -74,11 +76,20 @@ const ArtistRow = memo(function ArtistRow({
       artistId={result.id}
       className="flex items-center gap-3 p-3 hover:bg-[#0f0f12] transition-colors group"
     >
-      <div className="w-10 h-10 rounded-full overflow-hidden bg-[#0f0f12] border border-[#1a1a1f] group-hover:border-[#00f0ff]/30 flex items-center justify-center flex-shrink-0">
-        <IoPerson
-          className="text-neutral-600 group-hover:text-[#00f0ff]/60"
-          size={18}
-        />
+      <div className="w-10 h-10 rounded-full overflow-hidden bg-[#0f0f12] border border-[#1a1a1f] group-hover:border-[#00f0ff]/30 flex items-center justify-center flex-shrink-0 relative">
+        {imageUrl ? (
+          <OptimizedImage
+            src={imageUrl}
+            alt={result.title}
+            fill
+            className="object-cover"
+          />
+        ) : (
+          <IoPerson
+            className="text-neutral-600 group-hover:text-[#00f0ff]/60"
+            size={18}
+          />
+        )}
       </div>
       <div className="flex-1 min-w-0">
         <h3 className="text-sm text-neutral-300 group-hover:text-[#00f0ff] transition-colors truncate">
@@ -107,10 +118,13 @@ const AlbumRow = memo(function AlbumRow({
       href={`/album/${createSlug(result.title, result.id)}`}
       className="flex items-center gap-3 p-3 hover:bg-[#0f0f12] transition-colors group"
     >
-      <div className="w-10 h-10 overflow-hidden bg-[#0f0f12] border border-[#1a1a1f] group-hover:border-[#00f0ff]/30 flex items-center justify-center flex-shrink-0">
-        <IoDisc
-          className="text-neutral-600 group-hover:text-[#00f0ff]/60"
-          size={18}
+      <div className="w-10 h-10 overflow-hidden bg-[#0f0f12] border border-[#1a1a1f] group-hover:border-[#00f0ff]/30 flex items-center justify-center flex-shrink-0 relative">
+        <OptimizedImage
+          src={getCoverArtUrl(result.id, result.title, result.artistName)}
+          alt={result.title}
+          fill
+          className="object-cover"
+          fallbackSrc="/vinyl-placeholder.svg"
         />
       </div>
       <div className="flex-1 min-w-0">
@@ -156,7 +170,7 @@ const SongRow = memo(function SongRow({
 
   const content = (
     <>
-      <div className="w-10 h-10 overflow-hidden bg-[#0f0f12] border border-[#1a1a1f] group-hover:border-[#00f0ff]/30 flex items-center justify-center flex-shrink-0 relative rounded-sm">
+      <div className="w-10 h-10 overflow-hidden bg-[#0f0f12] border border-[#1a1a1f] group-hover:border-[#00f0ff]/30 flex items-center justify-center flex-shrink-0 relative">
         {result.releaseGroupId ? (
           <OptimizedImage
             src={getCoverArtUrl(
@@ -240,13 +254,15 @@ function SectionHeader({ label, count }: { label: string; count: number }) {
 const ResultRow = memo(function ResultRow({
   result,
   listenCounts,
+  artistImages,
 }: {
   result: SearchResult;
   listenCounts: Record<string, number>;
+  artistImages: Record<string, string>;
 }) {
   switch (result.type) {
     case "artist":
-      return <ArtistRow result={result} />;
+      return <ArtistRow result={result} imageUrl={artistImages[result.id]} />;
     case "album":
       return <AlbumRow result={result} />;
     case "song":
@@ -283,6 +299,11 @@ export default function SearchResults({
   const [history, setHistory] = useState<ArtistVisit[]>([]);
   const [images, setImages] = useState<Record<string, string>>({});
 
+  // Artist images for search results (fetched via Wikidata)
+  const [artistImages, setArtistImages] = useState<Record<string, string>>({});
+  const artistImagesRef = useRef(artistImages);
+  artistImagesRef.current = artistImages;
+
   // ─── TanStack Query: main search ───────────────────────────────────
   const {
     data: searchData,
@@ -296,6 +317,32 @@ export default function SearchResults({
   // ─── No client-side re-sort needed ────────────────────────────────
   // The server now handles hybrid search ranking (Last.fm + MusicBrainz)
   // so results arrive pre-sorted by popularity.
+
+  // ─── Fetch artist images when results contain artists ─────────────
+  useEffect(() => {
+    const artists =
+      category === "all" && grouped
+        ? grouped.artists
+        : results.filter((r) => r.type === "artist");
+
+    if (artists.length === 0) return;
+
+    // Only fetch IDs we don't already have
+    const newIds = artists
+      .map((a) => a.id)
+      .filter((id) => !(id in artistImagesRef.current));
+
+    if (newIds.length === 0) return;
+
+    fetch(`/api/images/artists?ids=${newIds.join(",")}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.images) {
+          setArtistImages((prev) => ({ ...prev, ...data.images }));
+        }
+      })
+      .catch(() => {});
+  }, [results, grouped, category]);
 
   // ─── History when focused and empty ────────────────────────────────
   const loadHistory = useCallback(() => {
@@ -359,7 +406,12 @@ export default function SearchResults({
                     count={grouped.artists.length}
                   />
                   {grouped.artists.slice(0, 3).map((r) => (
-                    <ResultRow key={r.id} result={r} listenCounts={{}} />
+                    <ResultRow
+                      key={r.id}
+                      result={r}
+                      listenCounts={{}}
+                      artistImages={artistImages}
+                    />
                   ))}
                 </>
               )}
@@ -367,7 +419,12 @@ export default function SearchResults({
                 <>
                   <SectionHeader label="Albums" count={grouped.albums.length} />
                   {grouped.albums.slice(0, 3).map((r) => (
-                    <ResultRow key={r.id} result={r} listenCounts={{}} />
+                    <ResultRow
+                      key={r.id}
+                      result={r}
+                      listenCounts={{}}
+                      artistImages={artistImages}
+                    />
                   ))}
                 </>
               )}
@@ -375,14 +432,24 @@ export default function SearchResults({
                 <>
                   <SectionHeader label="Songs" count={grouped.songs.length} />
                   {grouped.songs.slice(0, 8).map((r) => (
-                    <ResultRow key={r.id} result={r} listenCounts={{}} />
+                    <ResultRow
+                      key={r.id}
+                      result={r}
+                      listenCounts={{}}
+                      artistImages={artistImages}
+                    />
                   ))}
                 </>
               )}
             </>
           ) : (
             results.map((r) => (
-              <ResultRow key={r.id} result={r} listenCounts={{}} />
+              <ResultRow
+                key={r.id}
+                result={r}
+                listenCounts={{}}
+                artistImages={artistImages}
+              />
             ))
           )}
         </div>

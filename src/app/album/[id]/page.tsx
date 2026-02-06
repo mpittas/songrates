@@ -2,6 +2,7 @@ import { AlbumInfo } from "@/types/music";
 import { resolveAlbumId } from "@/lib/musicbrainz";
 import AlbumClient from "@/components/album/AlbumClient";
 import { albumCache } from "@/lib/cache";
+import { throttledMBFetch } from "@/lib/mb-throttle";
 
 // ─── Data Fetching ─────────────────────────────────────────────────────────────
 
@@ -25,7 +26,10 @@ async function getAlbumInfo(id: string): Promise<AlbumInfo | null> {
       const maxRetries = 2;
 
       while (true) {
-        const res = await fetch(url, { headers, next: { revalidate: 3600 } });
+        const res = await throttledMBFetch(url, {
+          headers,
+          next: { revalidate: 3600 },
+        });
 
         if (res.ok) return res;
 
