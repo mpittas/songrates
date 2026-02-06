@@ -1,7 +1,6 @@
 import {
   getArtistAlbums,
   getArtistData,
-  getOtherReleases,
   resolveArtistId,
 } from "@/lib/musicbrainz";
 import ArtistPageContent from "@/components/artist/ArtistPageContent";
@@ -23,10 +22,9 @@ export default async function ArtistPage({ params }: PageProps) {
   }
 
   // Fetch all data in parallel
-  const [artistData, albums, otherReleases] = await Promise.all([
+  const [artistData, albums] = await Promise.all([
     getArtistData(id),
     getArtistAlbums(id),
-    getOtherReleases(id),
   ]);
 
   if (!artistData.artist.name) {
@@ -43,7 +41,6 @@ export default async function ArtistPage({ params }: PageProps) {
       artistName={artistData.artist.name}
       artistInfo={artistData.artistInfo}
       albums={albums}
-      otherReleases={otherReleases}
     />
   );
 }

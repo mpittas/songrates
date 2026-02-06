@@ -8,6 +8,7 @@ import {
   FaSpotify,
   FaGlobe,
 } from "react-icons/fa";
+import OptimizedImage from "@/components/ui/OptimizedImage";
 
 interface Props {
   artistId: string;
@@ -27,10 +28,12 @@ export default function ArtistInfo({
       <div className="space-y-4">
         <div className="relative w-full aspect-square max-w-[100px] mx-auto lg:mx-0">
           {data.image ? (
-            <img
+            <OptimizedImage
               src={data.image}
               alt={artistName}
-              className="w-full h-full object-cover rounded-full bg-neutral-900"
+              fill
+              className="object-cover"
+              fallbackText={artistName.slice(0, 2).toUpperCase()}
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-white/5 rounded-full">

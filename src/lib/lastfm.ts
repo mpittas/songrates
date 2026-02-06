@@ -104,3 +104,47 @@ export async function getArtistPopularity(
     return {};
   }
 }
+
+/**
+ * Fetches top tracks for an artist to map listener counts to album tracks.
+ * Returns a map of normalized track title -> listener count.
+ */
+export async function getArtistTrackPopularity(
+  artistName: string,
+): Promise<Record<string, number>> {
+  const apiKey = process.env.LASTFM_API_KEY;
+  if (!apiKey || !artistName) return {};
+
+  try {
+    const url = `${LASTFM_BASE_URL}?method=artist.gettoptracks&artist=${encodeURIComponent(
+      artistName,
+    )}&api_key=${apiKey}&format=json&limit=500`; // Fetch top 500 to cover full discography
+
+    const res = await fetch(url, { next: { revalidate: 3600 } }); // 1 hour cache
+    const data = await res.json();
+
+    if (!data.toptracks || !data.toptracks.track) {
+      return {};
+    }
+
+    const tracks = Array.isArray(data.toptracks.track)
+      ? data.toptracks.track
+      : [data.toptracks.track];
+
+    const popularityMap: Record<string, number> = {};
+
+    tracks.forEach((t: any) => {
+      if (t.name && t.listeners) {
+        // Normalize: lowercase, standard spaces.
+        // We use this key to match against album track titles.
+        const key = t.name.toLowerCase().trim();
+        popularityMap[key] = parseInt(t.listeners, 10);
+      }
+    });
+
+    return popularityMap;
+  } catch (error) {
+    console.error("Error fetching Last.fm track popularity:", error);
+    return {};
+  }
+}

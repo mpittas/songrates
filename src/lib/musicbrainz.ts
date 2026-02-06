@@ -171,7 +171,7 @@ export async function getOtherReleases(
     let hasMore = true;
 
     // Safety brake to prevent infinite loops or excessively long waits
-    const maxPages = 10;
+    const maxPages = 5;
     let pageCount = 0;
 
     while (hasMore && pageCount < maxPages) {

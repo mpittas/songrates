@@ -2,12 +2,16 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { FaPlay, FaPause, FaGlobe, FaLock, FaHeadphones } from "react-icons/fa";
+import { FaPlay, FaPause, FaGlobe, FaLock } from "react-icons/fa";
+import { IoFlame } from "react-icons/io5";
 import { useRatings } from "@/hooks/useRatings";
 import { usePlayer } from "@/context/PlayerContext";
 import { formatTime, createSlug } from "@/lib/utils";
 import ColorRating from "@/components/rating/ColorRating";
+import ListenCountBadge from "@/components/shared/ListenCountBadge";
 import { TrackInfo, AlbumContext } from "@/types/music";
+
+import OptimizedImage from "@/components/ui/OptimizedImage";
 
 interface TrackItemProps {
   track: TrackInfo;
@@ -23,6 +27,8 @@ interface TrackItemProps {
   listenCount?: number;
   /** When true, scroll into view and pulse-highlight this track */
   highlighted?: boolean;
+  /** Whether to show the album cover image for this track */
+  showImage?: boolean;
 }
 
 export default function TrackItem({
@@ -37,6 +43,7 @@ export default function TrackItem({
   forcedRating,
   listenCount,
   highlighted = false,
+  showImage = false,
 }: TrackItemProps) {
   const trackRef = useRef<HTMLDivElement>(null);
   const { ratings, setRating } = useRatings();
@@ -71,6 +78,17 @@ export default function TrackItem({
     >
       <div className="flex items-center justify-between py-3 group hover:bg-[#0a0a0d] px-4 transition-colors">
         <div className="flex items-center gap-4 min-w-0 flex-1">
+          {showImage && (
+            <div className="relative w-10 h-10 shrink-0 rounded-sm overflow-hidden bg-neutral-900 border border-white/5">
+              <OptimizedImage
+                src={albumImageUrl}
+                alt={track.title}
+                fill
+                className="object-cover"
+                fallbackSrc="/vinyl-placeholder.svg"
+              />
+            </div>
+          )}
           <span className="text-neutral-600 font-mono text-xs w-2 shrink-0 text-left">
             {track.number}
           </span>
@@ -106,7 +124,7 @@ export default function TrackItem({
             )}
           </button>
 
-          <span className="text-[10px] text-neutral-600 font-mono hidden sm:block w-5 shrink-0 text-right mr-4">
+          <span className="text-[10px] text-neutral-600 font-mono hidden sm:block w-5 shrink-0 text-right">
             {formatTime(track.length, "milliseconds")}
           </span>
 
@@ -138,21 +156,7 @@ export default function TrackItem({
 
         <div className="flex items-center gap-4">
           {/* ListenBrainz Total Plays */}
-          {listenCount != null && listenCount > 0 && (
-            <div
-              className="hidden sm:flex items-center gap-1 opacity-50 hover:opacity-100 transition-opacity"
-              title={`${listenCount.toLocaleString()} total plays on ListenBrainz`}
-            >
-              <FaHeadphones size={9} className="text-orange-400/80" />
-              <span className="text-[10px] font-mono text-orange-400/80">
-                {listenCount >= 1_000_000
-                  ? `${(listenCount / 1_000_000).toFixed(1)}M`
-                  : listenCount >= 1_000
-                    ? `${Math.round(listenCount / 1_000)}k`
-                    : listenCount}
-              </span>
-            </div>
-          )}
+          <ListenCountBadge count={listenCount || 0} className="border-none" />
 
           {/* Public Rating Display */}
           {publicRating && (
