@@ -216,10 +216,32 @@ export function buildSmartLuceneQuery(field: string, rawQuery: string): string {
   }
 
   // ─── Wildcard prefix for partial input (low boost) ─────────────────
-  // e.g., "beyonc" → "beyonc*" catches "beyonce"
-  // Only for single words 4+ chars
-  if (words.length === 1 && words[0].length >= 4) {
-    parts.push(`${field}:${escapeLuceneValue(words[0])}*`);
+  // Supports "type-ahead" behavior.
+  // Single word: "michae" -> "michae*" matches "michael"
+  // Multi word:  "beat i" -> "beat AND i*" matches "beat it"
+
+  if (words.length > 0) {
+    const lastWord = words[words.length - 1];
+    const dropLast = words.slice(0, -1);
+
+    // Valid for prefix if last word is at least 2 chars (e.g. "Be" -> "Beat")
+    // OR if we have multiple words and the last is at least 1 char (e.g. "Beat I" -> "Beat It")
+    const isPrefixable =
+      words.length > 1 ? lastWord.length >= 1 : lastWord.length >= 3;
+
+    if (isPrefixable) {
+      const prefixPart = `${field}:${escapeLuceneValue(lastWord)}*`;
+      if (dropLast.length > 0) {
+        // AND with previous words: (field:beat AND field:i*)
+        const previousPart = dropLast
+          .map((w) => `${field}:${escapeLuceneValue(w)}`)
+          .join(" AND ");
+        parts.push(`(${previousPart} AND ${prefixPart})`);
+      } else {
+        // Single word prefix
+        parts.push(prefixPart);
+      }
+    }
   }
 
   // ─── Combine with OR ──────────────────────────────────────────────

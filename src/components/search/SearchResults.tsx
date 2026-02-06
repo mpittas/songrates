@@ -301,9 +301,9 @@ export default function SearchResults({
   }, [isFocused, query, loadHistory]);
 
   // ─── Determine loading state ───────────────────────────────────────
-  // Show loading spinner only when fetching AND we don't have previous data
-  // (keepPreviousData means we often have stale data to show)
-  const showLoading = isFetching && !isPlaceholderData && results.length === 0;
+  // Show loading spinner when fetching if we have no results to show
+  // (even if we have placeholder data, if it's empty, we should show loading instead of blank)
+  const showLoading = isFetching && results.length === 0;
 
   if (!query && (!isFocused || history.length === 0)) return null;
 
