@@ -283,6 +283,21 @@ export default function SearchResults({
     }
   }, [isFocused, query, loadHistory]);
 
+  // ─── Extract LastFM listen counts from search results ───────────────────
+  const listenCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    results.forEach((result) => {
+      if (
+        result.type === "song" &&
+        result.listenCount != null &&
+        result.listenCount > 0
+      ) {
+        counts[result.id] = result.listenCount;
+      }
+    });
+    return counts;
+  }, [results]);
+
   // ─── Determine loading state ───────────────────────────────────────
   // Show loading spinner when fetching if we have no results to show
   // (even if we have placeholder data, if it's empty, we should show loading instead of blank)
@@ -321,7 +336,11 @@ export default function SearchResults({
                     count={grouped.artists.length}
                   />
                   {grouped.artists.slice(0, 3).map((r) => (
-                    <ResultRow key={r.id} result={r} listenCounts={{}} />
+                    <ResultRow
+                      key={r.id}
+                      result={r}
+                      listenCounts={listenCounts}
+                    />
                   ))}
                 </>
               )}
@@ -329,7 +348,11 @@ export default function SearchResults({
                 <>
                   <SectionHeader label="Albums" count={grouped.albums.length} />
                   {grouped.albums.slice(0, 3).map((r) => (
-                    <ResultRow key={r.id} result={r} listenCounts={{}} />
+                    <ResultRow
+                      key={r.id}
+                      result={r}
+                      listenCounts={listenCounts}
+                    />
                   ))}
                 </>
               )}
@@ -337,14 +360,18 @@ export default function SearchResults({
                 <>
                   <SectionHeader label="Songs" count={grouped.songs.length} />
                   {grouped.songs.slice(0, 8).map((r) => (
-                    <ResultRow key={r.id} result={r} listenCounts={{}} />
+                    <ResultRow
+                      key={r.id}
+                      result={r}
+                      listenCounts={listenCounts}
+                    />
                   ))}
                 </>
               )}
             </>
           ) : (
             results.map((r) => (
-              <ResultRow key={r.id} result={r} listenCounts={{}} />
+              <ResultRow key={r.id} result={r} listenCounts={listenCounts} />
             ))
           )}
         </div>

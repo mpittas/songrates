@@ -49,7 +49,10 @@ export default function AlbumPage() {
   const [isSearchFocused, setIsSearchFocused] = useState(false);
 
   // Last.fm playcounts — single batch request for all tracks, non-blocking
-  const { data: playcounts } = useLastFmPlaycounts(album?.tracks || []);
+  const { data: playcounts } = useLastFmPlaycounts(
+    album?.tracks || [],
+    album?.artist?.name,
+  );
 
   useEffect(() => {
     if (!slug) return;
