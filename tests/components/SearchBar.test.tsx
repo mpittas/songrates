@@ -8,11 +8,21 @@ jest.mock("next/navigation", () => ({
   useSearchParams: jest.fn(),
 }));
 
+// Mock SearchResults component (uses TanStack Query internally)
+jest.mock("@/components/search/SearchResults", () => {
+  return function MockSearchResults({ query }: { query: string }) {
+    return query ? (
+      <div data-testid="search-results">Results for: {query}</div>
+    ) : null;
+  };
+});
+
 // Mock useSearchInput hook
 jest.mock("@/hooks/useSearchInput", () => ({
   useSearchInput: jest.fn(() => ({
     query: "",
     setQuery: jest.fn(),
+    debouncedQuery: "",
     isFocused: false,
     setIsFocused: jest.fn(),
     clearQuery: jest.fn(),
@@ -43,7 +53,9 @@ describe("SearchBar", () => {
   it("should render search input", () => {
     render(<SearchBar />);
 
-    const input = screen.getByPlaceholderText("Search for artists...");
+    const input = screen.getByPlaceholderText(
+      "Search artists, albums, songs...",
+    );
     expect(input).toBeInTheDocument();
   });
 
@@ -66,6 +78,7 @@ describe("SearchBar", () => {
     useSearchInput.mockReturnValue({
       query: "test query",
       setQuery: jest.fn(),
+      debouncedQuery: "test query",
       isFocused: false,
       setIsFocused: jest.fn(),
       clearQuery: jest.fn(),
@@ -75,7 +88,7 @@ describe("SearchBar", () => {
     render(<SearchBar />);
 
     const form = screen
-      .getByPlaceholderText("Search for artists...")
+      .getByPlaceholderText("Search artists, albums, songs...")
       .closest("form");
     if (form) {
       fireEvent.submit(form);
@@ -90,6 +103,7 @@ describe("SearchBar", () => {
     useSearchInput.mockReturnValue({
       query: "   ",
       setQuery: jest.fn(),
+      debouncedQuery: "",
       isFocused: false,
       setIsFocused: jest.fn(),
       clearQuery: jest.fn(),
@@ -99,7 +113,7 @@ describe("SearchBar", () => {
     render(<SearchBar />);
 
     const form = screen
-      .getByPlaceholderText("Search for artists...")
+      .getByPlaceholderText("Search artists, albums, songs...")
       .closest("form");
     if (form) {
       fireEvent.submit(form);
@@ -117,6 +131,7 @@ describe("SearchBar", () => {
       return {
         query: "",
         setQuery: jest.fn(),
+        debouncedQuery: "",
         isFocused: false,
         setIsFocused: jest.fn(),
         clearQuery: jest.fn(),
@@ -143,6 +158,7 @@ describe("SearchBar", () => {
       return {
         query: "",
         setQuery: jest.fn(),
+        debouncedQuery: "",
         isFocused: false,
         setIsFocused: jest.fn(),
         clearQuery: jest.fn(),
@@ -166,6 +182,7 @@ describe("SearchBar", () => {
     useSearchInput.mockReturnValue({
       query: "test",
       setQuery: jest.fn(),
+      debouncedQuery: "test",
       isFocused: false,
       setIsFocused: jest.fn(),
       clearQuery,
@@ -182,7 +199,9 @@ describe("SearchBar", () => {
   it("should use large size variant for SearchInput", () => {
     render(<SearchBar />);
 
-    const input = screen.getByPlaceholderText("Search for artists...");
+    const input = screen.getByPlaceholderText(
+      "Search artists, albums, songs...",
+    );
     // Large variant has specific classes
     expect(input).toHaveClass("py-3", "text-lg");
   });
@@ -193,6 +212,7 @@ describe("SearchBar", () => {
     useSearchInput.mockReturnValue({
       query: "",
       setQuery: jest.fn(),
+      debouncedQuery: "",
       isFocused: false,
       setIsFocused,
       clearQuery: jest.fn(),
@@ -201,7 +221,9 @@ describe("SearchBar", () => {
 
     render(<SearchBar />);
 
-    const input = screen.getByPlaceholderText("Search for artists...");
+    const input = screen.getByPlaceholderText(
+      "Search artists, albums, songs...",
+    );
 
     fireEvent.focus(input);
     expect(setIsFocused).toHaveBeenCalledWith(true);

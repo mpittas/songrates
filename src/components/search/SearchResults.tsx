@@ -1,13 +1,15 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import Link from "next/link";
 import { IoMusicalNotes, IoDisc, IoPerson, IoFlame } from "react-icons/io5";
 
-import { SearchResultsProps } from "@/types/search";
+import { useSearchQuery } from "@/hooks/useSearchQuery";
+import { useSearchEnrich } from "@/hooks/useSearchEnrich";
 import type {
   SearchCategory,
   SearchResult,
+  SearchResultsProps,
   ArtistSearchResult,
   AlbumSearchResult,
   SongSearchResult,
@@ -17,42 +19,6 @@ import { ArtistVisit } from "@/types/artist";
 import { getArtistHistory } from "@/lib/history";
 import { formatTimeAgo, createSlug, formatTime } from "@/lib/utils";
 import PrefetchLink from "@/components/ui/PrefetchLink";
-
-// ─── Client-side Result Cache ──────────────────────────────────────────────────
-// Caches results in memory so switching between tabs or re-typing a previous
-// query is instant. No network request needed.
-
-const resultCache = new Map<
-  string,
-  { results: SearchResult[]; grouped: GroupedSearchResults | null; ts: number }
->();
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
-
-function getCached(key: string) {
-  const entry = resultCache.get(key);
-  if (!entry) return null;
-  if (Date.now() - entry.ts > CACHE_TTL) {
-    resultCache.delete(key);
-    return null;
-  }
-  return entry;
-}
-
-function setCache(
-  key: string,
-  results: SearchResult[],
-  grouped: GroupedSearchResults | null,
-) {
-  // Evict old entries if cache grows too large
-  if (resultCache.size > 100) {
-    const oldest = resultCache.keys().next().value;
-    if (oldest) resultCache.delete(oldest);
-  }
-  resultCache.set(key, { results, grouped, ts: Date.now() });
-}
-
-// ─── ListenBrainz listen count cache ───────────────────────────────────────────
-const listenCountCache = new Map<string, number>();
 
 // ─── Category Filter Tabs ──────────────────────────────────────────────────────
 
@@ -271,7 +237,7 @@ function ResultRow({
   listenCounts,
 }: {
   result: SearchResult;
-  listenCounts: Map<string, number>;
+  listenCounts: Record<string, number>;
 }) {
   switch (result.type) {
     case "artist":
@@ -279,9 +245,7 @@ function ResultRow({
     case "album":
       return <AlbumRow result={result} />;
     case "song":
-      return (
-        <SongRow result={result} listenCount={listenCounts.get(result.id)} />
-      );
+      return <SongRow result={result} listenCount={listenCounts[result.id]} />;
     default:
       return null;
   }
@@ -293,183 +257,87 @@ export default function SearchResults({
   query,
   onClose,
   isFocused,
-}: SearchResultsProps & { isFocused: boolean }) {
+}: SearchResultsProps) {
   const [category, setCategory] = useState<SearchCategory>("all");
-  const [results, setResults] = useState<SearchResult[]>([]);
-  const [grouped, setGrouped] = useState<GroupedSearchResults | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [listenCounts, setListenCounts] = useState<Map<string, number>>(
-    new Map(),
-  );
 
   // History state
   const [history, setHistory] = useState<ArtistVisit[]>([]);
   const [images, setImages] = useState<Record<string, string>>({});
 
-  // Track current request to prevent stale updates
-  const requestIdRef = useRef(0);
+  // ─── TanStack Query: main search ───────────────────────────────────
+  const {
+    data: searchData,
+    isFetching,
+    isPlaceholderData,
+  } = useSearchQuery(query, category);
 
-  // ─── Fetch search results with client-side caching ─────────────────
-  useEffect(() => {
-    if (!query) {
-      setResults([]);
-      setGrouped(null);
-      return;
-    }
+  const results = searchData?.results ?? [];
+  const grouped = searchData?.grouped ?? null;
 
-    const cacheKey = `${query}:${category}`;
-    const cached = getCached(cacheKey);
+  // ─── TanStack Query: lazy ListenBrainz enrichment ──────────────────
+  const songResults = useMemo(
+    () => results.filter((r): r is SongSearchResult => r.type === "song"),
+    [results],
+  );
 
-    if (cached) {
-      // Instant result from client cache
-      setResults(cached.results);
-      setGrouped(cached.grouped);
-      setLoading(false);
-      return;
-    }
-
-    const currentReqId = ++requestIdRef.current;
-    const controller = new AbortController();
-    setLoading(true);
-
-    fetch(`/api/search?q=${encodeURIComponent(query)}&category=${category}`, {
-      signal: controller.signal,
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        // Only update if this is still the latest request
-        if (currentReqId !== requestIdRef.current) return;
-
-        const newResults = data.results || [];
-        const newGrouped = data.grouped || null;
-
-        setResults(newResults);
-        setGrouped(newGrouped);
-        setCache(cacheKey, newResults, newGrouped);
-      })
-      .catch((err) => {
-        if (
-          err.name !== "AbortError" &&
-          currentReqId === requestIdRef.current
-        ) {
-          console.error("Search fetch error:", err);
-          setResults([]);
-          setGrouped(null);
-        }
-      })
-      .finally(() => {
-        if (currentReqId === requestIdRef.current) {
-          setLoading(false);
-        }
-      });
-
-    return () => controller.abort();
-  }, [query, category]);
-
-  // ─── Lazy ListenBrainz enrichment ──────────────────────────────────
-  // Fires AFTER main results are rendered, enriches songs with listen counts.
-  // Does NOT mutate results/grouped state — re-sorting is via useMemo below.
-  useEffect(() => {
-    if (results.length === 0) return;
-
-    const songResults = results.filter(
-      (r): r is SongSearchResult => r.type === "song",
-    );
-    if (songResults.length === 0) return;
-
-    // Only enrich songs that aren't already cached
-    const toEnrich = songResults
-      .slice(0, 10)
-      .map((s) => s.id)
-      .filter((id) => !listenCountCache.has(id));
-
-    if (toEnrich.length === 0) {
-      // All cached — update state from cache
-      const fromCache = new Map<string, number>();
-      songResults.forEach((s) => {
-        const cached = listenCountCache.get(s.id);
-        if (cached !== undefined) fromCache.set(s.id, cached);
-      });
-      if (fromCache.size > 0) {
-        setListenCounts((prev) => new Map([...prev, ...fromCache]));
-      }
-      return;
-    }
-
-    // Fire-and-forget enrichment (non-blocking)
-    fetch("/api/search/enrich", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ mbids: toEnrich }),
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        const counts = data.counts || {};
-        const newCounts = new Map<string, number>();
-
-        Object.entries(counts).forEach(([id, count]) => {
-          listenCountCache.set(id, count as number);
-          newCounts.set(id, count as number);
-        });
-
-        // Also include previously cached counts
-        songResults.forEach((s) => {
-          const cached = listenCountCache.get(s.id);
-          if (cached !== undefined) newCounts.set(s.id, cached);
-        });
-
-        setListenCounts((prev) => new Map([...prev, ...newCounts]));
-      })
-      .catch(() => {
-        // Silently fail — enrichment is optional
-      });
-  }, [results]);
+  const { data: listenCounts = {} } = useSearchEnrich(songResults);
 
   // ─── Re-sort by ListenBrainz popularity (True Popularity) ─────────
   // Once listen counts arrive, re-rank songs so the most-listened-to
-  // version surfaces first. Uses useMemo to avoid state mutation loops.
+  // version surfaces first. Uses useMemo to avoid unnecessary recalcs.
   const sortedResults = useMemo(() => {
-    if (listenCounts.size === 0) return results;
+    const hasListenData = Object.keys(listenCounts).length > 0;
+    if (!hasListenData) return results;
 
     const nonSongs = results.filter((r) => r.type !== "song");
     const songs = results
       .filter((r): r is SongSearchResult => r.type === "song")
       .sort((a, b) => {
-        const aCount = listenCounts.get(a.id) ?? a.listenCount ?? 0;
-        const bCount = listenCounts.get(b.id) ?? b.listenCount ?? 0;
+        const aCount = listenCounts[a.id] ?? a.listenCount ?? 0;
+        const bCount = listenCounts[b.id] ?? b.listenCount ?? 0;
         return bCount - aCount;
       });
     return [...nonSongs, ...songs];
   }, [results, listenCounts]);
 
   const sortedGrouped = useMemo(() => {
-    if (!grouped || listenCounts.size === 0) return grouped;
+    const hasListenData = Object.keys(listenCounts).length > 0;
+    if (!grouped || !hasListenData) return grouped;
 
     const sortedSongs = [...grouped.songs].sort((a, b) => {
-      const aCount = listenCounts.get(a.id) ?? a.listenCount ?? 0;
-      const bCount = listenCounts.get(b.id) ?? b.listenCount ?? 0;
+      const aCount = listenCounts[a.id] ?? a.listenCount ?? 0;
+      const bCount = listenCounts[b.id] ?? b.listenCount ?? 0;
       return bCount - aCount;
     });
     return { ...grouped, songs: sortedSongs };
   }, [grouped, listenCounts]);
 
   // ─── History when focused and empty ────────────────────────────────
+  const loadHistory = useCallback(() => {
+    const data = getArtistHistory();
+    setHistory(data);
+
+    if (data.length > 0) {
+      const ids = data.map((a) => a.id).join(",");
+      fetch(`/api/images/artists?ids=${ids}`)
+        .then((res) => res.json())
+        .then((data) => {
+          setImages((prev) => ({ ...prev, ...data.images }));
+        })
+        .catch((e) => console.error(e));
+    }
+  }, []);
+
   useEffect(() => {
     if (isFocused && !query) {
-      const data = getArtistHistory();
-      setHistory(data);
-
-      if (data.length > 0) {
-        const ids = data.map((a) => a.id).join(",");
-        fetch(`/api/images/artists?ids=${ids}`)
-          .then((res) => res.json())
-          .then((data) => {
-            setImages((prev) => ({ ...prev, ...data.images }));
-          })
-          .catch((e) => console.error(e));
-      }
+      loadHistory();
     }
-  }, [isFocused, query]);
+  }, [isFocused, query, loadHistory]);
+
+  // ─── Determine loading state ───────────────────────────────────────
+  // Show loading spinner only when fetching AND we don't have previous data
+  // (keepPreviousData means we often have stale data to show)
+  const showLoading = isFetching && !isPlaceholderData && results.length === 0;
 
   if (!query && (!isFocused || history.length === 0)) return null;
 
@@ -478,15 +346,22 @@ export default function SearchResults({
       {/* Category Filter Tabs */}
       {query && <CategoryTabs active={category} onChange={setCategory} />}
 
-      {/* Loading */}
-      {query && loading && (
+      {/* Loading — only shown when no previous data available */}
+      {query && showLoading && (
         <div className="flex items-center justify-center py-12 text-neutral-600 font-mono text-sm tracking-widest uppercase">
           <span>Searching...</span>
         </div>
       )}
 
+      {/* Fetching indicator — subtle, shown when refreshing with existing data */}
+      {query && isFetching && !showLoading && sortedResults.length > 0 && (
+        <div className="h-0.5 bg-[#00f0ff]/20 overflow-hidden">
+          <div className="h-full bg-[#00f0ff]/60 animate-pulse w-full" />
+        </div>
+      )}
+
       {/* Results — uses sortedResults/sortedGrouped for ListenBrainz re-ranking */}
-      {query && !loading && sortedResults.length > 0 && (
+      {query && !showLoading && sortedResults.length > 0 && (
         <div className="divide-y divide-[#1a1a1f]/50">
           {category === "all" && sortedGrouped ? (
             <>
@@ -545,7 +420,7 @@ export default function SearchResults({
       )}
 
       {/* No results */}
-      {query && !loading && sortedResults.length === 0 && (
+      {query && !isFetching && sortedResults.length === 0 && (
         <div className="text-center py-8 text-neutral-600 font-mono text-sm">
           no results found for &ldquo;{query}&rdquo;
         </div>

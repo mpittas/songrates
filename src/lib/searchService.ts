@@ -31,7 +31,6 @@
  */
 
 import { searchCache } from "@/lib/cache";
-import { searchLastFmTracks, type LastFmTrack } from "@/lib/lastfm";
 import {
   buildSmartLuceneQuery,
   escapeLuceneValue,
@@ -327,33 +326,27 @@ function findOriginalAlbum(
   return undefined;
 }
 
+// ─── Fame Signal Helpers ────────────────────────────────────────────────────────
+
 /**
- * Re-rank MusicBrainz recordings using "Fame Signals":
+ * Re-rank MusicBrainz recordings using "Fame Signals" (MusicBrainz-only):
  *   1. Official release count (official versions appear on more official releases)
  *   2. Primary type bonus (Album > EP > Single > Compilation)
- *   3. Last.fm popularity (real listener counts)
- *   4. Title match quality (smart fuzzy match)
- *   5. MB relevance score (MusicBrainz's own scoring)
+ *   3. Title match quality (smart fuzzy match)
+ *   4. MB relevance score (MusicBrainz's own scoring)
  *
- * Weights:
- *   - Last.fm popularity:    40%  (real-world popularity)
- *   - Official release count: 25%  (fame index — how many official releases)
- *   - Primary type bonus:     10%  (Album > EP > Single)
- *   - Title match quality:    15%  (how well the title matches the query)
+ * Weights (Redistributed without Last.fm):
+ *   - Official release count: 50%  (primary fame signal)
+ *   - Primary type bonus:     20%  (Album > EP > Single)
+ *   - Title match quality:    20%  (how well the title matches the query)
  *   - MB relevance score:     10%  (MusicBrainz's built-in relevance)
  */
 function computeFameScore(
   recording: any,
   query: string,
-  popMap: { byKey: Map<string, number>; byMbid: Map<string, number> },
-  maxListeners: number,
   maxOfficialCount: number,
 ): number {
   const releases = recording.releases || [];
-
-  // Last.fm popularity (0–100 normalized)
-  const popularity =
-    (getPopularity(recording, popMap) / Math.max(maxListeners, 1)) * 100;
 
   // Official release count (0–100 normalized)
   const officialCount = countOfficialReleases(releases);
@@ -369,19 +362,12 @@ function computeFameScore(
   const mbScore = recording.score ?? 0;
 
   // Weighted combination
-  return (
-    popularity * 0.4 +
-    fameIndex * 0.25 +
-    typeBonus * 0.1 +
-    titleMatch * 0.15 +
-    mbScore * 0.1
-  );
+  return fameIndex * 0.5 + typeBonus * 0.2 + titleMatch * 0.2 + mbScore * 0.1;
 }
 
-// ─── Song Search — Hybrid MusicBrainz + Last.fm ────────────────────────────────
-// MusicBrainz gives us IDs and metadata, but has NO popularity ranking.
-// Last.fm gives us real popularity data (listener counts) so famous songs
-// like "Billie Jean" by MJ or "Imagine" by John Lennon surface first.
+// ─── Song Search — MusicBrainz Only ───────────────────────────────────────────
+// Optimized for speed: No external API calls (Last.fm) during search.
+// Uses "Fame Index" (release counts) to approximate popularity.
 
 function recordingDedupKey(recording: any): string {
   // Use collapsed normalization so "a m a r i" and "amari" dedup together
@@ -392,121 +378,23 @@ function recordingDedupKey(recording: any): string {
   return `${title}::${artist}`;
 }
 
-/** Simple dedup key from Last.fm track data */
-function lastFmDedupKey(name: string, artist: string): string {
-  return `${collapseSpaces(normalizeText(name))}::${collapseSpaces(normalizeText(artist))}`;
-}
-
-/**
- * Build a Last.fm popularity lookup map from track search results.
- */
-function buildPopularityMap(lastFmTracks: LastFmTrack[]): {
-  byKey: Map<string, number>;
-  byMbid: Map<string, number>;
-} {
-  const byKey = new Map<string, number>();
-  const byMbid = new Map<string, number>();
-
-  for (const track of lastFmTracks) {
-    const key = lastFmDedupKey(track.name, track.artist);
-    const existing = byKey.get(key) || 0;
-    if (track.listeners > existing) {
-      byKey.set(key, track.listeners);
-    }
-    if (track.mbid) {
-      byMbid.set(track.mbid, track.listeners);
-    }
-  }
-
-  return { byKey, byMbid };
-}
-
-/**
- * Look up a recording's popularity from the Last.fm map.
- */
-function getPopularity(
-  recording: any,
-  popMap: { byKey: Map<string, number>; byMbid: Map<string, number> },
-): number {
-  if (recording.id && popMap.byMbid.has(recording.id)) {
-    return popMap.byMbid.get(recording.id)!;
-  }
-  const key = recordingDedupKey(recording);
-  return popMap.byKey.get(key) || 0;
-}
-
-/**
- * For popular Last.fm tracks MISSING from general MusicBrainz results,
- * do a targeted MusicBrainz search: `recording:"title" AND artist:"artist"`.
- * This reliably finds the specific recording (e.g., MJ's "Billie Jean").
- */
-async function fetchMissingPopularRecordings(
-  lastFmTracks: LastFmTrack[],
-  existingKeys: Set<string>,
-  maxLookups: number = 3,
-): Promise<any[]> {
-  const missing = lastFmTracks
-    .filter((t) => t.listeners > 0)
-    .filter((t) => !existingKeys.has(lastFmDedupKey(t.name, t.artist)))
-    .slice(0, maxLookups);
-
-  if (missing.length === 0) return [];
-
-  const lookups = missing.map(async (track) => {
-    const titleEsc = escapeLuceneValue(normalizeText(track.name));
-    const artistEsc = escapeLuceneValue(normalizeText(track.artist));
-    const lucene = `recording:"${titleEsc}" AND artist:"${artistEsc}"`;
-    const path = `recording?query=${encodeURIComponent(lucene)}&limit=3&fmt=json`;
-    const result = await fetchMB<any>(path);
-    return result?.recordings || [];
-  });
-
-  const results = await Promise.all(lookups);
-  return results.flat();
-}
-
 async function searchSongs(
   query: string,
   limit: number = LIMITS.single.songs,
 ): Promise<SongSearchResult[]> {
-  const cacheKey = `search:song:v3:${normalizeText(query)}:${limit}`;
+  const cacheKey = `search:song:v4:${normalizeText(query)}:${limit}`;
   const cached = searchCache.get(cacheKey);
   if (cached) return cached as SongSearchResult[];
 
   return deduplicatedFetch(cacheKey, async () => {
-    // ─── Phase 1: Parallel MusicBrainz + Last.fm ─────────────────────
+    // ─── Parallel MusicBrainz Query ──────────────────────────────────
     const luceneQuery = buildSmartLuceneQuery("recording", query);
     const mbPath = `recording?query=${encodeURIComponent(luceneQuery)}&limit=${limit}&fmt=json`;
 
-    const [data, lastFmTracks] = await Promise.all([
-      fetchMB<any>(mbPath),
-      searchLastFmTracks(query, 30),
-    ]);
-
+    const data = await fetchMB<any>(mbPath);
     if (!data) return [];
 
-    let recordings: any[] = data.recordings || [];
-
-    // ─── Phase 2: Inject missing popular tracks ──────────────────────
-    // MusicBrainz may not include the most famous version (e.g., MJ's
-    // "Billie Jean" buried under 100+ covers). Last.fm tells us which
-    // versions are popular; we do targeted MB lookups for missing ones.
-    const existingKeys = new Set(recordings.map(recordingDedupKey));
-
-    if (lastFmTracks.length > 0) {
-      const extra = await fetchMissingPopularRecordings(
-        lastFmTracks,
-        existingKeys,
-        3,
-      );
-      if (extra.length > 0) {
-        recordings = [...recordings, ...extra];
-      }
-    }
-
-    // ─── Build popularity map from Last.fm ───────────────────────────
-    const popMap = buildPopularityMap(lastFmTracks);
-    const maxListeners = Math.max(...lastFmTracks.map((t) => t.listeners), 1);
+    const recordings: any[] = data.recordings || [];
 
     // ─── Deduplicate: keep the version with the most OFFICIAL releases ─
     // Prefer the version that appears on more official releases (not bootlegs).
@@ -526,43 +414,21 @@ async function searchSongs(
     const deduped = Array.from(dedupMap.values());
 
     // ─── Fame Signal Sorting ─────────────────────────────────────────
-    // Uses the multi-factor Fame Score:
-    //   • Last.fm popularity (40%) — real-world listener counts
-    //   • Official release count (25%) — fame index (official releases only)
-    //   • Primary type bonus (10%) — Album > EP > Single > Compilation
-    //   • Title match quality (15%) — fuzzy match quality
-    //   • MB relevance score (10%) — MusicBrainz built-in relevance
-    //
-    // This ensures:
-    //   • "Billie Jean" → MJ first (highest listeners + most official releases)
-    //   • "Imagine" → John Lennon first (highest listeners + Album bonus)
-    //   • "amari" → J. Cole's "a m a r i" surfaces (good title match + decent popularity)
+    // Sorts by Official Release Count + Type Bonus + Match Quality
     const maxOfficialCount = Math.max(
       ...deduped.map((r) => countOfficialReleases(r.releases || [])),
       1,
     );
 
     deduped.sort((a, b) => {
-      const aScore = computeFameScore(
-        a,
-        query,
-        popMap,
-        maxListeners,
-        maxOfficialCount,
-      );
-      const bScore = computeFameScore(
-        b,
-        query,
-        popMap,
-        maxListeners,
-        maxOfficialCount,
-      );
+      const aScore = computeFameScore(a, query, maxOfficialCount);
+      const bScore = computeFameScore(b, query, maxOfficialCount);
       return bScore - aScore;
     });
 
     const top = deduped.slice(0, RETURN_LIMITS.songs);
 
-    // ─── Map to typed results with Fame Signal data ──────────────────
+    // ─── Map to typed results ────────────────────────────────────────
     const results: SongSearchResult[] = top.map((r: any) => {
       const releases = r.releases || [];
 

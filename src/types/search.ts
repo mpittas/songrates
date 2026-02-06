@@ -107,6 +107,7 @@ export type SearchInputVariant = "light" | "dark";
 
 export interface SearchResultsProps {
   query: string;
+  isFocused: boolean;
   onClose?: () => void;
 }
 

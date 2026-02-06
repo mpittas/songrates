@@ -12,13 +12,14 @@ export default function SearchBar() {
   const {
     query,
     setQuery,
+    debouncedQuery,
     isFocused,
     setIsFocused,
     clearQuery,
     cancelDebounce,
   } = useSearchInput({
     initialQuery: searchParams.get("q") || "",
-    onQueryChange: (currentQuery, debouncedQuery) => {
+    onQueryChange: (_currentQuery, debouncedQuery) => {
       // Update URL when query changes (debounced)
       if (debouncedQuery.trim()) {
         router.replace(`/?q=${encodeURIComponent(debouncedQuery)}`);
@@ -59,7 +60,7 @@ export default function SearchBar() {
           variant="light"
         />
         <SearchResults
-          query={query}
+          query={debouncedQuery}
           isFocused={isFocused}
           onClose={() => setIsFocused(false)}
         />
