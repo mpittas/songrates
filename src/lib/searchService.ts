@@ -246,7 +246,9 @@ async function searchArtists(
     });
 
     const reranked = smartRerank(results, query);
-    searchCache.set(cacheKey, reranked, 1800);
+    if (reranked.length > 0) {
+      searchCache.set(cacheKey, reranked, 1800);
+    }
 
     // Pre-populate slug resolution cache so artist pages load instantly
     for (const r of reranked) {
@@ -376,10 +378,13 @@ async function searchAlbums(
       artistId: rg["artist-credit"]?.[0]?.artist?.id,
       releaseDate: rg["first-release-date"],
       primaryType: rg["primary-type"],
+      secondaryTypes: rg["secondary-types"] || [],
     }));
 
     const reranked = smartRerank(results, query);
-    searchCache.set(cacheKey, reranked, 1800);
+    if (reranked.length > 0) {
+      searchCache.set(cacheKey, reranked, 1800);
+    }
 
     // Pre-populate slug resolution cache so album pages load instantly
     for (const r of reranked) {
@@ -606,7 +611,9 @@ async function searchSongs(
       }
     }
 
-    searchCache.set(cacheKey, reranked, 1800);
+    if (reranked.length > 0) {
+      searchCache.set(cacheKey, reranked, 1800);
+    }
     return reranked;
   });
 }

@@ -28,6 +28,7 @@ export function normalizeText(text: string): string {
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "") // Strip diacritics (é→e, ü→u, ñ→n)
+    .replace(/[-/]/g, " ") // Replace hyphens and slashes with spaces (Bra-Less→Bra Less, AC/DC→AC DC)
     .replace(/[^a-z0-9\s]/g, "") // Strip everything except letters, digits, spaces
     .replace(/\s+/g, " ") // Collapse multiple spaces
     .trim();
@@ -98,7 +99,31 @@ export function generateQueryVariations(rawQuery: string): string[] {
   // 1. Always include the normalized original
   variations.add(normalized);
 
-  // 2. If it looks like spaced-out characters ("a m a r i"), add collapsed version
+  // 2. Hyphen handling: "Bra-Less" ↔ "Bra Less" ↔ "braless"
+  //    a) If the raw input contains hyphens, preserve the hyphenated form as a variation
+  //       so MusicBrainz can match titles stored with hyphens (e.g. "Bra-Less")
+  //    b) If the normalized form has multiple words, add a hyphenated version
+  //       so "Bra Less" also matches "Bra-Less"
+  const rawLower = rawQuery.toLowerCase().trim();
+  if (rawLower.includes("-")) {
+    // Preserve original hyphens: "Bra-Less" → "bra-less"
+    const hyphenated = rawLower
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9\s-]/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+    if (hyphenated && hyphenated !== normalized) {
+      variations.add(hyphenated);
+    }
+  }
+  if (words.length >= 2 && words.length <= 4 && !rawLower.includes("-")) {
+    // Add hyphenated variation: "bra less" → "bra-less"
+    const hyphenated = words.join("-");
+    variations.add(hyphenated);
+  }
+
+  // 3. If it looks like spaced-out characters ("a m a r i"), add collapsed version
   if (isSpacedOut(normalized)) {
     const collapsed = collapseSpaces(normalized);
     if (collapsed.length >= 2) {
@@ -106,13 +131,13 @@ export function generateQueryVariations(rawQuery: string): string[] {
     }
   }
 
-  // 3. If it's a single word (3–12 chars), add the spaced-out version
+  // 4. If it's a single word (3–12 chars), add the spaced-out version
   //    This catches "amari" → "a m a r i"
   if (words.length === 1 && words[0].length >= 3 && words[0].length <= 12) {
     variations.add(expandToSpaced(words[0]));
   }
 
-  // 4. For multi-word queries, add collapsed version: "j cole" → "jcole"
+  // 5. For multi-word queries, add collapsed version: "j cole" → "jcole"
   //    Useful for artist names that are sometimes written without spaces
   if (words.length >= 2 && words.length <= 4) {
     const collapsed = collapseSpaces(normalized);
@@ -121,14 +146,14 @@ export function generateQueryVariations(rawQuery: string): string[] {
     }
   }
 
-  // 5. For two-word queries where first word is a single letter ("j cole"),
+  // 6. For two-word queries where first word is a single letter ("j cole"),
   //    add version with period: "j. cole" (won't match Lucene but helps with alias matching)
   if (words.length === 2 && words[0].length === 1) {
     // The MusicBrainz search handles this via aliases, but we add the variation anyway
     variations.add(`${words[0]}. ${words.slice(1).join(" ")}`);
   }
 
-  // 6. Common substitutions ("and" ↔ "&", "feat" ↔ "featuring")
+  // 7. Common substitutions ("and" ↔ "&", "feat" ↔ "featuring")
   for (const { pattern, replacement } of SUBSTITUTIONS) {
     // Reset regex state (global flag)
     pattern.lastIndex = 0;

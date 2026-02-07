@@ -50,6 +50,7 @@ export interface AlbumSearchResult extends SearchResultBase {
   artistId?: string;
   releaseDate?: string;
   primaryType?: string;
+  secondaryTypes?: string[];
 }
 
 export interface SongSearchResult extends SearchResultBase {

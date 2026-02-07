@@ -23,6 +23,42 @@ import ListenCountBadge from "@/components/ui/ListenCountBadge";
 import Badge from "@/components/ui/Badge";
 import { usePrefetchAlbum } from "@/hooks/useAlbumInfo";
 
+// ─── Album classification helper ────────────────────────────────────────────
+
+const OTHER_ALBUM_SECONDARY_TYPES = [
+  "Soundtrack",
+  "Live",
+  "Remix",
+  "DJ-mix",
+  "Mixtape/Street",
+  "Spokenword",
+  "Interview",
+  "Audiobook",
+  "Audio drama",
+  "Demo",
+];
+
+function classifyAlbum(result: AlbumSearchResult): "album" | "other" | "ep" {
+  if (result.primaryType === "EP") return "ep";
+  const secondary = result.secondaryTypes || [];
+  if (secondary.some((t) => OTHER_ALBUM_SECONDARY_TYPES.includes(t)))
+    return "other";
+  return "album";
+}
+
+function getAlbumTypeLabel(result: AlbumSearchResult): string {
+  const kind = classifyAlbum(result);
+  if (kind === "ep") return "EP";
+  if (kind === "other") {
+    const secondary = result.secondaryTypes || [];
+    const match = secondary.find((t) =>
+      OTHER_ALBUM_SECONDARY_TYPES.includes(t),
+    );
+    return match || "Other album";
+  }
+  return "Album";
+}
+
 // ─── Category Filter Tabs ──────────────────────────────────────────────────────
 
 const CATEGORIES: { key: SearchCategory; label: string }[] = [
@@ -176,7 +212,7 @@ function AlbumRow({ result }: { result: AlbumSearchResult }) {
         </p>
       </div>
       <span className="text-[10px] text-neutral-600 font-mono flex-shrink-0 uppercase tracking-wider">
-        Album
+        {getAlbumTypeLabel(result)}
       </span>
     </Link>
   );
@@ -463,6 +499,65 @@ export default function SearchResults({
                 </>
               )}
             </>
+          ) : category === "album" ? (
+            (() => {
+              const albums = results.filter(
+                (r): r is AlbumSearchResult => r.type === "album",
+              );
+              const mainAlbums = albums.filter(
+                (r) => classifyAlbum(r) === "album",
+              );
+              const otherAlbums = albums.filter(
+                (r) => classifyAlbum(r) === "other",
+              );
+              const eps = albums.filter((r) => classifyAlbum(r) === "ep");
+              return (
+                <>
+                  {mainAlbums.length > 0 && (
+                    <>
+                      <SectionHeader label="Albums" count={mainAlbums.length} />
+                      {mainAlbums.map((r) => (
+                        <ResultRow
+                          key={r.id}
+                          result={r}
+                          listenCounts={listenCounts}
+                          artistImages={images}
+                        />
+                      ))}
+                    </>
+                  )}
+                  {otherAlbums.length > 0 && (
+                    <>
+                      <SectionHeader
+                        label="Other albums"
+                        count={otherAlbums.length}
+                      />
+                      {otherAlbums.map((r) => (
+                        <ResultRow
+                          key={r.id}
+                          result={r}
+                          listenCounts={listenCounts}
+                          artistImages={images}
+                        />
+                      ))}
+                    </>
+                  )}
+                  {eps.length > 0 && (
+                    <>
+                      <SectionHeader label="EPs" count={eps.length} />
+                      {eps.map((r) => (
+                        <ResultRow
+                          key={r.id}
+                          result={r}
+                          listenCounts={listenCounts}
+                          artistImages={images}
+                        />
+                      ))}
+                    </>
+                  )}
+                </>
+              );
+            })()
           ) : (
             results.map((r) => (
               <ResultRow
