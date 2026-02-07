@@ -396,6 +396,12 @@ export async function resolveArtistId(slug: string): Promise<string | null> {
 
 /**
  * Resolve an Album ID from a slug
+ *
+ * Resolution strategy (in order):
+ *   1. Cache hit (pre-populated by searchService when results are generated)
+ *   2. MB release-group name search with retry + backoff (handles rate limiting)
+ *   3. Direct MB release-group lookup by short ID prefix (fallback for generic names)
+ *   4. Returns null only if all attempts fail
  */
 export async function resolveAlbumId(slug: string): Promise<string | null> {
   if (
@@ -407,16 +413,68 @@ export async function resolveAlbumId(slug: string): Promise<string | null> {
   const { name, shortId } = parseSlug(slug);
   if (!shortId || shortId.length < 8) return slug;
 
+  // 1. Check cache for slug mapping (pre-populated by searchService)
   const cacheKey = `resolve-album:${slug}`;
   const cachedId = searchCache.get(cacheKey);
   if (cachedId) return cachedId as string;
 
-  const rgs = await searchReleaseGroups(name);
-  const match = rgs.find((rg: any) => rg.id.startsWith(shortId));
+  // 2. Search with retry + backoff (MusicBrainz rate-limits at 1 req/sec)
+  const MAX_RETRIES = 3;
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    if (attempt > 0) {
+      await new Promise((r) => setTimeout(r, 1100 * attempt));
+    }
 
-  if (match) {
-    searchCache.set(cacheKey, match.id);
-    return match.id;
+    try {
+      const url = `${MB_BASE_URL}/release-group?query=${encodeURIComponent(name)}&limit=100&fmt=json`;
+      const res = await fetch(url, {
+        headers: { "User-Agent": MB_USER_AGENT, Accept: "application/json" },
+        next: { revalidate: 3600 },
+      });
+
+      if (res.status === 503 || res.status === 429) {
+        continue; // Rate limited — retry after backoff
+      }
+      if (!res.ok) break;
+
+      const data = await res.json();
+      const match = (data["release-groups"] || []).find((rg: any) =>
+        rg.id.startsWith(shortId),
+      );
+
+      if (match) {
+        searchCache.set(cacheKey, match.id, 86400);
+        return match.id;
+      }
+      break; // Got a valid response but no match — try direct lookup
+    } catch (e) {
+      console.error(`resolveAlbumId search attempt ${attempt + 1} failed:`, e);
+    }
+  }
+
+  // 3. Direct lookup fallback: try fetching the release-group by reconstructed UUID
+  //    The shortId is the first segment of a UUID (8 hex chars). We can try common
+  //    UUID patterns by querying MB browse with the short prefix.
+  try {
+    await new Promise((r) => setTimeout(r, 1100));
+    const browseUrl = `${MB_BASE_URL}/release-group?query=rgid:${shortId}*&limit=10&fmt=json`;
+    const browseRes = await fetch(browseUrl, {
+      headers: { "User-Agent": MB_USER_AGENT, Accept: "application/json" },
+      next: { revalidate: 3600 },
+    });
+
+    if (browseRes.ok) {
+      const browseData = await browseRes.json();
+      const directMatch = (browseData["release-groups"] || []).find((rg: any) =>
+        rg.id.startsWith(shortId),
+      );
+      if (directMatch) {
+        searchCache.set(cacheKey, directMatch.id, 86400);
+        return directMatch.id;
+      }
+    }
+  } catch (e) {
+    console.error("resolveAlbumId direct lookup failed:", e);
   }
 
   return null;

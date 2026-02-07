@@ -380,6 +380,13 @@ async function searchAlbums(
 
     const reranked = smartRerank(results, query);
     searchCache.set(cacheKey, reranked, 1800);
+
+    // Pre-populate slug resolution cache so album pages load instantly
+    for (const r of reranked) {
+      const slug = createSlug(r.title, r.id);
+      searchCache.set(`resolve-album:${slug}`, r.id, 86400);
+    }
+
     return reranked;
   });
 }

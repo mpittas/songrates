@@ -4,6 +4,7 @@ import {
   successResponse,
   errorResponse,
 } from "@/lib/api-utils";
+import { resolveAlbumId } from "@/lib/musicbrainz";
 
 const MB_USER_AGENT = "SongRates/1.0 (mpittas@gmail.com)";
 const MB_BASE_URL = "https://musicbrainz.org/ws/2";
@@ -28,15 +29,66 @@ interface Track {
   recording?: { "artist-credit"?: ArtistCredit[] };
 }
 
+const mbFetchInit = {
+  headers: { "User-Agent": MB_USER_AGENT, Accept: "application/json" },
+  next: { revalidate: 3600 },
+};
+
+async function fetchWikipediaUrl(wikidataId: string): Promise<string | null> {
+  try {
+    const wdUrl = `https://www.wikidata.org/w/api.php?action=wbgetentities&ids=${wikidataId}&props=sitelinks/urls&format=json`;
+    const wdRes = await fetch(wdUrl, { next: { revalidate: 3600 } });
+    const wdData = await wdRes.json();
+    return wdData.entities?.[wikidataId]?.sitelinks?.enwiki?.url || null;
+  } catch (e) {
+    console.error("Wikidata fetch error", e);
+    return null;
+  }
+}
+
+async function fetchTracks(releases: any[]): Promise<any[]> {
+  if (!releases || releases.length === 0) return [];
+
+  // Pick oldest release
+  const release = releases.sort((a: { date?: string }, b: { date?: string }) =>
+    (a.date || "9999").localeCompare(b.date || "9999"),
+  )[0];
+
+  if (!release) return [];
+
+  const tracksRes = await fetch(
+    `${MB_BASE_URL}/release/${release.id}?inc=recordings+artist-credits&fmt=json`,
+    mbFetchInit,
+  );
+  const tracksData = await tracksRes.json();
+
+  return (
+    tracksData.media
+      ?.flatMap((m: { tracks?: Track[] }) => m.tracks || [])
+      .map((t: any) => ({
+        id: t.id,
+        title: t.title,
+        number: t.number,
+        length: t.length,
+        recordingId: t.recording?.id,
+        artists:
+          (t["artist-credit"] || t.recording?.["artist-credit"])?.map(
+            (ac: ArtistCredit) => ({
+              id: ac.artist?.id,
+              name: ac.name,
+              joinPhrase: ac.joinphrase,
+            }),
+          ) || [],
+      })) || []
+  );
+}
+
 async function fetchAlbumInfo(albumId: string) {
-  // 1. Fetch Release Group Info
-  const url = `${MB_BASE_URL}/release-group/${albumId}?inc=artist-credits+tags+url-rels+ratings&fmt=json`;
+  // Single combined fetch: release-group info + releases list in one call
+  // This eliminates the duplicate release-group fetch that was happening before
+  const url = `${MB_BASE_URL}/release-group/${albumId}?inc=artist-credits+tags+url-rels+ratings+releases&fmt=json`;
 
-  const rgRes = await fetch(url, {
-    headers: { "User-Agent": MB_USER_AGENT, Accept: "application/json" },
-    next: { revalidate: 3600 },
-  });
-
+  const rgRes = await fetch(url, mbFetchInit);
   if (!rgRes.ok) throw new Error("MB Release Group Fetch Error");
   const rgData = await rgRes.json();
 
@@ -59,9 +111,9 @@ async function fetchAlbumInfo(albumId: string) {
       .slice(0, 5)
       .map((t: Tag) => t.name) || [];
 
-  // 2. Fetch Links
-  let wikipediaUrl = null;
+  // Extract links from relations
   const links: Record<string, string> = {};
+  let wikidataId: string | null = null;
 
   if (rgData.relations) {
     rgData.relations.forEach(
@@ -70,77 +122,19 @@ async function fetchAlbumInfo(albumId: string) {
           if (rel.type === "discogs") links.discogs = rel.url.resource;
           if (rel.type === "allmusic") links.allmusic = rel.url.resource;
           if (rel.type === "bandcamp") links.bandcamp = rel.url.resource;
+          if (rel.type === "wikidata") {
+            wikidataId = rel.url.resource.split("/").pop() || null;
+          }
         }
       },
     );
   }
 
-  const wikidataRel = rgData.relations?.find(
-    (rel: { type: string; url?: { resource?: string } }) =>
-      rel.type === "wikidata",
-  );
-
-  if (wikidataRel?.url?.resource) {
-    const wikidataId = wikidataRel.url.resource.split("/").pop();
-    try {
-      const wdUrl = `https://www.wikidata.org/w/api.php?action=wbgetentities&ids=${wikidataId}&props=sitelinks/urls&format=json`;
-      const wdRes = await fetch(wdUrl, { next: { revalidate: 3600 } });
-      const wdData = await wdRes.json();
-      const siteLink = wdData.entities?.[wikidataId]?.sitelinks?.enwiki;
-      if (siteLink?.url) {
-        wikipediaUrl = siteLink.url;
-      }
-    } catch (e) {
-      console.error("Wikidata fetch error", e);
-    }
-  }
-
-  // 3. Fetch Tracks
-  const releasesRes = await fetch(
-    `${MB_BASE_URL}/release-group/${albumId}?inc=releases&fmt=json`,
-    {
-      headers: { "User-Agent": MB_USER_AGENT, Accept: "application/json" },
-      next: { revalidate: 3600 },
-    },
-  );
-  const releasesData = await releasesRes.json();
-
-  // Pick oldest release
-  const release = releasesData.releases?.sort(
-    (a: { date?: string }, b: { date?: string }) =>
-      (a.date || "9999").localeCompare(b.date || "9999"),
-  )[0];
-
-  let tracks: Track[] = [];
-  if (release) {
-    const tracksRes = await fetch(
-      `${MB_BASE_URL}/release/${release.id}?inc=recordings+artist-credits&fmt=json`,
-      {
-        headers: { "User-Agent": MB_USER_AGENT, Accept: "application/json" },
-        next: { revalidate: 3600 },
-      },
-    );
-    const tracksData = await tracksRes.json();
-
-    tracks =
-      tracksData.media
-        ?.flatMap((m: { tracks?: Track[] }) => m.tracks || [])
-        .map((t: any) => ({
-          id: t.id,
-          title: t.title,
-          number: t.number,
-          length: t.length,
-          recordingId: t.recording?.id,
-          artists:
-            (t["artist-credit"] || t.recording?.["artist-credit"])?.map(
-              (ac: ArtistCredit) => ({
-                id: ac.artist?.id,
-                name: ac.name,
-                joinPhrase: ac.joinphrase,
-              }),
-            ) || [],
-        })) || [];
-  }
+  // Parallel: fetch Wikipedia URL + tracks at the same time
+  const [wikipediaUrl, tracks] = await Promise.all([
+    wikidataId ? fetchWikipediaUrl(wikidataId) : Promise.resolve(null),
+    fetchTracks(rgData.releases || []),
+  ]);
 
   return {
     id: albumId,
@@ -159,10 +153,16 @@ async function fetchAlbumInfo(albumId: string) {
 }
 
 export async function GET(request: NextRequest) {
-  const albumId = request.nextUrl.searchParams.get("id");
+  const idParam = request.nextUrl.searchParams.get("id");
 
-  if (!albumId) {
+  if (!idParam) {
     return errorResponse("Missing id", 400);
+  }
+
+  // Resolve slug to full UUID server-side (instant if cached, fallback to MB search)
+  const albumId = await resolveAlbumId(idParam);
+  if (!albumId) {
+    return errorResponse("Album not found", 404);
   }
 
   return handleApiRequest(

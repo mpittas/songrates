@@ -21,17 +21,21 @@ import { SiDiscogs, SiBandcamp, SiGenius } from "react-icons/si";
 import AlbumRatingRow from "@/components/rating/AlbumRatingRow";
 import TrackItem from "@/components/album/TrackItem";
 import { useLastFmPlaycounts } from "@/hooks/useLastFmPlaycounts";
+import { useAlbumInfo } from "@/hooks/useAlbumInfo";
 
 import { AlbumInfo, TrackInfo, AlbumContext } from "@/types/music";
-import { resolveAlbumId } from "@/lib/musicbrainz";
 
 export default function AlbumPage() {
-  const { id: slug } = useParams();
+  const { id: rawSlug } = useParams();
   const searchParams = useSearchParams();
   const userId = searchParams.get("userId");
   const highlightTrackId = searchParams.get("track");
 
-  const [album, setAlbum] = useState<AlbumInfo | null>(null);
+  const slug = Array.isArray(rawSlug) ? rawSlug[0] : rawSlug;
+
+  // React Query — cached across navigations, instant on revisit
+  const { data: album = null, isLoading: loading } = useAlbumInfo(slug);
+
   const { ratings: myRatings, publicAlbumRatings } = useRatings();
 
   // State for "viewing other user's ratings"
@@ -44,7 +48,6 @@ export default function AlbumPage() {
   const [publicTrackRatings, setPublicTrackRatings] = useState<
     Record<string, { average_rating: number; rating_count: number }>
   >({});
-  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
 
@@ -53,28 +56,6 @@ export default function AlbumPage() {
     album?.tracks || [],
     album?.artist?.name,
   );
-
-  useEffect(() => {
-    if (!slug) return;
-
-    // Resolve short ID to full ID
-    const resolve = async () => {
-      try {
-        const id = await resolveAlbumId(Array.isArray(slug) ? slug[0] : slug);
-        if (!id) throw new Error("ID not found");
-
-        const res = await fetch(`/api/musicbrainz/album-info?id=${id}`);
-        const data = await res.json();
-        setAlbum(data);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    resolve();
-  }, [slug]);
 
   // Fetch target user ratings if userId is present
   useEffect(() => {

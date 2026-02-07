@@ -2,13 +2,14 @@
 
 import { createSlug } from "@/lib/utils";
 import OptimizedImage from "@/components/ui/OptimizedImage";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { FaWikipediaW, FaEllipsisV } from "react-icons/fa";
 import { useRatingsContext } from "@/context/RatingsContext";
 import AlbumRatingBadge from "@/components/rating/AlbumRatingBadge";
 import { Album } from "@/types/music";
 import Button from "@/components/ui/Button";
+import { usePrefetchAlbum } from "@/hooks/useAlbumInfo";
 
 interface AlbumCardProps {
   album: Album;
@@ -166,13 +167,22 @@ export default function AlbumCard({
 }: AlbumCardProps) {
   const imageUrl = `https://coverartarchive.org/release-group/${album.id}/front-250`;
   const [imageError, setImageError] = useState(false);
+  const prefetchAlbum = usePrefetchAlbum();
+  const prefetchedRef = useRef(false);
 
   const slug = createSlug(album.title, album.id);
+
+  const handleMouseEnter = useCallback(() => {
+    if (prefetchedRef.current) return;
+    prefetchedRef.current = true;
+    prefetchAlbum(slug);
+  }, [slug, prefetchAlbum]);
 
   if (layout === "list") {
     return (
       <Link
         href={`/album/${slug}`}
+        onMouseEnter={handleMouseEnter}
         className="flex items-center gap-4 p-2 hover:bg-neutral-900 border-b border-white/5 last:border-0 group transition-colors"
       >
         <div className="relative w-12 h-12 shrink-0 overflow-hidden bg-neutral-950">
@@ -214,7 +224,11 @@ export default function AlbumCard({
 
   return (
     <div className="group block">
-      <Link href={`/album/${slug}`} className="block relative mb-3">
+      <Link
+        href={`/album/${slug}`}
+        onMouseEnter={handleMouseEnter}
+        className="block relative mb-3"
+      >
         <div className="aspect-square bg-neutral-950 overflow-hidden relative border border-white/5 group-hover:border-cyan-400/30 transition-colors">
           {!imageError ? (
             <OptimizedImage
@@ -259,7 +273,11 @@ export default function AlbumCard({
       </Link>
 
       <div className="flex justify-between items-start gap-2">
-        <Link href={`/album/${slug}`} className="flex-1 min-w-0 block">
+        <Link
+          href={`/album/${slug}`}
+          onMouseEnter={handleMouseEnter}
+          className="flex-1 min-w-0 block"
+        >
           <h3 className="text-neutral-200 text-sm font-medium truncate group-hover:text-cyan-400 transition-colors leading-tight mb-0.5">
             {album.title}
           </h3>

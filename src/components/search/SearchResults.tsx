@@ -21,6 +21,7 @@ import { formatTimeAgo, createSlug, formatTime } from "@/lib/utils";
 import PrefetchLink from "@/components/ui/PrefetchLink";
 import ListenCountBadge from "@/components/ui/ListenCountBadge";
 import Badge from "@/components/ui/Badge";
+import { usePrefetchAlbum } from "@/hooks/useAlbumInfo";
 
 // ─── Category Filter Tabs ──────────────────────────────────────────────────────
 
@@ -152,9 +153,13 @@ function ArtistRow({
 }
 
 function AlbumRow({ result }: { result: AlbumSearchResult }) {
+  const prefetchAlbum = usePrefetchAlbum();
+  const slug = createSlug(result.title, result.id);
+
   return (
     <Link
-      href={`/album/${createSlug(result.title, result.id)}`}
+      href={`/album/${slug}`}
+      onMouseEnter={() => prefetchAlbum(slug)}
       className="flex items-center gap-3 p-3 hover:bg-[#0f0f12] transition-colors group"
     >
       <div className="w-10 h-10 overflow-hidden bg-[#0f0f12] border border-[#1a1a1f] group-hover:border-[#00f0ff]/30 flex items-center justify-center flex-shrink-0">
