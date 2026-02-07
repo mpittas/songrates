@@ -71,7 +71,27 @@ function deduplicatedFetch<T>(
 
 // ─── MusicBrainz Fetch Helper ──────────────────────────────────────────────────
 
+// MusicBrainz requires max 1 request per second per IP.
+// We space out *start times* to reduce 503s while still allowing
+// concurrent in-flight requests for faster initial search.
+const MB_MIN_GAP_MS = 250;
+let mbNextStart = 0;
+
+async function waitForMbSlot(): Promise<void> {
+  if (process.env.NODE_ENV === "test") return;
+  const now = Date.now();
+  const scheduled = Math.max(now, mbNextStart);
+  mbNextStart = scheduled + MB_MIN_GAP_MS;
+  const wait = scheduled - now;
+  if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+}
+
 async function fetchMB<T>(path: string): Promise<T | null> {
+  await waitForMbSlot();
+  return fetchMBInternal<T>(path);
+}
+
+async function fetchMBInternal<T>(path: string): Promise<T | null> {
   try {
     const fetchInit: any = {
       headers: {
@@ -85,6 +105,19 @@ async function fetchMB<T>(path: string): Promise<T | null> {
     }
 
     const res = await fetch(`${MB_BASE_URL}/${path}`, fetchInit);
+
+    // Retry once on 503 (rate limit)
+    if (res.status === 503) {
+      await new Promise((r) => setTimeout(r, 1000));
+      await waitForMbSlot();
+      const retry = await fetch(`${MB_BASE_URL}/${path}`, fetchInit);
+      if (!retry.ok) {
+        console.error(`MB API ${retry.status} for ${path} (after retry)`);
+        return null;
+      }
+      return retry.json();
+    }
+
     if (!res.ok) {
       console.error(`MB API ${res.status} for ${path}`);
       return null;
@@ -160,8 +193,9 @@ async function fetchArtistMetadata(
 async function searchArtists(
   query: string,
   limit: number = LIMITS.single.artists,
+  quick: boolean = false,
 ): Promise<ArtistSearchResult[]> {
-  const cacheKey = `search:artist:${normalizeText(query)}:${limit}`;
+  const cacheKey = `search:artist:${normalizeText(query)}:${limit}${quick ? ":quick" : ""}`;
   const cached = searchCache.get(cacheKey);
   if (cached) return cached as ArtistSearchResult[];
 
@@ -229,7 +263,10 @@ async function searchArtists(
       .slice(0, RETURN_LIMITS.artists);
 
     // Enrich with country, type, disambiguation, and genre tags
-    const metaMap = await fetchArtistMetadata(topArtists.map((a) => a.id));
+    // Skip in quick mode (used by searchAll) to avoid N+1 API calls
+    const metaMap = quick
+      ? new Map<string, ArtistMeta>()
+      : await fetchArtistMetadata(topArtists.map((a) => a.id));
 
     const results: ArtistSearchResult[] = topArtists.map((a) => {
       const meta = metaMap.get(a.id);
@@ -268,8 +305,9 @@ async function searchAlbums(
   query: string,
   limit: number = LIMITS.single.albums,
   quick: boolean = false,
+  skipLastFm: boolean = false,
 ): Promise<AlbumSearchResult[]> {
-  const cacheKey = `search:album:hybrid:${normalizeText(query)}:${limit}${quick ? ":quick" : ""}`;
+  const cacheKey = `search:album:hybrid:${normalizeText(query)}:${limit}${quick ? ":quick" : ""}${skipLastFm ? ":nofm" : ""}`;
   const cached = searchCache.get(cacheKey);
   if (cached) return cached as AlbumSearchResult[];
 
@@ -279,13 +317,19 @@ async function searchAlbums(
     const mbPromise = fetchMB<any>(
       `release-group?query=${encodeURIComponent(luceneQuery)}&limit=${limit}&fmt=json`,
     );
-    const lastFmPromise = searchLastFmAlbums(
-      query,
-      quick ? 15 : 30,
-      quick ? 0 : 10,
-    );
+    let data: any | null = null;
+    let lastFmAlbums: Awaited<ReturnType<typeof searchLastFmAlbums>> = [];
 
-    const [data, lastFmAlbums] = await Promise.all([mbPromise, lastFmPromise]);
+    if (skipLastFm) {
+      data = await mbPromise;
+    } else {
+      const lastFmPromise = searchLastFmAlbums(
+        query,
+        quick ? 15 : 30,
+        quick ? 0 : 10,
+      );
+      [data, lastFmAlbums] = await Promise.all([mbPromise, lastFmPromise]);
+    }
     if (!data) return [];
 
     // 2. Build Popularity Lookup Map from Last.fm
@@ -404,8 +448,9 @@ async function searchSongs(
   query: string,
   limit: number = LIMITS.single.songs,
   quick: boolean = false,
+  skipLastFm: boolean = false,
 ): Promise<SongSearchResult[]> {
-  const cacheKey = `search:song:hybrid:${normalizeText(query)}:${limit}${quick ? ":quick" : ""}`;
+  const cacheKey = `search:song:hybrid:${normalizeText(query)}:${limit}${quick ? ":quick" : ""}${skipLastFm ? ":nofm" : ""}`;
   const cached = searchCache.get(cacheKey);
   if (cached) return cached as SongSearchResult[];
 
@@ -415,51 +460,57 @@ async function searchSongs(
     const broadMbPromise = fetchMB<any>(
       `recording?query=${encodeURIComponent(luceneQuery)}&limit=${limit}&fmt=json`,
     );
-    const lastFmPromise = searchLastFmTracks(
-      query,
-      quick ? 15 : 50,
-      quick ? 0 : 10,
-    );
-
     let recordings: any[];
-    let lastFmTracks: Awaited<ReturnType<typeof searchLastFmTracks>>;
+    let lastFmTracks: Awaited<ReturnType<typeof searchLastFmTracks>> = [];
 
-    if (quick) {
-      // Quick mode: MB + Last.fm in parallel, no targeted injection
-      const [broadData, lfmTracks] = await Promise.all([
-        broadMbPromise,
-        lastFmPromise,
-      ]);
+    if (skipLastFm) {
+      const broadData = await broadMbPromise;
       if (!broadData) return [];
       recordings = broadData.recordings || [];
-      lastFmTracks = lfmTracks;
     } else {
-      // Last.fm is already running in parallel with MB broad search.
-      // Await it so we can build targeted MB queries from top hits.
-      lastFmTracks = await lastFmPromise;
-
-      // Targeted Injection: fetch MB metadata for top Last.fm hits
-      // to guarantee the most popular songs appear even if the broad search missed them
-      const topHits = lastFmTracks.slice(0, 3);
-
-      const targetedPromises = topHits.map(async (hit) => {
-        const targetQuery = `recording:"${escapeLuceneValue(hit.name)}" AND artist:"${escapeLuceneValue(hit.artist)}"`;
-        const path = `recording?query=${encodeURIComponent(targetQuery)}&limit=10&fmt=json`;
-        return fetchMB<any>(path);
-      });
-
-      const [broadData, ...targetedResults] = await Promise.all([
-        broadMbPromise,
-        ...targetedPromises,
-      ]);
-
-      if (!broadData && targetedResults.length === 0) return [];
-
-      const broadRecordings = broadData?.recordings || [];
-      const targetedRecordings = targetedResults.flatMap(
-        (r) => r?.recordings || [],
+      const lastFmPromise = searchLastFmTracks(
+        query,
+        quick ? 15 : 50,
+        quick ? 0 : 10,
       );
-      recordings = [...broadRecordings, ...targetedRecordings];
+
+      if (quick) {
+        // Quick mode: MB + Last.fm in parallel, no targeted injection
+        const [broadData, lfmTracks] = await Promise.all([
+          broadMbPromise,
+          lastFmPromise,
+        ]);
+        if (!broadData) return [];
+        recordings = broadData.recordings || [];
+        lastFmTracks = lfmTracks;
+      } else {
+        // Last.fm is already running in parallel with MB broad search.
+        // Await it so we can build targeted MB queries from top hits.
+        lastFmTracks = await lastFmPromise;
+
+        // Targeted Injection: fetch MB metadata for top Last.fm hits
+        // to guarantee the most popular songs appear even if the broad search missed them
+        const topHits = lastFmTracks.slice(0, 3);
+
+        const targetedPromises = topHits.map(async (hit) => {
+          const targetQuery = `recording:"${escapeLuceneValue(hit.name)}" AND artist:"${escapeLuceneValue(hit.artist)}"`;
+          const path = `recording?query=${encodeURIComponent(targetQuery)}&limit=10&fmt=json`;
+          return fetchMB<any>(path);
+        });
+
+        const [broadData, ...targetedResults] = await Promise.all([
+          broadMbPromise,
+          ...targetedPromises,
+        ]);
+
+        if (!broadData && targetedResults.length === 0) return [];
+
+        const broadRecordings = broadData?.recordings || [];
+        const targetedRecordings = targetedResults.flatMap(
+          (r) => r?.recordings || [],
+        );
+        recordings = [...broadRecordings, ...targetedRecordings];
+      }
     }
 
     // 2. Build Popularity Lookup Map
@@ -593,19 +644,22 @@ async function searchSongs(
     // 6. Second-pass enrichment: fetch Last.fm playcounts for results missing them.
     // The initial Last.fm search only covers its top results, so songs found via
     // MusicBrainz but not in Last.fm's top search hits will be missing playcounts.
-    const missing = reranked.filter(
-      (r) => r.listenCount == null && r.artistName && r.title,
-    );
-    if (missing.length > 0) {
-      const enriched = await fetchTrackPlaycounts(
-        missing.map((r) => ({ name: r.title, artist: r.artistName! })),
+    // Skip in quick mode to keep the "all" search fast.
+    if (!quick) {
+      const missing = reranked.filter(
+        (r) => r.listenCount == null && r.artistName && r.title,
       );
-      for (const r of reranked) {
-        if (r.listenCount == null && r.artistName) {
-          const key = `${r.artistName}:${r.title}`;
-          const count = enriched.get(key);
-          if (count && count > 0) {
-            r.listenCount = count;
+      if (missing.length > 0) {
+        const enriched = await fetchTrackPlaycounts(
+          missing.map((r) => ({ name: r.title, artist: r.artistName! })),
+        );
+        for (const r of reranked) {
+          if (r.listenCount == null && r.artistName) {
+            const key = `${r.artistName}:${r.title}`;
+            const count = enriched.get(key);
+            if (count && count > 0) {
+              r.listenCount = count;
+            }
           }
         }
       }
@@ -832,10 +886,17 @@ export async function searchByCategory(
 }
 
 export async function searchAll(query: string): Promise<GroupedSearchResults> {
+  // Fire artist search first (most important for type-ahead), then
+  // album + song in parallel. Last.fm calls inside album/song don't
+  // use the MB queue so they start immediately alongside the MB requests.
+  const artistsPromise = searchArtists(query, LIMITS.all.artists, true);
+  const albumsPromise = searchAlbums(query, LIMITS.all.albums, true, true);
+  const songsPromise = searchSongs(query, LIMITS.all.songs, true, true);
+
   const [artists, albums, songs] = await Promise.all([
-    searchArtists(query, LIMITS.all.artists),
-    searchAlbums(query, LIMITS.all.albums, true),
-    searchSongs(query, LIMITS.all.songs, true),
+    artistsPromise,
+    albumsPromise,
+    songsPromise,
   ]);
 
   return { artists, albums, songs };

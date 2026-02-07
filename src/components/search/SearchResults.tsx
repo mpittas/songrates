@@ -437,17 +437,29 @@ export default function SearchResults({
       {/* Category Filter Tabs */}
       {query && <CategoryTabs active={category} onChange={setCategory} />}
 
-      {/* Loading — only shown when no previous data available */}
+      {/* Loading skeletons — shown immediately when no previous data available */}
       {query && showLoading && (
-        <div className="flex items-center justify-center py-12 text-neutral-600 font-mono text-sm tracking-widest uppercase">
-          <span>Searching...</span>
+        <div className="divide-y divide-[#1a1a1f]/50">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-3 p-3 animate-pulse">
+              <div className="w-10 h-10 rounded bg-[#1a1a1f] flex-shrink-0" />
+              <div className="flex-1 min-w-0 space-y-2">
+                <div className="h-3.5 bg-[#1a1a1f] rounded w-2/5" />
+                <div className="h-2.5 bg-[#1a1a1f]/60 rounded w-3/5" />
+              </div>
+              <div className="h-3 bg-[#1a1a1f] rounded w-10 flex-shrink-0" />
+            </div>
+          ))}
         </div>
       )}
 
-      {/* Fetching indicator — subtle, shown when refreshing with existing data */}
+      {/* Fetching indicator — shown when refreshing with existing data */}
       {query && isFetching && !showLoading && results.length > 0 && (
-        <div className="h-0.5 bg-[#00f0ff]/20 overflow-hidden">
-          <div className="h-full bg-[#00f0ff]/60 animate-pulse w-full" />
+        <div className="h-0.5 bg-[#00f0ff]/10 overflow-hidden">
+          <div
+            className="h-full bg-[#00f0ff]/60 w-1/3"
+            style={{ animation: "searchSlide 1s ease-in-out infinite" }}
+          />
         </div>
       )}
 

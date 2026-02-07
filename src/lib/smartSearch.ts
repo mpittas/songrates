@@ -227,9 +227,15 @@ export function buildSmartLuceneQuery(field: string, rawQuery: string): string {
   // ─── Fuzzy term queries (low boost) ────────────────────────────────
   // Only for words 4+ chars to avoid noise. Low boost so they don't
   // outrank exact phrase matches.
+  // When AND-ing multiple fuzzy terms, cap distance at 1 to prevent
+  // overly broad matches (e.g. "timber~2" matching "bieber").
   const fuzzyTerms = words
     .filter((w) => fuzzyDistance(w) > 0)
-    .map((w) => `${field}:${escapeLuceneValue(w)}~${fuzzyDistance(w)}`);
+    .map((w) => {
+      const dist =
+        words.length > 1 ? Math.min(fuzzyDistance(w), 1) : fuzzyDistance(w);
+      return `${field}:${escapeLuceneValue(w)}~${dist}`;
+    });
 
   if (fuzzyTerms.length > 0) {
     if (fuzzyTerms.length > 1) {
@@ -257,14 +263,14 @@ export function buildSmartLuceneQuery(field: string, rawQuery: string): string {
     if (isPrefixable) {
       const prefixPart = `${field}:${escapeLuceneValue(lastWord)}*`;
       if (dropLast.length > 0) {
-        // AND with previous words: (field:beat AND field:i*)
+        // AND with previous words, boosted so prefix matches outrank fuzzy noise
         const previousPart = dropLast
           .map((w) => `${field}:${escapeLuceneValue(w)}`)
           .join(" AND ");
-        parts.push(`(${previousPart} AND ${prefixPart})`);
+        parts.push(`(${previousPart} AND ${prefixPart})^3`);
       } else {
         // Single word prefix
-        parts.push(prefixPart);
+        parts.push(`${prefixPart}^3`);
       }
     }
   }
