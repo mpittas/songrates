@@ -21,7 +21,7 @@ export interface LastFmTrack {
  * Fetch playcounts for a limited number of tracks using track.getInfo.
  * Only called for top results to avoid slowing down search.
  */
-async function fetchTrackPlaycounts(
+export async function fetchTrackPlaycounts(
   tracks: { name: string; artist: string }[],
 ): Promise<Map<string, number>> {
   const apiKey = process.env.LASTFM_API_KEY;
@@ -29,46 +29,37 @@ async function fetchTrackPlaycounts(
 
   const playcounts = new Map<string, number>();
 
-  // Limit to top 10 tracks to avoid API rate limits
+  // Limit to top 10 tracks to avoid excessive API calls
   const limitedTracks = tracks.slice(0, 10);
 
-  // Fetch in parallel with a small delay between batches
-  const batchSize = 5;
-  for (let i = 0; i < limitedTracks.length; i += batchSize) {
-    const batch = limitedTracks.slice(i, i + batchSize);
+  // Fire all requests in parallel — Last.fm allows ~5 req/sec,
+  // and these are lightweight getInfo calls with Next.js revalidation caching
+  const promises = limitedTracks.map(async (track) => {
+    try {
+      const url = `${LASTFM_BASE_URL}?method=track.getInfo&artist=${encodeURIComponent(
+        track.artist,
+      )}&track=${encodeURIComponent(track.name)}&api_key=${apiKey}&format=json`;
 
-    const promises = batch.map(async (track) => {
-      try {
-        const url = `${LASTFM_BASE_URL}?method=track.getInfo&artist=${encodeURIComponent(
-          track.artist,
-        )}&track=${encodeURIComponent(track.name)}&api_key=${apiKey}&format=json`;
-
-        const fetchInit: any = {};
-        if (process.env.NODE_ENV !== "test") {
-          fetchInit.next = { revalidate: 1800 };
-        }
-
-        const res = await fetch(url, fetchInit);
-        if (!res.ok) return;
-
-        const data = await res.json();
-        const playcount = parseInt(data?.track?.playcount, 10);
-        if (playcount > 0) {
-          const key = `${track.artist}:${track.name}`;
-          playcounts.set(key, playcount);
-        }
-      } catch (err) {
-        // Silently fail - playcount is optional enrichment
+      const fetchInit: any = {};
+      if (process.env.NODE_ENV !== "test") {
+        fetchInit.next = { revalidate: 1800 };
       }
-    });
 
-    await Promise.all(promises);
+      const res = await fetch(url, fetchInit);
+      if (!res.ok) return;
 
-    // Small delay between batches to be respectful to the API
-    if (i + batchSize < limitedTracks.length) {
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      const data = await res.json();
+      const playcount = parseInt(data?.track?.playcount, 10);
+      if (playcount > 0) {
+        const key = `${track.artist}:${track.name}`;
+        playcounts.set(key, playcount);
+      }
+    } catch (err) {
+      // Silently fail - playcount is optional enrichment
     }
-  }
+  });
+
+  await Promise.all(promises);
 
   return playcounts;
 }

@@ -9,11 +9,16 @@ import { searchCache } from "@/lib/cache";
 import {
   buildSmartLuceneQuery,
   smartRerank,
+  smartMatchScore,
   normalizeText,
   collapseSpaces,
   escapeLuceneValue,
 } from "@/lib/smartSearch";
-import { searchLastFmTracks, searchLastFmAlbums } from "@/lib/lastfm";
+import {
+  searchLastFmTracks,
+  searchLastFmAlbums,
+  fetchTrackPlaycounts,
+} from "@/lib/lastfm";
 import { createSlug } from "@/lib/utils";
 import type {
   SearchCategory,
@@ -393,37 +398,41 @@ async function searchSongs(
   if (cached) return cached as SongSearchResult[];
 
   return deduplicatedFetch(cacheKey, async () => {
-    // 1. Parallel Fetch: MB candidates + Last.fm popularity ranking
-    // 1. Start Broad MB Fetch immediately (it's slow)
+    // 1. Fire MB + Last.fm searches in parallel (both are slow, no dependency)
     const luceneQuery = buildSmartLuceneQuery("recording", query);
     const broadMbPromise = fetchMB<any>(
       `recording?query=${encodeURIComponent(luceneQuery)}&limit=${limit}&fmt=json`,
     );
-
-    // 2. Fetch Last.fm to find "True Popularity" targets
-    const lastFmTracks = await searchLastFmTracks(
+    const lastFmPromise = searchLastFmTracks(
       query,
       quick ? 15 : 50,
       quick ? 0 : 10,
     );
 
     let recordings: any[];
+    let lastFmTracks: Awaited<ReturnType<typeof searchLastFmTracks>>;
 
     if (quick) {
-      // Quick mode: skip targeted MB injection, just use broad search
-      const broadData = await broadMbPromise;
+      // Quick mode: MB + Last.fm in parallel, no targeted injection
+      const [broadData, lfmTracks] = await Promise.all([
+        broadMbPromise,
+        lastFmPromise,
+      ]);
       if (!broadData) return [];
       recordings = broadData.recordings || [];
+      lastFmTracks = lfmTracks;
     } else {
-      // 3. Identification & Targeted Injection
-      // The broad search might miss the #1 hit if it's buried (e.g. "Beat It" by MJ).
-      // We explicitly fetch metadata for the Top 3 Last.fm tracks to guarantee they exist.
+      // Last.fm is already running in parallel with MB broad search.
+      // Await it so we can build targeted MB queries from top hits.
+      lastFmTracks = await lastFmPromise;
+
+      // Targeted Injection: fetch MB metadata for top Last.fm hits
+      // to guarantee the most popular songs appear even if the broad search missed them
       const topHits = lastFmTracks.slice(0, 3);
 
       const targetedPromises = topHits.map(async (hit) => {
-        // Build a specific query: recording:"Beat It" AND artist:"Michael Jackson"
         const targetQuery = `recording:"${escapeLuceneValue(hit.name)}" AND artist:"${escapeLuceneValue(hit.artist)}"`;
-        const path = `recording?query=${encodeURIComponent(targetQuery)}&limit=10&fmt=json`; // limit 10 to capture originals amidst compilations
+        const path = `recording?query=${encodeURIComponent(targetQuery)}&limit=10&fmt=json`;
         return fetchMB<any>(path);
       });
 
@@ -434,7 +443,6 @@ async function searchSongs(
 
       if (!broadData && targetedResults.length === 0) return [];
 
-      // Merge all recordings
       const broadRecordings = broadData?.recordings || [];
       const targetedRecordings = targetedResults.flatMap(
         (r) => r?.recordings || [],
@@ -454,7 +462,11 @@ async function searchSongs(
       popularityMap.set(key, Math.max(existing, count));
     });
 
-    // 3. Deduplicate MB results — merge releases from all duplicate recordings
+    // 3. Deduplicate MB results — keep the best recording per artist:title
+    // IMPORTANT: Do NOT merge releases across different recording IDs.
+    // Each recording's releases are the ones it actually appears on.
+    // Merging releases caused bugs where a recording would link to an album
+    // it doesn't actually belong to ("hallucinated" results).
     const dedupMap = new Map<string, any>();
     recordings.forEach((rec) => {
       const title = cleanString(rec.title || "");
@@ -464,38 +476,39 @@ async function searchSongs(
       const existing = dedupMap.get(key);
 
       if (!existing) {
-        // Clone so we don't mutate the original
         dedupMap.set(key, { ...rec, releases: [...(rec.releases || [])] });
         return;
       }
 
-      // Merge releases from this recording into the existing one (dedup by release id)
-      const seenReleaseIds = new Set(
-        (existing.releases || []).map((r: any) => r.id),
+      // Pick the better recording: prefer the one with more official releases,
+      // then the one with the earliest release date.
+      const existingOfficialCount = countOfficialReleases(
+        existing.releases || [],
       );
-      for (const r of rec.releases || []) {
-        if (r.id && !seenReleaseIds.has(r.id)) {
-          existing.releases.push(r);
-          seenReleaseIds.add(r.id);
+      const recOfficialCount = countOfficialReleases(rec.releases || []);
+
+      let replace = false;
+      if (recOfficialCount > existingOfficialCount) {
+        replace = true;
+      } else if (recOfficialCount === existingOfficialCount) {
+        const recDate = rec["first-release-date"] || "9999-99-99";
+        const existingDate = existing["first-release-date"] || "9999-99-99";
+        if (recDate < existingDate) {
+          replace = true;
         }
       }
 
-      // Keep the recording metadata with the earliest release date
-      const recDate = rec["first-release-date"] || "9999-99-99";
-      const existingDate = existing["first-release-date"] || "9999-99-99";
-
-      if (recDate < existingDate) {
-        // Preserve merged releases, update everything else
-        const mergedReleases = existing.releases;
-        Object.assign(existing, rec);
-        existing.releases = mergedReleases;
+      if (replace) {
+        dedupMap.set(key, { ...rec, releases: [...(rec.releases || [])] });
       }
     });
 
     // Filter: only keep recordings that appear on Album, EP, or Single
-    const deduped = Array.from(dedupMap.values()).filter((rec) =>
-      hasAllowedReleaseType(rec.releases || []),
-    );
+    // AND that are actually relevant to the user's query.
+    const deduped = Array.from(dedupMap.values()).filter((rec) => {
+      if (!hasAllowedReleaseType(rec.releases || [])) return false;
+      return isRelevantRecording(query, rec);
+    });
 
     // 4. Score and Sort
     const scored = deduped.map((rec) => {
@@ -551,13 +564,43 @@ async function searchSongs(
         releaseGroupTitle: bestRG.title,
         originalAlbumTitle: originalAlbum?.title,
         originalAlbumDate: originalAlbum?.date,
+        releaseType: originalAlbum
+          ? originalAlbum.primaryType === "Album"
+            ? originalAlbum.isMain
+              ? "Album"
+              : "Other album"
+            : originalAlbum.primaryType
+          : undefined,
         // Use Last.fm playcount (or listeners as fallback)
         listenCount: popularity > 0 ? popularity : undefined,
       };
     });
 
-    searchCache.set(cacheKey, results, 1800);
-    return results;
+    const reranked = smartRerank(results, query);
+
+    // 6. Second-pass enrichment: fetch Last.fm playcounts for results missing them.
+    // The initial Last.fm search only covers its top results, so songs found via
+    // MusicBrainz but not in Last.fm's top search hits will be missing playcounts.
+    const missing = reranked.filter(
+      (r) => r.listenCount == null && r.artistName && r.title,
+    );
+    if (missing.length > 0) {
+      const enriched = await fetchTrackPlaycounts(
+        missing.map((r) => ({ name: r.title, artist: r.artistName! })),
+      );
+      for (const r of reranked) {
+        if (r.listenCount == null && r.artistName) {
+          const key = `${r.artistName}:${r.title}`;
+          const count = enriched.get(key);
+          if (count && count > 0) {
+            r.listenCount = count;
+          }
+        }
+      }
+    }
+
+    searchCache.set(cacheKey, reranked, 1800);
+    return reranked;
   });
 }
 
@@ -610,6 +653,42 @@ async function fetchListenBrainzCounts(
 }
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
+
+/**
+ * Check if a recording is relevant to the user's query.
+ * Uses word-overlap analysis to filter out fuzzy search noise.
+ *
+ * For multi-word queries (2+ significant words), at least half the query words
+ * must appear in the recording's title OR artist name.
+ *   - "No you girls" vs "girls with gills" → 1/3 overlap → REJECT
+ *   - "No you girls" vs "No You Girls"     → 3/3 overlap → KEEP
+ *
+ * For single-word queries, uses smartMatchScore with a threshold.
+ */
+function isRelevantRecording(query: string, rec: any): boolean {
+  const normQuery = normalizeText(query);
+  const normTitle = normalizeText(rec.title || "");
+  const normArtist = normalizeText(rec["artist-credit"]?.[0]?.name || "");
+
+  // Combine title + artist for word matching
+  const combinedWords = new Set(
+    `${normTitle} ${normArtist}`.split(/\s+/).filter((w) => w.length > 0),
+  );
+
+  const queryWords = normQuery.split(/\s+/).filter((w) => w.length > 1);
+
+  if (queryWords.length >= 2) {
+    // Multi-word query: require at least half the query words to appear
+    const matched = queryWords.filter((w) => combinedWords.has(w)).length;
+    const ratio = matched / queryWords.length;
+    return ratio >= 0.5;
+  }
+
+  // Single-word query: use smartMatchScore threshold
+  const titleScore = smartMatchScore(query, rec.title || "");
+  const artistScore = smartMatchScore(query, normArtist);
+  return Math.max(titleScore, artistScore) >= 50;
+}
 
 function countOfficialReleases(releases: any[]): number {
   return releases.filter((r: any) => r.status === "Official").length;
@@ -666,9 +745,15 @@ function hasAllowedReleaseType(releases: any[]): boolean {
   );
 }
 
-function findOriginalAlbum(
-  releases: any[],
-): { id: string; title: string; date: string } | undefined {
+function findOriginalAlbum(releases: any[]):
+  | {
+      id: string;
+      title: string;
+      date: string;
+      primaryType: string;
+      isMain: boolean;
+    }
+  | undefined {
   // Prioritize: main studio albums > main EPs > compilation albums > other
   const typePriority = (r: any): number => {
     const rg = r["release-group"];
@@ -678,7 +763,9 @@ function findOriginalAlbum(
     if (primary === "EP" && main) return 1;
     if (primary === "Album") return 2;
     if (primary === "EP") return 3;
-    return 4;
+    if (primary === "Single" && main) return 4;
+    if (primary === "Single") return 5;
+    return 6;
   };
 
   const candidates = releases
@@ -686,7 +773,7 @@ function findOriginalAlbum(
       const rg = r["release-group"];
       return (
         rg?.id &&
-        ["Album", "EP"].includes(rg["primary-type"]) &&
+        ["Album", "EP", "Single"].includes(rg["primary-type"]) &&
         (!r.status || r.status === "Official")
       );
     })
@@ -705,6 +792,8 @@ function findOriginalAlbum(
       id: rg.id,
       title: rg.title,
       date: candidates[0].date || "",
+      primaryType: rg["primary-type"] || "Album",
+      isMain: isMainRelease(rg || {}),
     };
   }
   return undefined;

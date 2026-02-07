@@ -230,9 +230,9 @@ function SongRow({
         </p>
       </div>
       <div className="flex items-center gap-2 flex-shrink-0">
-        {result.hasAlbumRelease && (
-          <Badge variant="green" title="Appears on an official Album">
-            LP
+        {result.releaseType && (
+          <Badge variant="green" title={`From: ${result.releaseType}`}>
+            {result.releaseType}
           </Badge>
         )}
         {effectiveListenCount != null && effectiveListenCount > 0 && (

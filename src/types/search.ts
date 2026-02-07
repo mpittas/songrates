@@ -76,6 +76,8 @@ export interface SongSearchResult extends SearchResultBase {
   originalAlbumTitle?: string;
   /** The original album's release date */
   originalAlbumDate?: string;
+  /** Release type label for display: "Album", "Other album", "EP", "Single" */
+  releaseType?: string;
 }
 
 export type SearchResult =
