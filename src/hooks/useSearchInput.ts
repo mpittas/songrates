@@ -22,9 +22,17 @@ export function useSearchInput(options: UseSearchInputOptions = {}) {
   }, [onQueryChange]);
 
   // Debounced search callback
-  const debouncedSearch = useDebouncedCallback((value: string) => {
-    setDebouncedQuery(value);
-  }, debounceMs);
+  // - trailing: true (default) → fires after debounce period with final value
+  // - maxWait → guarantees callback fires within this time even during rapid typing
+  // NOTE: leading:true was removed because it fires partial queries (e.g. "k")
+  // that may return 0 results, causing a flash of "no results found".
+  const debouncedSearch = useDebouncedCallback(
+    (value: string) => {
+      setDebouncedQuery(value.trim());
+    },
+    debounceMs,
+    { maxWait: debounceMs * 2 },
+  );
 
   // Update debounced query when query changes
   useEffect(() => {

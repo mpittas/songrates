@@ -471,8 +471,8 @@ export default function SearchResults({
         </div>
       )}
 
-      {/* No results */}
-      {query && !isFetching && results.length === 0 && (
+      {/* No results — only show when fetch completed and no placeholder data is being shown */}
+      {query && !isFetching && !isPlaceholderData && results.length === 0 && (
         <div className="text-center py-8 text-neutral-600 font-mono text-sm">
           no results found for &ldquo;{query}&rdquo;
         </div>
