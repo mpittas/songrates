@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import Drawer from "@/components/ui/Drawer";
 import { FaUserCircle, FaSignOutAlt, FaStar } from "react-icons/fa";
+import { User } from "@supabase/supabase-js";
 
 interface UserMenuProps {
   user: User;
