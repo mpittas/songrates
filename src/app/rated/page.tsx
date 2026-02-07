@@ -148,29 +148,33 @@ export default function RatedAlbumsPage() {
 
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             {/* Filters - Left */}
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="grid grid-cols-2 md:flex md:flex-wrap items-center gap-2 w-full md:w-auto">
               <DropdownFilter
                 options={sortOptions}
                 value={sortFilter}
                 onChange={setSortFilter}
+                className="w-full md:w-auto"
               />
 
               <DropdownFilter
                 options={categoryOptions}
                 value={categoryFilter}
                 onChange={setCategoryFilter}
+                className="w-full md:w-auto"
               />
 
               <DropdownFilter
                 options={ratingOptions}
                 value={ratingFilter}
                 onChange={setRatingFilter}
+                className="w-full md:w-auto"
               />
 
               <DropdownFilter
                 options={statusOptions}
                 value={statusFilter}
                 onChange={setStatusFilter}
+                className="w-full md:w-auto"
               />
             </div>
 

@@ -54,7 +54,7 @@ export default function DropdownFilter({
       )}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 bg-[#0a0a0d] border border-[#1a1a1f] hover:border-[#00f0ff]/50 text-neutral-400 text-xs font-mono px-3 py-1.5 transition-colors min-w-[120px] justify-between"
+        className="flex items-center gap-2 bg-[#0a0a0d] border border-[#1a1a1f] hover:border-[#00f0ff]/50 text-neutral-400 text-xs font-mono px-3 py-1.5 transition-colors w-full justify-between"
       >
         <span className="truncate">{selectedOption.label}</span>
         <FaChevronDown
@@ -66,7 +66,7 @@ export default function DropdownFilter({
       </button>
 
       {isOpen && (
-        <div className="absolute top-full right-0 mt-1 w-48 bg-[#0a0a0d] border border-[#1a1a1f] z-50 max-h-60 overflow-y-auto">
+        <div className="absolute top-full right-0 mt-1 w-full bg-[#0a0a0d] border border-[#1a1a1f] z-50 max-h-60 overflow-y-auto min-w-[120px]">
           {options.map((option) => (
             <button
               key={option.value}

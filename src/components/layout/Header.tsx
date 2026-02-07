@@ -112,7 +112,9 @@ export default function Header({ showSearch }: HeaderProps) {
             </nav>
 
             <div className="flex items-center gap-4 md:hidden">
-              {!loading && user && <UserMenu user={user} onSignOut={signOut} />}
+              {!loading && user && (
+                <UserMenu user={user} onSignOut={signOut} isMobile={true} />
+              )}
               {/* Mobile Menu Button */}
               <button
                 className="text-neutral-100 p-2"
