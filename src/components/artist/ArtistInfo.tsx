@@ -30,6 +30,7 @@ export default function ArtistInfo({
             <img
               src={data.image}
               alt={artistName}
+              referrerPolicy="no-referrer"
               className="w-full h-full object-cover rounded-full bg-neutral-900"
             />
           ) : (

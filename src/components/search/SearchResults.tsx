@@ -158,6 +158,7 @@ function ArtistRow({
             height={40}
             loading="lazy"
             decoding="async"
+            referrerPolicy="no-referrer"
             onError={() => setImgError(true)}
             className="w-full h-full object-cover transition-all grayscale group-hover:grayscale-0 rounded-full"
           />
@@ -206,6 +207,7 @@ function AlbumRow({ result }: { result: AlbumSearchResult }) {
             height={40}
             loading="lazy"
             decoding="async"
+            referrerPolicy="no-referrer"
             className="w-full h-full object-cover transition-all grayscale group-hover:grayscale-0"
           />
         ) : (
@@ -260,6 +262,7 @@ function SongRow({
             height={40}
             loading="lazy"
             decoding="async"
+            referrerPolicy="no-referrer"
             className="w-full h-full object-cover transition-all grayscale group-hover:grayscale-0"
           />
         ) : result.releaseGroupId ? (
