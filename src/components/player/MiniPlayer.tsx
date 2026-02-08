@@ -58,6 +58,7 @@ export default function MiniPlayer() {
           artistName: currentTrack.artistName || "Unknown Artist",
           releaseDate: currentTrack.releaseDate,
           totalTracks: currentTrack.totalTracks,
+          thumbnailUrl: currentTrack.albumImageUrl || undefined,
         };
         setRating(currentTrack.id, val, albumContext);
       } else {

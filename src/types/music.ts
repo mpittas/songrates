@@ -95,6 +95,7 @@ export interface AlbumContext {
   artistName: string;
   releaseDate?: string;
   totalTracks: number;
+  thumbnailUrl?: string;
 }
 
 export interface RatedAlbumData {

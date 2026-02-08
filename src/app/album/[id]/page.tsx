@@ -458,6 +458,7 @@ export default function AlbumPage() {
                     artistName: album.artist?.name || "Unknown Artist",
                     releaseDate: album.releaseDate,
                     totalTracks: album.tracks?.length || 0,
+                    thumbnailUrl: album.thumbnailUrl || undefined,
                   }}
                   publicRating={publicTrackRatings[track.id]?.average_rating}
                   publicCount={publicTrackRatings[track.id]?.rating_count}

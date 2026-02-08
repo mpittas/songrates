@@ -11,6 +11,7 @@ interface RatedAlbum {
   artistName: string;
   rating: number;
   ratedAt: string;
+  thumbnailUrl: string | null;
 }
 
 interface RPCAlbum {
@@ -23,6 +24,7 @@ interface RPCAlbum {
   user_first_name: string | null;
   user_last_name: string | null;
   user_email: string | null;
+  thumbnail_url: string | null;
 }
 
 async function getLatestRatedAlbums(): Promise<RatedAlbum[]> {
@@ -64,6 +66,7 @@ async function getLatestRatedAlbums(): Promise<RatedAlbum[]> {
       artistName: album.artist_name,
       rating: Number(album.average_rating),
       ratedAt: album.rated_at,
+      thumbnailUrl: album.thumbnail_url,
     };
   });
 }
@@ -82,7 +85,9 @@ export default async function LatestRatedAlbums() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 w-full">
           {ratedAlbums.map((album) => {
-            const imageUrl = `https://coverartarchive.org/release-group/${album.albumId}/front-250`;
+            const imageUrl =
+              album.thumbnailUrl ||
+              `https://coverartarchive.org/release-group/${album.albumId}/front-250`;
 
             return (
               <Link
