@@ -53,8 +53,9 @@ export default function ArtistPageContent({
   );
 
   useEffect(() => {
-    if (artistId && artistName) addToHistory(artistId, artistName);
-  }, [artistId, artistName]);
+    if (artistId && artistName)
+      addToHistory(artistId, artistName, artistInfo?.image || undefined);
+  }, [artistId, artistName, artistInfo?.image]);
 
   return (
     <main className="min-h-screen bg-[#050507] text-neutral-100">

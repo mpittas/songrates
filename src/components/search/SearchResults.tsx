@@ -413,14 +413,39 @@ export default function SearchResults({
     const data = getArtistHistory();
     setHistory(data);
 
-    if (data.length > 0) {
-      const ids = data.map((a) => a.id).join(",");
-      fetch(`/api/images/artists?ids=${ids}`)
-        .then((res) => res.json())
-        .then((data) => {
-          setImages((prev) => ({ ...prev, ...data.images }));
-        })
-        .catch((e) => console.error(e));
+    // Backfill thumbnails for entries that don't have one yet
+    const missing = data.filter((a) => !a.thumbnailUrl);
+    if (missing.length > 0) {
+      Promise.all(
+        missing.map((a) =>
+          fetch(`/api/artist/${a.id}/data`)
+            .then((r) => r.json())
+            .then((d) => ({ id: a.id, thumb: d?.artistInfo?.image }))
+            .catch(() => ({ id: a.id, thumb: null })),
+        ),
+      ).then((results) => {
+        const thumbMap: Record<string, string> = {};
+        results.forEach((r) => {
+          if (r.thumb) thumbMap[r.id] = r.thumb;
+        });
+        if (Object.keys(thumbMap).length > 0) {
+          setHistory((prev) =>
+            prev.map((a) =>
+              thumbMap[a.id] ? { ...a, thumbnailUrl: thumbMap[a.id] } : a,
+            ),
+          );
+          // Also persist to localStorage so we don't re-fetch next time
+          const updated = data.map((a) =>
+            thumbMap[a.id] ? { ...a, thumbnailUrl: thumbMap[a.id] } : a,
+          );
+          try {
+            localStorage.setItem(
+              "songrates_artist_history",
+              JSON.stringify(updated),
+            );
+          } catch {}
+        }
+      });
     }
   }, []);
 
@@ -622,21 +647,22 @@ export default function SearchResults({
             {history.map((artist) => (
               <PrefetchLink
                 key={artist.id}
-                href={`/artist/${createSlug(artist.name, artist.id)}`}
+                href={`/artist/${artist.id}`}
                 artistId={artist.id}
                 className="flex items-center justify-between p-3 hover:bg-[#0f0f12] transition-colors group"
                 onMouseDown={(e) => e.preventDefault()}
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 overflow-hidden bg-[#0a0a0d] border border-[#1a1a1f] flex-shrink-0 group-hover:border-[#00f0ff]/30">
-                    {images[artist.id] ? (
+                  <div className="w-8 h-8 rounded-full overflow-hidden bg-[#0a0a0d] border border-[#1a1a1f] flex-shrink-0 group-hover:border-[#00f0ff]/30">
+                    {artist.thumbnailUrl ? (
                       <img
-                        src={images[artist.id]}
+                        src={artist.thumbnailUrl}
                         alt={artist.name}
                         width={32}
                         height={32}
                         loading="lazy"
                         decoding="async"
+                        referrerPolicy="no-referrer"
                         className="w-full h-full object-cover transition-all grayscale group-hover:grayscale-0"
                       />
                     ) : (
