@@ -891,7 +891,7 @@ export async function searchAll(query: string): Promise<GroupedSearchResults> {
   // use the MB queue so they start immediately alongside the MB requests.
   const artistsPromise = searchArtists(query, LIMITS.all.artists, true);
   const albumsPromise = searchAlbums(query, LIMITS.all.albums, true, true);
-  const songsPromise = searchSongs(query, LIMITS.all.songs, true, true);
+  const songsPromise = searchSongs(query, LIMITS.all.songs, true, false);
 
   const [artists, albums, songs] = await Promise.all([
     artistsPromise,

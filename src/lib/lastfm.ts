@@ -1,4 +1,21 @@
-const LASTFM_BASE_URL = "http://ws.audioscrobbler.com/2.0/";
+import { searchCache } from "@/lib/cache";
+
+const LASTFM_BASE_URL = "https://ws.audioscrobbler.com/2.0/";
+
+/** Fetch with a hard timeout to cap worst-case latency */
+async function fetchWithTimeout(
+  url: string,
+  init: RequestInit & { next?: any } = {},
+  timeoutMs: number = 3000,
+): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 interface PopularityResponse {
   [titleKey: string]: number;
@@ -45,7 +62,7 @@ export async function fetchTrackPlaycounts(
         fetchInit.next = { revalidate: 1800 };
       }
 
-      const res = await fetch(url, fetchInit);
+      const res = await fetchWithTimeout(url, fetchInit, 2500);
       if (!res.ok) return;
 
       const data = await res.json();
@@ -80,6 +97,11 @@ export async function searchLastFmTracks(
   const apiKey = process.env.LASTFM_API_KEY;
   if (!apiKey) return [];
 
+  // In-memory cache (keyed by query+limit+maxEnrich)
+  const cacheKey = `lfm:track:${query.toLowerCase().trim()}:${limit}:${maxEnrich}`;
+  const cached = searchCache.get(cacheKey);
+  if (cached) return cached as LastFmTrack[];
+
   try {
     const url = `${LASTFM_BASE_URL}?method=track.search&track=${encodeURIComponent(
       query,
@@ -90,7 +112,7 @@ export async function searchLastFmTracks(
       fetchInit.next = { revalidate: 1800 };
     }
 
-    const res = await fetch(url, fetchInit);
+    const res = await fetchWithTimeout(url, fetchInit, 3000);
     if (!res.ok) return [];
 
     const data = await res.json();
@@ -105,17 +127,22 @@ export async function searchLastFmTracks(
     }));
 
     // Fetch playcounts for top results only (to avoid slowing down search)
-    if (maxEnrich <= 0) return results;
+    if (maxEnrich <= 0) {
+      searchCache.set(cacheKey, results, 1800);
+      return results;
+    }
     const playcounts = await fetchTrackPlaycounts(results.slice(0, maxEnrich));
 
     // Merge playcounts back into results
-    return results.map((track) => {
+    const enriched = results.map((track) => {
       const key = `${track.artist}:${track.name}`;
       return {
         ...track,
         playcount: playcounts.get(key),
       };
     });
+    searchCache.set(cacheKey, enriched, 1800);
+    return enriched;
   } catch (err) {
     console.error("Last.fm track search error:", err);
     return [];
@@ -161,7 +188,7 @@ async function fetchAlbumListeners(
           fetchInit.next = { revalidate: 1800 };
         }
 
-        const res = await fetch(url, fetchInit);
+        const res = await fetchWithTimeout(url, fetchInit, 2500);
         if (!res.ok) return;
 
         const data = await res.json();
@@ -202,6 +229,11 @@ export async function searchLastFmAlbums(
   const apiKey = process.env.LASTFM_API_KEY;
   if (!apiKey) return [];
 
+  // In-memory cache
+  const cacheKey = `lfm:album:${query.toLowerCase().trim()}:${limit}:${maxEnrich}`;
+  const cached = searchCache.get(cacheKey);
+  if (cached) return cached as LastFmAlbum[];
+
   try {
     const url = `${LASTFM_BASE_URL}?method=album.search&album=${encodeURIComponent(
       query,
@@ -212,7 +244,7 @@ export async function searchLastFmAlbums(
       fetchInit.next = { revalidate: 1800 };
     }
 
-    const res = await fetch(url, fetchInit);
+    const res = await fetchWithTimeout(url, fetchInit, 3000);
     if (!res.ok) return [];
 
     const data = await res.json();
@@ -227,16 +259,21 @@ export async function searchLastFmAlbums(
     }));
 
     // Fetch listener counts for top results
-    if (maxEnrich <= 0) return results;
+    if (maxEnrich <= 0) {
+      searchCache.set(cacheKey, results, 1800);
+      return results;
+    }
     const listenerMap = await fetchAlbumListeners(results.slice(0, maxEnrich));
 
-    return results.map((album) => {
+    const enriched = results.map((album) => {
       const key = `${album.artist}:${album.name}`;
       return {
         ...album,
         listeners: listenerMap.get(key) || 0,
       };
     });
+    searchCache.set(cacheKey, enriched, 1800);
+    return enriched;
   } catch (err) {
     console.error("Last.fm album search error:", err);
     return [];
@@ -268,7 +305,7 @@ export async function getArtistPopularity(
       fetchInit.next = { revalidate: 86400 };
     }
 
-    const res = await fetch(url, fetchInit);
+    const res = await fetchWithTimeout(url, fetchInit, 5000);
     const data = await res.json();
 
     if (!data.topalbums || !data.topalbums.album) {

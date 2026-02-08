@@ -1,11 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
-import {
-  useQuery,
-  useQueryClient,
-  keepPreviousData,
-} from "@tanstack/react-query";
+import { useCallback } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type {
   SearchCategory,
   SearchResult,
@@ -49,6 +45,37 @@ async function fetchSearchResults(
   };
 }
 
+// ─── Category extraction from "all" grouped data ─────────────────────────────
+
+const CATEGORY_TO_GROUPED_KEY: Record<
+  Exclude<SearchCategory, "all">,
+  keyof GroupedSearchResults
+> = {
+  artist: "artists",
+  album: "albums",
+  song: "songs",
+};
+
+function extractCategoryFromAll(
+  allData: SearchApiData,
+  category: Exclude<SearchCategory, "all">,
+): SearchApiData | undefined {
+  const grouped = allData.grouped;
+  if (!grouped) return undefined;
+  const key = CATEGORY_TO_GROUPED_KEY[category];
+  const results = grouped[key] as SearchResult[];
+  if (!results || results.length === 0) return undefined;
+  return {
+    results,
+    meta: {
+      query: allData.meta?.query || "",
+      category,
+      totalResults: results.length,
+      took: 0,
+    },
+  };
+}
+
 // ─── Hook ──────────────────────────────────────────────────────────────────────
 
 /**
@@ -57,19 +84,43 @@ async function fetchSearchResults(
  * Benefits over manual fetch + useEffect:
  *   - Automatic request deduplication (same query won't fire twice)
  *   - Built-in caching with configurable stale/gc times
- *   - `placeholderData: keepPreviousData` keeps old results visible while new ones load
+ *   - Synchronous placeholder from "all" cache for instant tab switches
  *   - Automatic AbortController management (cancels stale requests)
  *   - No manual loading/error state management
  *   - Background refetching when data goes stale
  *   - Structural sharing prevents unnecessary re-renders
  *
  * Tab-switch optimization:
- *   When the "all" search completes, we seed per-category caches with the
- *   grouped results so switching tabs renders instantly from cache while the
- *   full single-category fetch runs in the background.
+ *   When switching to a specific category, the placeholderData function
+ *   synchronously extracts matching results from the cached "all" response.
+ *   This avoids the race condition of useEffect-based seeding and ensures
+ *   results appear instantly on tab switch.
  */
 export function useSearchQuery(query: string, category: SearchCategory) {
   const queryClient = useQueryClient();
+
+  // Synchronous placeholder: when switching to a specific category,
+  // pull matching results from the cached "all" response immediately.
+  // This runs during render (no useEffect delay) so tabs switch instantly.
+  const getPlaceholder = useCallback((): SearchApiData | undefined => {
+    // For "all" tab or empty query, fall back to keepPreviousData behavior
+    if (category === "all" || !query) return undefined;
+
+    // Try to extract from the cached "all" response for this query
+    const allData = queryClient.getQueryData<SearchApiData>([
+      "search",
+      query,
+      "all",
+    ]);
+    if (allData) {
+      const extracted = extractCategoryFromAll(allData, category);
+      if (extracted) return extracted;
+    }
+
+    // Fall back: check if there's any previous data for this exact key
+    // (handles re-visiting a tab that was already fetched)
+    return undefined;
+  }, [category, query, queryClient]);
 
   const queryResult = useQuery<SearchApiData>({
     // Query key includes both query and category for proper cache separation
@@ -80,8 +131,15 @@ export function useSearchQuery(query: string, category: SearchCategory) {
 
     queryFn: ({ signal }) => fetchSearchResults(query, category, signal),
 
-    // Keep previous results visible while fetching new ones (no flash of empty state)
-    placeholderData: keepPreviousData,
+    // Synchronous placeholder from "all" cache for instant tab switches.
+    // Falls back to keepPreviousData when no "all" data is available.
+    placeholderData: (previousData) => {
+      // First try extracting from "all" cache (instant tab switch)
+      const fromAll = getPlaceholder();
+      if (fromAll) return fromAll;
+      // Fall back to previous data for this observer (typing new query)
+      return previousData;
+    },
 
     // Cache configuration tuned for search:
     // - staleTime: 5 min — results are fresh for 5 min, no refetch needed
@@ -96,41 +154,6 @@ export function useSearchQuery(query: string, category: SearchCategory) {
     retry: 1,
     retryDelay: 1000,
   });
-
-  // ─── Seed per-category caches from "all" results ──────────────────
-  // When the "all" search returns grouped data, pre-populate the individual
-  // category caches so tab switches show results instantly. The data is marked
-  // stale so a background refetch with full single-category limits still runs.
-  const grouped = queryResult.data?.grouped;
-  useEffect(() => {
-    if (category !== "all" || !grouped || !query) return;
-
-    const seedCategory = (
-      cat: "artist" | "album" | "song",
-      results: SearchResult[],
-    ) => {
-      if (results.length === 0) return;
-      const key = ["search", query, cat] as const;
-      // Only seed if no data exists yet for this category+query
-      const existing = queryClient.getQueryData(key);
-      if (existing) return;
-      queryClient.setQueryData<SearchApiData>(key, {
-        results,
-        meta: {
-          query,
-          category: cat,
-          totalResults: results.length,
-          took: 0,
-        },
-      });
-      // Mark as stale so a background refetch with full limits still fires
-      queryClient.invalidateQueries({ queryKey: key, refetchType: "none" });
-    };
-
-    seedCategory("artist", grouped.artists);
-    seedCategory("album", grouped.albums);
-    seedCategory("song", grouped.songs);
-  }, [category, grouped, query, queryClient]);
 
   return queryResult;
 }
