@@ -16,7 +16,20 @@ export default function Home() {
           </div>
         }
       >
-        <LatestRatedAlbums />
+        <LatestRatedAlbums
+          filterType="Album"
+          sectionTitle="Latest Community Ratings"
+        />
+      </Suspense>
+
+      <Suspense
+        fallback={
+          <div className="h-64 flex items-center justify-center text-neutral-600 text-xs tracking-widest uppercase">
+            Loading feeds...
+          </div>
+        }
+      >
+        <LatestRatedAlbums filterType="EP" sectionTitle="Latest Rated EPs" />
       </Suspense>
     </main>
   );

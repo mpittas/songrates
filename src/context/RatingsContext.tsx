@@ -289,6 +289,7 @@ export function RatingsProvider({ children }: { children: React.ReactNode }) {
           release_date: albumContext.releaseDate,
           total_tracks: albumContext.totalTracks,
           thumbnail_url: albumContext.thumbnailUrl || null,
+          album_type: albumContext.albumType || "Album",
         });
 
         if (aError) {

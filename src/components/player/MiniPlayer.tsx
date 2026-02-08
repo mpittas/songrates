@@ -59,6 +59,7 @@ export default function MiniPlayer() {
           releaseDate: currentTrack.releaseDate,
           totalTracks: currentTrack.totalTracks,
           thumbnailUrl: currentTrack.albumImageUrl || undefined,
+          albumType: currentTrack.albumType || "Album",
         };
         setRating(currentTrack.id, val, albumContext);
       } else {

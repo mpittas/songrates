@@ -12,6 +12,7 @@ interface RatedAlbum {
   rating: number;
   ratedAt: string;
   thumbnailUrl: string | null;
+  albumType: string;
 }
 
 interface RPCAlbum {
@@ -25,9 +26,12 @@ interface RPCAlbum {
   user_last_name: string | null;
   user_email: string | null;
   thumbnail_url: string | null;
+  album_type: string;
 }
 
-async function getLatestRatedAlbums(): Promise<RatedAlbum[]> {
+async function getLatestRatedAlbums(
+  filterType?: string,
+): Promise<RatedAlbum[]> {
   const supabase = createAdminClient();
 
   if (!supabase) {
@@ -37,6 +41,7 @@ async function getLatestRatedAlbums(): Promise<RatedAlbum[]> {
   // Use the optimized RPC function
   const { data, error } = await supabase.rpc("get_latest_completed_albums", {
     limit_count: 4,
+    filter_type: filterType || null,
   });
 
   if (error) {
@@ -67,12 +72,19 @@ async function getLatestRatedAlbums(): Promise<RatedAlbum[]> {
       rating: Number(album.average_rating),
       ratedAt: album.rated_at,
       thumbnailUrl: album.thumbnail_url,
+      albumType: album.album_type,
     };
   });
 }
 
-export default async function LatestRatedAlbums() {
-  const ratedAlbums = await getLatestRatedAlbums();
+export default async function LatestRatedAlbums({
+  filterType,
+  sectionTitle = "Latest Community Ratings",
+}: {
+  filterType?: string;
+  sectionTitle?: string;
+}) {
+  const ratedAlbums = await getLatestRatedAlbums(filterType);
 
   if (ratedAlbums.length === 0) return null;
 
@@ -80,7 +92,7 @@ export default async function LatestRatedAlbums() {
     <section className="relative z-20 py-12 border-t border-white/5">
       <div className="flex flex-col items-center justify-center w-full max-w-7xl mx-auto px-6">
         <h2 className="text-2xl font-light tracking-tight text-white mb-8 self-start">
-          Latest Community Ratings
+          {sectionTitle}
         </h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 w-full">

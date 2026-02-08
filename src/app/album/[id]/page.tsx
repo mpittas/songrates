@@ -459,6 +459,7 @@ export default function AlbumPage() {
                     releaseDate: album.releaseDate,
                     totalTracks: album.tracks?.length || 0,
                     thumbnailUrl: album.thumbnailUrl || undefined,
+                    albumType: album.primaryType || album.type || "Album",
                   }}
                   publicRating={publicTrackRatings[track.id]?.average_rating}
                   publicCount={publicTrackRatings[track.id]?.rating_count}

@@ -89,6 +89,7 @@ export default function TrackItem({
                 releaseDate: albumContext.releaseDate,
                 totalTracks: albumContext.totalTracks,
                 artists: track.artists,
+                albumType: albumContext.albumType,
               })
             }
             className={`flex items-center justify-center w-6 h-6 border shrink-0 transition-all ${

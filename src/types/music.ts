@@ -11,6 +11,7 @@ export interface Track {
   length?: number;
   number?: string;
   artists?: { id: string; name: string }[];
+  albumType?: string;
 }
 
 export interface Album {
@@ -96,6 +97,7 @@ export interface AlbumContext {
   releaseDate?: string;
   totalTracks: number;
   thumbnailUrl?: string;
+  albumType?: string;
 }
 
 export interface RatedAlbumData {
