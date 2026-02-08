@@ -91,6 +91,7 @@ export default function OptimizedImage({
         loading="eager"
         decoding="async"
         fetchPriority="high"
+        referrerPolicy="no-referrer"
         onError={handleError}
         className={className}
         style={imageStyles}
@@ -112,6 +113,7 @@ export default function OptimizedImage({
       style={imageStyles}
       threshold={100}
       wrapperClassName={fill ? "absolute inset-0 w-full h-full" : undefined}
+      referrerPolicy="no-referrer"
     />
   );
 }

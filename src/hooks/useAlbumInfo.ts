@@ -13,9 +13,9 @@ export const albumKeys = {
 
 // ─── Fetcher ────────────────────────────────────────────────────────────────────
 
-async function fetchAlbumInfo(slug: string): Promise<AlbumInfo> {
+async function fetchAlbumInfo(albumId: string): Promise<AlbumInfo> {
   const res = await fetch(
-    `/api/musicbrainz/album-info?id=${encodeURIComponent(slug)}`,
+    `/api/musicbrainz/album-info?id=${encodeURIComponent(albumId)}`,
   );
   if (!res.ok) throw new Error("Album not found");
   return res.json();

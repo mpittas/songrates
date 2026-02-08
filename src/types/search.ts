@@ -42,6 +42,7 @@ export interface ArtistSearchResult extends SearchResultBase {
   disambiguation?: string;
   artistType?: string; // "Group", "Person", etc.
   tags?: string[]; // Top genre/style tags from MusicBrainz
+  thumbnailUrl?: string; // YTMusic thumbnail
 }
 
 export interface AlbumSearchResult extends SearchResultBase {
@@ -51,6 +52,7 @@ export interface AlbumSearchResult extends SearchResultBase {
   releaseDate?: string;
   primaryType?: string;
   secondaryTypes?: string[];
+  thumbnailUrl?: string; // YTMusic thumbnail
 }
 
 export interface SongSearchResult extends SearchResultBase {
@@ -79,6 +81,8 @@ export interface SongSearchResult extends SearchResultBase {
   originalAlbumDate?: string;
   /** Release type label for display: "Album", "Other album", "EP", "Single" */
   releaseType?: string;
+  thumbnailUrl?: string; // YTMusic thumbnail
+  videoId?: string; // YouTube video ID for playback
 }
 
 export type SearchResult =

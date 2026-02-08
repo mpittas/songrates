@@ -35,6 +35,18 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "*.googleusercontent.com",
       },
+      {
+        protocol: "https",
+        hostname: "lh3.googleusercontent.com",
+      },
+      {
+        protocol: "https",
+        hostname: "i.ytimg.com",
+      },
+      {
+        protocol: "https",
+        hostname: "music.youtube.com",
+      },
     ],
     // Enable modern formats for better compression (30-50% smaller than JPEG)
     formats: ["image/avif", "image/webp"],

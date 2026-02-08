@@ -1,6 +1,5 @@
 "use client";
 
-import { createSlug } from "@/lib/utils";
 import OptimizedImage from "@/components/ui/OptimizedImage";
 import { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
@@ -165,23 +164,21 @@ export default function AlbumCard({
   isPriority = false,
   layout = "grid",
 }: AlbumCardProps) {
-  const imageUrl = `https://coverartarchive.org/release-group/${album.id}/front-250`;
-  const [imageError, setImageError] = useState(false);
+  const imageUrl = album.thumbnailUrl || "";
+  const [imageError, setImageError] = useState(!imageUrl);
   const prefetchAlbum = usePrefetchAlbum();
   const prefetchedRef = useRef(false);
-
-  const slug = createSlug(album.title, album.id);
 
   const handleMouseEnter = useCallback(() => {
     if (prefetchedRef.current) return;
     prefetchedRef.current = true;
-    prefetchAlbum(slug);
-  }, [slug, prefetchAlbum]);
+    prefetchAlbum(album.id);
+  }, [album.id, prefetchAlbum]);
 
   if (layout === "list") {
     return (
       <Link
-        href={`/album/${slug}`}
+        href={`/album/${album.id}`}
         onMouseEnter={handleMouseEnter}
         className="flex items-center gap-4 p-2 hover:bg-neutral-900 border-b border-white/5 last:border-0 group transition-colors"
       >
@@ -225,7 +222,7 @@ export default function AlbumCard({
   return (
     <div className="group block">
       <Link
-        href={`/album/${slug}`}
+        href={`/album/${album.id}`}
         onMouseEnter={handleMouseEnter}
         className="block relative mb-3"
       >
@@ -274,7 +271,7 @@ export default function AlbumCard({
 
       <div className="flex justify-between items-start gap-2">
         <Link
-          href={`/album/${slug}`}
+          href={`/album/${album.id}`}
           onMouseEnter={handleMouseEnter}
           className="flex-1 min-w-0 block"
         >

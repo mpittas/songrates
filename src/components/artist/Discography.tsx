@@ -39,10 +39,10 @@ export default function Discography({
   useEffect(() => {
     if (Object.keys(initialReleases).length > 0 || !artistId) return;
 
-    fetch(`/api/musicbrainz/other-releases?artistId=${artistId}`)
+    fetch(`/api/artist/${artistId}/releases`)
       .then((res) => res.json())
       .then((data) => {
-        setReleases(data.releases || {});
+        setReleases(data || {});
         setLoading(false);
       })
       .catch(() => setLoading(false));

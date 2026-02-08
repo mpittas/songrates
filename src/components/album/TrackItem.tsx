@@ -123,7 +123,7 @@ export default function TrackItem({
                     <span key={a.id}>
                       {i === 0 ? "feat. " : ""}
                       <Link
-                        href={`/artist/${createSlug(a.name, a.id)}`}
+                        href={`/artist/${a.id}`}
                         className="hover:text-[#00f0ff] hover:underline transition-colors"
                         onClick={(e) => e.stopPropagation()}
                       >

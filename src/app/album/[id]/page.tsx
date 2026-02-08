@@ -189,7 +189,7 @@ export default function AlbumPage() {
     );
   }
 
-  const imageUrl = `https://coverartarchive.org/release-group/${album.id}/front-250`;
+  const imageUrl = album.thumbnailUrl || "";
 
   const filteredTracks = (album.tracks || []).filter((track) =>
     track.title.toLowerCase().includes(searchQuery.toLowerCase()),
@@ -250,11 +250,7 @@ export default function AlbumPage() {
 
         <div className="mb-4 flex items-center justify-between">
           <Button
-            href={`/artist/${
-              album.artist?.id
-                ? createSlug(album.artist.name, album.artist.id)
-                : ""
-            }`}
+            href={`/artist/${album.artist?.id || ""}`}
             iconLeft={<FaArrowLeft size={10} />}
             variant="ghost"
             size="xs"
@@ -325,11 +321,7 @@ export default function AlbumPage() {
               </h1>
 
               <Link
-                href={`/artist/${
-                  album.artist?.id
-                    ? createSlug(album.artist.name, album.artist.id)
-                    : ""
-                }`}
+                href={`/artist/${album.artist?.id || ""}`}
                 className="block text-neutral-500 hover:text-[#00f0ff] transition-colors text-md mb-3"
               >
                 {album.artist?.name}

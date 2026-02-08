@@ -21,6 +21,7 @@ export interface Album {
   wikipediaUrl?: string;
   wikidataId?: string;
   rating?: number | null;
+  thumbnailUrl?: string;
 }
 
 export interface TrackInfo extends Track {
@@ -50,6 +51,7 @@ export interface AlbumInfo {
     description?: string;
   };
   tracks: TrackInfo[];
+  thumbnailUrl?: string | null;
 }
 
 export interface ArtistInfo {
@@ -80,6 +82,7 @@ export interface Release {
   title: string;
   releaseDate?: string;
   wikipediaUrl?: string;
+  thumbnailUrl?: string;
 }
 
 export interface GroupedReleases {

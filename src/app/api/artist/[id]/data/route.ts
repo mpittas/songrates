@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { getArtistData } from "@/lib/musicbrainz";
+import { getYTMusicArtistData } from "@/lib/ytmusicData";
 import { handleApiRequest, getRouteId } from "@/lib/api-utils";
 
 export async function GET(
@@ -13,7 +13,7 @@ export async function GET(
   }
 
   return handleApiRequest(
-    () => getArtistData(id),
+    () => getYTMusicArtistData(id),
     "Failed to fetch artist",
     "artist",
   );

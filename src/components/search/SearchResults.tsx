@@ -145,14 +145,14 @@ function ArtistRow({
 
   return (
     <PrefetchLink
-      href={`/artist/${createSlug(result.title, result.id)}`}
+      href={`/artist/${result.id}`}
       artistId={result.id}
       className="flex items-center gap-3 p-3 hover:bg-[#0f0f12] transition-colors group"
     >
       <div className="w-10 h-10 rounded-full overflow-hidden bg-[#0f0f12] border border-[#1a1a1f] group-hover:border-[#00f0ff]/30 flex items-center justify-center flex-shrink-0">
-        {imageUrl && !imgError ? (
+        {(result.thumbnailUrl || imageUrl) && !imgError ? (
           <img
-            src={imageUrl}
+            src={result.thumbnailUrl || imageUrl}
             alt={result.title}
             width={40}
             height={40}
@@ -190,16 +190,27 @@ function ArtistRow({
 
 function AlbumRow({ result }: { result: AlbumSearchResult }) {
   const prefetchAlbum = usePrefetchAlbum();
-  const slug = createSlug(result.title, result.id);
 
   return (
     <Link
-      href={`/album/${slug}`}
-      onMouseEnter={() => prefetchAlbum(slug)}
+      href={`/album/${result.id}`}
+      onMouseEnter={() => prefetchAlbum(result.id)}
       className="flex items-center gap-3 p-3 hover:bg-[#0f0f12] transition-colors group"
     >
       <div className="w-10 h-10 overflow-hidden bg-[#0f0f12] border border-[#1a1a1f] group-hover:border-[#00f0ff]/30 flex items-center justify-center flex-shrink-0">
-        <CoverArtImage releaseGroupId={result.id} alt={result.title} />
+        {result.thumbnailUrl ? (
+          <img
+            src={result.thumbnailUrl}
+            alt={result.title}
+            width={40}
+            height={40}
+            loading="lazy"
+            decoding="async"
+            className="w-full h-full object-cover transition-all grayscale group-hover:grayscale-0"
+          />
+        ) : (
+          <CoverArtImage releaseGroupId={result.id} alt={result.title} />
+        )}
       </div>
       <div className="flex-1 min-w-0">
         <h3 className="text-sm text-neutral-300 group-hover:text-[#00f0ff] transition-colors truncate">
@@ -225,13 +236,9 @@ function SongRow({
   result: SongSearchResult;
   listenCount?: number;
 }) {
-  const albumSlug = result.releaseGroupId
-    ? createSlug(
-        result.releaseGroupTitle || result.title,
-        result.releaseGroupId,
-      )
-    : null;
-  const href = albumSlug ? `/album/${albumSlug}?track=${result.id}` : undefined;
+  const href = result.releaseGroupId
+    ? `/album/${result.releaseGroupId}?track=${result.id}`
+    : undefined;
 
   const effectiveListenCount = listenCount ?? result.listenCount;
 
@@ -245,7 +252,17 @@ function SongRow({
   const content = (
     <>
       <div className="w-10 h-10 overflow-hidden bg-[#0f0f12] border border-[#1a1a1f] group-hover:border-[#00f0ff]/30 flex items-center justify-center flex-shrink-0">
-        {result.releaseGroupId ? (
+        {result.thumbnailUrl ? (
+          <img
+            src={result.thumbnailUrl}
+            alt={result.title}
+            width={40}
+            height={40}
+            loading="lazy"
+            decoding="async"
+            className="w-full h-full object-cover transition-all grayscale group-hover:grayscale-0"
+          />
+        ) : result.releaseGroupId ? (
           <CoverArtImage
             releaseGroupId={result.releaseGroupId}
             alt={result.releaseGroupTitle || result.title}

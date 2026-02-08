@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
-  searchMusicBrainz,
+  searchYTMusic,
   isValidQuery,
   isValidCategory,
-} from "@/lib/searchService";
+} from "@/lib/ytmusicSearch";
 import type { SearchCategory, SearchApiResponse } from "@/types/search";
 import { CACHE_HEADERS } from "@/lib/api-utils";
 
@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
   const category = categoryParam as SearchCategory;
 
   try {
-    const { results, grouped } = await searchMusicBrainz(q, category);
+    const { results, grouped } = await searchYTMusic(q, category);
     const took = Math.round(performance.now() - start);
 
     const response: SearchApiResponse = {
