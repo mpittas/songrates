@@ -1,23 +1,16 @@
 /**
- * searchService.ts — Hybrid Smart Search
+ * searchService.ts — Last.fm-Powered Search
  *
- * Combines MusicBrainz (structural metadata) with Last.fm (popularity ranking)
- * to surface the truly "famous" songs first.
+ * Uses Last.fm exclusively for search (artists, albums, tracks).
+ * Results are ranked by Last.fm listener/playcount popularity.
+ * MusicBrainz IDs from Last.fm are used for linking to artist/album pages.
  */
 
 import { searchCache } from "@/lib/cache";
 import {
-  buildSmartLuceneQuery,
-  smartRerank,
-  smartMatchScore,
-  normalizeText,
-  collapseSpaces,
-  escapeLuceneValue,
-} from "@/lib/smartSearch";
-import {
-  searchLastFmTracks,
+  searchLastFmArtists,
   searchLastFmAlbums,
-  fetchTrackPlaycounts,
+  searchLastFmTracks,
 } from "@/lib/lastfm";
 import { createSlug } from "@/lib/utils";
 import type {
@@ -31,23 +24,30 @@ import type {
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 
-const MB_BASE_URL = "https://musicbrainz.org/ws/2";
-const USER_AGENT = "SongRates/1.0 (mpittas@gmail.com)";
+const LASTFM_API_KEY =
+  process.env.LASTFM_API_KEY || "b25b959554ed76058ac220b7b2e0a026";
+const LASTFM_BASE_URL = "https://ws.audioscrobbler.com/2.0/";
 
-/** Fetch limits */
-const LIMITS = {
-  single: { artists: 80, albums: 60, songs: 60 }, // MB limit lowered for songs as we rely on ranking
-  all: { artists: 50, albums: 25, songs: 25 },
+/** How many results to fetch from Last.fm per type */
+const FETCH_LIMITS = {
+  single: { artists: 30, albums: 30, songs: 50 },
+  all: { artists: 10, albums: 10, songs: 20 },
 } as const;
 
 /** How many final results to return per type */
 const RETURN_LIMITS = {
   artists: 10,
   albums: 10,
-  songs: 15, // Return top 15 most popular
+  songs: 15,
   allArtists: 3,
   allAlbums: 3,
   allSongs: 8,
+} as const;
+
+/** How many results to enrich with getInfo calls */
+const ENRICH_LIMITS = {
+  single: { artists: 10, albums: 10, songs: 10 },
+  all: { artists: 5, albums: 0, songs: 5 },
 } as const;
 
 // ─── In-flight Request Deduplication ───────────────────────────────────────────
@@ -69,64 +69,29 @@ function deduplicatedFetch<T>(
   return promise;
 }
 
-// ─── MusicBrainz Fetch Helper ──────────────────────────────────────────────────
+// ─── Last.fm Fetch Helper ───────────────────────────────────────────────────────
 
-// MusicBrainz requires max 1 request per second per IP.
-// We space out *start times* to reduce 503s while still allowing
-// concurrent in-flight requests for faster initial search.
-const MB_MIN_GAP_MS = 250;
-let mbNextStart = 0;
-
-async function waitForMbSlot(): Promise<void> {
-  if (process.env.NODE_ENV === "test") return;
-  const now = Date.now();
-  const scheduled = Math.max(now, mbNextStart);
-  mbNextStart = scheduled + MB_MIN_GAP_MS;
-  const wait = scheduled - now;
-  if (wait > 0) await new Promise((r) => setTimeout(r, wait));
-}
-
-async function fetchMB<T>(path: string): Promise<T | null> {
-  await waitForMbSlot();
-  return fetchMBInternal<T>(path);
-}
-
-async function fetchMBInternal<T>(path: string): Promise<T | null> {
+async function fetchWithTimeout(
+  url: string,
+  init: RequestInit & { next?: any } = {},
+  timeoutMs: number = 4000,
+): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const fetchInit: any = {
-      headers: {
-        "User-Agent": USER_AGENT,
-        Accept: "application/json",
-      },
-    };
-
-    if (process.env.NODE_ENV !== "test") {
-      fetchInit.next = { revalidate: 1800 };
-    }
-
-    const res = await fetch(`${MB_BASE_URL}/${path}`, fetchInit);
-
-    // Retry once on 503 (rate limit)
-    if (res.status === 503) {
-      await new Promise((r) => setTimeout(r, 1000));
-      await waitForMbSlot();
-      const retry = await fetch(`${MB_BASE_URL}/${path}`, fetchInit);
-      if (!retry.ok) {
-        console.error(`MB API ${retry.status} for ${path} (after retry)`);
-        return null;
-      }
-      return retry.json();
-    }
-
-    if (!res.ok) {
-      console.error(`MB API ${res.status} for ${path}`);
-      return null;
-    }
-    return res.json();
-  } catch (err) {
-    console.error("MB fetch error:", err);
-    return null;
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
   }
+}
+
+function buildLastFmUrl(params: Record<string, string>): string {
+  const searchParams = new URLSearchParams({
+    ...params,
+    api_key: LASTFM_API_KEY,
+    format: "json",
+  });
+  return `${LASTFM_BASE_URL}?${searchParams.toString()}`;
 }
 
 // ─── Utils ─────────────────────────────────────────────────────────────────────
@@ -143,728 +108,517 @@ export function isValidCategory(category: string): category is SearchCategory {
   return ["all", "artist", "album", "song"].includes(category);
 }
 
-function cleanString(str: string): string {
-  return collapseSpaces(normalizeText(str));
-}
-
-// ─── Artist Metadata Enrichment ─────────────────────────────────────────────────
-
-interface ArtistMeta {
-  country?: string;
-  type?: string;
-  disambiguation?: string;
-  tags?: string[];
-}
-
-/**
- * Batch-fetch artist metadata (country, type, disambiguation, tags) from MB.
- * Uses a single artist search query to avoid N+1 lookups.
- */
-async function fetchArtistMetadata(
-  artistIds: string[],
-): Promise<Map<string, ArtistMeta>> {
-  const metaMap = new Map<string, ArtistMeta>();
-  if (artistIds.length === 0) return metaMap;
-
-  // Fetch up to 10 artists in parallel using individual lookups (fast, cached)
-  const promises = artistIds.slice(0, 10).map(async (id) => {
-    const data = await fetchMB<any>(`artist/${id}?inc=tags&fmt=json`);
-    if (!data) return;
-
-    const tags = (data.tags || [])
-      .sort((a: any, b: any) => (b.count || 0) - (a.count || 0))
-      .slice(0, 3)
-      .map((t: any) => t.name);
-
-    metaMap.set(id, {
-      country: data.area?.name || data.country || undefined,
-      type: data.type || undefined,
-      disambiguation: data.disambiguation || undefined,
-      tags: tags.length > 0 ? tags : undefined,
-    });
-  });
-
-  await Promise.all(promises);
-  return metaMap;
+function normalizeText(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9\s]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 // ─── Artist Search ──────────────────────────────────────────────────────────────
 
 async function searchArtists(
   query: string,
-  limit: number = LIMITS.single.artists,
+  limit: number = FETCH_LIMITS.single.artists,
   quick: boolean = false,
 ): Promise<ArtistSearchResult[]> {
-  const cacheKey = `search:artist:${normalizeText(query)}:${limit}${quick ? ":quick" : ""}`;
+  const cacheKey = `search:artist:lfm:${normalizeText(query)}:${limit}${quick ? ":quick" : ""}`;
   const cached = searchCache.get(cacheKey);
   if (cached) return cached as ArtistSearchResult[];
 
   return deduplicatedFetch(cacheKey, async () => {
-    const luceneQuery = buildSmartLuceneQuery("artist", query);
-    const path = `release-group?query=${encodeURIComponent(luceneQuery)}&limit=${limit}&fmt=json`;
+    const maxEnrich = quick
+      ? ENRICH_LIMITS.all.artists
+      : ENRICH_LIMITS.single.artists;
+    const lfmArtists = await searchLastFmArtists(query, limit, maxEnrich);
+    if (lfmArtists.length === 0) return [];
 
-    const data = await fetchMB<any>(path);
-    if (!data) return [];
-
-    const artistMap = new Map<
-      string,
-      { id: string; name: string; score: number; releaseGroupCount: number }
-    >();
-
-    // Only count release-groups that represent real discography
-    // (Album, EP, Single) and exclude compilations / live / etc.
-    const ALLOWED_PRIMARY = new Set(["Album", "EP", "Single"]);
-    const EXCLUDED_SECONDARY = new Set([
-      "Compilation",
-      "Live",
-      "Remix",
-      "DJ-mix",
-      "Mixtape/Street",
-      "Spokenword",
-      "Interview",
-      "Audiobook",
-      "Audio drama",
-      "Demo",
-      "Field recording",
-    ]);
-
-    for (const rg of data["release-groups"] || []) {
-      // Skip release-groups that won't appear on the artist page
-      if (!ALLOWED_PRIMARY.has(rg["primary-type"])) continue;
-      const secondaryTypes: string[] = rg["secondary-types"] || [];
-      if (secondaryTypes.some((t) => EXCLUDED_SECONDARY.has(t))) continue;
-
-      const credit0 = rg["artist-credit"]?.[0];
-      const artistId = credit0?.artist?.id;
-      const artistName = credit0?.name || credit0?.artist?.name;
-      if (!artistId || !artistName) continue;
-
-      const rgScore = rg.score ?? 0;
-      const existing = artistMap.get(artistId);
-      if (!existing) {
-        artistMap.set(artistId, {
-          id: artistId,
-          name: artistName,
-          score: rgScore,
-          releaseGroupCount: 1,
-        });
-        continue;
+    // Deduplicate by normalized name AND by mbid
+    const seenNames = new Set<string>();
+    const seenMbids = new Set<string>();
+    const deduped = lfmArtists.filter((a) => {
+      const nameKey = normalizeText(a.name);
+      if (seenNames.has(nameKey)) return false;
+      seenNames.add(nameKey);
+      // Also deduplicate by mbid to avoid different name variants of the same artist
+      if (a.mbid) {
+        if (seenMbids.has(a.mbid)) return false;
+        seenMbids.add(a.mbid);
       }
-
-      existing.releaseGroupCount += 1;
-      existing.score = Math.max(existing.score, rgScore);
-    }
-
-    const topArtists = Array.from(artistMap.values())
-      .sort(
-        (a, b) =>
-          b.score - a.score || b.releaseGroupCount - a.releaseGroupCount,
-      )
-      .slice(0, RETURN_LIMITS.artists);
-
-    // Enrich with country, type, disambiguation, and genre tags
-    // Skip in quick mode (used by searchAll) to avoid N+1 API calls
-    const metaMap = quick
-      ? new Map<string, ArtistMeta>()
-      : await fetchArtistMetadata(topArtists.map((a) => a.id));
-
-    const results: ArtistSearchResult[] = topArtists.map((a) => {
-      const meta = metaMap.get(a.id);
-      return {
-        id: a.id,
-        type: "artist" as const,
-        title: a.name,
-        score: a.score,
-        country: meta?.country,
-        artistType: meta?.type,
-        disambiguation: meta?.disambiguation,
-        tags: meta?.tags,
-      };
+      return true;
     });
 
-    const reranked = smartRerank(results, query);
-    if (reranked.length > 0) {
-      searchCache.set(cacheKey, reranked, 1800);
+    const results: ArtistSearchResult[] = deduped
+      .slice(0, RETURN_LIMITS.artists)
+      .map((a, index) => ({
+        id: a.mbid || `lfm-artist-${normalizeText(a.name)}`,
+        type: "artist" as const,
+        title: a.name,
+        score: Math.max(100 - index * 5, 10),
+        tags: a.tags,
+      }));
+
+    // Filter out results without a valid MusicBrainz ID (can't link to artist page)
+    const validResults = results.filter(
+      (r) => r.id && !r.id.startsWith("lfm-"),
+    );
+
+    if (validResults.length > 0) {
+      searchCache.set(cacheKey, validResults, 1800);
     }
 
     // Pre-populate slug resolution cache so artist pages load instantly
-    for (const r of reranked) {
+    for (const r of validResults) {
       const slug = createSlug(r.title, r.id);
       searchCache.set(`resolve-artist:${slug}`, r.id, 86400);
     }
 
-    return reranked;
+    return validResults;
   });
 }
 
-// ─── Hybrid Album Search ────────────────────────────────────────────────────────
-// Fetches MB candidates AND Last.fm popularity ranking in parallel.
-// Merges them to ensure the most popular albums are surfaced first.
+// ─── Album Search ───────────────────────────────────────────────────────────────
 
 async function searchAlbums(
   query: string,
-  limit: number = LIMITS.single.albums,
+  limit: number = FETCH_LIMITS.single.albums,
   quick: boolean = false,
-  skipLastFm: boolean = false,
 ): Promise<AlbumSearchResult[]> {
-  const cacheKey = `search:album:hybrid:${normalizeText(query)}:${limit}${quick ? ":quick" : ""}${skipLastFm ? ":nofm" : ""}`;
+  const cacheKey = `search:album:lfm:${normalizeText(query)}:${limit}${quick ? ":quick" : ""}`;
   const cached = searchCache.get(cacheKey);
   if (cached) return cached as AlbumSearchResult[];
 
   return deduplicatedFetch(cacheKey, async () => {
-    // 1. Parallel Fetch: MB candidates + Last.fm popularity ranking
-    const luceneQuery = buildSmartLuceneQuery("releasegroup", query);
-    const mbPromise = fetchMB<any>(
-      `release-group?query=${encodeURIComponent(luceneQuery)}&limit=${limit}&fmt=json`,
-    );
-    let data: any | null = null;
-    let lastFmAlbums: Awaited<ReturnType<typeof searchLastFmAlbums>> = [];
+    const maxEnrich = quick
+      ? ENRICH_LIMITS.all.albums
+      : ENRICH_LIMITS.single.albums;
+    const lfmAlbums = await searchLastFmAlbums(query, limit, maxEnrich);
+    if (lfmAlbums.length === 0) return [];
 
-    if (skipLastFm) {
-      data = await mbPromise;
-    } else {
-      const lastFmPromise = searchLastFmAlbums(
-        query,
-        quick ? 15 : 30,
-        quick ? 0 : 10,
-      );
-      [data, lastFmAlbums] = await Promise.all([mbPromise, lastFmPromise]);
-    }
-    if (!data) return [];
-
-    // 2. Build Popularity Lookup Map from Last.fm
-    // Key: "artist:title" (normalized) -> listeners
-    const popularityMap = new Map<string, number>();
-    lastFmAlbums.forEach((album, index) => {
-      const key = `${cleanString(album.artist)}:${cleanString(album.name)}`;
-      const existing = popularityMap.get(key) || 0;
-      // Use listeners if available, otherwise use rank-based score
-      const score =
-        album.listeners > 0 ? album.listeners : Math.max(1000 - index * 30, 10);
-      popularityMap.set(key, Math.max(existing, score));
-    });
-
-    // 3. Filter and deduplicate MB results
-    // Only show studio Albums, other Albums, and EPs — exclude Singles and Compilations
-    const releaseGroups = (data["release-groups"] || []).filter((rg: any) => {
-      const primaryType = rg["primary-type"];
-      if (!["Album", "EP"].includes(primaryType)) return false;
-      const secondaryTypes: string[] = rg["secondary-types"] || [];
-      if (secondaryTypes.includes("Compilation")) return false;
+    // Deduplicate by normalized artist:title
+    const seen = new Set<string>();
+    const deduped = lfmAlbums.filter((a) => {
+      const key = `${normalizeText(a.artist)}:${normalizeText(a.name)}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
       return true;
     });
 
-    // Deduplicate by normalized artist:title
-    const dedupMap = new Map<string, any>();
-    for (const rg of releaseGroups) {
-      const title = cleanString(rg.title || "");
-      const artist = cleanString(rg["artist-credit"]?.[0]?.name || "");
-      const key = `${artist}:${title}`;
-      if (!dedupMap.has(key)) {
-        dedupMap.set(key, rg);
-      }
-    }
+    // Sort by listeners (descending) — most popular first
+    const sorted = deduped.sort(
+      (a, b) => (b.listeners || 0) - (a.listeners || 0),
+    );
 
-    // 4. Score and Sort by popularity with release-type boost
-    const scored = Array.from(dedupMap.values()).map((rg: any) => {
-      const title = cleanString(rg.title || "");
-      const artist = cleanString(rg["artist-credit"]?.[0]?.name || "");
-      const key = `${artist}:${title}`;
+    const results: AlbumSearchResult[] = sorted
+      .slice(0, RETURN_LIMITS.albums)
+      .map((a, index) => ({
+        id:
+          a.mbid ||
+          `lfm-album-${normalizeText(a.artist)}-${normalizeText(a.name)}`,
+        type: "album" as const,
+        title: a.name,
+        subtitle: a.artist,
+        score: Math.max(100 - index * 5, 10),
+        artistName: a.artist,
+        primaryType: "Album",
+        secondaryTypes: [],
+      }));
 
-      const popularity = popularityMap.get(key) || 0;
-      const mbScore = rg.score ?? 0;
+    // Filter out results without a valid MusicBrainz ID (can't link to album page)
+    const validResults = results.filter(
+      (r) => r.id && !r.id.startsWith("lfm-"),
+    );
 
-      // Release type boost: prioritize main studio Albums > EPs > others
-      const primaryType = rg["primary-type"];
-      const secondaryTypes: string[] = rg["secondary-types"] || [];
-      const isMain = !secondaryTypes.some((t: string) =>
-        [
-          "Compilation",
-          "Soundtrack",
-          "Live",
-          "Remix",
-          "DJ-mix",
-          "Mixtape/Street",
-          "Spokenword",
-          "Interview",
-          "Audiobook",
-          "Audio drama",
-          "Demo",
-        ].includes(t),
-      );
-
-      let typeBoost = 1.0;
-      if (primaryType === "Album" && isMain) typeBoost = 1.5;
-      else if (primaryType === "EP" && isMain) typeBoost = 1.2;
-      else if (primaryType === "Album") typeBoost = 1.1;
-      else if (primaryType === "EP") typeBoost = 1.05;
-      // Singles get no boost (1.0)
-
-      // Composite: popularity is dominant when available, MB score as tiebreaker
-      const baseScore = popularity > 0 ? popularity + mbScore : mbScore;
-      const compositeScore = baseScore * typeBoost;
-
-      return { rg, compositeScore, popularity };
-    });
-
-    scored.sort((a, b) => b.compositeScore - a.compositeScore);
-
-    const top = scored.slice(0, RETURN_LIMITS.albums);
-
-    // 5. Map to Result
-    const results: AlbumSearchResult[] = top.map(({ rg, popularity }) => ({
-      id: rg.id,
-      type: "album" as const,
-      title: rg.title,
-      subtitle: rg["artist-credit"]?.[0]?.name,
-      score: rg.score ?? 0,
-      artistName: rg["artist-credit"]?.[0]?.name,
-      artistId: rg["artist-credit"]?.[0]?.artist?.id,
-      releaseDate: rg["first-release-date"],
-      primaryType: rg["primary-type"],
-      secondaryTypes: rg["secondary-types"] || [],
-    }));
-
-    const reranked = smartRerank(results, query);
-    if (reranked.length > 0) {
-      searchCache.set(cacheKey, reranked, 1800);
+    if (validResults.length > 0) {
+      searchCache.set(cacheKey, validResults, 1800);
     }
 
     // Pre-populate slug resolution cache so album pages load instantly
-    for (const r of reranked) {
+    for (const r of validResults) {
       const slug = createSlug(r.title, r.id);
       searchCache.set(`resolve-album:${slug}`, r.id, 86400);
     }
 
-    return reranked;
+    return validResults;
   });
 }
 
-// ─── Hybrid Song Search ────────────────────────────────────────────────────────
-// Fetches MB candidates AND Last.fm popularity ranking in parallel.
-// Merges them to ensure the most popular song (based on listeners) is top.
+// ─── Song/Track Search ──────────────────────────────────────────────────────────
 
 async function searchSongs(
   query: string,
-  limit: number = LIMITS.single.songs,
+  limit: number = FETCH_LIMITS.single.songs,
   quick: boolean = false,
-  skipLastFm: boolean = false,
 ): Promise<SongSearchResult[]> {
-  const cacheKey = `search:song:hybrid:${normalizeText(query)}:${limit}${quick ? ":quick" : ""}${skipLastFm ? ":nofm" : ""}`;
+  const cacheKey = `search:song:lfm:${normalizeText(query)}:${limit}${quick ? ":quick" : ""}`;
   const cached = searchCache.get(cacheKey);
   if (cached) return cached as SongSearchResult[];
 
   return deduplicatedFetch(cacheKey, async () => {
-    // 1. Fire MB + Last.fm searches in parallel (both are slow, no dependency)
-    const luceneQuery = buildSmartLuceneQuery("recording", query);
-    const broadMbPromise = fetchMB<any>(
-      `recording?query=${encodeURIComponent(luceneQuery)}&limit=${limit}&fmt=json`,
+    const maxEnrich = quick
+      ? ENRICH_LIMITS.all.songs
+      : ENRICH_LIMITS.single.songs;
+    const lfmTracks = await searchLastFmTracks(query, limit, maxEnrich);
+    if (lfmTracks.length === 0) return [];
+
+    // Deduplicate by normalized artist:title
+    const seen = new Set<string>();
+    const deduped = lfmTracks.filter((t) => {
+      const key = `${normalizeText(t.artist)}:${normalizeText(t.name)}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    // Sort by playcount (if available) then listeners — most popular first
+    const sorted = deduped.sort((a, b) => {
+      const aScore = a.playcount ?? a.listeners;
+      const bScore = b.playcount ?? b.listeners;
+      return bScore - aScore;
+    });
+
+    const top = sorted.slice(0, RETURN_LIMITS.songs);
+
+    // Enrich with MusicBrainz recording search to get release-group IDs for linking.
+    // In quick mode, limit to top 8 tracks to keep search fast.
+    const tracksToEnrich = quick ? top.slice(0, 8) : top;
+    const trackInfoMap = await fetchTrackInfoBatch(
+      tracksToEnrich.map((t) => ({ name: t.name, artist: t.artist })),
     );
-    let recordings: any[];
-    let lastFmTracks: Awaited<ReturnType<typeof searchLastFmTracks>> = [];
 
-    if (skipLastFm) {
-      const broadData = await broadMbPromise;
-      if (!broadData) return [];
-      recordings = broadData.recordings || [];
-    } else {
-      const lastFmPromise = searchLastFmTracks(
-        query,
-        quick ? 15 : 50,
-        quick ? 0 : 10,
-      );
+    const results: SongSearchResult[] = top.map((t, index) => {
+      const infoKey = `${t.artist}:${t.name}`;
+      const info = trackInfoMap.get(infoKey);
+      const playcount = t.playcount ?? t.listeners;
 
-      if (quick) {
-        // Quick mode: MB + Last.fm in parallel, no targeted injection
-        const [broadData, lfmTracks] = await Promise.all([
-          broadMbPromise,
-          lastFmPromise,
-        ]);
-        if (!broadData) return [];
-        recordings = broadData.recordings || [];
-        lastFmTracks = lfmTracks;
-      } else {
-        // Last.fm is already running in parallel with MB broad search.
-        // Await it so we can build targeted MB queries from top hits.
-        lastFmTracks = await lastFmPromise;
-
-        // Targeted Injection: fetch MB metadata for top Last.fm hits
-        // to guarantee the most popular songs appear even if the broad search missed them
-        const topHits = lastFmTracks.slice(0, 3);
-
-        const targetedPromises = topHits.map(async (hit) => {
-          const targetQuery = `recording:"${escapeLuceneValue(hit.name)}" AND artist:"${escapeLuceneValue(hit.artist)}"`;
-          const path = `recording?query=${encodeURIComponent(targetQuery)}&limit=10&fmt=json`;
-          return fetchMB<any>(path);
-        });
-
-        const [broadData, ...targetedResults] = await Promise.all([
-          broadMbPromise,
-          ...targetedPromises,
-        ]);
-
-        if (!broadData && targetedResults.length === 0) return [];
-
-        const broadRecordings = broadData?.recordings || [];
-        const targetedRecordings = targetedResults.flatMap(
-          (r) => r?.recordings || [],
-        );
-        recordings = [...broadRecordings, ...targetedRecordings];
-      }
-    }
-
-    // 2. Build Popularity Lookup Map
-    // Key: "artist:title" (normalized) -> playcount/listeners
-    const popularityMap = new Map<string, number>();
-
-    lastFmTracks.forEach((track) => {
-      const key = `${cleanString(track.artist)}:${cleanString(track.name)}`;
-      const existing = popularityMap.get(key) || 0;
-      // Use playcount if available, otherwise fall back to listeners
-      const count = track.playcount ?? track.listeners;
-      popularityMap.set(key, Math.max(existing, count));
-    });
-
-    // 3. Deduplicate MB results — keep the best recording per artist:title
-    // IMPORTANT: Do NOT merge releases across different recording IDs.
-    // Each recording's releases are the ones it actually appears on.
-    // Merging releases caused bugs where a recording would link to an album
-    // it doesn't actually belong to ("hallucinated" results).
-    const dedupMap = new Map<string, any>();
-    recordings.forEach((rec) => {
-      const title = cleanString(rec.title || "");
-      const artist = cleanString(rec["artist-credit"]?.[0]?.name || "");
-      const key = `${artist}:${title}`;
-
-      const existing = dedupMap.get(key);
-
-      if (!existing) {
-        dedupMap.set(key, { ...rec, releases: [...(rec.releases || [])] });
-        return;
-      }
-
-      // Pick the better recording: prefer the one with more official releases,
-      // then the one with the earliest release date.
-      const existingOfficialCount = countOfficialReleases(
-        existing.releases || [],
-      );
-      const recOfficialCount = countOfficialReleases(rec.releases || []);
-
-      let replace = false;
-      if (recOfficialCount > existingOfficialCount) {
-        replace = true;
-      } else if (recOfficialCount === existingOfficialCount) {
-        const recDate = rec["first-release-date"] || "9999-99-99";
-        const existingDate = existing["first-release-date"] || "9999-99-99";
-        if (recDate < existingDate) {
-          replace = true;
-        }
-      }
-
-      if (replace) {
-        dedupMap.set(key, { ...rec, releases: [...(rec.releases || [])] });
-      }
-    });
-
-    // Filter: only keep recordings that appear on Album, EP, or Single
-    // AND that are actually relevant to the user's query.
-    const deduped = Array.from(dedupMap.values()).filter((rec) => {
-      if (!hasAllowedReleaseType(rec.releases || [])) return false;
-      return isRelevantRecording(query, rec);
-    });
-
-    // 4. Score and Sort
-    const scored = deduped.map((rec) => {
-      const title = cleanString(rec.title || "");
-      const artist = cleanString(rec["artist-credit"]?.[0]?.name || "");
-      const key = `${artist}:${title}`;
-
-      // Get popularity from Last.fm (playcount or listeners)
-      const popularity = popularityMap.get(key) || 0;
-
-      // Fallback: Use official release count as a proxy if no Last.fm data
-      const officialCount = countOfficialReleases(rec.releases || []);
-
-      // Composite Score:
-      // If we have popularity, that's the dominant factor.
-      // If not, we rely on release count.
-      // We normalize popularity roughly (1M plays = high score)
-      const popularityScore =
-        popularity > 0 ? popularity : officialCount * 1000; // 1 release ~= 1000 plays fallback
-
-      // Boost recordings that appear on main studio albums or EPs
-      const releaseBoost = getReleaseTypeBoost(rec.releases || []);
-
-      return { rec, score: popularityScore * releaseBoost, popularity };
-    });
-
-    // Sort descending by score
-    scored.sort((a, b) => b.score - a.score);
-
-    const top = scored.slice(0, RETURN_LIMITS.songs);
-
-    // 5. Map to Result
-    const results: SongSearchResult[] = top.map(({ rec, popularity }) => {
-      const releases = rec.releases || [];
-      const originalAlbum = findOriginalAlbum(releases);
-      const bestRG = originalAlbum ||
-        releases[0]?.["release-group"] || { id: "", title: "" };
+      // Prefer mbid from search, fall back to mbid from track.getInfo
+      const mbid = t.mbid || info?.trackMbid;
 
       return {
-        id: rec.id,
+        id:
+          mbid ||
+          `lfm-track-${normalizeText(t.artist)}-${normalizeText(t.name)}`,
         type: "song" as const,
-        title: rec.title,
-        subtitle: rec["artist-credit"]?.[0]?.name,
-        score: rec.score ?? 0, // MB score
-        artistName: rec["artist-credit"]?.[0]?.name,
-        artistId: rec["artist-credit"]?.[0]?.artist?.id,
-        releaseCount: releases.length,
-        officialReleaseCount: countOfficialReleases(releases),
-        hasAlbumRelease: hasAlbumTypeRelease(releases),
-        firstReleaseDate: rec["first-release-date"],
-        length: rec.length,
-        releaseGroupId: bestRG.id,
-        releaseGroupTitle: bestRG.title,
-        originalAlbumTitle: originalAlbum?.title,
-        originalAlbumDate: originalAlbum?.date,
-        releaseType: originalAlbum
-          ? originalAlbum.primaryType === "Album"
-            ? originalAlbum.isMain
-              ? "Album"
-              : "Other album"
-            : originalAlbum.primaryType
-          : undefined,
-        // Use Last.fm playcount (or listeners as fallback)
-        listenCount: popularity > 0 ? popularity : undefined,
+        title: t.name,
+        subtitle: t.artist,
+        score: Math.max(100 - index * 3, 10),
+        artistName: t.artist,
+        artistId: info?.artistMbid,
+        releaseCount: 0,
+        officialReleaseCount: 0,
+        hasAlbumRelease: !!info?.albumTitle,
+        firstReleaseDate: undefined,
+        length: info?.duration,
+        listenCount: playcount > 0 ? playcount : undefined,
+        releaseGroupId: info?.albumMbid,
+        releaseGroupTitle: info?.albumTitle,
+        originalAlbumTitle: info?.albumTitle,
+        releaseType: info?.albumTitle ? "Album" : undefined,
       };
     });
 
-    const reranked = smartRerank(results, query);
-
-    // 6. Second-pass enrichment: fetch Last.fm playcounts for results missing them.
-    // The initial Last.fm search only covers its top results, so songs found via
-    // MusicBrainz but not in Last.fm's top search hits will be missing playcounts.
-    // Skip in quick mode to keep the "all" search fast.
-    if (!quick) {
-      const missing = reranked.filter(
-        (r) => r.listenCount == null && r.artistName && r.title,
-      );
-      if (missing.length > 0) {
-        const enriched = await fetchTrackPlaycounts(
-          missing.map((r) => ({ name: r.title, artist: r.artistName! })),
-        );
-        for (const r of reranked) {
-          if (r.listenCount == null && r.artistName) {
-            const key = `${r.artistName}:${r.title}`;
-            const count = enriched.get(key);
-            if (count && count > 0) {
-              r.listenCount = count;
-            }
-          }
-        }
-      }
+    if (results.length > 0) {
+      searchCache.set(cacheKey, results, 1800);
     }
-
-    if (reranked.length > 0) {
-      searchCache.set(cacheKey, reranked, 1800);
-    }
-    return reranked;
+    return results;
   });
 }
 
-// ─── ListenBrainz Enrichment ────────────────────────────────────────────────────
+// ─── Track Info Enrichment ───────────────────────────────────────────────────────
 
-const LISTENBRAINZ_BASE_URL = "https://api.listenbrainz.org/1";
+const MB_BASE_URL = "https://musicbrainz.org/ws/2";
+const MB_USER_AGENT = "SongRates/1.0 (mpittas@gmail.com)";
+
+interface TrackInfo {
+  trackMbid?: string;
+  duration?: number;
+  albumTitle?: string;
+  albumMbid?: string;
+  artistMbid?: string;
+}
 
 /**
- * Fetch total listen counts from ListenBrainz for a batch of recording MBIDs.
- * Same data source as the album tracklist, ensuring numbers match.
+ * Two-step enrichment for tracks:
+ *   1. Last.fm track.getInfo → album title, artist mbid, duration, track mbid
+ *   2. MusicBrainz release-group search → release-group ID for album linking
+ *
+ * Step 2 uses the album title from step 1 to find the correct release-group.
+ * This is more reliable than recording search for popular songs with many versions.
  */
-async function fetchListenBrainzCounts(
-  recordingMbids: string[],
-): Promise<Record<string, number>> {
-  if (recordingMbids.length === 0) return {};
+async function fetchTrackInfoBatch(
+  tracks: { name: string; artist: string }[],
+): Promise<Map<string, TrackInfo>> {
+  const infoMap = new Map<string, TrackInfo>();
+  if (tracks.length === 0) return infoMap;
 
-  try {
-    const res = await fetch(`${LISTENBRAINZ_BASE_URL}/popularity/recording`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "User-Agent": USER_AGENT,
-      },
-      body: JSON.stringify({ recording_mbids: recordingMbids.slice(0, 50) }),
-    });
+  const limited = tracks.slice(0, 15);
 
-    if (!res.ok) return {};
+  // ── Step 1: Last.fm track.getInfo (parallel, no rate limit) ──
+  const lfmPromises = limited.map(async (track) => {
+    const key = `${track.artist}:${track.name}`;
+    try {
+      const url = buildLastFmUrl({
+        method: "track.getInfo",
+        artist: track.artist,
+        track: track.name,
+      });
 
-    const data = await res.json();
-    const items = Array.isArray(data)
-      ? data
-      : Array.isArray(data?.payload)
-        ? data.payload
-        : [];
+      const fetchInit: any = {};
+      if (process.env.NODE_ENV !== "test") {
+        fetchInit.next = { revalidate: 1800 };
+      }
 
-    const counts: Record<string, number> = {};
-    for (const entry of items) {
-      if (
-        entry.recording_mbid &&
-        typeof entry.total_listen_count === "number"
-      ) {
-        counts[entry.recording_mbid] = entry.total_listen_count;
+      const res = await fetchWithTimeout(url, fetchInit, 3000);
+      if (!res.ok) return;
+
+      const data = await res.json();
+      const t = data?.track;
+      if (!t) return;
+
+      infoMap.set(key, {
+        trackMbid: t.mbid || undefined,
+        duration: t.duration ? parseInt(t.duration, 10) : undefined,
+        albumTitle: t.album?.title,
+        albumMbid: undefined, // Resolved in step 2
+        artistMbid: t.artist?.mbid || undefined,
+      });
+    } catch {
+      // Silently fail — enrichment is optional
+    }
+  });
+
+  await Promise.all(lfmPromises);
+
+  // ── Step 2: Resolve release-group IDs via MusicBrainz ──
+  // Collect unique artist+album pairs that need resolution
+  const albumLookups = new Map<
+    string,
+    { artist: string; album: string; keys: string[] }
+  >();
+  for (const [key, info] of infoMap) {
+    if (!info.albumTitle) continue;
+    const artist = key.split(":")[0];
+    const lookupKey = `${normalizeText(artist)}::${normalizeText(info.albumTitle)}`;
+    const existing = albumLookups.get(lookupKey);
+    if (existing) {
+      existing.keys.push(key);
+    } else {
+      albumLookups.set(lookupKey, {
+        artist,
+        album: info.albumTitle,
+        keys: [key],
+      });
+    }
+  }
+
+  if (albumLookups.size > 0) {
+    const rgMap = await resolveReleaseGroupIds(
+      Array.from(albumLookups.values()).map((v) => ({
+        artist: v.artist,
+        album: v.album,
+      })),
+    );
+
+    // Apply resolved release-group IDs back to track info
+    for (const [, lookup] of albumLookups) {
+      const resolved = rgMap.get(
+        `${normalizeText(lookup.artist)}::${normalizeText(lookup.album)}`,
+      );
+      if (!resolved) continue;
+      for (const key of lookup.keys) {
+        const info = infoMap.get(key);
+        if (info) {
+          info.albumMbid = resolved.id;
+          info.albumTitle = resolved.title;
+        }
       }
     }
-    return counts;
-  } catch (err) {
-    console.error("ListenBrainz enrichment error:", err);
-    return {};
   }
-}
 
-// ─── Helpers ───────────────────────────────────────────────────────────────────
+  return infoMap;
+}
 
 /**
- * Check if a recording is relevant to the user's query.
- * Uses word-overlap analysis to filter out fuzzy search noise.
- *
- * For multi-word queries (2+ significant words), at least half the query words
- * must appear in the recording's title OR artist name.
- *   - "No you girls" vs "girls with gills" → 1/3 overlap → REJECT
- *   - "No you girls" vs "No You Girls"     → 3/3 overlap → KEEP
- *
- * For single-word queries, uses smartMatchScore with a threshold.
+ * Strip common edition/remaster suffixes from album titles so we can
+ * fall back to the base album name when Last.fm returns a variant.
+ * e.g. "Thriller 25 Super Deluxe Edition" → "Thriller"
  */
-function isRelevantRecording(query: string, rec: any): boolean {
-  const normQuery = normalizeText(query);
-  const normTitle = normalizeText(rec.title || "");
-  const normArtist = normalizeText(rec["artist-credit"]?.[0]?.name || "");
+function simplifyAlbumTitle(title: string): string {
+  return title
+    .replace(
+      /\s*[\(\[:]?\s*(super\s+)?deluxe\s*(edition|version)?\s*[\)\]]?\s*$/i,
+      "",
+    )
+    .replace(/\s*[\(\[:]?\s*remaster(ed)?\s*(\d{4})?\s*[\)\]]?\s*$/i, "")
+    .replace(
+      /\s*[\(\[:]?\s*\d+th\s+anniversary\s*(edition|version)?\s*[\)\]]?\s*$/i,
+      "",
+    )
+    .replace(/\s*[\(\[:]?\s*expanded\s*(edition|version)?\s*[\)\]]?\s*$/i, "")
+    .replace(/\s*[\(\[:]?\s*special\s*(edition|version)?\s*[\)\]]?\s*$/i, "")
+    .replace(
+      /\s*[\(\[:]?\s*bonus\s+track(s)?\s*(edition|version)?\s*[\)\]]?\s*$/i,
+      "",
+    )
+    .replace(/\s*\d+\s*$/, "") // Trailing numbers like "Thriller 25"
+    .trim();
+}
 
-  // Combine title + artist for word matching
-  const combinedWords = new Set(
-    `${normTitle} ${normArtist}`.split(/\s+/).filter((w) => w.length > 0),
-  );
+/**
+ * Resolve release-group IDs from MusicBrainz for artist+album pairs.
+ * Returns a map of "normalizedArtist::normalizedAlbum" → { id, title }.
+ */
+async function resolveReleaseGroupIds(
+  albums: { artist: string; album: string }[],
+): Promise<Map<string, { id: string; title: string }>> {
+  const rgMap = new Map<string, { id: string; title: string }>();
+  if (albums.length === 0) return rgMap;
 
-  const queryWords = normQuery.split(/\s+/).filter((w) => w.length > 1);
+  // Limit lookups to keep search fast
+  const limited = albums.slice(0, 10);
 
-  if (queryWords.length >= 2) {
-    // Multi-word query: require at least half the query words to appear
-    const matched = queryWords.filter((w) => combinedWords.has(w)).length;
-    const ratio = matched / queryWords.length;
-    return ratio >= 0.5;
+  const mbFetchInit: any = {
+    headers: {
+      "User-Agent": MB_USER_AGENT,
+      Accept: "application/json",
+    },
+  };
+  if (process.env.NODE_ENV !== "test") {
+    mbFetchInit.next = { revalidate: 3600 };
   }
 
-  // Single-word query: use smartMatchScore threshold
-  const titleScore = smartMatchScore(query, rec.title || "");
-  const artistScore = smartMatchScore(query, normArtist);
-  return Math.max(titleScore, artistScore) >= 50;
+  // MusicBrainz rate-limits at ~1 req/sec. Process in small batches.
+  const BATCH_SIZE = 3;
+  const BATCH_DELAY_MS = 400;
+
+  for (let i = 0; i < limited.length; i += BATCH_SIZE) {
+    if (i > 0) {
+      await new Promise((r) => setTimeout(r, BATCH_DELAY_MS));
+    }
+
+    const batch = limited.slice(i, i + BATCH_SIZE);
+    const batchPromises = batch.map(async ({ artist, album }) => {
+      const mapKey = `${normalizeText(artist)}::${normalizeText(album)}`;
+
+      try {
+        // Check cache first
+        const cacheKey = `rg-resolve:${mapKey}`;
+        const cached = searchCache.get(cacheKey);
+        if (cached) {
+          rgMap.set(mapKey, cached as { id: string; title: string });
+          return;
+        }
+
+        // Try exact album title first, then simplified (strip deluxe/remaster suffixes)
+        const albumVariants = [album];
+        const simplified = simplifyAlbumTitle(album);
+        if (simplified !== album) albumVariants.push(simplified);
+
+        for (const albumVariant of albumVariants) {
+          const query = `releasegroup:"${escapeMBValue(albumVariant)}" AND artist:"${escapeMBValue(artist)}"`;
+          const url = `${MB_BASE_URL}/release-group?query=${encodeURIComponent(query)}&limit=10&fmt=json`;
+
+          const res = await fetchWithTimeout(url, mbFetchInit, 4000);
+          if (!res.ok) continue;
+
+          const data = await res.json();
+          const rgs = data["release-groups"];
+          if (!Array.isArray(rgs) || rgs.length === 0) continue;
+
+          const normArtist = normalizeText(artist);
+          const match = pickBestReleaseGroup(
+            rgs,
+            normalizeText(albumVariant),
+            normArtist,
+          );
+
+          if (match) {
+            const result = { id: match.id, title: match.title };
+            rgMap.set(mapKey, result);
+            searchCache.set(cacheKey, result, 86400);
+            break; // Found a match, stop trying variants
+          }
+        }
+      } catch {
+        // Silently fail — linking is optional
+      }
+    });
+
+    await Promise.all(batchPromises);
+  }
+
+  return rgMap;
 }
 
-function countOfficialReleases(releases: any[]): number {
-  return releases.filter((r: any) => r.status === "Official").length;
-}
-
-function isMainRelease(rg: any): boolean {
-  const secondaryTypes: string[] =
-    rg["secondary-types"] || rg["secondary-type-list"] || [];
-  const dominated = [
+/**
+ * Pick the best release-group from MusicBrainz search results.
+ * Priority: exact title match > fuzzy match, then Album > EP > Single,
+ * and prefer releases without secondary types (Compilation, Live, etc.).
+ */
+function pickBestReleaseGroup(
+  rgs: any[],
+  normAlbum: string,
+  normArtist: string,
+): { id: string; title: string } | undefined {
+  const SECONDARY_DEPRIORITIZE = new Set([
     "Compilation",
     "Soundtrack",
     "Live",
     "Remix",
     "DJ-mix",
     "Mixtape/Street",
-  ];
-  return !secondaryTypes.some((t: string) => dominated.includes(t));
-}
+  ]);
 
-function getReleaseTypeBoost(releases: any[]): number {
-  let bestBoost = 1.0;
+  const ALLOWED_PRIMARY = new Set(["Album", "EP", "Single"]);
 
-  for (const r of releases) {
-    const rg = r["release-group"];
-    if (!rg) continue;
-    if (r.status && r.status !== "Official") continue;
-
-    const primaryType = rg["primary-type"];
-    const main = isMainRelease(rg);
-
-    if (primaryType === "Album" && main) {
-      return 1.5; // Best: main studio album
-    } else if (primaryType === "EP" && main) {
-      bestBoost = Math.max(bestBoost, 1.3);
-    } else if (primaryType === "Album" || primaryType === "EP") {
-      bestBoost = Math.max(bestBoost, 1.1); // Compilation/soundtrack album or EP
-    }
-  }
-
-  return bestBoost;
-}
-
-function hasAlbumTypeRelease(releases: any[]): boolean {
-  return releases.some(
-    (r: any) => r["release-group"]?.["primary-type"] === "Album",
-  );
-}
-
-const ALLOWED_RELEASE_TYPES = new Set(["Album", "EP", "Single"]);
-
-function hasAllowedReleaseType(releases: any[]): boolean {
-  return releases.some((r: any) =>
-    ALLOWED_RELEASE_TYPES.has(r["release-group"]?.["primary-type"]),
-  );
-}
-
-function findOriginalAlbum(releases: any[]):
-  | {
-      id: string;
-      title: string;
-      date: string;
-      primaryType: string;
-      isMain: boolean;
-    }
-  | undefined {
-  // Prioritize: main studio albums > main EPs > compilation albums > other
-  const typePriority = (r: any): number => {
-    const rg = r["release-group"];
-    const primary = rg?.["primary-type"];
-    const main = isMainRelease(rg || {});
-    if (primary === "Album" && main) return 0;
-    if (primary === "EP" && main) return 1;
-    if (primary === "Album") return 2;
-    if (primary === "EP") return 3;
-    if (primary === "Single" && main) return 4;
-    if (primary === "Single") return 5;
-    return 6;
-  };
-
-  const candidates = releases
-    .filter((r: any) => {
-      const rg = r["release-group"];
-      return (
-        rg?.id &&
-        ["Album", "EP", "Single"].includes(rg["primary-type"]) &&
-        (!r.status || r.status === "Official")
-      );
+  const scoredRGs = rgs
+    .filter((rg: any) => {
+      if (!rg.id) return false;
+      if (!ALLOWED_PRIMARY.has(rg["primary-type"])) return false;
+      // Check artist match
+      const rgArtist =
+        rg["artist-credit"]?.[0]?.name ||
+        rg["artist-credit"]?.[0]?.artist?.name ||
+        "";
+      if (normalizeText(rgArtist) !== normArtist) return false;
+      return true;
     })
-    .sort((a: any, b: any) => {
-      const prioA = typePriority(a);
-      const prioB = typePriority(b);
-      if (prioA !== prioB) return prioA - prioB;
-      const dateA = a.date || "9999";
-      const dateB = b.date || "9999";
-      return dateA.localeCompare(dateB);
-    });
+    .map((rg: any) => {
+      const primary = rg["primary-type"];
+      const secondary: string[] = rg["secondary-types"] || [];
+      const isMain = !secondary.some((t: string) =>
+        SECONDARY_DEPRIORITIZE.has(t),
+      );
+      const titleMatch = normalizeText(rg.title) === normAlbum;
 
-  if (candidates.length > 0) {
-    const rg = candidates[0]["release-group"];
-    return {
-      id: rg.id,
-      title: rg.title,
-      date: candidates[0].date || "",
-      primaryType: rg["primary-type"] || "Album",
-      isMain: isMainRelease(rg || {}),
-    };
-  }
-  return undefined;
+      // Score: lower is better
+      let score = 0;
+      // Exact title match is strongly preferred
+      if (!titleMatch) score += 100;
+      // Type priority
+      if (primary === "Album" && isMain) score += 0;
+      else if (primary === "EP" && isMain) score += 1;
+      else if (primary === "Album") score += 2;
+      else if (primary === "EP") score += 3;
+      else if (primary === "Single" && isMain) score += 4;
+      else if (primary === "Single") score += 5;
+      else score += 6;
+
+      return { id: rg.id, title: rg.title, score };
+    })
+    .sort((a: any, b: any) => a.score - b.score);
+
+  return scoredRGs.length > 0 ? scoredRGs[0] : undefined;
+}
+
+/**
+ * Escape special characters in MusicBrainz Lucene query values.
+ */
+function escapeMBValue(input: string): string {
+  return input.replace(/([+\-&|!(){}[\]^"~*?:\\/])/g, "\\$1");
 }
 
 // ─── Main Export ───────────────────────────────────────────────────────────────
@@ -886,17 +640,11 @@ export async function searchByCategory(
 }
 
 export async function searchAll(query: string): Promise<GroupedSearchResults> {
-  // Fire artist search first (most important for type-ahead), then
-  // album + song in parallel. Last.fm calls inside album/song don't
-  // use the MB queue so they start immediately alongside the MB requests.
-  const artistsPromise = searchArtists(query, LIMITS.all.artists, true);
-  const albumsPromise = searchAlbums(query, LIMITS.all.albums, true, true);
-  const songsPromise = searchSongs(query, LIMITS.all.songs, true, false);
-
+  // Fire all three searches in parallel — Last.fm has no rate limit concerns
   const [artists, albums, songs] = await Promise.all([
-    artistsPromise,
-    albumsPromise,
-    songsPromise,
+    searchArtists(query, FETCH_LIMITS.all.artists, true),
+    searchAlbums(query, FETCH_LIMITS.all.albums, true),
+    searchSongs(query, FETCH_LIMITS.all.songs, true),
   ]);
 
   return { artists, albums, songs };

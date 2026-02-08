@@ -280,6 +280,108 @@ export async function searchLastFmAlbums(
   }
 }
 
+// ─── Last.fm Artist Search Result ─────────────────────────────────────────────
+
+export interface LastFmArtist {
+  name: string;
+  /** Last.fm listener count */
+  listeners: number;
+  /** MusicBrainz artist ID (may be empty string) */
+  mbid: string;
+  /** Last.fm URL */
+  url: string;
+}
+
+/**
+ * Search Last.fm for artists. Returns results sorted by relevance.
+ * Enriches top results with artist.getInfo to get listener counts and tags.
+ */
+export async function searchLastFmArtists(
+  query: string,
+  limit: number = 30,
+  maxEnrich: number = 5,
+): Promise<(LastFmArtist & { tags?: string[] })[]> {
+  const apiKey = process.env.LASTFM_API_KEY;
+  if (!apiKey) return [];
+
+  const cacheKey = `lfm:artist:${query.toLowerCase().trim()}:${limit}:${maxEnrich}`;
+  const cached = searchCache.get(cacheKey);
+  if (cached) return cached as (LastFmArtist & { tags?: string[] })[];
+
+  try {
+    const url = `${LASTFM_BASE_URL}?method=artist.search&artist=${encodeURIComponent(
+      query,
+    )}&api_key=${apiKey}&format=json&limit=${limit}`;
+
+    const fetchInit: any = {};
+    if (process.env.NODE_ENV !== "test") {
+      fetchInit.next = { revalidate: 1800 };
+    }
+
+    const res = await fetchWithTimeout(url, fetchInit, 3000);
+    if (!res.ok) return [];
+
+    const data = await res.json();
+    const artists = data?.results?.artistmatches?.artist;
+    if (!Array.isArray(artists)) return [];
+
+    const results: (LastFmArtist & { tags?: string[] })[] = artists.map(
+      (a: any) => ({
+        name: a.name || "",
+        listeners: parseInt(a.listeners, 10) || 0,
+        mbid: a.mbid || "",
+        url: a.url || "",
+      }),
+    );
+
+    // Enrich top results with artist.getInfo for tags and accurate listener counts
+    if (maxEnrich > 0) {
+      const toEnrich = results.slice(0, maxEnrich);
+      const enrichPromises = toEnrich.map(async (artist) => {
+        try {
+          const infoUrl = `${LASTFM_BASE_URL}?method=artist.getInfo&artist=${encodeURIComponent(
+            artist.name,
+          )}&api_key=${apiKey}&format=json`;
+
+          const infoInit: any = {};
+          if (process.env.NODE_ENV !== "test") {
+            infoInit.next = { revalidate: 1800 };
+          }
+
+          const infoRes = await fetchWithTimeout(infoUrl, infoInit, 2500);
+          if (!infoRes.ok) return;
+
+          const infoData = await infoRes.json();
+          const info = infoData?.artist;
+          if (!info) return;
+
+          // Update listener count from getInfo (more accurate)
+          const listeners = parseInt(info?.stats?.listeners, 10);
+          if (listeners > 0) artist.listeners = listeners;
+
+          // Get mbid if missing
+          if (!artist.mbid && info.mbid) artist.mbid = info.mbid;
+
+          // Extract top tags
+          const tags = info?.tags?.tag;
+          if (Array.isArray(tags) && tags.length > 0) {
+            artist.tags = tags.slice(0, 3).map((t: any) => t.name || "");
+          }
+        } catch {
+          // Silently fail — enrichment is optional
+        }
+      });
+      await Promise.all(enrichPromises);
+    }
+
+    searchCache.set(cacheKey, results, 1800);
+    return results;
+  } catch (err) {
+    console.error("Last.fm artist search error:", err);
+    return [];
+  }
+}
+
 export async function getArtistPopularity(
   artistName: string,
 ): Promise<PopularityResponse> {
