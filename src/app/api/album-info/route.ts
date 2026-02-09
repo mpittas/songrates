@@ -72,6 +72,19 @@ export async function GET(request: NextRequest) {
           artistId: t.artistId,
           artists: t.artistId ? [{ id: t.artistId, name: t.artistName }] : [],
         })),
+        otherVersions: album.otherVersions?.map((v) => ({
+          id: v.id,
+          name: v.name,
+          artworkUrl: v.artworkUrl ? artworkUrl(v.artworkUrl, 200) : undefined,
+          releaseDate: v.releaseDate,
+          type: classifyAlbumType({
+            name: v.name,
+            isSingle: v.isSingle || false,
+            isCompilation: v.isCompilation || false,
+            trackCount: v.trackCount,
+          }),
+          trackCount: v.trackCount,
+        })),
       };
     },
     "Failed to fetch album info",

@@ -75,6 +75,10 @@ function TopSongsList({ songs }: { songs: TopSong[] }) {
             ? createSlug(song.albumName || song.name, song.albumId)
             : null;
 
+          const trackLink = albumSlug
+            ? `/album/${albumSlug}?track=${song.id}`
+            : null;
+
           return (
             <div
               key={song.id}
@@ -100,9 +104,18 @@ function TopSongsList({ songs }: { songs: TopSong[] }) {
 
               {/* Title + Album link */}
               <div className="flex-1 min-w-0">
-                <p className="text-sm text-neutral-200 truncate group-hover:text-white transition-colors">
-                  {song.name}
-                </p>
+                {trackLink ? (
+                  <Link
+                    href={trackLink}
+                    className="text-sm text-neutral-200 truncate group-hover:text-[#00f0ff] transition-colors block"
+                  >
+                    {song.name}
+                  </Link>
+                ) : (
+                  <p className="text-sm text-neutral-200 truncate group-hover:text-white transition-colors">
+                    {song.name}
+                  </p>
+                )}
                 {albumSlug && (
                   <Link
                     href={`/album/${albumSlug}`}

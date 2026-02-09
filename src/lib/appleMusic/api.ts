@@ -157,6 +157,13 @@ function parseAlbum(item: any): AppleAlbumResult {
   };
 }
 
+function extractAlbumIdFromUrl(url?: string): string | undefined {
+  if (!url) return undefined;
+  // Apple Music song URLs: https://music.apple.com/us/album/song-name/ALBUM_ID?i=SONG_ID
+  const match = url.match(/\/album\/[^/]+\/(\d+)/);
+  return match?.[1];
+}
+
 function parseSong(item: any): AppleSongResult {
   const a = item.attributes || {};
   const albumRel = item.relationships?.albums?.data?.[0];
@@ -167,7 +174,7 @@ function parseSong(item: any): AppleSongResult {
     artistName: a.artistName || "",
     artistId: artistRel?.id,
     albumName: a.albumName,
-    albumId: albumRel?.id,
+    albumId: albumRel?.id || extractAlbumIdFromUrl(a.url),
     artworkUrl: a.artwork?.url,
     releaseDate: a.releaseDate,
     durationMs: a.durationInMillis,
@@ -280,7 +287,7 @@ export async function getArtistWithViews(
   if (cached) return cached as ArtistDiscography;
 
   const data = await appleMusicFetch<any>(
-    `/catalog/${STOREFRONT}/artists/${artistId}?views=top-songs,featured-albums,full-albums,singles,compilation-albums,appears-on-albums`,
+    `/catalog/${STOREFRONT}/artists/${artistId}?views=top-songs,featured-albums,full-albums,singles,compilation-albums,appears-on-albums&include[songs]=albums`,
   );
 
   const item = data?.data?.[0];
@@ -303,11 +310,14 @@ export async function getArtistWithViews(
   const topSongsData = views["top-songs"]?.data || [];
   const topSongs: AppleTopSong[] = topSongsData.map((s: any) => {
     const sa = s.attributes || {};
+    const songAlbumRel = s.relationships?.albums?.data?.[0];
     return {
       id: s.id,
       name: sa.name || "",
       artistName: sa.artistName || "",
+      artistId: artistId,
       albumName: sa.albumName,
+      albumId: songAlbumRel?.id,
       artworkUrl: sa.artwork?.url,
       releaseDate: sa.releaseDate,
       durationMs: sa.durationInMillis,
@@ -500,6 +510,15 @@ export interface AppleAlbumDetail {
   editorialNotes?: string;
   url?: string;
   tracks: AppleTrack[];
+  otherVersions?: {
+    id: string;
+    name: string;
+    artworkUrl?: string;
+    releaseDate?: string;
+    isSingle?: boolean;
+    isCompilation?: boolean;
+    trackCount?: number;
+  }[];
 }
 
 export interface AppleTrack {
@@ -526,9 +545,9 @@ export async function getAlbumDetail(
   const cached = albumCache.get(cacheKey);
   if (cached) return cached as AppleAlbumDetail;
 
-  // Fetch album with tracks relationship included
+  // Fetch album with tracks relationship and other-versions view
   const data = await appleMusicFetch<any>(
-    `/catalog/${STOREFRONT}/albums/${albumId}?include=tracks,artists`,
+    `/catalog/${STOREFRONT}/albums/${albumId}?include=tracks,artists&views=other-versions`,
   );
 
   const item = data?.data?.[0];
@@ -580,6 +599,20 @@ export async function getAlbumDetail(
       a.editorialNotes?.standard || a.editorialNotes?.short || undefined,
     url: a.url,
     tracks,
+    otherVersions: (item.views?.["other-versions"]?.data || []).map(
+      (v: any) => {
+        const va = v.attributes || {};
+        return {
+          id: v.id,
+          name: va.name || "",
+          artworkUrl: va.artwork?.url,
+          releaseDate: va.releaseDate,
+          isSingle: va.isSingle === true,
+          isCompilation: va.isCompilation === true,
+          trackCount: va.trackCount,
+        };
+      },
+    ),
   };
 
   albumCache.set(cacheKey, result, 86400);

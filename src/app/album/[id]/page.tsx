@@ -408,6 +408,49 @@ export default function AlbumPage() {
             </div>
           </div>
         </div>
+
+        {/* Other Versions */}
+        {album.otherVersions && album.otherVersions.length > 0 && (
+          <div className="w-full mt-10">
+            <h3 className="text-neutral-600 font-mono tracking-wide text-xs uppercase mb-4">
+              other versions
+            </h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+              {album.otherVersions.map((version) => {
+                const versionSlug = createSlug(version.name, version.id);
+                return (
+                  <Link
+                    key={version.id}
+                    href={`/album/${versionSlug}`}
+                    className="group"
+                  >
+                    <div className="aspect-square relative bg-[#0f0f12] border border-[#1a1a1f] group-hover:border-[#00f0ff]/30 transition-colors overflow-hidden">
+                      <OptimizedImage
+                        src={version.artworkUrl || "/vinyl-placeholder.svg"}
+                        alt={version.name}
+                        fill
+                        className="object-cover"
+                        fallbackSrc="/vinyl-placeholder.svg"
+                      />
+                    </div>
+                    <div className="mt-2">
+                      <p className="text-sm text-neutral-300 group-hover:text-[#00f0ff] transition-colors truncate">
+                        {version.name}
+                      </p>
+                      <p className="text-[11px] text-neutral-600 truncate mt-0.5">
+                        {version.releaseDate?.slice(0, 4) || ""}
+                        {version.type ? ` · ${version.type}` : ""}
+                        {version.trackCount
+                          ? ` · ${version.trackCount} tracks`
+                          : ""}
+                      </p>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </MySection>
     </main>
   );

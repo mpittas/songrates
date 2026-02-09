@@ -43,6 +43,14 @@ export interface AlbumInfo {
   copyright?: string;
   editorialNotes?: string;
   tracks: TrackInfo[];
+  otherVersions?: {
+    id: string;
+    name: string;
+    artworkUrl?: string;
+    releaseDate?: string;
+    type?: string;
+    trackCount?: number;
+  }[];
 }
 
 export interface ArtistInfo {
