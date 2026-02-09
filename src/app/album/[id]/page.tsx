@@ -10,17 +10,9 @@ import MySection from "@/components/ui/MySection";
 import AlbumSkeleton from "@/components/album/AlbumSkeleton";
 import SearchInput from "@/components/search/SearchInput";
 import Button from "@/components/ui/Button";
-import {
-  FaArrowLeft,
-  FaWikipediaW,
-  FaSpotify,
-  FaGlobe,
-  FaLock,
-} from "react-icons/fa";
-import { SiDiscogs, SiBandcamp, SiGenius } from "react-icons/si";
+import { FaArrowLeft, FaLock } from "react-icons/fa";
 import AlbumRatingRow from "@/components/rating/AlbumRatingRow";
 import TrackItem from "@/components/album/TrackItem";
-import { useLastFmPlaycounts } from "@/hooks/useLastFmPlaycounts";
 import { useAlbumInfo } from "@/hooks/useAlbumInfo";
 
 import { AlbumInfo, TrackInfo, AlbumContext } from "@/types/music";
@@ -50,12 +42,6 @@ export default function AlbumPage() {
   >({});
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
-
-  // Last.fm playcounts — single batch request for all tracks, non-blocking
-  const { data: playcounts } = useLastFmPlaycounts(
-    album?.tracks || [],
-    album?.artist?.name,
-  );
 
   // Fetch target user ratings if userId is present
   useEffect(() => {
@@ -189,7 +175,7 @@ export default function AlbumPage() {
     );
   }
 
-  const imageUrl = `https://coverartarchive.org/release-group/${album.id}/front-250`;
+  const imageUrl = album.artworkUrl || "/vinyl-placeholder.svg";
 
   const filteredTracks = (album.tracks || []).filter((track) =>
     track.title.toLowerCase().includes(searchQuery.toLowerCase()),
@@ -338,77 +324,19 @@ export default function AlbumPage() {
               {/* Album Type Badge */}
               <div className="flex items-center gap-2 mb-3">
                 <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-[#00f0ff]/10 text-[#00f0ff] border border-[#00f0ff]/20">
-                  {album.primaryType || album.type}
+                  {album.type}
                 </span>
-                {album.secondaryTypes && album.secondaryTypes.length > 0 && (
-                  <span className="text-xs text-neutral-500">
-                    / {album.secondaryTypes.join(" / ")}
-                  </span>
-                )}
               </div>
             </div>
 
             {/* Actions / Links */}
-            <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mb-8">
-              {/* External Links */}
-              {album.wikipediaUrl && (
-                <Button
-                  href={album.wikipediaUrl}
-                  isExternal
-                  iconLeft={<FaWikipediaW size={12} />}
-                  variant="border"
-                  size="xs"
-                >
-                  Wiki
+            {album.url && (
+              <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mb-8">
+                <Button href={album.url} isExternal variant="border" size="xs">
+                  Apple Music
                 </Button>
-              )}
-              {album.links?.discogs && (
-                <Button
-                  href={album.links.discogs}
-                  isExternal
-                  iconLeft={<SiDiscogs size={12} />}
-                  variant="border"
-                  size="xs"
-                >
-                  Discogs
-                </Button>
-              )}
-              {album.links?.bandcamp && (
-                <Button
-                  href={album.links.bandcamp}
-                  isExternal
-                  iconLeft={<SiBandcamp size={12} />}
-                  variant="border"
-                  size="xs"
-                  className="text-neutral-400 hover:text-[#00f0ff] hover:border-neutral-800 hover:bg-neutral-800 h-8 transition-colors"
-                >
-                  Bandcamp
-                </Button>
-              )}
-              {album.links?.allmusic && (
-                <Button
-                  href={album.links.allmusic}
-                  isExternal
-                  iconLeft={<FaGlobe size={12} />} // Fallback icon
-                  variant="border"
-                  size="xs"
-                >
-                  AllMusic
-                </Button>
-              )}
-              {album.links?.spotify && (
-                <Button
-                  href={album.links.spotify}
-                  isExternal
-                  iconLeft={<FaSpotify size={12} />}
-                  variant="border"
-                  size="xs"
-                  className="text-neutral-400 hover:text-[#1DB954] hover:border-neutral-800 hover:bg-neutral-800 h-8 transition-colors"
-                >
-                  Spotify
-                </Button>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -469,7 +397,6 @@ export default function AlbumPage() {
                   }}
                   publicRating={publicTrackRatings[track.id]?.average_rating}
                   publicCount={publicTrackRatings[track.id]?.rating_count}
-                  listenCount={playcounts?.[track.title]}
                   forcedRating={
                     viewingUserRatings
                       ? viewingUserRatings[track.id] || 0

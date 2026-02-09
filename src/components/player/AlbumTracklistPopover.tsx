@@ -39,7 +39,7 @@ export default function AlbumTracklistPopover({
   const { data: album, isLoading } = useQuery({
     queryKey: ["album", albumId],
     queryFn: async () => {
-      const res = await fetch(`/api/musicbrainz/album-info?id=${albumId}`);
+      const res = await fetch(`/api/album-info?id=${albumId}`);
       if (!res.ok) throw new Error("Failed to fetch album");
       return res.json();
     },
@@ -104,7 +104,8 @@ export default function AlbumTracklistPopover({
                       artistName: album.artist.name,
                       artistId: album.artist.id,
                       albumId: album.id,
-                      albumImageUrl: `https://coverartarchive.org/release-group/${album.id}/front-250`,
+                      albumImageUrl:
+                        album.artworkUrl || "/vinyl-placeholder.svg",
                       albumTitle: album.title,
                       releaseDate: album.releaseDate,
                       totalTracks: album.tracks?.length,

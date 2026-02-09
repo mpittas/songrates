@@ -1,30 +1,7 @@
-import { Artist } from "./artist";
-import { Album } from "./music";
-
 // ─── Search Filter Types ───────────────────────────────────────────────────────
 
 /** The user-facing search categories */
 export type SearchCategory = "all" | "artist" | "album" | "song";
-
-/** MusicBrainz entity types we actually query */
-export type MBEntityType = "artist" | "release-group" | "recording";
-
-/** Maps user-facing category → MusicBrainz entity */
-export const CATEGORY_TO_MB_ENTITY: Record<
-  Exclude<SearchCategory, "all">,
-  MBEntityType
-> = {
-  artist: "artist",
-  album: "release-group",
-  song: "recording",
-} as const;
-
-/** Lucene field names for each entity */
-export const MB_LUCENE_FIELD: Record<MBEntityType, string> = {
-  artist: "artist",
-  "release-group": "releasegroup",
-  recording: "recording",
-} as const;
 
 // ─── Search Result Types ───────────────────────────────────────────────────────
 
@@ -33,15 +10,12 @@ export interface SearchResultBase {
   type: Exclude<SearchCategory, "all">;
   title: string;
   subtitle?: string;
-  score: number;
+  artworkUrl?: string;
 }
 
 export interface ArtistSearchResult extends SearchResultBase {
   type: "artist";
-  country?: string;
-  disambiguation?: string;
-  artistType?: string; // "Group", "Person", etc.
-  tags?: string[]; // Top genre/style tags from MusicBrainz
+  genres?: string[];
 }
 
 export interface AlbumSearchResult extends SearchResultBase {
@@ -49,36 +23,19 @@ export interface AlbumSearchResult extends SearchResultBase {
   artistName?: string;
   artistId?: string;
   releaseDate?: string;
-  primaryType?: string;
-  secondaryTypes?: string[];
+  /** "Album" | "EP" | "Single" | "Compilation" */
+  albumType?: string;
 }
 
 export interface SongSearchResult extends SearchResultBase {
   type: "song";
   artistName?: string;
   artistId?: string;
-  /** Total number of releases this recording appears on (Fame Index) */
-  releaseCount: number;
-  /** Number of *official* releases only (status: "Official") */
-  officialReleaseCount: number;
-  /** Whether this recording appears on an Album-type release-group */
-  hasAlbumRelease: boolean;
-  /** First release date */
-  firstReleaseDate?: string;
+  albumName?: string;
+  albumId?: string;
   /** Duration in milliseconds */
-  length?: number;
-  /** ListenBrainz total listen count (optional enrichment) */
-  listenCount?: number;
-  /** The best-matching release-group (album/EP/single) this recording belongs to */
-  releaseGroupId?: string;
-  /** Title of the best-matching release-group */
-  releaseGroupTitle?: string;
-  /** The original album title (earliest official Album release-group) */
-  originalAlbumTitle?: string;
-  /** The original album's release date */
-  originalAlbumDate?: string;
-  /** Release type label for display: "Album", "Other album", "EP", "Single" */
-  releaseType?: string;
+  durationMs?: number;
+  releaseDate?: string;
 }
 
 export type SearchResult =

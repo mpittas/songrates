@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { IoMusicalNotes, IoDisc, IoPerson } from "react-icons/io5";
 
@@ -19,45 +19,7 @@ import { ArtistVisit } from "@/types/artist";
 import { getArtistHistory } from "@/lib/history";
 import { formatTimeAgo, createSlug, formatTime } from "@/lib/utils";
 import PrefetchLink from "@/components/ui/PrefetchLink";
-import ListenCountBadge from "@/components/ui/ListenCountBadge";
-import Badge from "@/components/ui/Badge";
 import { usePrefetchAlbum } from "@/hooks/useAlbumInfo";
-
-// ─── Album classification helper ────────────────────────────────────────────
-
-const OTHER_ALBUM_SECONDARY_TYPES = [
-  "Soundtrack",
-  "Live",
-  "Remix",
-  "DJ-mix",
-  "Mixtape/Street",
-  "Spokenword",
-  "Interview",
-  "Audiobook",
-  "Audio drama",
-  "Demo",
-];
-
-function classifyAlbum(result: AlbumSearchResult): "album" | "other" | "ep" {
-  if (result.primaryType === "EP") return "ep";
-  const secondary = result.secondaryTypes || [];
-  if (secondary.some((t) => OTHER_ALBUM_SECONDARY_TYPES.includes(t)))
-    return "other";
-  return "album";
-}
-
-function getAlbumTypeLabel(result: AlbumSearchResult): string {
-  const kind = classifyAlbum(result);
-  if (kind === "ep") return "EP";
-  if (kind === "other") {
-    const secondary = result.secondaryTypes || [];
-    const match = secondary.find((t) =>
-      OTHER_ALBUM_SECONDARY_TYPES.includes(t),
-    );
-    return match || "Other album";
-  }
-  return "Album";
-}
 
 // ─── Category Filter Tabs ──────────────────────────────────────────────────────
 
@@ -81,7 +43,7 @@ function CategoryTabs({
         <button
           key={cat.key}
           type="button"
-          onMouseDown={(e) => e.preventDefault()} // Prevent blur
+          onMouseDown={(e) => e.preventDefault()}
           onClick={() => onChange(cat.key)}
           className={`px-3 py-1 text-[11px] font-mono tracking-wider uppercase transition-all rounded-sm ${
             active === cat.key
@@ -96,33 +58,35 @@ function CategoryTabs({
   );
 }
 
-// ─── Individual Result Row Components ──────────────────────────────────────────
+// ─── Artwork helper ─────────────────────────────────────────────────────────
 
-// ─── Cover Art Archive helper ────────────────────────────────────────────────
-
-function CoverArtImage({
-  releaseGroupId,
+function ArtworkImage({
+  url,
   alt,
   rounded = false,
+  fallbackIcon,
 }: {
-  releaseGroupId: string;
+  url?: string;
   alt: string;
   rounded?: boolean;
+  fallbackIcon?: React.ReactNode;
 }) {
   const [hasError, setHasError] = useState(false);
 
-  if (hasError || !releaseGroupId) {
+  if (hasError || !url) {
     return (
-      <IoDisc
-        className="text-neutral-600 group-hover:text-[#00f0ff]/60"
-        size={18}
-      />
+      fallbackIcon || (
+        <IoDisc
+          className="text-neutral-600 group-hover:text-[#00f0ff]/60"
+          size={18}
+        />
+      )
     );
   }
 
   return (
     <img
-      src={`https://coverartarchive.org/release-group/${releaseGroupId}/front-250`}
+      src={url}
       alt={alt}
       width={40}
       height={40}
@@ -134,15 +98,9 @@ function CoverArtImage({
   );
 }
 
-function ArtistRow({
-  result,
-  imageUrl,
-}: {
-  result: ArtistSearchResult;
-  imageUrl?: string;
-}) {
-  const [imgError, setImgError] = useState(false);
+// ─── Individual Result Row Components ──────────────────────────────────────────
 
+function ArtistRow({ result }: { result: ArtistSearchResult }) {
   return (
     <PrefetchLink
       href={`/artist/${createSlug(result.title, result.id)}`}
@@ -150,35 +108,26 @@ function ArtistRow({
       className="flex items-center gap-3 p-3 hover:bg-[#0f0f12] transition-colors group"
     >
       <div className="w-10 h-10 rounded-full overflow-hidden bg-[#0f0f12] border border-[#1a1a1f] group-hover:border-[#00f0ff]/30 flex items-center justify-center flex-shrink-0">
-        {imageUrl && !imgError ? (
-          <img
-            src={imageUrl}
-            alt={result.title}
-            width={40}
-            height={40}
-            loading="lazy"
-            decoding="async"
-            onError={() => setImgError(true)}
-            className="w-full h-full object-cover transition-all grayscale group-hover:grayscale-0 rounded-full"
-          />
-        ) : (
-          <IoPerson
-            className="text-neutral-600 group-hover:text-[#00f0ff]/60"
-            size={18}
-          />
-        )}
+        <ArtworkImage
+          url={result.artworkUrl}
+          alt={result.title}
+          rounded
+          fallbackIcon={
+            <IoPerson
+              className="text-neutral-600 group-hover:text-[#00f0ff]/60"
+              size={18}
+            />
+          }
+        />
       </div>
       <div className="flex-1 min-w-0">
         <h3 className="text-sm text-neutral-300 group-hover:text-[#00f0ff] transition-colors truncate">
           {result.title}
         </h3>
         <p className="text-[11px] text-neutral-600 truncate mt-0.5">
-          {result.artistType || "Artist"}
-          {result.country ? ` · ${result.country}` : ""}
-          {result.tags && result.tags.length > 0
-            ? ` · ${result.tags.join(", ")}`
-            : ""}
-          {result.disambiguation ? ` · ${result.disambiguation}` : ""}
+          {result.genres && result.genres.length > 0
+            ? result.genres.slice(0, 3).join(", ")
+            : "Artist"}
         </p>
       </div>
       <span className="text-[10px] text-neutral-600 font-mono flex-shrink-0 uppercase tracking-wider">
@@ -199,7 +148,7 @@ function AlbumRow({ result }: { result: AlbumSearchResult }) {
       className="flex items-center gap-3 p-3 hover:bg-[#0f0f12] transition-colors group"
     >
       <div className="w-10 h-10 overflow-hidden bg-[#0f0f12] border border-[#1a1a1f] group-hover:border-[#00f0ff]/30 flex items-center justify-center flex-shrink-0">
-        <CoverArtImage releaseGroupId={result.id} alt={result.title} />
+        <ArtworkImage url={result.artworkUrl} alt={result.title} />
       </div>
       <div className="flex-1 min-w-0">
         <h3 className="text-sm text-neutral-300 group-hover:text-[#00f0ff] transition-colors truncate">
@@ -208,54 +157,37 @@ function AlbumRow({ result }: { result: AlbumSearchResult }) {
         <p className="text-[11px] text-neutral-600 truncate mt-0.5">
           {result.artistName || "Unknown Artist"}
           {result.releaseDate ? ` · ${result.releaseDate.slice(0, 4)}` : ""}
-          {result.primaryType ? ` · ${result.primaryType}` : ""}
         </p>
       </div>
       <span className="text-[10px] text-neutral-600 font-mono flex-shrink-0 uppercase tracking-wider">
-        {getAlbumTypeLabel(result)}
+        {result.albumType || "Album"}
       </span>
     </Link>
   );
 }
 
-function SongRow({
-  result,
-  listenCount,
-}: {
-  result: SongSearchResult;
-  listenCount?: number;
-}) {
-  const albumSlug = result.releaseGroupId
-    ? createSlug(
-        result.releaseGroupTitle || result.title,
-        result.releaseGroupId,
-      )
+function SongRow({ result }: { result: SongSearchResult }) {
+  const prefetchAlbum = usePrefetchAlbum();
+  const albumSlug = result.albumId
+    ? createSlug(result.albumName || result.title, result.albumId)
     : null;
   const href = albumSlug ? `/album/${albumSlug}?track=${result.id}` : undefined;
 
-  const effectiveListenCount = listenCount ?? result.listenCount;
-
-  // Display the original album title if available, otherwise the release group title
-  const displayAlbumTitle =
-    result.originalAlbumTitle || result.releaseGroupTitle;
-  // Show the year from original album date, or fall back to first release date
-  const displayYear =
-    (result.originalAlbumDate || result.firstReleaseDate)?.slice(0, 4) || "";
+  const displayYear = result.releaseDate?.slice(0, 4) || "";
 
   const content = (
     <>
       <div className="w-10 h-10 overflow-hidden bg-[#0f0f12] border border-[#1a1a1f] group-hover:border-[#00f0ff]/30 flex items-center justify-center flex-shrink-0">
-        {result.releaseGroupId ? (
-          <CoverArtImage
-            releaseGroupId={result.releaseGroupId}
-            alt={result.releaseGroupTitle || result.title}
-          />
-        ) : (
-          <IoMusicalNotes
-            className="text-neutral-600 group-hover:text-[#00f0ff]/60"
-            size={18}
-          />
-        )}
+        <ArtworkImage
+          url={result.artworkUrl}
+          alt={result.title}
+          fallbackIcon={
+            <IoMusicalNotes
+              className="text-neutral-600 group-hover:text-[#00f0ff]/60"
+              size={18}
+            />
+          }
+        />
       </div>
       <div className="flex-1 min-w-0">
         <h3 className="text-sm text-neutral-300 group-hover:text-[#00f0ff] transition-colors truncate">
@@ -263,26 +195,16 @@ function SongRow({
         </h3>
         <p className="text-[11px] text-neutral-600 truncate mt-0.5">
           {result.artistName || "Unknown Artist"}
-          {displayAlbumTitle ? ` · ${displayAlbumTitle}` : ""}
+          {result.albumName ? ` · ${result.albumName}` : ""}
           {displayYear ? ` · ${displayYear}` : ""}
-          {result.length
-            ? ` · ${formatTime(result.length, "milliseconds")}`
+          {result.durationMs
+            ? ` · ${formatTime(result.durationMs, "milliseconds")}`
             : ""}
         </p>
       </div>
-      <div className="flex items-center gap-2 flex-shrink-0">
-        {result.releaseType && (
-          <Badge variant="green" title={`From: ${result.releaseType}`}>
-            {result.releaseType}
-          </Badge>
-        )}
-        {effectiveListenCount != null && effectiveListenCount > 0 && (
-          <ListenCountBadge listenCount={effectiveListenCount} />
-        )}
-        <span className="text-[10px] text-neutral-600 font-mono uppercase tracking-wider">
-          Song
-        </span>
-      </div>
+      <span className="text-[10px] text-neutral-600 font-mono flex-shrink-0 uppercase tracking-wider">
+        Song
+      </span>
     </>
   );
 
@@ -290,6 +212,7 @@ function SongRow({
     return (
       <Link
         href={href}
+        onMouseEnter={() => albumSlug && prefetchAlbum(albumSlug)}
         className="flex items-center gap-3 p-3 hover:bg-[#0f0f12] transition-colors group"
       >
         {content}
@@ -320,22 +243,14 @@ function SectionHeader({ label, count }: { label: string; count: number }) {
 
 // ─── Result Renderer ───────────────────────────────────────────────────────────
 
-function ResultRow({
-  result,
-  listenCounts,
-  artistImages,
-}: {
-  result: SearchResult;
-  listenCounts: Record<string, number>;
-  artistImages: Record<string, string>;
-}) {
+function ResultRow({ result }: { result: SearchResult }) {
   switch (result.type) {
     case "artist":
-      return <ArtistRow result={result} imageUrl={artistImages[result.id]} />;
+      return <ArtistRow result={result} />;
     case "album":
       return <AlbumRow result={result} />;
     case "song":
-      return <SongRow result={result} listenCount={listenCounts[result.id]} />;
+      return <SongRow result={result} />;
     default:
       return null;
   }
@@ -352,7 +267,6 @@ export default function SearchResults({
 
   // History state
   const [history, setHistory] = useState<ArtistVisit[]>([]);
-  const [images, setImages] = useState<Record<string, string>>({});
 
   // ─── TanStack Query: main search ───────────────────────────────────
   const {
@@ -364,44 +278,10 @@ export default function SearchResults({
   const results = searchData?.results ?? [];
   const grouped = searchData?.grouped ?? null;
 
-  // ─── No client-side re-sort needed ────────────────────────────────
-  // The server now handles hybrid search ranking (Last.fm + MusicBrainz)
-  // so results arrive pre-sorted by popularity.
-
-  // ─── Fetch artist images when search results change ───────────────
-  useEffect(() => {
-    const artistIds = results
-      .filter((r) => r.type === "artist")
-      .map((r) => r.id);
-    if (artistIds.length === 0) return;
-
-    const newIds = artistIds.filter((id) => !images[id]);
-    if (newIds.length === 0) return;
-
-    fetch(`/api/images/artists?ids=${newIds.join(",")}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.images) {
-          setImages((prev) => ({ ...prev, ...data.images }));
-        }
-      })
-      .catch((e) => console.error(e));
-  }, [results]);
-
   // ─── History when focused and empty ────────────────────────────────
   const loadHistory = useCallback(() => {
     const data = getArtistHistory();
     setHistory(data);
-
-    if (data.length > 0) {
-      const ids = data.map((a) => a.id).join(",");
-      fetch(`/api/images/artists?ids=${ids}`)
-        .then((res) => res.json())
-        .then((data) => {
-          setImages((prev) => ({ ...prev, ...data.images }));
-        })
-        .catch((e) => console.error(e));
-    }
   }, []);
 
   useEffect(() => {
@@ -410,24 +290,7 @@ export default function SearchResults({
     }
   }, [isFocused, query, loadHistory]);
 
-  // ─── Extract LastFM listen counts from search results ───────────────────
-  const listenCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    results.forEach((result) => {
-      if (
-        result.type === "song" &&
-        result.listenCount != null &&
-        result.listenCount > 0
-      ) {
-        counts[result.id] = result.listenCount;
-      }
-    });
-    return counts;
-  }, [results]);
-
   // ─── Determine loading state ───────────────────────────────────────
-  // Show loading spinner when fetching if we have no results to show
-  // (even if we have placeholder data, if it's empty, we should show loading instead of blank)
   const showLoading = isFetching && results.length === 0;
 
   if (!query && (!isFocused || history.length === 0)) return null;
@@ -437,7 +300,7 @@ export default function SearchResults({
       {/* Category Filter Tabs */}
       {query && <CategoryTabs active={category} onChange={setCategory} />}
 
-      {/* Loading skeletons — shown immediately when no previous data available */}
+      {/* Loading skeletons */}
       {query && showLoading && (
         <div className="divide-y divide-[#1a1a1f]/50">
           {Array.from({ length: 6 }).map((_, i) => (
@@ -453,7 +316,7 @@ export default function SearchResults({
         </div>
       )}
 
-      {/* Fetching indicator — shown when refreshing with existing data */}
+      {/* Fetching indicator */}
       {query && isFetching && !showLoading && results.length > 0 && (
         <div className="h-0.5 bg-[#00f0ff]/10 overflow-hidden">
           <div
@@ -463,7 +326,7 @@ export default function SearchResults({
         </div>
       )}
 
-      {/* Results — uses server-ranked results directly */}
+      {/* Results */}
       {query && !showLoading && results.length > 0 && (
         <div className="divide-y divide-[#1a1a1f]/50">
           {category === "all" && grouped ? (
@@ -475,12 +338,7 @@ export default function SearchResults({
                     count={grouped.artists.length}
                   />
                   {grouped.artists.slice(0, 3).map((r) => (
-                    <ResultRow
-                      key={r.id}
-                      result={r}
-                      listenCounts={listenCounts}
-                      artistImages={images}
-                    />
+                    <ResultRow key={r.id} result={r} />
                   ))}
                 </>
               )}
@@ -488,12 +346,7 @@ export default function SearchResults({
                 <>
                   <SectionHeader label="Albums" count={grouped.albums.length} />
                   {grouped.albums.slice(0, 3).map((r) => (
-                    <ResultRow
-                      key={r.id}
-                      result={r}
-                      listenCounts={listenCounts}
-                      artistImages={images}
-                    />
+                    <ResultRow key={r.id} result={r} />
                   ))}
                 </>
               )}
@@ -501,12 +354,7 @@ export default function SearchResults({
                 <>
                   <SectionHeader label="Songs" count={grouped.songs.length} />
                   {grouped.songs.slice(0, 8).map((r) => (
-                    <ResultRow
-                      key={r.id}
-                      result={r}
-                      listenCounts={listenCounts}
-                      artistImages={images}
-                    />
+                    <ResultRow key={r.id} result={r} />
                   ))}
                 </>
               )}
@@ -516,41 +364,19 @@ export default function SearchResults({
               const albums = results.filter(
                 (r): r is AlbumSearchResult => r.type === "album",
               );
-              const mainAlbums = albums.filter(
-                (r) => classifyAlbum(r) === "album",
+              const mainAlbums = albums.filter((r) => r.albumType === "Album");
+              const eps = albums.filter((r) => r.albumType === "EP");
+              const singles = albums.filter((r) => r.albumType === "Single");
+              const compilations = albums.filter(
+                (r) => r.albumType === "Compilation",
               );
-              const otherAlbums = albums.filter(
-                (r) => classifyAlbum(r) === "other",
-              );
-              const eps = albums.filter((r) => classifyAlbum(r) === "ep");
               return (
                 <>
                   {mainAlbums.length > 0 && (
                     <>
                       <SectionHeader label="Albums" count={mainAlbums.length} />
                       {mainAlbums.map((r) => (
-                        <ResultRow
-                          key={r.id}
-                          result={r}
-                          listenCounts={listenCounts}
-                          artistImages={images}
-                        />
-                      ))}
-                    </>
-                  )}
-                  {otherAlbums.length > 0 && (
-                    <>
-                      <SectionHeader
-                        label="Other albums"
-                        count={otherAlbums.length}
-                      />
-                      {otherAlbums.map((r) => (
-                        <ResultRow
-                          key={r.id}
-                          result={r}
-                          listenCounts={listenCounts}
-                          artistImages={images}
-                        />
+                        <ResultRow key={r.id} result={r} />
                       ))}
                     </>
                   )}
@@ -558,12 +384,26 @@ export default function SearchResults({
                     <>
                       <SectionHeader label="EPs" count={eps.length} />
                       {eps.map((r) => (
-                        <ResultRow
-                          key={r.id}
-                          result={r}
-                          listenCounts={listenCounts}
-                          artistImages={images}
-                        />
+                        <ResultRow key={r.id} result={r} />
+                      ))}
+                    </>
+                  )}
+                  {singles.length > 0 && (
+                    <>
+                      <SectionHeader label="Singles" count={singles.length} />
+                      {singles.map((r) => (
+                        <ResultRow key={r.id} result={r} />
+                      ))}
+                    </>
+                  )}
+                  {compilations.length > 0 && (
+                    <>
+                      <SectionHeader
+                        label="Compilations"
+                        count={compilations.length}
+                      />
+                      {compilations.map((r) => (
+                        <ResultRow key={r.id} result={r} />
                       ))}
                     </>
                   )}
@@ -571,19 +411,12 @@ export default function SearchResults({
               );
             })()
           ) : (
-            results.map((r) => (
-              <ResultRow
-                key={r.id}
-                result={r}
-                listenCounts={listenCounts}
-                artistImages={images}
-              />
-            ))
+            results.map((r) => <ResultRow key={r.id} result={r} />)
           )}
         </div>
       )}
 
-      {/* No results — only show when fetch completed and no placeholder data is being shown */}
+      {/* No results */}
       {query && !isFetching && !isPlaceholderData && results.length === 0 && (
         <div className="text-center py-8 text-neutral-600 font-mono text-sm">
           no results found for &ldquo;{query}&rdquo;
@@ -608,24 +441,10 @@ export default function SearchResults({
                 onMouseDown={(e) => e.preventDefault()}
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 overflow-hidden bg-[#0a0a0d] border border-[#1a1a1f] flex-shrink-0 group-hover:border-[#00f0ff]/30">
-                    {images[artist.id] ? (
-                      <img
-                        src={images[artist.id]}
-                        alt={artist.name}
-                        width={32}
-                        height={32}
-                        loading="lazy"
-                        decoding="async"
-                        className="w-full h-full object-cover transition-all grayscale group-hover:grayscale-0"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-neutral-600">
-                        <span className="text-[10px] font-mono">
-                          {artist.name.slice(0, 2).toUpperCase()}
-                        </span>
-                      </div>
-                    )}
+                  <div className="w-8 h-8 overflow-hidden bg-[#0a0a0d] border border-[#1a1a1f] flex-shrink-0 group-hover:border-[#00f0ff]/30 flex items-center justify-center">
+                    <span className="text-[10px] font-mono text-neutral-600">
+                      {artist.name.slice(0, 2).toUpperCase()}
+                    </span>
                   </div>
                   <span className="text-sm text-neutral-400 group-hover:text-[#00f0ff] transition-colors">
                     {artist.name}

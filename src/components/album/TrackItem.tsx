@@ -7,7 +7,6 @@ import { useRatings } from "@/hooks/useRatings";
 import { usePlayer } from "@/context/PlayerContext";
 import { formatTime, createSlug } from "@/lib/utils";
 import ColorRating from "@/components/rating/ColorRating";
-import ListenCountBadge from "@/components/ui/ListenCountBadge";
 import { TrackInfo, AlbumContext } from "@/types/music";
 
 interface TrackItemProps {
@@ -20,8 +19,6 @@ interface TrackItemProps {
   publicRating?: number;
   publicCount?: number;
   forcedRating?: number;
-  /** ListenBrainz total listen count */
-  listenCount?: number;
   /** When true, scroll into view and pulse-highlight this track */
   highlighted?: boolean;
 }
@@ -36,7 +33,6 @@ export default function TrackItem({
   publicRating,
   publicCount,
   forcedRating,
-  listenCount,
   highlighted = false,
 }: TrackItemProps) {
   const trackRef = useRef<HTMLDivElement>(null);
@@ -138,11 +134,6 @@ export default function TrackItem({
         </div>
 
         <div className="flex items-center gap-4">
-          {/* ListenBrainz Total Plays */}
-          {listenCount != null && listenCount > 0 && (
-            <ListenCountBadge listenCount={listenCount} />
-          )}
-
           {/* Public Rating Display */}
           {publicRating && (
             <div

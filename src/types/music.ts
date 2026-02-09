@@ -17,69 +17,53 @@ export interface Album {
   id: string;
   title: string;
   artistName?: string;
+  artworkUrl?: string;
   releaseDate?: string;
-  wikipediaUrl?: string;
-  wikidataId?: string;
   rating?: number | null;
+  /** "Album" | "EP" | "Single" | "Compilation" */
+  type?: string;
 }
 
 export interface TrackInfo extends Track {
   number: string;
   length?: number;
   artists?: { id: string; name: string; joinPhrase?: string }[];
-  /** MusicBrainz recording MBID — used for ListenBrainz lookups */
-  recordingId?: string;
 }
 
 export interface AlbumInfo {
   id: string;
   title: string;
   artist: { name: string; id: string };
+  /** "Album" | "EP" | "Single" | "Compilation" */
   type: string;
-  primaryType?: string;
-  secondaryTypes?: string[];
   releaseDate: string;
   genres: string[];
-  rating: number | null;
-  wikipediaUrl: string | null;
-  links?: {
-    discogs?: string;
-    allmusic?: string;
-    bandcamp?: string;
-    spotify?: string;
-    description?: string;
-  };
+  artworkUrl?: string;
+  url?: string;
+  copyright?: string;
+  editorialNotes?: string;
   tracks: TrackInfo[];
 }
 
 export interface ArtistInfo {
   image: string | null;
   description: string | null;
-  wikipedia: string | null;
-  twitter: string | null;
-  instagram: string | null;
-  facebook: string | null;
-  youtube: string | null;
-  spotify: string | null;
-  officialSite: string | null;
+  url: string | null;
   genres: string[];
-  beginDate: string | null;
-  endDate: string | null;
-  country: string | null;
 }
 
 export interface ArtistData {
   id: string;
   name: string | null;
-  country: string | null;
-  lifeSpan: any;
 }
 
 export interface Release {
   id: string;
   title: string;
+  artworkUrl?: string;
   releaseDate?: string;
-  wikipediaUrl?: string;
+  /** "Album" | "EP" | "Single" | "Compilation" */
+  type?: string;
 }
 
 export interface GroupedReleases {

@@ -27,18 +27,32 @@ export async function generateAppleMusicToken(): Promise<string | null> {
   const privateKey = process.env.APPLE_MUSIC_PRIVATE_KEY;
 
   if (!keyId || !teamId || !privateKey) {
-    console.error("Missing Apple Music credentials. Check environment variables.");
+    console.error(
+      "Missing Apple Music credentials. Check environment variables.",
+    );
     return null;
   }
 
   // Check cached token
-  if (tokenCache && tokenCache.expiresAt > Date.now() + TOKEN_REFRESH_BUFFER_MS) {
+  if (
+    tokenCache &&
+    tokenCache.expiresAt > Date.now() + TOKEN_REFRESH_BUFFER_MS
+  ) {
     return tokenCache.token;
   }
 
   try {
-    // Import the private key (ES256 requires PKCS8 format)
-    const key = await importPKCS8(privateKey.replace(/\\n/g, "\n"), "ES256");
+    // Normalize the private key:
+    // - Next.js dotenv may deliver real newlines (multiline quoted value)
+    // - Or it may deliver literal \n escape sequences (single-line value)
+    // Handle both cases:
+    let normalizedKey = privateKey;
+    if (!normalizedKey.includes("\n")) {
+      // Single-line: replace literal \n with real newlines
+      normalizedKey = normalizedKey.replace(/\\n/g, "\n");
+    }
+
+    const key = await importPKCS8(normalizedKey, "ES256");
 
     const now = Math.floor(Date.now() / 1000);
     const exp = now + 15552000; // 6 months (max allowed by Apple)
@@ -70,7 +84,10 @@ export async function generateAppleMusicToken(): Promise<string | null> {
 /**
  * Get authorization headers for Apple Music API
  */
-export async function getAppleMusicHeaders(): Promise<Record<string, string> | null> {
+export async function getAppleMusicHeaders(): Promise<Record<
+  string,
+  string
+> | null> {
   const token = await generateAppleMusicToken();
   if (!token) return null;
 

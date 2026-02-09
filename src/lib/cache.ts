@@ -81,9 +81,6 @@ export const albumCache = new LRUCache<any>(2000, 86400);
 // Image URL cache - 7 day TTL, up to 5000 entries (images rarely change)
 export const imageCache = new LRUCache<string>(5000, 604800);
 
-// Wikidata cache - 24 hour TTL, up to 1000 entries
-export const wikidataCache = new LRUCache<any>(1000, 86400);
-
 // Search results cache - 1 hour TTL, up to 500 entries
 export const searchCache = new LRUCache<any>(500, 3600);
 

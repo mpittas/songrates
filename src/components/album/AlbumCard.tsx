@@ -4,7 +4,7 @@ import { createSlug } from "@/lib/utils";
 import OptimizedImage from "@/components/ui/OptimizedImage";
 import { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { FaWikipediaW, FaEllipsisV } from "react-icons/fa";
+import { FaEllipsisV } from "react-icons/fa";
 import { useRatingsContext } from "@/context/RatingsContext";
 import AlbumRatingBadge from "@/components/rating/AlbumRatingBadge";
 import { Album } from "@/types/music";
@@ -165,7 +165,7 @@ export default function AlbumCard({
   isPriority = false,
   layout = "grid",
 }: AlbumCardProps) {
-  const imageUrl = `https://coverartarchive.org/release-group/${album.id}/front-250`;
+  const imageUrl = album.artworkUrl || "/vinyl-placeholder.svg";
   const [imageError, setImageError] = useState(false);
   const prefetchAlbum = usePrefetchAlbum();
   const prefetchedRef = useRef(false);
@@ -251,20 +251,6 @@ export default function AlbumCard({
           )}
 
           <div className="absolute top-2 right-2 flex gap-2 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-            {album.wikipediaUrl && (
-              <Button
-                variant="ghost"
-                size="xs"
-                className="w-8 h-8 p-0 bg-black/60 hover:bg-black/80 text-white border border-white/10 backdrop-blur-sm"
-                onClick={(e) => {
-                  e.preventDefault();
-                  window.open(album.wikipediaUrl, "_blank");
-                }}
-                title="Wikipedia"
-              >
-                <FaWikipediaW size={12} />
-              </Button>
-            )}
             <AlbumOptionsMenu albumId={album.id} />
           </div>
 
