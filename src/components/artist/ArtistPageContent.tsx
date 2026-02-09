@@ -1,56 +1,39 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import DropdownFilter from "@/components/ui/DropdownFilter";
 import SearchInput from "@/components/search/SearchInput";
 
 import ArtistInfo from "./ArtistInfo";
 import Discography from "./Discography";
-import Link from "next/link";
 import { addToHistory } from "@/lib/history";
 import MySection from "@/components/ui/MySection";
 import Button from "@/components/ui/Button";
 import { FaArrowLeft } from "react-icons/fa";
-// Types
-import {
-  Album,
-  ArtistInfo as ArtistInfoType,
-  GroupedReleases,
-} from "@/types/music";
+import { Album, ArtistInfo as ArtistInfoType, TopSong } from "@/types/music";
 
 interface ArtistPageContentProps {
   artistId: string;
   artistName: string;
   artistInfo: ArtistInfoType;
+  topSongs: TopSong[];
+  essentialAlbums: Album[];
   albums: Album[];
-  otherReleases?: GroupedReleases;
+  epsAndSingles: Album[];
+  appearsOn: Album[];
 }
 
 export default function ArtistPageContent({
   artistId,
   artistName,
   artistInfo,
+  topSongs,
+  essentialAlbums,
   albums,
-  otherReleases = {},
+  epsAndSingles,
+  appearsOn,
 }: ArtistPageContentProps) {
-  const [sortBy, setSortBy] = useState<
-    "newest" | "oldest" | "title" | "popularity"
-  >("newest");
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
-
-  const sortedAlbums = [...albums].sort((a, b) => {
-    if (sortBy === "newest")
-      return (b.releaseDate || "").localeCompare(a.releaseDate || "");
-    if (sortBy === "oldest")
-      return (a.releaseDate || "").localeCompare(b.releaseDate || "");
-    if (sortBy === "title") return a.title.localeCompare(b.title);
-    return 0;
-  });
-
-  const filteredMainAlbums = sortedAlbums.filter((album) =>
-    album.title.toLowerCase().includes(searchQuery.toLowerCase()),
-  );
 
   useEffect(() => {
     if (artistId && artistName) addToHistory(artistId, artistName);
@@ -70,30 +53,17 @@ export default function ArtistPageContent({
             Back
           </Button>
 
-          <div className="flex items-center gap-2 w-full md:w-auto">
-            <DropdownFilter
-              label="sort:"
-              options={[
-                { label: "Newest First", value: "newest" },
-                { label: "Oldest First", value: "oldest" },
-                { label: "Title (A-Z)", value: "title" },
-                { label: "Popularity", value: "popularity" },
-              ]}
-              value={sortBy}
-              onChange={(val) => setSortBy(val as any)}
+          <div className="w-full md:w-48">
+            <SearchInput
+              value={searchQuery}
+              onChange={setSearchQuery}
+              onClear={() => setSearchQuery("")}
+              placeholder="search discography..."
+              onFocus={() => setIsSearchFocused(true)}
+              onBlur={() => setIsSearchFocused(false)}
+              isFocused={isSearchFocused}
+              size="compact"
             />
-            <div className="w-full md:w-48">
-              <SearchInput
-                value={searchQuery}
-                onChange={setSearchQuery}
-                onClear={() => setSearchQuery("")}
-                placeholder="search discography..."
-                onFocus={() => setIsSearchFocused(true)}
-                onBlur={() => setIsSearchFocused(false)}
-                isFocused={isSearchFocused}
-                size="compact"
-              />
-            </div>
           </div>
         </div>
 
@@ -111,11 +81,12 @@ export default function ArtistPageContent({
             <Discography
               artistId={artistId}
               artistName={artistName}
-              mainAlbums={filteredMainAlbums}
-              onSelectAlbum={() => {}}
-              initialReleases={otherReleases}
+              topSongs={topSongs}
+              essentialAlbums={essentialAlbums}
+              albums={albums}
+              epsAndSingles={epsAndSingles}
+              appearsOn={appearsOn}
               searchQuery={searchQuery}
-              sortBy={sortBy}
             />
           </div>
         </div>

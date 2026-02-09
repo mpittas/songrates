@@ -1,11 +1,13 @@
 import {
-  getArtist,
-  getArtistAlbums,
-  groupArtistAlbums,
+  getArtistWithViews,
+  getArtistFullAlbums,
+  getArtistSingles,
+  classifyAlbumType,
   artworkUrl,
+  type AppleArtistAlbum,
 } from "@/lib/appleMusic/api";
 import ArtistPageContent from "@/components/artist/ArtistPageContent";
-import type { Album, ArtistInfo, GroupedReleases } from "@/types/music";
+import type { Album, ArtistInfo, TopSong } from "@/types/music";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -27,13 +29,17 @@ export default async function ArtistPage({ params }: PageProps) {
   const { id: slug } = await params;
   const id = resolveArtistId(slug);
 
-  // Fetch artist info and albums in parallel
-  const [artist, allAlbums] = await Promise.all([
-    getArtist(id),
-    getArtistAlbums(id),
+  // Single API call gets artist + all views (top-songs, featured-albums,
+  // full-albums, singles, compilation-albums, appears-on-albums).
+  // The ?views= param returns up to 10 items per view.
+  // For full lists we paginate full-albums and singles separately.
+  const [discography, allFullAlbums, allSingles] = await Promise.all([
+    getArtistWithViews(id),
+    getArtistFullAlbums(id),
+    getArtistSingles(id),
   ]);
 
-  if (!artist) {
+  if (!discography) {
     return (
       <main className="min-h-screen bg-[#050507] text-neutral-100 p-6 md:px-16 md:py-8 flex items-center justify-center">
         <div className="text-neutral-500 font-mono">Artist not found</div>
@@ -41,51 +47,46 @@ export default async function ArtistPage({ params }: PageProps) {
     );
   }
 
-  // Group albums into categories
-  const grouped = groupArtistAlbums(allAlbums);
+  const { artist } = discography;
 
-  // Map to our Album type for the main albums section
-  const albums: Album[] = grouped.albums.map((a) => ({
+  // Helper to map Apple albums → our Album type
+  const mapAlbum = (a: AppleArtistAlbum, typeOverride?: string): Album => ({
     id: a.id,
     title: a.name,
     artistName: a.artistName,
     artworkUrl: a.artworkUrl ? artworkUrl(a.artworkUrl, 300) : undefined,
     releaseDate: a.releaseDate,
-    type: "Album",
+    type: typeOverride || classifyAlbumType(a),
+  });
+
+  // ── Top Songs (from views, up to 10) ──
+  const topSongs: TopSong[] = discography.topSongs.map((s) => ({
+    id: s.id,
+    name: s.name,
+    artistName: s.artistName,
+    artistId: s.artistId,
+    albumName: s.albumName,
+    albumId: s.albumId,
+    artworkUrl: s.artworkUrl ? artworkUrl(s.artworkUrl, 100) : undefined,
+    releaseDate: s.releaseDate,
+    durationMs: s.durationMs,
   }));
 
-  // Map other releases into GroupedReleases
-  const otherReleases: GroupedReleases = {};
+  // ── Essential Albums: from featured-albums view (Apple's curated picks) ──
+  const essentialAlbums: Album[] = discography.featuredAlbums.map((a) =>
+    mapAlbum(a, "Album"),
+  );
 
-  if (grouped.eps.length > 0) {
-    otherReleases["EPs"] = grouped.eps.map((a) => ({
-      id: a.id,
-      title: a.name,
-      artworkUrl: a.artworkUrl ? artworkUrl(a.artworkUrl, 300) : undefined,
-      releaseDate: a.releaseDate,
-      type: "EP",
-    }));
-  }
+  // ── Albums: full paginated list from /view/full-albums ──
+  const albums: Album[] = allFullAlbums.map((a) => mapAlbum(a, "Album"));
 
-  if (grouped.singles.length > 0) {
-    otherReleases["Singles"] = grouped.singles.map((a) => ({
-      id: a.id,
-      title: a.name,
-      artworkUrl: a.artworkUrl ? artworkUrl(a.artworkUrl, 300) : undefined,
-      releaseDate: a.releaseDate,
-      type: "Single",
-    }));
-  }
+  // ── EPs & Singles: full paginated list from /view/singles ──
+  const epsAndSingles: Album[] = allSingles
+    .map((a) => mapAlbum(a))
+    .sort((a, b) => (b.releaseDate || "").localeCompare(a.releaseDate || ""));
 
-  if (grouped.compilations.length > 0) {
-    otherReleases["Compilations"] = grouped.compilations.map((a) => ({
-      id: a.id,
-      title: a.name,
-      artworkUrl: a.artworkUrl ? artworkUrl(a.artworkUrl, 300) : undefined,
-      releaseDate: a.releaseDate,
-      type: "Compilation",
-    }));
-  }
+  // ── Appears On (from views, up to 10) ──
+  const appearsOn: Album[] = discography.appearsOn.map((a) => mapAlbum(a));
 
   const artistInfo: ArtistInfo = {
     image: artist.artworkUrl ? artworkUrl(artist.artworkUrl, 300) : null,
@@ -99,8 +100,11 @@ export default async function ArtistPage({ params }: PageProps) {
       artistId={id}
       artistName={artist.name}
       artistInfo={artistInfo}
+      topSongs={topSongs}
+      essentialAlbums={essentialAlbums}
       albums={albums}
-      otherReleases={otherReleases}
+      epsAndSingles={epsAndSingles}
+      appearsOn={appearsOn}
     />
   );
 }

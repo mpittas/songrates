@@ -70,6 +70,18 @@ export interface GroupedReleases {
   [type: string]: Release[];
 }
 
+export interface TopSong {
+  id: string;
+  name: string;
+  artistName: string;
+  artistId?: string;
+  albumName?: string;
+  albumId?: string;
+  artworkUrl?: string;
+  releaseDate?: string;
+  durationMs?: number;
+}
+
 export interface AlbumContext {
   albumId: string;
   title: string;

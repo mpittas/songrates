@@ -24,7 +24,10 @@ export function artworkUrl(
     .replace("{h}", String(height ?? width));
 }
 
-async function appleMusicFetch<T>(path: string): Promise<T | null> {
+async function appleMusicFetch<T>(
+  path: string,
+  retries: number = 2,
+): Promise<T | null> {
   const headers = await getAppleMusicHeaders();
   if (!headers) {
     console.error("Apple Music: failed to get auth headers");
@@ -33,26 +36,46 @@ async function appleMusicFetch<T>(path: string): Promise<T | null> {
 
   const url = `${APPLE_MUSIC_BASE_URL}${path}`;
 
-  try {
-    const res = await fetch(url, {
-      headers,
-      next: { revalidate: 3600 },
-    });
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const res = await fetch(url, {
+        headers,
+        next: { revalidate: 3600 },
+      });
 
-    if (!res.ok) {
-      const body = await res.text();
-      console.error(
-        `Apple Music API ${res.status} for ${path}:`,
-        body.substring(0, 500),
-      );
+      if (res.status === 429) {
+        // Rate limited — wait and retry
+        const retryAfter = Number(res.headers.get("Retry-After")) || 1;
+        const delay = Math.min(retryAfter * 1000, 5000) * (attempt + 1);
+        if (attempt < retries) {
+          await new Promise((r) => setTimeout(r, delay));
+          continue;
+        }
+        console.error(`Apple Music API 429 (exhausted retries) for ${path}`);
+        return null;
+      }
+
+      if (!res.ok) {
+        const body = await res.text();
+        console.error(
+          `Apple Music API ${res.status} for ${path}:`,
+          body.substring(0, 500),
+        );
+        return null;
+      }
+
+      return res.json();
+    } catch (err) {
+      if (attempt < retries) {
+        await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
+        continue;
+      }
+      console.error("Apple Music fetch error for", url, ":", err);
       return null;
     }
-
-    return res.json();
-  } catch (err) {
-    console.error("Apple Music fetch error for", url, ":", err);
-    return null;
   }
+
+  return null;
 }
 
 // ─── Search ───────────────────────────────────────────────────────────────────
@@ -232,6 +255,89 @@ export async function getArtist(
   return result;
 }
 
+/**
+ * All artist discography data returned from a single API call
+ */
+export interface ArtistDiscography {
+  artist: AppleArtistDetail;
+  topSongs: AppleTopSong[];
+  featuredAlbums: AppleArtistAlbum[];
+  fullAlbums: AppleArtistAlbum[];
+  singles: AppleArtistAlbum[];
+  compilations: AppleArtistAlbum[];
+  appearsOn: AppleArtistAlbum[];
+}
+
+/**
+ * Fetch artist + all views in a single API call using ?views= parameter.
+ * This matches the data shown on music.apple.com artist pages.
+ */
+export async function getArtistWithViews(
+  artistId: string,
+): Promise<ArtistDiscography | null> {
+  const cacheKey = `am-artist-full:${artistId}`;
+  const cached = artistCache.get(cacheKey);
+  if (cached) return cached as ArtistDiscography;
+
+  const data = await appleMusicFetch<any>(
+    `/catalog/${STOREFRONT}/artists/${artistId}?views=top-songs,featured-albums,full-albums,singles,compilation-albums,appears-on-albums`,
+  );
+
+  const item = data?.data?.[0];
+  if (!item) return null;
+
+  const a = item.attributes || {};
+  const views = item.views || {};
+
+  const artist: AppleArtistDetail = {
+    id: item.id,
+    name: a.name || "",
+    genres: a.genreNames || [],
+    artworkUrl: a.artwork?.url,
+    url: a.url,
+    editorialNotes:
+      a.editorialNotes?.standard || a.editorialNotes?.short || undefined,
+  };
+
+  // Parse top songs from the view
+  const topSongsData = views["top-songs"]?.data || [];
+  const topSongs: AppleTopSong[] = topSongsData.map((s: any) => {
+    const sa = s.attributes || {};
+    return {
+      id: s.id,
+      name: sa.name || "",
+      artistName: sa.artistName || "",
+      albumName: sa.albumName,
+      artworkUrl: sa.artwork?.url,
+      releaseDate: sa.releaseDate,
+      durationMs: sa.durationInMillis,
+      trackNumber: sa.trackNumber,
+      url: sa.url,
+    };
+  });
+
+  const result: ArtistDiscography = {
+    artist,
+    topSongs,
+    featuredAlbums: sortByDateDesc(
+      parseAlbumItems(views["featured-albums"]?.data || []),
+    ),
+    fullAlbums: sortByDateDesc(
+      parseAlbumItems(views["full-albums"]?.data || []),
+    ),
+    singles: sortByDateDesc(parseAlbumItems(views["singles"]?.data || [])),
+    compilations: sortByDateDesc(
+      parseAlbumItems(views["compilation-albums"]?.data || []),
+    ),
+    appearsOn: sortByDateDesc(
+      parseAlbumItems(views["appears-on-albums"]?.data || []),
+    ),
+  };
+
+  artistCache.set(cacheKey, result, 86400);
+  return result;
+}
+
 // ─── Artist Albums (Discography) ──────────────────────────────────────────────
 
 export interface AppleArtistAlbum {
@@ -259,13 +365,11 @@ export function classifyAlbumType(album: {
 }): string {
   if (album.isCompilation) return "Compilation";
   if (album.isSingle) {
-    // Apple marks both singles and EPs as isSingle=true
-    // EPs typically have 4-6 tracks, or "EP" in the name
+    const lower = album.name.toLowerCase();
     if (
-      album.name.toLowerCase().includes(" ep") ||
-      album.name.toLowerCase().includes("(ep)") ||
-      album.name.toLowerCase().endsWith(" - ep") ||
-      (album.trackCount && album.trackCount >= 4 && album.trackCount <= 6)
+      lower.includes(" ep") ||
+      lower.includes("(ep)") ||
+      lower.endsWith(" - ep")
     ) {
       return "EP";
     }
@@ -275,99 +379,106 @@ export function classifyAlbumType(album: {
 }
 
 /**
- * Get all albums for an artist (paginated, fetches all)
+ * Parse raw Apple Music album items into AppleArtistAlbum[]
  */
-export async function getArtistAlbums(
-  artistId: string,
-): Promise<AppleArtistAlbum[]> {
-  const cacheKey = `am-artist-albums:${artistId}`;
-  const cached = albumCache.get(cacheKey);
-  if (cached) return cached as AppleArtistAlbum[];
-
-  const allAlbums: AppleArtistAlbum[] = [];
-  let offset = 0;
-  const limit = 100;
-  let hasMore = true;
-
-  while (hasMore) {
-    const data = await appleMusicFetch<any>(
-      `/catalog/${STOREFRONT}/artists/${artistId}/albums?limit=${limit}&offset=${offset}`,
-    );
-
-    const items = data?.data || [];
-    if (items.length === 0) {
-      hasMore = false;
-      break;
-    }
-
-    for (const item of items) {
-      const a = item.attributes || {};
-      allAlbums.push({
-        id: item.id,
-        name: a.name || "",
-        artistName: a.artistName || "",
-        artworkUrl: a.artwork?.url,
-        releaseDate: a.releaseDate,
-        trackCount: a.trackCount,
-        isSingle: a.isSingle === true,
-        isCompilation: a.isCompilation === true,
-        genreNames: a.genreNames || [],
-        contentRating: a.contentRating,
-        url: a.url,
-      });
-    }
-
-    if (items.length < limit) {
-      hasMore = false;
-    } else {
-      offset += limit;
-    }
-  }
-
-  // Sort by release date descending
-  allAlbums.sort((a, b) =>
-    (b.releaseDate || "").localeCompare(a.releaseDate || ""),
-  );
-
-  albumCache.set(cacheKey, allAlbums, 86400);
-  return allAlbums;
+function parseAlbumItems(items: any[]): AppleArtistAlbum[] {
+  return items.map((item: any) => {
+    const a = item.attributes || {};
+    return {
+      id: item.id,
+      name: a.name || "",
+      artistName: a.artistName || "",
+      artworkUrl: a.artwork?.url,
+      releaseDate: a.releaseDate,
+      trackCount: a.trackCount,
+      isSingle: a.isSingle === true,
+      isCompilation: a.isCompilation === true,
+      genreNames: a.genreNames || [],
+      contentRating: a.contentRating,
+      url: a.url,
+    };
+  });
 }
 
 /**
- * Group artist albums into categories: Albums, EPs, Singles, Compilations
+ * Sort albums by release date descending
  */
-export function groupArtistAlbums(albums: AppleArtistAlbum[]): {
-  albums: AppleArtistAlbum[];
-  eps: AppleArtistAlbum[];
-  singles: AppleArtistAlbum[];
-  compilations: AppleArtistAlbum[];
-} {
-  const result = {
-    albums: [] as AppleArtistAlbum[],
-    eps: [] as AppleArtistAlbum[],
-    singles: [] as AppleArtistAlbum[],
-    compilations: [] as AppleArtistAlbum[],
-  };
+function sortByDateDesc(albums: AppleArtistAlbum[]): AppleArtistAlbum[] {
+  return albums.sort((a, b) =>
+    (b.releaseDate || "").localeCompare(a.releaseDate || ""),
+  );
+}
 
-  for (const album of albums) {
-    const type = classifyAlbumType(album);
-    switch (type) {
-      case "Album":
-        result.albums.push(album);
-        break;
-      case "EP":
-        result.eps.push(album);
-        break;
-      case "Single":
-        result.singles.push(album);
-        break;
-      case "Compilation":
-        result.compilations.push(album);
-        break;
-    }
+/**
+ * Fetch a paginated artist view endpoint (full-albums, singles, etc.)
+ * These view endpoints return the same curated data as music.apple.com
+ */
+async function fetchArtistView(
+  artistId: string,
+  view: string,
+  maxItems: number = 100,
+): Promise<AppleArtistAlbum[]> {
+  const cacheKey = `am-artist-view:${artistId}:${view}`;
+  const cached = albumCache.get(cacheKey);
+  if (cached) return cached as AppleArtistAlbum[];
+
+  const all: AppleArtistAlbum[] = [];
+  let offset = 0;
+  const limit = Math.min(maxItems, 25);
+
+  while (all.length < maxItems) {
+    const data = await appleMusicFetch<any>(
+      `/catalog/${STOREFRONT}/artists/${artistId}/view/${view}?limit=${limit}&offset=${offset}`,
+    );
+
+    const items = data?.data || [];
+    if (items.length === 0) break;
+
+    all.push(...parseAlbumItems(items));
+
+    if (items.length < limit || all.length >= maxItems) break;
+    offset += limit;
   }
 
-  return result;
+  const sorted = sortByDateDesc(all);
+  if (sorted.length > 0) {
+    albumCache.set(cacheKey, sorted, 86400);
+  }
+  return sorted;
+}
+
+/**
+ * Get curated full albums for an artist (matches Apple Music website "Albums" section)
+ */
+export async function getArtistFullAlbums(
+  artistId: string,
+): Promise<AppleArtistAlbum[]> {
+  return fetchArtistView(artistId, "full-albums", 200);
+}
+
+/**
+ * Get singles & EPs for an artist (matches Apple Music website "Singles & EPs" section)
+ */
+export async function getArtistSingles(
+  artistId: string,
+): Promise<AppleArtistAlbum[]> {
+  return fetchArtistView(artistId, "singles", 200);
+}
+
+// ─── Artist Top Songs ────────────────────────────────────────────────────────
+
+export interface AppleTopSong {
+  id: string;
+  name: string;
+  artistName: string;
+  artistId?: string;
+  albumName?: string;
+  albumId?: string;
+  artworkUrl?: string;
+  releaseDate?: string;
+  durationMs?: number;
+  trackNumber?: number;
+  url?: string;
 }
 
 // ─── Album Detail + Tracks ────────────────────────────────────────────────────
