@@ -6,7 +6,7 @@ import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { YouTubeProps, YouTubeEvent } from "react-youtube";
 import { YouTubePlayer } from "@/types/player";
 
-import { useRatings } from "@/hooks/useRatings";
+import { useRatingsContext as useRatings } from "@/context/RatingsContext";
 import ColorRating from "@/components/rating/ColorRating";
 import { AlbumContext } from "@/types/music";
 

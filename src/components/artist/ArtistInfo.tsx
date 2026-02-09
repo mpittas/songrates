@@ -2,10 +2,8 @@ import { ArtistInfo as ArtistInfoType } from "@/types/music";
 import { FaGlobe } from "react-icons/fa";
 
 interface Props {
-  artistId: string;
   artistName: string;
   data: ArtistInfoType;
-  disableFetch?: boolean;
   className?: string;
 }
 

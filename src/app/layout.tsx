@@ -11,7 +11,7 @@ const spaceMono = Space_Mono({
 });
 
 const inter = Inter({
-  variable: "--font-manrope",
+  variable: "--font-inter",
   subsets: ["latin"],
 });
 

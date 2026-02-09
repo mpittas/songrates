@@ -3,18 +3,10 @@
 import { useState, Suspense } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { useRouter, useSearchParams } from "next/navigation";
-import { cn } from "@/lib/utils";
 import MeshGradient from "@/components/mesh/MeshGradient";
 import { MeshGradientConfig } from "@/components/mesh/types";
 import { FcGoogle } from "react-icons/fc";
-import {
-  FaApple,
-  FaFacebookF,
-  FaCheck,
-  FaTimes,
-  FaEye,
-  FaEyeSlash,
-} from "react-icons/fa";
+import { FaCheck, FaEye, FaEyeSlash } from "react-icons/fa";
 import Button from "@/components/ui/Button";
 
 const greenMeshConfig: MeshGradientConfig = {

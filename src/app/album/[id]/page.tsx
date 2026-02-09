@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import OptimizedImage from "@/components/ui/OptimizedImage";
 import Link from "next/link";
-import { useRatings } from "@/hooks/useRatings";
+import { useRatingsContext as useRatings } from "@/context/RatingsContext";
 import { createSlug } from "@/lib/utils";
 import MySection from "@/components/ui/MySection";
 import AlbumSkeleton from "@/components/album/AlbumSkeleton";

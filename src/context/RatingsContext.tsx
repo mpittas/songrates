@@ -78,7 +78,6 @@ export function RatingsProvider({ children }: { children: React.ReactNode }) {
           table: "public_album_ratings",
         },
         (payload) => {
-          // console.log("Realtime event received:", payload);
           if (
             payload.eventType === "INSERT" ||
             payload.eventType === "UPDATE"
@@ -104,18 +103,13 @@ export function RatingsProvider({ children }: { children: React.ReactNode }) {
           }
         },
       )
-      .subscribe((status) => {
-        if (status === "SUBSCRIBED") {
-          // console.log("Subscribed to public ratings changes");
-        }
-      });
+      .subscribe();
 
     // 3. Fetch Personal Ratings (User or Guest)
     const activeUserId = user?.id || localStorage.getItem("songrates_guest_id");
 
     // Generate guest ID if needed
     if (!user && !activeUserId) {
-      console.log("DEBUG: Generating New Guest ID");
       const newGuestId = crypto.randomUUID();
       localStorage.setItem("songrates_guest_id", newGuestId);
     }
@@ -123,16 +117,7 @@ export function RatingsProvider({ children }: { children: React.ReactNode }) {
     // Stabilize the ID we use for this effect run
     const effectiveUserId =
       user?.id || localStorage.getItem("songrates_guest_id");
-    console.log(
-      "DEBUG: Effective User ID for fetching:",
-      effectiveUserId,
-      "Is Auth:",
-      !!user,
-    );
-
     if (!effectiveUserId) {
-      // Should not happen if we just set it, but safety
-      console.error("DEBUG: No effective user ID found!");
       setRatings({});
       setAlbumRatings({});
       setIsLoaded(true);
@@ -143,14 +128,12 @@ export function RatingsProvider({ children }: { children: React.ReactNode }) {
 
     const fetchPersonalData = async () => {
       try {
-        console.log("DEBUG: Fetching ratings for", effectiveUserId);
         // Fetch ratings
         const { data: dbRatings, error: rError } = await supabase
           .from("ratings")
           .select("track_id, album_id, rating")
           .eq("user_id", effectiveUserId);
 
-        console.log("DEBUG: Ratings fetch result:", dbRatings?.length, rError);
         if (rError) throw rError;
 
         // Fetch albums

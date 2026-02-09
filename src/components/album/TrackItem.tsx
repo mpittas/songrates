@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { FaPlay, FaPause, FaGlobe, FaLock } from "react-icons/fa";
-import { useRatings } from "@/hooks/useRatings";
+import { useRatingsContext as useRatings } from "@/context/RatingsContext";
 import { usePlayer } from "@/context/PlayerContext";
 import { formatTime, createSlug } from "@/lib/utils";
 import ColorRating from "@/components/rating/ColorRating";

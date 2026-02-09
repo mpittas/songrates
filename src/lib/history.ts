@@ -32,13 +32,3 @@ export function addToHistory(id: string, name: string): void {
     console.error("Failed to save artist history:", error);
   }
 }
-
-export function clearHistory(): void {
-  if (typeof window === "undefined") return;
-
-  try {
-    localStorage.removeItem(HISTORY_KEY);
-  } catch (error) {
-    console.error("Failed to clear history:", error);
-  }
-}

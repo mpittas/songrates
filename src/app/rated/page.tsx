@@ -1,12 +1,11 @@
 "use client";
 
-import { useRatings } from "@/hooks/useRatings";
+import { useRatingsContext as useRatings } from "@/context/RatingsContext";
 import { useMemo, useState } from "react";
 import MySection from "@/components/ui/MySection";
 import AlbumGrid from "@/components/album/AlbumGrid";
 import DropdownFilter from "@/components/ui/DropdownFilter";
 import SearchInput from "@/components/search/SearchInput";
-import { Album } from "@/types/music";
 
 type FilterType = "all" | "full" | "partial";
 

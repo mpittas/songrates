@@ -64,18 +64,3 @@ export function createSlug(name: string, id: string): string {
   const shortId = id.split("-")[0];
   return `${slug}-${shortId}`;
 }
-
-/**
- * Parse a slug into name and short ID parts
- * @param slug - The slug string (e.g., "the-beatles-75a72702")
- * @returns Object with name and shortId, or just shortId if name parsing fails
- */
-export function parseSlug(slug: string): { name: string; shortId: string } {
-  if (!slug) return { name: "", shortId: "" };
-
-  const parts = slug.split("-");
-  const shortId = parts.pop() || "";
-  const name = parts.join(" ");
-
-  return { name, shortId };
-}

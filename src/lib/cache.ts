@@ -78,32 +78,8 @@ export const artistCache = new LRUCache<any>(1000, 86400);
 // Album/release cache - 24 hour TTL, up to 2000 entries
 export const albumCache = new LRUCache<any>(2000, 86400);
 
-// Image URL cache - 7 day TTL, up to 5000 entries (images rarely change)
-export const imageCache = new LRUCache<string>(5000, 604800);
-
 // Search results cache - 1 hour TTL, up to 500 entries
 export const searchCache = new LRUCache<any>(500, 3600);
 
 // YouTube video ID cache - 1 hour TTL, up to 500 entries (for faster track switching)
 export const youtubeCache = new LRUCache<string>(500, 3600);
-
-/**
- * Helper to wrap async functions with caching
- */
-export async function withCache<T>(
-  cache: LRUCache<T>,
-  key: string,
-  fetcher: () => Promise<T>,
-  ttlSeconds?: number,
-): Promise<T> {
-  // Check cache first
-  const cached = cache.get(key);
-  if (cached !== null) {
-    return cached;
-  }
-
-  // Fetch and cache
-  const data = await fetcher();
-  cache.set(key, data, ttlSeconds);
-  return data;
-}

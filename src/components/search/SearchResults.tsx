@@ -13,12 +13,10 @@ import type {
   ArtistSearchResult,
   AlbumSearchResult,
   SongSearchResult,
-  GroupedSearchResults,
 } from "@/types/search";
 import { ArtistVisit } from "@/types/artist";
 import { getArtistHistory } from "@/lib/history";
 import { formatTimeAgo, createSlug, formatTime } from "@/lib/utils";
-import PrefetchLink from "@/components/ui/PrefetchLink";
 import { usePrefetchAlbum } from "@/hooks/useAlbumInfo";
 
 // ─── Category Filter Tabs ──────────────────────────────────────────────────────
@@ -102,9 +100,8 @@ function ArtworkImage({
 
 function ArtistRow({ result }: { result: ArtistSearchResult }) {
   return (
-    <PrefetchLink
+    <Link
       href={`/artist/${createSlug(result.title, result.id)}`}
-      artistId={result.id}
       className="flex items-center gap-3 p-3 hover:bg-[#0f0f12] transition-colors group"
     >
       <div className="w-10 h-10 rounded-full overflow-hidden bg-[#0f0f12] border border-[#1a1a1f] group-hover:border-[#00f0ff]/30 flex items-center justify-center flex-shrink-0">
@@ -133,7 +130,7 @@ function ArtistRow({ result }: { result: ArtistSearchResult }) {
       <span className="text-[10px] text-neutral-600 font-mono flex-shrink-0 uppercase tracking-wider">
         Artist
       </span>
-    </PrefetchLink>
+    </Link>
   );
 }
 
@@ -433,12 +430,11 @@ export default function SearchResults({
           </div>
           <div className="divide-y divide-[#1a1a1f]/50">
             {history.map((artist) => (
-              <PrefetchLink
+              <Link
                 key={artist.id}
                 href={`/artist/${createSlug(artist.name, artist.id)}`}
-                artistId={artist.id}
                 className="flex items-center justify-between p-3 hover:bg-[#0f0f12] transition-colors group"
-                onMouseDown={(e) => e.preventDefault()}
+                onMouseDown={(e: React.MouseEvent) => e.preventDefault()}
               >
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 overflow-hidden bg-[#0a0a0d] border border-[#1a1a1f] flex-shrink-0 group-hover:border-[#00f0ff]/30 flex items-center justify-center">
@@ -453,7 +449,7 @@ export default function SearchResults({
                 <span className="text-[10px] text-neutral-600 font-mono">
                   {formatTimeAgo(artist.visitedAt)}
                 </span>
-              </PrefetchLink>
+              </Link>
             ))}
           </div>
         </div>

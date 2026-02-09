@@ -1,18 +1,9 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { LazyLoadImage } from "react-lazy-load-image-component";
-import "react-lazy-load-image-component/src/effects/blur.css";
 
 import { OptimizedImageProps } from "@/types/ui";
 
-/**
- * Optimized image component using react-lazy-load-image-component
- * - Uses LazyLoadImage with blur effect for smooth loading
- * - Supports priority loading for above-the-fold images
- * - Error handling with fallback placeholder
- * - Uses native loading="eager" for priority images
- */
 export default function OptimizedImage({
   src,
   alt,
@@ -27,7 +18,6 @@ export default function OptimizedImage({
 }: OptimizedImageProps) {
   const [hasError, setHasError] = useState(false);
 
-  // Reset error state when src changes
   useEffect(() => {
     setHasError(false);
   }, [src]);
@@ -37,17 +27,10 @@ export default function OptimizedImage({
     onError?.();
   }, [onError]);
 
-  // Generate fallback initials from alt text
   const initials = fallbackText || alt.slice(0, 2).toUpperCase();
-
-  // Placeholder color matching the theme
-  const placeholderSrc =
-    "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMSIgaGVpZ2h0PSIxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9IiMwYTBhMGQiLz48L3N2Zz4=";
 
   if (hasError) {
     if (fallbackSrc) {
-      // If fallbackSrc is provided, we try to show it.
-      // We assume fallbackSrc is a local asset that exists.
       return (
         <div
           className={`flex items-center justify-center bg-[#0a0a0d] ${
@@ -80,38 +63,18 @@ export default function OptimizedImage({
     ? { position: "absolute", inset: 0, width: "100%", height: "100%" }
     : {};
 
-  // For priority images, skip lazy loading
-  if (priority) {
-    return (
-      <img
-        src={src}
-        alt={alt}
-        width={fill ? undefined : width}
-        height={fill ? undefined : height}
-        loading="eager"
-        decoding="async"
-        fetchPriority="high"
-        onError={handleError}
-        className={className}
-        style={imageStyles}
-      />
-    );
-  }
-
-  // For non-priority images, use LazyLoadImage with blur effect
   return (
-    <LazyLoadImage
+    <img
       src={src}
       alt={alt}
-      width={fill ? "100%" : width}
-      height={fill ? "100%" : height}
-      effect="blur"
-      placeholderSrc={placeholderSrc}
+      width={fill ? undefined : width}
+      height={fill ? undefined : height}
+      loading={priority ? "eager" : "lazy"}
+      decoding="async"
+      fetchPriority={priority ? "high" : undefined}
       onError={handleError}
-      className={className}
+      className={`bg-[#0a0a0d] ${className}`}
       style={imageStyles}
-      threshold={100}
-      wrapperClassName={fill ? "absolute inset-0 w-full h-full" : undefined}
     />
   );
 }

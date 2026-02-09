@@ -1,7 +1,17 @@
-import YouTube, { YouTubeProps } from "react-youtube";
+"use client";
+
+import dynamic from "next/dynamic";
 import { FaTimes } from "react-icons/fa";
 
 import { VideoPlayerProps } from "@/types/player";
+
+const YouTube = dynamic(
+  () => import("react-youtube").then((mod) => mod.default),
+  {
+    ssr: false,
+    loading: () => <div className="w-full h-full bg-black" />,
+  },
+);
 
 export default function VideoPlayer({
   videoId,

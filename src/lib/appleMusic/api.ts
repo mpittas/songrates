@@ -231,38 +231,6 @@ export interface AppleArtistDetail {
 }
 
 /**
- * Get artist details by Apple Music ID
- */
-export async function getArtist(
-  artistId: string,
-): Promise<AppleArtistDetail | null> {
-  const cacheKey = `am-artist:${artistId}`;
-  const cached = artistCache.get(cacheKey);
-  if (cached) return cached as AppleArtistDetail;
-
-  const data = await appleMusicFetch<any>(
-    `/catalog/${STOREFRONT}/artists/${artistId}`,
-  );
-
-  const item = data?.data?.[0];
-  if (!item) return null;
-
-  const a = item.attributes || {};
-  const result: AppleArtistDetail = {
-    id: item.id,
-    name: a.name || "",
-    genres: a.genreNames || [],
-    artworkUrl: a.artwork?.url,
-    url: a.url,
-    editorialNotes:
-      a.editorialNotes?.standard || a.editorialNotes?.short || undefined,
-  };
-
-  artistCache.set(cacheKey, result, 86400);
-  return result;
-}
-
-/**
  * All artist discography data returned from a single API call
  */
 export interface ArtistDiscography {

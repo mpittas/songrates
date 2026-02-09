@@ -1,25 +1,12 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { Track } from "@/types/music";
 import { formatTime } from "@/lib/utils";
 import { useEffect, useRef } from "react";
 import { FaPlay, FaPause } from "react-icons/fa";
 import { usePlayer } from "@/context/PlayerContext";
-import { useRatings } from "@/hooks/useRatings";
-
-const COLORS = [
-  "#a31616", // 1
-  "#b8441a", // 2
-  "#ca7a23", // 3
-  "#bb9920", // 4
-  "#b3c022", // 5
-  "#8ec227", // 6
-  "#65c227", // 7
-  "#3ec227", // 8
-  "#21b691", // 9
-  "#14bba5", // 10
-];
+import { useRatingsContext as useRatings } from "@/context/RatingsContext";
+import { RATING_COLORS } from "@/components/rating/constants";
 
 interface AlbumTracklistPopoverProps {
   albumId: string;
@@ -147,8 +134,8 @@ export default function AlbumTracklistPopover({
                     <span
                       className="text-[9px] font-mono px-1 py-0.5 shrink-0"
                       style={{
-                        backgroundColor: `${COLORS[ratings[track.id] - 1]}22`,
-                        color: COLORS[ratings[track.id] - 1],
+                        backgroundColor: `${RATING_COLORS[ratings[track.id] - 1]}22`,
+                        color: RATING_COLORS[ratings[track.id] - 1],
                       }}
                     >
                       {ratings[track.id]}

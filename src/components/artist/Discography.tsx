@@ -5,7 +5,7 @@ import Link from "next/link";
 import { FaChevronDown, FaChevronUp } from "react-icons/fa";
 import AlbumGrid from "@/components/album/AlbumGrid";
 import OptimizedImage from "@/components/ui/OptimizedImage";
-import { useRatings } from "@/hooks/useRatings";
+import { useRatingsContext as useRatings } from "@/context/RatingsContext";
 import { createSlug, formatTime } from "@/lib/utils";
 
 import { Album, TopSong } from "@/types/music";
