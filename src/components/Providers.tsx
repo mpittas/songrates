@@ -4,6 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { getQueryClient } from "@/lib/queryClient";
 import { PlayerProvider } from "@/context/PlayerContext";
 import { RatingsProvider } from "@/context/RatingsContext";
+import { PlaylistProvider } from "@/context/PlaylistContext";
 import MiniPlayer from "@/components/player/MiniPlayer";
 
 import { AuthProvider } from "@/context/AuthContext";
@@ -16,8 +17,10 @@ export default function Providers({ children }: { children: React.ReactNode }) {
       <AuthProvider>
         <PlayerProvider>
           <RatingsProvider>
-            {children}
-            <MiniPlayer />
+            <PlaylistProvider>
+              {children}
+              <MiniPlayer />
+            </PlaylistProvider>
           </RatingsProvider>
         </PlayerProvider>
       </AuthProvider>

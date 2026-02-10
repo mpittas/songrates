@@ -17,6 +17,7 @@ import { formatTime, createSlug } from "@/lib/utils";
 import ColorRating from "@/components/rating/ColorRating";
 import Button from "@/components/ui/Button";
 import FavoriteButton from "@/components/ui/FavoriteButton";
+import AddToPlaylistButton from "@/components/ui/AddToPlaylistButton";
 import { useLyrics } from "@/hooks/useLyrics";
 import { TrackInfo, AlbumContext } from "@/types/music";
 
@@ -137,6 +138,19 @@ export default function TrackItem({
             itemType="track"
             itemName={track.title}
             artistName={artistName}
+            size="sm"
+            className="mr-2"
+          />
+
+          {/* Add to Playlist Button */}
+          <AddToPlaylistButton
+            trackId={track.id}
+            trackName={track.title}
+            artistName={artistName}
+            albumName={albumContext.title}
+            albumId={albumId}
+            thumbnailUrl={albumImageUrl}
+            durationMs={track.length}
             size="sm"
             className="mr-2"
           />

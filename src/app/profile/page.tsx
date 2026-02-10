@@ -9,6 +9,7 @@ import Link from "next/link";
 import { FaUser, FaStar, FaSignOutAlt } from "react-icons/fa";
 import OptimizedImage from "@/components/ui/OptimizedImage";
 import AlbumGrid from "@/components/album/AlbumGrid";
+import PlaylistsSection from "@/components/profile/PlaylistsSection";
 import { Album } from "@/types/music";
 import FavoriteStatsBar, {
   FavoriteItem,
@@ -177,6 +178,9 @@ export default function ProfilePage() {
 
       {/* Content Sections */}
       <div className="max-w-4xl mx-auto px-6 mt-12 pb-20 space-y-16">
+        {/* Playlists Section */}
+        <PlaylistsSection />
+
         {/* Rated Music Section */}
         <section>
           <div className="flex items-center gap-3 mb-6">
