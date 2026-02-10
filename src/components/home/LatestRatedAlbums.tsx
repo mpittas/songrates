@@ -5,12 +5,14 @@ import OptimizedImage from "@/components/ui/OptimizedImage";
 import { createSlug } from "@/lib/utils";
 
 interface RatedAlbum {
+  userId: string;
   albumId: string;
   albumTitle: string;
   artistName: string;
   rating: number;
   ratedAt: string;
   thumbnailUrl: string | null;
+  userName: string;
 }
 
 interface RPCAlbum {
@@ -22,6 +24,7 @@ interface RPCAlbum {
   rated_at: string;
   thumbnail_url: string | null;
   album_type: string;
+  user_name: string;
 }
 
 async function getLatestRatedAlbums(): Promise<RatedAlbum[]> {
@@ -44,12 +47,14 @@ async function getLatestRatedAlbums(): Promise<RatedAlbum[]> {
   if (!data) return [];
 
   return (data as RPCAlbum[]).map((album) => ({
+    userId: album.user_id,
     albumId: album.album_id,
     albumTitle: album.title,
     artistName: album.artist_name,
     rating: Number(album.average_rating),
     ratedAt: album.rated_at,
     thumbnailUrl: album.thumbnail_url || null,
+    userName: album.user_name || "Anonymous",
   }));
 }
 
@@ -69,11 +74,12 @@ export default async function LatestRatedAlbums() {
           {ratedAlbums.map((album, index) => {
             const imageUrl = album.thumbnailUrl || "/vinyl-placeholder.svg";
             const slug = createSlug(album.albumTitle, album.albumId);
+            const href = `/album/${slug}?userId=${album.userId}&userName=${encodeURIComponent(album.userName)}`;
 
             return (
               <Link
                 key={`${album.albumId}-${index}`}
-                href={`/album/${slug}`}
+                href={href}
                 className="group relative bg-neutral-900/40 border border-white/5 overflow-hidden transition-all duration-300 hover:bg-neutral-900/60 hover:border-white/10"
               >
                 <div className="p-4 flex flex-col gap-4">

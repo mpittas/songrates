@@ -188,21 +188,6 @@ export default function TrackItem({
             </div>
           )}
 
-          {/* User Rating Digit (Read Only Mode) */}
-          {isReadOnly && rating > 0 && (
-            <div className="flex items-center gap-1.5 ml-2 border-l border-neutral-800 pl-3">
-              <span
-                className="text-[11px] font-bold"
-                style={{ color: "#00f0ff" }}
-              >
-                {rating}
-              </span>
-              <span className="text-[9px] text-neutral-600 font-mono uppercase">
-                User
-              </span>
-            </div>
-          )}
-
           <div
             className={`flex items-center gap-2 ${isReadOnly ? "opacity-60" : ""}`}
           >
@@ -215,6 +200,21 @@ export default function TrackItem({
                 }
               />
             </div>
+
+            {/* User Rating Digit (Read Only Mode) - Now on right side of progress bar */}
+            {isReadOnly && rating > 0 && (
+              <div className="flex items-center gap-1.5 ml-2 border-l border-neutral-800 pl-3">
+                <span
+                  className="text-[11px] font-bold"
+                  style={{ color: "#00f0ff" }}
+                >
+                  {rating}
+                </span>
+                <span className="text-[9px] text-neutral-600 font-mono uppercase">
+                  User
+                </span>
+              </div>
+            )}
           </div>
         </div>
       </div>
