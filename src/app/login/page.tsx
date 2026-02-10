@@ -28,6 +28,7 @@ function LoginContent() {
   const [password, setPassword] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+  const [username, setUsername] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -105,6 +106,7 @@ function LoginContent() {
             data: {
               first_name: firstName,
               last_name: lastName,
+              username: username,
             },
           },
         });
@@ -170,28 +172,42 @@ function LoginContent() {
 
         <form onSubmit={handleAuth} className="flex flex-col gap-4">
           {!isLogin && (
-            <div className="flex gap-4">
-              <div className="flex-1 flex flex-col gap-1.5">
-                <label className="text-sm text-neutral-500">First Name</label>
+            <>
+              <div className="flex gap-4">
+                <div className="flex-1 flex flex-col gap-1.5">
+                  <label className="text-sm text-neutral-500">First Name</label>
+                  <input
+                    type="text"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    placeholder="eg. John"
+                    className="w-full bg-[#1A1A1A] border-none text-white text-sm px-4 py-3 placeholder:text-neutral-600 focus:ring-1 focus:ring-emerald-500/50 outline-none rounded-none"
+                  />
+                </div>
+                <div className="flex-1 flex flex-col gap-1.5">
+                  <label className="text-sm text-neutral-500">Last Name</label>
+                  <input
+                    type="text"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    placeholder="eg. Francisco"
+                    className="w-full bg-[#1A1A1A] border-none text-white text-sm px-4 py-3 placeholder:text-neutral-600 focus:ring-1 focus:ring-emerald-500/50 outline-none rounded-none"
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm text-neutral-500">Username *</label>
                 <input
                   type="text"
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                  placeholder="eg. John"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="eg. musiclover99"
+                  required
                   className="w-full bg-[#1A1A1A] border-none text-white text-sm px-4 py-3 placeholder:text-neutral-600 focus:ring-1 focus:ring-emerald-500/50 outline-none rounded-none"
                 />
               </div>
-              <div className="flex-1 flex flex-col gap-1.5">
-                <label className="text-sm text-neutral-500">Last Name</label>
-                <input
-                  type="text"
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                  placeholder="eg. Francisco"
-                  className="w-full bg-[#1A1A1A] border-none text-white text-sm px-4 py-3 placeholder:text-neutral-600 focus:ring-1 focus:ring-emerald-500/50 outline-none rounded-none"
-                />
-              </div>
-            </div>
+            </>
           )}
 
           <div className="flex flex-col gap-1.5">
