@@ -501,6 +501,7 @@ export interface AppleTrack {
   url?: string;
   hasLyrics?: boolean;
   genreNames?: string[];
+  artists?: { id: string; name: string }[];
 }
 
 /**
@@ -514,8 +515,9 @@ export async function getAlbumDetail(
   if (cached) return cached as AppleAlbumDetail;
 
   // Fetch album with tracks relationship and other-versions view
+  // include[tracks]=artists fetches all artists (including featured) per track
   const data = await appleMusicFetch<any>(
-    `/catalog/${STOREFRONT}/albums/${albumId}?include=tracks,artists&views=other-versions`,
+    `/catalog/${STOREFRONT}/albums/${albumId}?include=tracks,artists&include[tracks]=artists&views=other-versions`,
   );
 
   const item = data?.data?.[0];
@@ -525,14 +527,17 @@ export async function getAlbumDetail(
   const artistRel = item.relationships?.artists?.data?.[0];
   const trackItems = item.relationships?.tracks?.data || [];
 
+  const albumArtistName = a.artistName || "";
+
   const tracks: AppleTrack[] = trackItems.map((t: any) => {
     const ta = t.attributes || {};
-    const trackArtistRel = t.relationships?.artists?.data?.[0];
+    const trackArtists = t.relationships?.artists?.data || [];
+    const primaryArtist = trackArtists[0];
     return {
       id: t.id,
       name: ta.name || "",
       artistName: ta.artistName || "",
-      artistId: trackArtistRel?.id,
+      artistId: primaryArtist?.id,
       trackNumber: ta.trackNumber || 0,
       discNumber: ta.discNumber || 1,
       durationMs: ta.durationInMillis || 0,
@@ -540,8 +545,53 @@ export async function getAlbumDetail(
       url: ta.url,
       hasLyrics: ta.hasLyrics,
       genreNames: ta.genreNames || [],
+      artists: trackArtists.map((ar: any) => ({
+        id: ar.id,
+        name: ar.attributes?.name || ta.artistName || "",
+      })),
     };
   });
+
+  // Apple Music's nested include[tracks]=artists doesn't return artist
+  // relationships on the albums endpoint.  For tracks whose artistName
+  // differs from the album artist (i.e. they have featured artists),
+  // batch-fetch via /songs?ids=…&include=artists to get proper IDs.
+  const tracksNeedingArtists = tracks.filter(
+    (t) =>
+      (!t.artists || t.artists.length === 0) &&
+      t.artistName !== albumArtistName,
+  );
+
+  if (tracksNeedingArtists.length > 0) {
+    const ids = tracksNeedingArtists.map((t) => t.id).join(",");
+    const songsData = await appleMusicFetch<any>(
+      `/catalog/${STOREFRONT}/songs?ids=${ids}&include=artists`,
+    );
+
+    if (songsData?.data) {
+      const artistMap = new Map<string, { id: string; name: string }[]>();
+      for (const song of songsData.data) {
+        const songArtists = song.relationships?.artists?.data || [];
+        artistMap.set(
+          song.id,
+          songArtists.map((ar: any) => ({
+            id: ar.id,
+            name: ar.attributes?.name || "",
+          })),
+        );
+      }
+
+      for (const track of tracksNeedingArtists) {
+        const resolved = artistMap.get(track.id);
+        if (resolved && resolved.length > 0) {
+          track.artists = resolved;
+          if (!track.artistId) {
+            track.artistId = resolved[0].id;
+          }
+        }
+      }
+    }
+  }
 
   // Sort tracks by disc number then track number
   tracks.sort((a, b) => {

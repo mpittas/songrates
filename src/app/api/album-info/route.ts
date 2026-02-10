@@ -70,7 +70,12 @@ export async function GET(request: NextRequest) {
           length: t.durationMs,
           artistName: t.artistName,
           artistId: t.artistId,
-          artists: t.artistId ? [{ id: t.artistId, name: t.artistName }] : [],
+          artists:
+            t.artists && t.artists.length > 0
+              ? t.artists
+              : t.artistId
+                ? [{ id: t.artistId, name: t.artistName }]
+                : [],
         })),
         otherVersions: album.otherVersions?.map((v) => ({
           id: v.id,
