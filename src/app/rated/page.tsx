@@ -37,6 +37,7 @@ export default function RatedAlbumsPage() {
         id: a.id,
         title: a.title,
         artistName: a.artistName,
+        artworkUrl: a.artworkUrl,
         releaseDate: a.releaseDate,
         rating: rating,
         status: isFull ? "full" : "partial",

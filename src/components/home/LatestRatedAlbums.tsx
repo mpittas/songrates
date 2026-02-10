@@ -1,16 +1,16 @@
-import { createAdminClient } from "@/utils/supabase/admin";
+import { createClient } from "@/utils/supabase/server";
 
 import Link from "next/link";
 import OptimizedImage from "@/components/ui/OptimizedImage";
+import { createSlug } from "@/lib/utils";
 
 interface RatedAlbum {
-  userId: string;
-  userName: string;
   albumId: string;
   albumTitle: string;
   artistName: string;
   rating: number;
   ratedAt: string;
+  thumbnailUrl: string | null;
 }
 
 interface RPCAlbum {
@@ -20,52 +20,37 @@ interface RPCAlbum {
   artist_name: string;
   average_rating: number;
   rated_at: string;
-  user_first_name: string | null;
-  user_last_name: string | null;
-  user_email: string | null;
+  thumbnail_url: string | null;
+  album_type: string;
 }
 
 async function getLatestRatedAlbums(): Promise<RatedAlbum[]> {
-  const supabase = createAdminClient();
+  const supabase = await createClient();
 
-  if (!supabase) {
-    return [];
-  }
-
-  // Use the optimized RPC function
   const { data, error } = await supabase.rpc("get_latest_completed_albums", {
     limit_count: 4,
   });
 
   if (error) {
-    console.error("Error fetching latest rated albums:", error);
+    console.error(
+      "LatestRatedAlbums: RPC error:",
+      error.message,
+      error.details,
+      error.hint,
+    );
     return [];
   }
 
   if (!data) return [];
 
-  return (data as RPCAlbum[]).map((album) => {
-    let userName = "Anonymous";
-
-    // Prioritize First Name
-    if (album.user_first_name) {
-      userName = album.user_first_name;
-    }
-    // Fallback to email username
-    else if (album.user_email) {
-      userName = album.user_email.split("@")[0];
-    }
-
-    return {
-      userId: album.user_id,
-      userName,
-      albumId: album.album_id,
-      albumTitle: album.title,
-      artistName: album.artist_name,
-      rating: Number(album.average_rating),
-      ratedAt: album.rated_at,
-    };
-  });
+  return (data as RPCAlbum[]).map((album) => ({
+    albumId: album.album_id,
+    albumTitle: album.title,
+    artistName: album.artist_name,
+    rating: Number(album.average_rating),
+    ratedAt: album.rated_at,
+    thumbnailUrl: album.thumbnail_url || null,
+  }));
 }
 
 export default async function LatestRatedAlbums() {
@@ -82,20 +67,18 @@ export default async function LatestRatedAlbums() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 w-full">
           {ratedAlbums.map((album) => {
-            const imageUrl = "/vinyl-placeholder.svg";
+            const imageUrl = album.thumbnailUrl || "/vinyl-placeholder.svg";
+            const slug = createSlug(album.albumTitle, album.albumId);
 
             return (
               <Link
-                key={`${album.userId}-${album.albumId}`}
-                href={`/album/${album.albumId}?userId=${album.userId}&userName=${encodeURIComponent(album.userName)}`}
+                key={album.albumId}
+                href={`/album/${slug}`}
                 className="group relative bg-neutral-900/40 border border-white/5 overflow-hidden transition-all duration-300 hover:bg-neutral-900/60 hover:border-white/10"
               >
                 <div className="p-4 flex flex-col gap-4">
-                  {/* Header: User & Time */}
-                  <div className="flex justify-between items-start text-xs text-neutral-400">
-                    <span className="font-medium text-white/80 line-clamp-1 max-w-[60%]">
-                      {album.userName}
-                    </span>
+                  {/* Header: Time */}
+                  <div className="flex justify-end items-start text-xs text-neutral-400">
                     <time
                       dateTime={album.ratedAt}
                       className="text-[10px] uppercase tracking-wider opacity-60"

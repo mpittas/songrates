@@ -171,6 +171,7 @@ export function RatingsProvider({ children }: { children: React.ReactNode }) {
               totalTracks: a.total_tracks,
               ratedTrackIds: albumTracksMap[a.album_id] || [],
               ratedAt: a.created_at,
+              artworkUrl: a.thumbnail_url || undefined,
             };
           });
         }
@@ -207,6 +208,7 @@ export function RatingsProvider({ children }: { children: React.ReactNode }) {
             artistName: albumContext.artistName,
             releaseDate: albumContext.releaseDate,
             totalTracks: albumContext.totalTracks,
+            artworkUrl: albumContext.artworkUrl,
             ratedTrackIds: [],
           };
 
@@ -228,6 +230,7 @@ export function RatingsProvider({ children }: { children: React.ReactNode }) {
               artistName: albumContext.artistName,
               releaseDate: albumContext.releaseDate,
               totalTracks: albumContext.totalTracks,
+              artworkUrl: albumContext.artworkUrl || currentAlbum.artworkUrl,
               ratedTrackIds: newRatedTrackIds,
               ratedAt: currentAlbum.ratedAt || new Date().toISOString(),
             },
@@ -261,7 +264,13 @@ export function RatingsProvider({ children }: { children: React.ReactNode }) {
         });
 
         if (rError) {
-          console.error("Error saving rating to Supabase", rError);
+          console.error(
+            "Error saving rating to Supabase:",
+            rError.message,
+            rError.code,
+            rError.details,
+            rError.hint,
+          );
         }
 
         const { error: aError } = await supabase.from("user_albums").upsert({
@@ -271,6 +280,7 @@ export function RatingsProvider({ children }: { children: React.ReactNode }) {
           artist_name: albumContext.artistName,
           release_date: albumContext.releaseDate,
           total_tracks: albumContext.totalTracks,
+          thumbnail_url: albumContext.artworkUrl || null,
         });
 
         if (aError) {

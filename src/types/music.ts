@@ -96,6 +96,7 @@ export interface AlbumContext {
   artistName: string;
   releaseDate?: string;
   totalTracks: number;
+  artworkUrl?: string;
 }
 
 export interface RatedAlbumData {
@@ -106,6 +107,7 @@ export interface RatedAlbumData {
   totalTracks: number;
   ratedTrackIds: string[];
   ratedAt?: string;
+  artworkUrl?: string;
 }
 
 export interface PublicAlbumRating {
