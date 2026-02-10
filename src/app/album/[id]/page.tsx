@@ -19,8 +19,30 @@ import { useAlbumInfo } from "@/hooks/useAlbumInfo";
 
 import { AlbumInfo, TrackInfo, AlbumContext } from "@/types/music";
 
+interface UserRating {
+  track_id: string;
+  rating: number;
+}
+
+interface PublicTrackRating {
+  track_id: string;
+  average_rating: number;
+  rating_count: number;
+}
+
+interface RealtimePayload<T> {
+  eventType: "INSERT" | "UPDATE" | "DELETE";
+  new: T;
+  old: T;
+  schema: string;
+  table: string;
+  commit_timestamp: string;
+  errors: null | any[];
+}
+
 export default function AlbumPage() {
   const { id: rawSlug } = useParams();
+
   const searchParams = useSearchParams();
   const userId = searchParams.get("userId");
   const highlightTrackId = searchParams.get("track");
@@ -77,8 +99,9 @@ export default function AlbumPage() {
 
       if (userRatings) {
         const map: Record<string, number> = {};
-        userRatings.forEach((r: any) => {
-          map[r.track_id] = Number(r.rating);
+        userRatings.forEach((r) => {
+          const rating = r as unknown as UserRating;
+          map[rating.track_id] = Number(rating.rating);
         });
         setViewingUserRatings(map);
       }
@@ -105,10 +128,11 @@ export default function AlbumPage() {
           string,
           { average_rating: number; rating_count: number }
         > = {};
-        data.forEach((r: any) => {
-          map[r.track_id] = {
-            average_rating: Number(r.average_rating),
-            rating_count: r.rating_count,
+        data.forEach((r) => {
+          const rating = r as unknown as PublicTrackRating;
+          map[rating.track_id] = {
+            average_rating: Number(rating.average_rating),
+            rating_count: rating.rating_count,
           };
         });
         setPublicTrackRatings(map);
@@ -132,12 +156,12 @@ export default function AlbumPage() {
             table: "public_track_ratings",
             filter: `album_id=eq.${album.id}`,
           },
-          (payload: any) => {
+          (payload: RealtimePayload<PublicTrackRating>) => {
             if (
               payload.eventType === "INSERT" ||
               payload.eventType === "UPDATE"
             ) {
-              const newRecord = payload.new as any;
+              const newRecord = payload.new as PublicTrackRating;
               setPublicTrackRatings((prev) => ({
                 ...prev,
                 [newRecord.track_id]: {
@@ -146,7 +170,7 @@ export default function AlbumPage() {
                 },
               }));
             } else if (payload.eventType === "DELETE") {
-              const oldRecord = payload.old as any;
+              const oldRecord = payload.old as PublicTrackRating;
               setPublicTrackRatings((prev) => {
                 const next = { ...prev };
                 delete next[oldRecord.track_id];
