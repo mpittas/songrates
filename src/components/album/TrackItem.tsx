@@ -175,25 +175,34 @@ export default function TrackItem({
                 </Button>
               )}
             </div>
-            {track.artists && track.artists.length > 0 && (
-              <span className="text-neutral-600 text-xs line-clamp-2 leading-relaxed mt-0.5">
-                {track.artists
-                  .filter((a) => a.id !== artistId)
-                  .map((a, i, arr) => (
-                    <span key={`${a.id}-${i}`}>
-                      {i === 0 ? "feat. " : ""}
+            {(() => {
+              const features = (track.artists || []).filter(
+                (a) => a.id !== artistId,
+              );
+              if (features.length === 0) return null;
+
+              return (
+                <div className="flex flex-wrap gap-x-1 mt-0.5">
+                  <span className="text-neutral-500 text-[11px] font-mono uppercase tracking-tight">
+                    feat.
+                  </span>
+                  {features.map((a, i, arr) => (
+                    <span key={a.id} className="text-[11px]">
                       <Link
                         href={`/artist/${createSlug(a.name, a.id)}`}
-                        className="hover:text-[#00f0ff] hover:underline transition-colors"
+                        className="text-neutral-500 hover:text-[#00f0ff] transition-colors"
                         onClick={(e) => e.stopPropagation()}
                       >
                         {a.name}
                       </Link>
-                      {i < arr.length - 1 ? ", " : ""}
+                      {i < arr.length - 1 && (
+                        <span className="text-neutral-600 ml-0.5">,</span>
+                      )}
                     </span>
                   ))}
-              </span>
-            )}
+                </div>
+              );
+            })()}
           </div>
         </div>
 

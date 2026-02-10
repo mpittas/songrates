@@ -24,6 +24,22 @@ interface RatingsContextType {
   removeAlbumRating: (albumId: string) => Promise<void>;
 }
 
+interface DBPublicAlbumRating {
+  album_id: string;
+  average_rating: string | number;
+  rating_count: number;
+}
+
+interface RealtimePayload<T> {
+  eventType: "INSERT" | "UPDATE" | "DELETE";
+  new: T;
+  old: T;
+  schema: string;
+  table: string;
+  commit_timestamp: string;
+  errors: null | any[];
+}
+
 const RatingsContext = createContext<RatingsContextType | undefined>(undefined);
 
 export function RatingsProvider({ children }: { children: React.ReactNode }) {
@@ -53,7 +69,7 @@ export function RatingsProvider({ children }: { children: React.ReactNode }) {
       } else {
         const newPublicRatings: Record<string, PublicAlbumRating> = {};
         if (dbPublicRatings) {
-          dbPublicRatings.forEach((r) => {
+          dbPublicRatings.forEach((r: any) => {
             newPublicRatings[r.album_id] = {
               albumId: r.album_id,
               averageRating: Number(r.average_rating),
@@ -77,12 +93,12 @@ export function RatingsProvider({ children }: { children: React.ReactNode }) {
           schema: "public",
           table: "public_album_ratings",
         },
-        (payload) => {
+        (payload: RealtimePayload<DBPublicAlbumRating>) => {
           if (
             payload.eventType === "INSERT" ||
             payload.eventType === "UPDATE"
           ) {
-            const newRecord = payload.new as any;
+            const newRecord = payload.new;
             setPublicAlbumRatings((prev) => ({
               ...prev,
               [newRecord.album_id]: {
@@ -92,7 +108,7 @@ export function RatingsProvider({ children }: { children: React.ReactNode }) {
               },
             }));
           } else if (payload.eventType === "DELETE") {
-            const oldRecord = payload.old as any;
+            const oldRecord = payload.old;
             if (oldRecord && oldRecord.album_id) {
               setPublicAlbumRatings((prev) => {
                 const next = { ...prev };
@@ -149,7 +165,7 @@ export function RatingsProvider({ children }: { children: React.ReactNode }) {
         const albumTracksMap: Record<string, string[]> = {};
 
         if (dbRatings) {
-          dbRatings.forEach((r) => {
+          dbRatings.forEach((r: any) => {
             newRatings[r.track_id] = Number(r.rating);
 
             if (!albumTracksMap[r.album_id]) {
@@ -162,7 +178,7 @@ export function RatingsProvider({ children }: { children: React.ReactNode }) {
 
         const newAlbumRatings: Record<string, RatedAlbumData> = {};
         if (dbAlbums) {
-          dbAlbums.forEach((a) => {
+          dbAlbums.forEach((a: any) => {
             newAlbumRatings[a.album_id] = {
               id: a.album_id,
               title: a.title,

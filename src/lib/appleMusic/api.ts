@@ -517,7 +517,7 @@ export async function getAlbumDetail(
   // Fetch album with tracks relationship and other-versions view
   // include[tracks]=artists fetches all artists (including featured) per track
   const data = await appleMusicFetch<any>(
-    `/catalog/${STOREFRONT}/albums/${albumId}?include=tracks,artists&include[tracks]=artists&views=other-versions`,
+    `/catalog/${STOREFRONT}/albums/${albumId}?include=tracks,artists&include[songs]=artists,featured-artists&views=other-versions`,
   );
 
   const item = data?.data?.[0];
@@ -527,12 +527,35 @@ export async function getAlbumDetail(
   const artistRel = item.relationships?.artists?.data?.[0];
   const trackItems = item.relationships?.tracks?.data || [];
 
+  // Create a map of included resources for quick lookup
+  const includedMap: Record<string, any> = {};
+  if (data.included) {
+    data.included.forEach((inc: any) => {
+      includedMap[`${inc.type}:${inc.id}`] = inc;
+    });
+  }
+
   const albumArtistName = a.artistName || "";
 
   const tracks: AppleTrack[] = trackItems.map((t: any) => {
     const ta = t.attributes || {};
-    const trackArtists = t.relationships?.artists?.data || [];
-    const primaryArtist = trackArtists[0];
+
+    // Resolve all artists/featured-artists for this track from the included map
+    const artistRefs = [
+      ...(t.relationships?.artists?.data || []),
+      ...(t.relationships?.["featured-artists"]?.data || []),
+    ];
+
+    // De-duplicate by ID to avoid overlapping primary and featured lists
+    const uniqueRefs = Array.from(
+      new Map(artistRefs.map((r: any) => [r.id, r])).values(),
+    );
+
+    const songArtists = uniqueRefs
+      .map((ref: any) => includedMap[`artists:${ref.id}`] || ref)
+      .map(parseArtist);
+
+    const primaryArtist = songArtists[0];
     return {
       id: t.id,
       name: ta.name || "",
@@ -545,10 +568,7 @@ export async function getAlbumDetail(
       url: ta.url,
       hasLyrics: ta.hasLyrics,
       genreNames: ta.genreNames || [],
-      artists: trackArtists.map((ar: any) => ({
-        id: ar.id,
-        name: ar.attributes?.name || ta.artistName || "",
-      })),
+      artists: songArtists,
     };
   });
 

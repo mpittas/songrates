@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
         editorialNotes: album.editorialNotes,
         tracks: album.tracks.map((t) => ({
           id: t.id,
-          title: t.name,
+          title: t.name.replace(/\s+\(feat\..*?\)$/i, "").trim(),
           number: String(t.trackNumber),
           length: t.durationMs,
           hasLyrics: t.hasLyrics,
