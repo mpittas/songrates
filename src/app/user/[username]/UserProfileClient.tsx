@@ -1,11 +1,20 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { createClient } from "@/utils/supabase/client";
 import MySection from "@/components/ui/MySection";
 import AlbumGrid from "@/components/album/AlbumGrid";
-import { FaUser, FaCalendarAlt } from "react-icons/fa";
+import {
+  FaUser,
+  FaCalendarAlt,
+  FaHeart,
+  FaMusic,
+  FaCompactDisc,
+  FaMicrophoneAlt,
+} from "react-icons/fa";
 import OptimizedImage from "@/components/ui/OptimizedImage";
+import { createSlug } from "@/lib/utils";
 
 interface UserProfile {
   id: string;
@@ -27,14 +36,29 @@ interface RatedAlbum {
   ratedAt: string;
 }
 
+interface FavoriteItem {
+  id: string;
+  item_id: string;
+  item_type: "track" | "album" | "artist";
+  item_name: string | null;
+  artist_name: string | null;
+  thumbnail_url: string | null;
+  created_at: string;
+}
+
 interface UserProfileClientProps {
   profile: UserProfile;
 }
 
 export default function UserProfileClient({ profile }: UserProfileClientProps) {
   const [albums, setAlbums] = useState<RatedAlbum[]>([]);
+  const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingFavorites, setLoadingFavorites] = useState(true);
   const [sortFilter, setSortFilter] = useState<string>("newest");
+  const [activeTab, setActiveTab] = useState<"ratings" | "favorites">(
+    "ratings",
+  );
 
   useEffect(() => {
     const fetchUserAlbums = async () => {
@@ -88,7 +112,8 @@ export default function UserProfileClient({ profile }: UserProfileClientProps) {
         const trackRatingsList = trackIds.map((id) => trackRatings[id] || 0);
         const avgRating =
           trackRatingsList.length > 0
-            ? trackRatingsList.reduce((a, b) => a + b, 0) / trackRatingsList.length
+            ? trackRatingsList.reduce((a, b) => a + b, 0) /
+              trackRatingsList.length
             : null;
 
         return {
@@ -108,7 +133,27 @@ export default function UserProfileClient({ profile }: UserProfileClientProps) {
       setLoading(false);
     };
 
+    const fetchFavorites = async () => {
+      const supabase = createClient();
+
+      const { data, error } = await supabase
+        .from("user_favorites")
+        .select("*")
+        .eq("user_id", profile.id)
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Error fetching favorites:", error);
+        setLoadingFavorites(false);
+        return;
+      }
+
+      setFavorites(data || []);
+      setLoadingFavorites(false);
+    };
+
     fetchUserAlbums();
+    fetchFavorites();
   }, [profile.id]);
 
   const sortedAlbums = useMemo(() => {
@@ -120,7 +165,9 @@ export default function UserProfileClient({ profile }: UserProfileClientProps) {
         return (a.ratedAt || "").localeCompare(b.ratedAt || "");
       }
       if (sortFilter === "artist") {
-        const artistCompare = (a.artistName || "").localeCompare(b.artistName || "");
+        const artistCompare = (a.artistName || "").localeCompare(
+          b.artistName || "",
+        );
         if (artistCompare !== 0) return artistCompare;
         return a.title.localeCompare(b.title);
       }
@@ -143,12 +190,83 @@ export default function UserProfileClient({ profile }: UserProfileClientProps) {
   });
 
   const fullAlbumsCount = albums.filter(
-    (a) => a.ratedTrackIds.length >= a.totalTracks && a.totalTracks > 0
+    (a) => a.ratedTrackIds.length >= a.totalTracks && a.totalTracks > 0,
   ).length;
 
   const partialAlbumsCount = albums.filter(
-    (a) => a.ratedTrackIds.length > 0 && a.ratedTrackIds.length < a.totalTracks
+    (a) => a.ratedTrackIds.length > 0 && a.ratedTrackIds.length < a.totalTracks,
   ).length;
+
+  const favoriteStats = useMemo(() => {
+    return {
+      tracks: favorites.filter((f) => f.item_type === "track").length,
+      albums: favorites.filter((f) => f.item_type === "album").length,
+      artists: favorites.filter((f) => f.item_type === "artist").length,
+    };
+  }, [favorites]);
+
+  const renderFavoriteItem = (item: FavoriteItem) => {
+    const isTrack = item.item_type === "track";
+    const isAlbum = item.item_type === "album";
+    const isArtist = item.item_type === "artist";
+
+    let href = "#";
+    if (isTrack) {
+      href = `/track/${item.item_id}`;
+    } else if (isAlbum && item.item_name) {
+      href = `/album/${createSlug(item.item_name, item.item_id)}`;
+    } else if (isArtist && item.item_name) {
+      href = `/artist/${createSlug(item.item_name, item.item_id)}`;
+    }
+
+    return (
+      <Link
+        key={item.id}
+        href={href}
+        className="group flex items-center gap-4 p-3 bg-neutral-900/40 border border-white/5 hover:border-white/10 transition-colors"
+      >
+        <div className="relative w-14 h-14 shrink-0 bg-neutral-800 overflow-hidden">
+          {item.thumbnail_url ? (
+            <OptimizedImage
+              src={item.thumbnail_url}
+              alt={item.item_name || "Unknown"}
+              fill
+              className="object-cover"
+              fallbackSrc="/vinyl-placeholder.svg"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center bg-neutral-800">
+              {isTrack && <FaMusic size={20} className="text-neutral-600" />}
+              {isAlbum && (
+                <FaCompactDisc size={20} className="text-neutral-600" />
+              )}
+              {isArtist && (
+                <FaMicrophoneAlt size={20} className="text-neutral-600" />
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-xs text-[#00f0ff] uppercase tracking-wider">
+              {item.item_type}
+            </span>
+          </div>
+          <h4 className="text-sm text-white truncate group-hover:text-[#00f0ff] transition-colors">
+            {item.item_name || "Unknown"}
+          </h4>
+          {item.artist_name && (
+            <p className="text-xs text-neutral-500 truncate">
+              {item.artist_name}
+            </p>
+          )}
+        </div>
+
+        <FaHeart size={14} className="text-red-500 shrink-0" />
+      </Link>
+    );
+  };
 
   return (
     <main className="min-h-screen bg-[#050507]">
@@ -215,14 +333,82 @@ export default function UserProfileClient({ profile }: UserProfileClientProps) {
                     </div>
                   </div>
                 </div>
+
+                {/* Favorites Stats */}
+                <div className="pt-4 border-t border-white/5">
+                  <div className="flex items-center gap-2 text-neutral-400 text-xs mb-3">
+                    <FaHeart size={12} className="text-red-500" />
+                    <span className="uppercase tracking-wider">Favorites</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="text-center">
+                      <div className="text-lg font-light text-white">
+                        {favoriteStats.tracks}
+                      </div>
+                      <div className="text-[9px] uppercase tracking-wider text-neutral-500">
+                        Tracks
+                      </div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-lg font-light text-white">
+                        {favoriteStats.albums}
+                      </div>
+                      <div className="text-[9px] uppercase tracking-wider text-neutral-500">
+                        Albums
+                      </div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-lg font-light text-white">
+                        {favoriteStats.artists}
+                      </div>
+                      <div className="text-[9px] uppercase tracking-wider text-neutral-500">
+                        Artists
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </aside>
 
-          {/* Main Content - Rated Albums */}
+          {/* Main Content */}
           <div className="flex-1 min-w-0">
-            <MySection className="pt-0">
-              <div className="flex flex-col gap-6">
+            {/* Tabs */}
+            <div className="flex items-center gap-1 mb-6 border-b border-white/5">
+              <button
+                onClick={() => setActiveTab("ratings")}
+                className={`px-4 py-3 text-sm font-medium transition-colors relative ${
+                  activeTab === "ratings"
+                    ? "text-white"
+                    : "text-neutral-500 hover:text-neutral-300"
+                }`}
+              >
+                Rated Albums
+                {activeTab === "ratings" && (
+                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#00f0ff]" />
+                )}
+              </button>
+              <button
+                onClick={() => setActiveTab("favorites")}
+                className={`px-4 py-3 text-sm font-medium transition-colors relative ${
+                  activeTab === "favorites"
+                    ? "text-white"
+                    : "text-neutral-500 hover:text-neutral-300"
+                }`}
+              >
+                <span className="flex items-center gap-2">
+                  <FaHeart size={12} className="text-red-500" />
+                  Favorites
+                </span>
+                {activeTab === "favorites" && (
+                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#00f0ff]" />
+                )}
+              </button>
+            </div>
+
+            {/* Ratings Tab */}
+            {activeTab === "ratings" && (
+              <>
                 {/* Header */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div>
@@ -230,7 +416,8 @@ export default function UserProfileClient({ profile }: UserProfileClientProps) {
                       Rated Albums
                     </h2>
                     <p className="text-neutral-500 text-sm font-mono mt-1">
-                      {albums.length} album{albums.length !== 1 ? "s" : ""} rated
+                      {albums.length} album{albums.length !== 1 ? "s" : ""}{" "}
+                      rated
                     </p>
                   </div>
 
@@ -265,8 +452,40 @@ export default function UserProfileClient({ profile }: UserProfileClientProps) {
                     gridCols={3}
                   />
                 )}
-              </div>
-            </MySection>
+              </>
+            )}
+
+            {/* Favorites Tab */}
+            {activeTab === "favorites" && (
+              <>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <h2 className="text-xl font-light tracking-tight text-white flex items-center gap-2">
+                      <FaHeart size={16} className="text-red-500" />
+                      Favorites
+                    </h2>
+                    <p className="text-neutral-500 text-sm font-mono mt-1">
+                      {favorites.length} item{favorites.length !== 1 ? "s" : ""}{" "}
+                      saved
+                    </p>
+                  </div>
+                </div>
+
+                {loadingFavorites ? (
+                  <div className="py-20 flex items-center justify-center">
+                    <div className="w-8 h-8 border-2 border-[#00f0ff] border-t-transparent rounded-full animate-spin" />
+                  </div>
+                ) : favorites.length === 0 ? (
+                  <div className="py-20 text-center text-neutral-600 font-mono text-sm">
+                    No favorites yet.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {favorites.map(renderFavoriteItem)}
+                  </div>
+                )}
+              </>
+            )}
           </div>
         </div>
       </div>

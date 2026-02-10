@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
-import Link from "next/link";
 import OptimizedImage from "@/components/ui/OptimizedImage";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { createSlug } from "@/lib/utils";
 
 interface RatedAlbum {
@@ -27,6 +28,27 @@ interface RPCAlbum {
   thumbnail_url: string | null;
   album_type: string;
   user_name: string;
+}
+
+// Separate component to handle user link navigation without nested <a> tags
+function UserLink({ userName }: { userName: string }) {
+  const router = useRouter();
+
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    router.push(`/user/${userName}`);
+  };
+
+  return (
+    <span
+      onClick={handleClick}
+      className="inline-flex items-center gap-1.5 text-[10px] text-neutral-400 hover:text-[#00f0ff] transition-colors cursor-pointer"
+    >
+      <span className="uppercase tracking-wider">by</span>
+      <span className="font-medium">@{userName}</span>
+    </span>
+  );
 }
 
 export default function LatestRatedAlbums() {
@@ -162,14 +184,7 @@ export default function LatestRatedAlbums() {
 
                   {/* User Link */}
                   <div className="pt-2 border-t border-white/5">
-                    <Link
-                      href={`/user/${album.userName}`}
-                      className="inline-flex items-center gap-1.5 text-[10px] text-neutral-400 hover:text-[#00f0ff] transition-colors"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <span className="uppercase tracking-wider">by</span>
-                      <span className="font-medium">@{album.userName}</span>
-                    </Link>
+                    <UserLink userName={album.userName} />
                   </div>
                 </div>
               </Link>

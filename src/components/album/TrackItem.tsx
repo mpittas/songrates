@@ -16,6 +16,7 @@ import { usePlayer } from "@/context/PlayerContext";
 import { formatTime, createSlug } from "@/lib/utils";
 import ColorRating from "@/components/rating/ColorRating";
 import Button from "@/components/ui/Button";
+import FavoriteButton from "@/components/ui/FavoriteButton";
 import { useLyrics } from "@/hooks/useLyrics";
 import { TrackInfo, AlbumContext } from "@/types/music";
 
@@ -129,6 +130,16 @@ export default function TrackItem({
           <span className="text-[10px] text-neutral-600 font-mono hidden sm:block w-5 shrink-0 text-right mr-4">
             {formatTime(track.length, "milliseconds")}
           </span>
+
+          {/* Favorite Button */}
+          <FavoriteButton
+            itemId={track.id}
+            itemType="track"
+            itemName={track.title}
+            artistName={artistName}
+            size="sm"
+            className="mr-2"
+          />
 
           <div className="flex flex-col min-w-0">
             <div className="flex items-center gap-2 min-w-0">

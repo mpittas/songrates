@@ -70,6 +70,7 @@ export default function ArtistPageContent({
         <div className="grid grid-cols-1 gap-12 items-start lg:grid-cols-[150px_1fr]">
           <div className="lg:sticky lg:top-20">
             <ArtistInfo
+              artistId={artistId}
               artistName={artistName}
               data={artistInfo}
               className="w-full"

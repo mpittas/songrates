@@ -10,6 +10,7 @@ import MySection from "@/components/ui/MySection";
 import AlbumSkeleton from "@/components/album/AlbumSkeleton";
 import SearchInput from "@/components/search/SearchInput";
 import Button from "@/components/ui/Button";
+import FavoriteButton from "@/components/ui/FavoriteButton";
 import { FaArrowLeft, FaLock } from "react-icons/fa";
 import AlbumRatingRow from "@/components/rating/AlbumRatingRow";
 import TrackItem from "@/components/album/TrackItem";
@@ -341,6 +342,14 @@ export default function AlbumPage() {
                 <Button href={album.url} isExternal variant="border" size="xs">
                   Apple Music
                 </Button>
+                <FavoriteButton
+                  itemId={album.id}
+                  itemType="album"
+                  itemName={album.title}
+                  artistName={album.artist?.name}
+                  thumbnailUrl={album.artworkUrl}
+                  size="md"
+                />
               </div>
             )}
           </div>

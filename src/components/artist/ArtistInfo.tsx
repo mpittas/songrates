@@ -1,13 +1,18 @@
+"use client";
+
 import { ArtistInfo as ArtistInfoType } from "@/types/music";
 import { FaGlobe } from "react-icons/fa";
+import FavoriteButton from "@/components/ui/FavoriteButton";
 
 interface Props {
+  artistId: string;
   artistName: string;
   data: ArtistInfoType;
   className?: string;
 }
 
 export default function ArtistInfo({
+  artistId,
   artistName,
   data,
   className = "",
@@ -35,6 +40,17 @@ export default function ArtistInfo({
           <h1 className="text-xl text-white tracking-tight leading-tight mb-1">
             {artistName}
           </h1>
+        </div>
+
+        {/* Favorite Button */}
+        <div className="flex justify-center lg:justify-start">
+          <FavoriteButton
+            itemId={artistId}
+            itemType="artist"
+            itemName={artistName}
+            thumbnailUrl={data.image || undefined}
+            size="md"
+          />
         </div>
       </div>
 
