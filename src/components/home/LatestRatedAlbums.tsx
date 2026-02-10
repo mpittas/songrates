@@ -45,7 +45,7 @@ function UserLink({ userName }: { userName: string }) {
       onClick={handleClick}
       className="inline-flex items-center gap-1.5 text-[10px] text-neutral-400 hover:text-[#00f0ff] transition-colors cursor-pointer"
     >
-      <span className="uppercase tracking-wider">by</span>
+      <span className="tracking-wider">By:</span>
       <span className="font-medium">@{userName}</span>
     </span>
   );
@@ -141,7 +141,7 @@ export default function LatestRatedAlbums() {
                   <div className="flex justify-end items-start text-xs text-neutral-400">
                     <time
                       dateTime={album.ratedAt}
-                      className="text-[10px] uppercase tracking-wider opacity-60"
+                      className="text-[10px] tracking-wider opacity-60"
                     >
                       {new Date(album.ratedAt).toLocaleDateString()}
                     </time>
@@ -171,8 +171,10 @@ export default function LatestRatedAlbums() {
 
                   {/* Rating Badge */}
                   <div className="mt-2 flex items-center justify-between border-t border-white/5 pt-3">
-                    <span className="text-[10px] uppercase tracking-widest text-neutral-500">
-                      RATED
+                    <span className="text-[10px] tracking-widest text-neutral-500">
+                      <div>
+                        <UserLink userName={album.userName} />
+                      </div>
                     </span>
                     <div className="flex items-baseline gap-1">
                       <span className="text-lg font-bold text-white">
@@ -180,11 +182,6 @@ export default function LatestRatedAlbums() {
                       </span>
                       <span className="text-xs text-neutral-600">/ 10</span>
                     </div>
-                  </div>
-
-                  {/* User Link */}
-                  <div className="pt-2 border-t border-white/5">
-                    <UserLink userName={album.userName} />
                   </div>
                 </div>
               </Link>

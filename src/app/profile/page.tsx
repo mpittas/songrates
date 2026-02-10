@@ -1,39 +1,25 @@
 "use client";
 
 import { useAuth } from "@/context/AuthContext";
-import MySection from "@/components/ui/MySection";
+import { useRatingsContext } from "@/context/RatingsContext";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 import Link from "next/link";
-import {
-  FaHeart,
-  FaMusic,
-  FaCompactDisc,
-  FaMicrophoneAlt,
-} from "react-icons/fa";
+import { FaUser, FaStar, FaSignOutAlt } from "react-icons/fa";
 import OptimizedImage from "@/components/ui/OptimizedImage";
-import { createSlug } from "@/lib/utils";
-
-interface FavoriteItem {
-  id: string;
-  item_id: string;
-  item_type: "track" | "album" | "artist";
-  item_name: string | null;
-  artist_name: string | null;
-  thumbnail_url: string | null;
-  created_at: string;
-}
+import AlbumGrid from "@/components/album/AlbumGrid";
+import { Album } from "@/types/music";
+import FavoriteStatsBar, {
+  FavoriteItem,
+} from "@/components/profile/FavoriteStatsBar";
 
 export default function ProfilePage() {
   const { user, signOut, loading } = useAuth();
+  const { albumRatings, ratings } = useRatingsContext();
   const router = useRouter();
   const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
   const [loadingFavorites, setLoadingFavorites] = useState(true);
-  const [activeTab, setActiveTab] = useState<"info" | "favorites">("info");
-  const [favoriteSubTab, setFavoriteSubTab] = useState<
-    "discography" | "artists"
-  >("discography");
 
   useEffect(() => {
     if (!loading && !user) {
@@ -64,13 +50,58 @@ export default function ProfilePage() {
     fetchFavorites();
   }, [user]);
 
+  // Build rated albums from context
+  const ratedAlbums: Album[] = useMemo(() => {
+    return Object.values(albumRatings)
+      .filter((a) => a.ratedTrackIds.length > 0)
+      .sort((a, b) => (b.ratedAt || "").localeCompare(a.ratedAt || ""))
+      .map((a) => {
+        let avgRating: number | null = null;
+        if (a.ratedTrackIds.length > 0) {
+          let sum = 0;
+          let count = 0;
+          a.ratedTrackIds.forEach((tId) => {
+            if (ratings[tId]) {
+              sum += ratings[tId];
+              count++;
+            }
+          });
+          if (count > 0) avgRating = sum / count;
+        }
+        return {
+          id: a.id,
+          title: a.title,
+          artistName: a.artistName,
+          artworkUrl: a.artworkUrl,
+          releaseDate: a.releaseDate,
+          rating: avgRating,
+        };
+      });
+  }, [albumRatings, ratings]);
+
+  // Build album ratings lookup for track linking in favorites modal
+  const albumRatingsLookup = useMemo(() => {
+    const lookup: Record<
+      string,
+      { id: string; title: string; ratedTrackIds: string[] }
+    > = {};
+    Object.values(albumRatings).forEach((album) => {
+      lookup[album.id] = {
+        id: album.id,
+        title: album.title,
+        ratedTrackIds: album.ratedTrackIds,
+      };
+    });
+    return lookup;
+  }, [albumRatings]);
+
   if (loading) {
     return (
-      <MySection className="min-h-[calc(100vh-64px)] flex items-center justify-center">
+      <main className="min-h-screen bg-[#050507] flex items-center justify-center">
         <div className="font-mono text-neutral-500 animate-pulse text-xs tracking-widest uppercase">
           Initializing...
         </div>
-      </MySection>
+      </main>
     );
   }
 
@@ -78,284 +109,119 @@ export default function ProfilePage() {
     return null;
   }
 
-  const renderFavoriteItem = (item: FavoriteItem) => {
-    const isTrack = item.item_type === "track";
-    const isAlbum = item.item_type === "album";
-    const isArtist = item.item_type === "artist";
-
-    let href = "#";
-    if (isTrack) {
-      href = `/track/${item.item_id}`;
-    } else if (isAlbum && item.item_name) {
-      href = `/album/${createSlug(item.item_name, item.item_id)}`;
-    } else if (isArtist && item.item_name) {
-      href = `/artist/${createSlug(item.item_name, item.item_id)}`;
-    }
-
-    return (
-      <Link
-        key={item.id}
-        href={href}
-        className="group flex items-center gap-4 p-3 bg-neutral-900/40 border border-white/5 hover:border-white/10 transition-colors"
-      >
-        <div className="relative w-14 h-14 shrink-0 bg-neutral-800 overflow-hidden">
-          {item.thumbnail_url ? (
-            <OptimizedImage
-              src={item.thumbnail_url}
-              alt={item.item_name || "Unknown"}
-              fill
-              className="object-cover"
-              fallbackSrc="/vinyl-placeholder.svg"
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center bg-neutral-800">
-              {isTrack && <FaMusic size={20} className="text-neutral-600" />}
-              {isAlbum && (
-                <FaCompactDisc size={20} className="text-neutral-600" />
-              )}
-              {isArtist && (
-                <FaMicrophoneAlt size={20} className="text-neutral-600" />
-              )}
-            </div>
-          )}
-        </div>
-
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-xs text-[#00f0ff] uppercase tracking-wider">
-              {item.item_type}
-            </span>
-          </div>
-          <h4 className="text-sm text-white truncate group-hover:text-[#00f0ff] transition-colors">
-            {item.item_name || "Unknown"}
-          </h4>
-          {item.artist_name && (
-            <p className="text-xs text-neutral-500 truncate">
-              {item.artist_name}
-            </p>
-          )}
-        </div>
-
-        <FaHeart size={14} className="text-red-500 shrink-0" />
-      </Link>
-    );
-  };
-
-  const favoriteStats = {
-    tracks: favorites.filter((f) => f.item_type === "track").length,
-    albums: favorites.filter((f) => f.item_type === "album").length,
-    artists: favorites.filter((f) => f.item_type === "artist").length,
-  };
+  const username =
+    user.user_metadata?.username || user.email?.split("@")[0] || "user";
+  const avatarUrl = user.user_metadata?.avatar_url || null;
 
   return (
-    <main className="min-h-[calc(100vh-64px)] flex flex-col pt-10">
-      <MySection>
-        <div className="max-w-4xl">
-          <div className="space-y-10">
-            {/* Header section with very minimalistic typography */}
-            <header className="space-y-4">
-              <h1 className="text-4xl md:text-6xl font-light tracking-tighter text-white">
-                Profile
-              </h1>
-              <p className="text-white/40 text-xs md:text-sm font-mono tracking-widest uppercase">
-                Account Information / System Settings
-              </p>
-            </header>
+    <main className="min-h-screen bg-[#050507]">
+      {/* Cover Art Banner */}
+      <div className="relative w-full h-48 md:h-64 overflow-hidden">
+        <img
+          src="/profile-cover.svg"
+          alt=""
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#050507]" />
+      </div>
 
-            {/* Tabs */}
-            <div className="flex items-center gap-1 border-b border-white/5">
-              <button
-                onClick={() => setActiveTab("info")}
-                className={`px-4 py-3 text-sm font-medium transition-colors relative ${
-                  activeTab === "info"
-                    ? "text-white"
-                    : "text-neutral-500 hover:text-neutral-300"
-                }`}
-              >
-                Account Info
-                {activeTab === "info" && (
-                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#00f0ff]" />
-                )}
-              </button>
-              <button
-                onClick={() => setActiveTab("favorites")}
-                className={`px-4 py-3 text-sm font-medium transition-colors relative ${
-                  activeTab === "favorites"
-                    ? "text-white"
-                    : "text-neutral-500 hover:text-neutral-300"
-                }`}
-              >
-                <span className="flex items-center gap-2">
-                  <FaHeart size={12} className="text-red-500" />
-                  Favorites
-                  <span className="ml-1 text-xs text-neutral-500">
-                    ({favorites.length})
-                  </span>
-                </span>
-                {activeTab === "favorites" && (
-                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#00f0ff]" />
-                )}
-              </button>
-            </div>
-
-            {/* Info Tab */}
-            {activeTab === "info" && (
-              <div className="space-y-12">
-                <div className="space-y-2">
-                  <div className="text-[10px] font-mono uppercase tracking-[0.3em] text-white/20">
-                    Identity
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <div className="text-lg font-light text-white/90 tracking-tight">
-                      @
-                      {user.user_metadata?.username ||
-                        user.email?.split("@")[0]}
-                    </div>
-                    <div className="text-sm font-mono text-white/40 tracking-tight">
-                      {user.email}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Favorites Summary */}
-                <div className="space-y-4">
-                  <div className="text-[10px] font-mono uppercase tracking-[0.3em] text-white/20">
-                    Your Favorites
-                  </div>
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="bg-neutral-900/40 border border-white/5 p-4 text-center">
-                      <div className="text-2xl font-light text-white">
-                        {favoriteStats.tracks}
-                      </div>
-                      <div className="text-[10px] uppercase tracking-wider text-neutral-500 mt-1">
-                        Tracks
-                      </div>
-                    </div>
-                    <div className="bg-neutral-900/40 border border-white/5 p-4 text-center">
-                      <div className="text-2xl font-light text-white">
-                        {favoriteStats.albums}
-                      </div>
-                      <div className="text-[10px] uppercase tracking-wider text-neutral-500 mt-1">
-                        Albums
-                      </div>
-                    </div>
-                    <div className="bg-neutral-900/40 border border-white/5 p-4 text-center">
-                      <div className="text-2xl font-light text-white">
-                        {favoriteStats.artists}
-                      </div>
-                      <div className="text-[10px] uppercase tracking-wider text-neutral-500 mt-1">
-                        Artists
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="pt-8 border-t border-white/5 flex flex-col items-start gap-8">
-                  <button
-                    onClick={() => signOut()}
-                    className="text-sm font-mono tracking-widest uppercase text-white/40 hover:text-red-400 transition-colors duration-300"
-                  >
-                    Log out
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Favorites Tab */}
-            {activeTab === "favorites" && (
-              <div className="space-y-6">
-                {/* Sub-tabs */}
-                <div className="flex items-center gap-1 border-b border-white/5">
-                  <button
-                    onClick={() => setFavoriteSubTab("discography")}
-                    className={`px-4 py-2 text-sm font-medium transition-colors relative ${
-                      favoriteSubTab === "discography"
-                        ? "text-white"
-                        : "text-neutral-500 hover:text-neutral-300"
-                    }`}
-                  >
-                    <span className="flex items-center gap-2">
-                      <FaCompactDisc size={12} />
-                      Discography
-                      <span className="ml-1 text-xs text-neutral-500">
-                        ({favoriteStats.tracks + favoriteStats.albums})
-                      </span>
-                    </span>
-                    {favoriteSubTab === "discography" && (
-                      <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#00f0ff]" />
-                    )}
-                  </button>
-                  <button
-                    onClick={() => setFavoriteSubTab("artists")}
-                    className={`px-4 py-2 text-sm font-medium transition-colors relative ${
-                      favoriteSubTab === "artists"
-                        ? "text-white"
-                        : "text-neutral-500 hover:text-neutral-300"
-                    }`}
-                  >
-                    <span className="flex items-center gap-2">
-                      <FaMicrophoneAlt size={12} />
-                      Artists
-                      <span className="ml-1 text-xs text-neutral-500">
-                        ({favoriteStats.artists})
-                      </span>
-                    </span>
-                    {favoriteSubTab === "artists" && (
-                      <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#00f0ff]" />
-                    )}
-                  </button>
-                </div>
-
-                {loadingFavorites ? (
-                  <div className="py-20 flex items-center justify-center">
-                    <div className="w-8 h-8 border-2 border-[#00f0ff] border-t-transparent rounded-full animate-spin" />
-                  </div>
-                ) : (
-                  <>
-                    {/* Discography Sub-tab */}
-                    {favoriteSubTab === "discography" && (
-                      <div className="space-y-4">
-                        {favoriteStats.tracks + favoriteStats.albums === 0 ? (
-                          <div className="py-20 text-center text-neutral-600 font-mono text-sm">
-                            No liked tracks or albums yet.
-                          </div>
-                        ) : (
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            {favorites
-                              .filter(
-                                (f) =>
-                                  f.item_type === "track" ||
-                                  f.item_type === "album",
-                              )
-                              .map(renderFavoriteItem)}
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Artists Sub-tab */}
-                    {favoriteSubTab === "artists" && (
-                      <div className="space-y-4">
-                        {favoriteStats.artists === 0 ? (
-                          <div className="py-20 text-center text-neutral-600 font-mono text-sm">
-                            No liked artists yet.
-                          </div>
-                        ) : (
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            {favorites
-                              .filter((f) => f.item_type === "artist")
-                              .map(renderFavoriteItem)}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </>
-                )}
+      {/* Profile Header — overlaps the banner */}
+      <div className="relative max-w-4xl mx-auto px-6 -mt-20 md:-mt-24 z-10">
+        <div className="flex flex-col sm:flex-row items-start sm:items-end gap-5">
+          {/* Avatar */}
+          <div className="relative w-28 h-28 md:w-36 md:h-36 rounded-full overflow-hidden bg-neutral-900 border-4 border-[#050507] shadow-2xl shrink-0">
+            {avatarUrl ? (
+              <OptimizedImage
+                src={avatarUrl}
+                alt={username}
+                fill
+                className="object-cover"
+                fallbackSrc="/vinyl-placeholder.svg"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center bg-neutral-800">
+                <FaUser size={40} className="text-neutral-600" />
               </div>
             )}
           </div>
+
+          {/* User Info */}
+          <div className="flex-1 min-w-0 pb-2">
+            <h1 className="text-2xl md:text-3xl font-light tracking-tight text-white">
+              @{username}
+            </h1>
+            <p className="text-sm text-neutral-500 font-mono mt-1">
+              {user.email}
+            </p>
+          </div>
+
+          {/* Sign Out */}
+          <button
+            onClick={() => signOut()}
+            className="flex items-center gap-2 px-4 py-2 text-xs font-mono uppercase tracking-widest text-neutral-500 hover:text-red-400 border border-white/5 hover:border-red-400/20 bg-neutral-900/40 transition-all duration-200 shrink-0"
+          >
+            <FaSignOutAlt size={12} />
+            Log out
+          </button>
         </div>
-      </MySection>
+      </div>
+
+      {/* Stats Bar */}
+      <div className="max-w-4xl mx-auto px-6 mt-8">
+        <FavoriteStatsBar
+          favorites={favorites}
+          loading={loadingFavorites}
+          albumRatings={albumRatingsLookup}
+        />
+      </div>
+
+      {/* Content Sections */}
+      <div className="max-w-4xl mx-auto px-6 mt-12 pb-20 space-y-16">
+        {/* Rated Music Section */}
+        <section>
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-1 h-5 bg-[#00f0ff]" />
+            <h2 className="text-lg font-light tracking-tight text-white">
+              Rated Music
+            </h2>
+            <span className="text-xs text-neutral-600 font-mono">
+              {ratedAlbums.length}
+            </span>
+          </div>
+
+          {ratedAlbums.length === 0 ? (
+            <div className="py-16 text-center border border-white/[0.04] bg-neutral-900/20">
+              <FaStar size={24} className="text-neutral-700 mx-auto mb-3" />
+              <p className="text-neutral-600 font-mono text-sm">
+                No rated albums yet
+              </p>
+              <p className="text-neutral-700 text-xs mt-1">
+                Rate tracks on any album page to see them here
+              </p>
+            </div>
+          ) : (
+            <>
+              <AlbumGrid
+                albums={ratedAlbums.slice(0, 12)}
+                onSelectAlbum={() => {}}
+                layout="grid"
+                gridCols={4}
+                priorityCount={4}
+              />
+              {ratedAlbums.length > 12 && (
+                <div className="mt-6 flex justify-center">
+                  <Link
+                    href={`/user/${username}`}
+                    className="px-6 py-2.5 text-xs font-mono uppercase tracking-widest text-neutral-400 hover:text-white border border-white/[0.06] hover:border-[#00f0ff]/30 bg-neutral-900/30 hover:bg-neutral-900/50 transition-all duration-200"
+                  >
+                    Show all {ratedAlbums.length} albums
+                  </Link>
+                </div>
+              )}
+            </>
+          )}
+        </section>
+      </div>
     </main>
   );
 }
