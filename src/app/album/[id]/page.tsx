@@ -105,7 +105,7 @@ export default function AlbumPage() {
           string,
           { average_rating: number; rating_count: number }
         > = {};
-        data.forEach((r) => {
+        data.forEach((r: any) => {
           map[r.track_id] = {
             average_rating: Number(r.average_rating),
             rating_count: r.rating_count,
@@ -132,7 +132,7 @@ export default function AlbumPage() {
             table: "public_track_ratings",
             filter: `album_id=eq.${album.id}`,
           },
-          (payload) => {
+          (payload: any) => {
             if (
               payload.eventType === "INSERT" ||
               payload.eventType === "UPDATE"
