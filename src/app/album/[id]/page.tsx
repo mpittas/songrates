@@ -99,8 +99,8 @@ export default function AlbumPage() {
 
       if (userRatings) {
         const map: Record<string, number> = {};
-        userRatings.forEach((r) => {
-          const rating = r as unknown as UserRating;
+        userRatings.forEach((r: unknown) => {
+          const rating = r as UserRating;
           map[rating.track_id] = Number(rating.rating);
         });
         setViewingUserRatings(map);
@@ -128,8 +128,8 @@ export default function AlbumPage() {
           string,
           { average_rating: number; rating_count: number }
         > = {};
-        data.forEach((r) => {
-          const rating = r as unknown as PublicTrackRating;
+        data.forEach((r: unknown) => {
+          const rating = r as PublicTrackRating;
           map[rating.track_id] = {
             average_rating: Number(rating.average_rating),
             rating_count: rating.rating_count,
