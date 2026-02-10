@@ -37,11 +37,7 @@ export async function GET(request: Request) {
         await supabase.from("profiles").upsert(
           {
             id: user.id,
-            display_name:
-              user.user_metadata?.full_name ||
-              user.user_metadata?.name ||
-              user.email ||
-              null,
+            display_name: user.user_metadata?.username || user.email || null,
           },
           { onConflict: "id", ignoreDuplicates: true },
         );

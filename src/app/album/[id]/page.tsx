@@ -222,9 +222,12 @@ export default function AlbumPage() {
                   <span className="text-[10px] uppercase tracking-widest text-[#00f0ff]/50 font-mono mb-1">
                     Viewing Ratings By
                   </span>
-                  <span className="text-md text-white leading-none">
+                  <Link
+                    href={`/user/${searchParams.get("userName")}`}
+                    className="text-md text-white leading-none hover:text-[#00f0ff] transition-colors"
+                  >
                     {searchParams.get("userName")}
-                  </span>
+                  </Link>
                 </div>
               )}
             </div>

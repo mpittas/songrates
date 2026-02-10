@@ -44,7 +44,7 @@ export default function ProfilePage() {
               </p>
             </header>
 
-            {/* Content sectin */}
+            {/* Content section */}
             <div className="space-y-12">
               <div className="space-y-2">
                 <div className="text-[10px] font-mono uppercase tracking-[0.3em] text-white/20">
@@ -52,8 +52,7 @@ export default function ProfilePage() {
                 </div>
                 <div className="flex flex-col gap-1">
                   <div className="text-lg font-light text-white/90 tracking-tight">
-                    {user.user_metadata?.first_name}{" "}
-                    {user.user_metadata?.last_name}
+                    @{user.user_metadata?.username || user.email?.split("@")[0]}
                   </div>
                   <div className="text-sm font-mono text-white/40 tracking-tight">
                     {user.email}

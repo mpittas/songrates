@@ -1,5 +1,7 @@
-import { createClient } from "@/utils/supabase/server";
+"use client";
 
+import { useEffect, useState } from "react";
+import { createClient } from "@/utils/supabase/client";
 import Link from "next/link";
 import OptimizedImage from "@/components/ui/OptimizedImage";
 import { createSlug } from "@/lib/utils";
@@ -27,39 +29,69 @@ interface RPCAlbum {
   user_name: string;
 }
 
-async function getLatestRatedAlbums(): Promise<RatedAlbum[]> {
-  const supabase = await createClient();
+export default function LatestRatedAlbums() {
+  const [ratedAlbums, setRatedAlbums] = useState<RatedAlbum[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const { data, error } = await supabase.rpc("get_latest_completed_albums", {
-    limit_count: 4,
-  });
+  useEffect(() => {
+    const fetchLatestRatedAlbums = async () => {
+      const supabase = createClient();
 
-  if (error) {
-    console.error(
-      "LatestRatedAlbums: RPC error:",
-      error.message,
-      error.details,
-      error.hint,
+      const { data, error } = await supabase.rpc(
+        "get_latest_completed_albums",
+        {
+          limit_count: 4,
+        },
+      );
+
+      if (error) {
+        console.error(
+          "LatestRatedAlbums: RPC error:",
+          error.message,
+          error.details,
+          error.hint,
+        );
+        setLoading(false);
+        return;
+      }
+
+      if (!data) {
+        setLoading(false);
+        return;
+      }
+
+      const albums: RatedAlbum[] = (data as RPCAlbum[]).map((album) => ({
+        userId: album.user_id,
+        albumId: album.album_id,
+        albumTitle: album.title,
+        artistName: album.artist_name,
+        rating: Number(album.average_rating),
+        ratedAt: album.rated_at,
+        thumbnailUrl: album.thumbnail_url || null,
+        userName: album.user_name || "Anonymous",
+      }));
+
+      setRatedAlbums(albums);
+      setLoading(false);
+    };
+
+    fetchLatestRatedAlbums();
+  }, []);
+
+  if (loading) {
+    return (
+      <section className="relative z-20 py-12 border-t border-white/5">
+        <div className="flex flex-col items-center justify-center w-full max-w-7xl mx-auto px-6">
+          <h2 className="text-2xl font-light tracking-tight text-white mb-8 self-start">
+            Latest Community Ratings
+          </h2>
+          <div className="w-full flex items-center justify-center py-12">
+            <div className="w-8 h-8 border-2 border-[#00f0ff] border-t-transparent rounded-full animate-spin" />
+          </div>
+        </div>
+      </section>
     );
-    return [];
   }
-
-  if (!data) return [];
-
-  return (data as RPCAlbum[]).map((album) => ({
-    userId: album.user_id,
-    albumId: album.album_id,
-    albumTitle: album.title,
-    artistName: album.artist_name,
-    rating: Number(album.average_rating),
-    ratedAt: album.rated_at,
-    thumbnailUrl: album.thumbnail_url || null,
-    userName: album.user_name || "Anonymous",
-  }));
-}
-
-export default async function LatestRatedAlbums() {
-  const ratedAlbums = await getLatestRatedAlbums();
 
   if (ratedAlbums.length === 0) return null;
 
@@ -126,6 +158,18 @@ export default async function LatestRatedAlbums() {
                       </span>
                       <span className="text-xs text-neutral-600">/ 10</span>
                     </div>
+                  </div>
+
+                  {/* User Link */}
+                  <div className="pt-2 border-t border-white/5">
+                    <Link
+                      href={`/user/${album.userName}`}
+                      className="inline-flex items-center gap-1.5 text-[10px] text-neutral-400 hover:text-[#00f0ff] transition-colors"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <span className="uppercase tracking-wider">by</span>
+                      <span className="font-medium">@{album.userName}</span>
+                    </Link>
                   </div>
                 </div>
               </Link>
