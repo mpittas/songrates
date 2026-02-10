@@ -2,8 +2,8 @@ import React from "react";
 import Link from "next/link";
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: "primary" | "secondary" | "ghost" | "border";
-  size?: "xs" | "sm" | "md" | "lg";
+  variant?: "primary" | "secondary" | "ghost" | "border" | "muted";
+  size?: "xxs" | "xs" | "sm" | "md" | "lg";
   iconLeft?: React.ReactNode;
   iconRight?: React.ReactNode;
   href?: string;
@@ -31,11 +31,14 @@ export default function Button({
     secondary:
       "bg-white text-black border border-white hover:bg-neutral-200 hover:border-neutral-200",
     ghost: "bg-transparent text-neutral-400 hover:text-white hover:bg-white/5",
+    muted:
+      "bg-neutral-900 text-neutral-300 hover:bg-neutral-700/60 hover:text-white",
     border:
       "bg-transparent border border-white/10 text-neutral-300 hover:bg-white hover:text-black hover:border-white",
   };
 
   const sizes = {
+    xxs: "px-1.5 py-0.5 text-[9px] gap-1",
     xs: "px-2 py-1 text-[10px]",
     sm: "px-4 py-2 text-xs",
     md: "px-6 py-3 text-sm",
@@ -46,9 +49,9 @@ export default function Button({
 
   const content = (
     <>
-      {iconLeft && <span className="mr-2 flex items-center">{iconLeft}</span>}
+      {iconLeft && <span className="flex items-center">{iconLeft}</span>}
       {children}
-      {iconRight && <span className="ml-2 flex items-center">{iconRight}</span>}
+      {iconRight && <span className="flex items-center">{iconRight}</span>}
     </>
   );
 

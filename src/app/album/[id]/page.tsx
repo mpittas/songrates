@@ -42,6 +42,9 @@ export default function AlbumPage() {
   >({});
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [openLyricsTrackId, setOpenLyricsTrackId] = useState<string | null>(
+    null,
+  );
 
   // Fetch target user ratings if userId is present
   useEffect(() => {
@@ -404,6 +407,12 @@ export default function AlbumPage() {
                       : undefined
                   }
                   highlighted={track.id === highlightTrackId}
+                  lyricsOpen={openLyricsTrackId === track.id}
+                  onToggleLyrics={(trackId) =>
+                    setOpenLyricsTrackId((prev) =>
+                      prev === trackId ? null : trackId,
+                    )
+                  }
                 />
               ))}
             </div>

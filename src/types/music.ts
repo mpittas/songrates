@@ -27,6 +27,7 @@ export interface Album {
 export interface TrackInfo extends Track {
   number: string;
   length?: number;
+  hasLyrics?: boolean;
   artists?: { id: string; name: string; joinPhrase?: string }[];
 }
 

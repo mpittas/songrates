@@ -68,6 +68,7 @@ export async function GET(request: NextRequest) {
           title: t.name,
           number: String(t.trackNumber),
           length: t.durationMs,
+          hasLyrics: t.hasLyrics,
           artistName: t.artistName,
           artistId: t.artistId,
           artists:

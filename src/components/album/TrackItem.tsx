@@ -2,11 +2,21 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { FaPlay, FaPause, FaGlobe, FaLock } from "react-icons/fa";
+import {
+  FaPlay,
+  FaPause,
+  FaGlobe,
+  FaLock,
+  FaPlus,
+  FaMinus,
+} from "react-icons/fa";
+import { HiOutlineMicrophone } from "react-icons/hi2";
 import { useRatingsContext as useRatings } from "@/context/RatingsContext";
 import { usePlayer } from "@/context/PlayerContext";
 import { formatTime, createSlug } from "@/lib/utils";
 import ColorRating from "@/components/rating/ColorRating";
+import Button from "@/components/ui/Button";
+import { useLyrics } from "@/hooks/useLyrics";
 import { TrackInfo, AlbumContext } from "@/types/music";
 
 interface TrackItemProps {
@@ -21,6 +31,8 @@ interface TrackItemProps {
   forcedRating?: number;
   /** When true, scroll into view and pulse-highlight this track */
   highlighted?: boolean;
+  lyricsOpen?: boolean;
+  onToggleLyrics?: (trackId: string) => void;
 }
 
 export default function TrackItem({
@@ -34,14 +46,25 @@ export default function TrackItem({
   publicCount,
   forcedRating,
   highlighted = false,
+  lyricsOpen = false,
+  onToggleLyrics,
 }: TrackItemProps) {
   const trackRef = useRef<HTMLDivElement>(null);
+  const [lyricsFontSize, setLyricsFontSize] = useState(12);
   const { ratings, setRating } = useRatings();
   const { currentTrack, isPlaying, isLoading, playTrack } = usePlayer();
   const rating =
     forcedRating !== undefined ? forcedRating : ratings[track.id] || 0;
   const isCurrentTrack = currentTrack?.id === track.id;
   const isReadOnly = forcedRating !== undefined;
+
+  // Only fetch lyrics when user opens the panel
+  const { data: lyricsData, isLoading: lyricsLoading } = useLyrics(
+    track.title,
+    artistName,
+    track.length,
+    lyricsOpen,
+  );
 
   // Auto-scroll and highlight when this track is the search target
   useEffect(() => {
@@ -108,15 +131,31 @@ export default function TrackItem({
           </span>
 
           <div className="flex flex-col min-w-0">
-            <span className="text-neutral-300 group-hover:text-[#00f0ff] transition-colors truncate text-sm">
-              {track.title}
-            </span>
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="text-neutral-300 group-hover:text-[#00f0ff] transition-colors truncate text-sm">
+                {track.title}
+              </span>
+              {track.hasLyrics && (
+                <Button
+                  size="xxs"
+                  variant={lyricsOpen ? "primary" : "muted"}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onToggleLyrics?.(track.id);
+                  }}
+                  iconLeft={<HiOutlineMicrophone size={10} />}
+                  title={lyricsOpen ? "Hide lyrics" : "Show lyrics"}
+                >
+                  Lyrics
+                </Button>
+              )}
+            </div>
             {track.artists && track.artists.length > 0 && (
               <span className="text-neutral-600 text-xs line-clamp-2 leading-relaxed mt-0.5">
                 {track.artists
                   .filter((a) => a.id !== artistId)
                   .map((a, i, arr) => (
-                    <span key={a.id}>
+                    <span key={`${a.id}-${i}`}>
                       {i === 0 ? "feat. " : ""}
                       <Link
                         href={`/artist/${createSlug(a.name, a.id)}`}
@@ -179,6 +218,54 @@ export default function TrackItem({
           </div>
         </div>
       </div>
+
+      {/* Lyrics Accordion */}
+      {lyricsOpen && (
+        <div className="px-4 pb-4 pt-2 bg-[#07070a] border-t border-[#1a1a1f]/50">
+          {lyricsLoading ? (
+            <div className="flex items-center gap-2 py-3">
+              <div className="w-3 h-3 border border-[#00f0ff]/40 border-t-[#00f0ff] rounded-full animate-spin" />
+              <span className="text-neutral-500 text-xs font-mono">
+                Loading lyrics...
+              </span>
+            </div>
+          ) : lyricsData?.lyrics ? (
+            <>
+              <div className="flex items-center justify-end gap-1 mb-2">
+                <Button
+                  size="xxs"
+                  variant="ghost"
+                  onClick={() => setLyricsFontSize((s) => Math.max(8, s - 1))}
+                  title="Decrease font size"
+                >
+                  <FaMinus size={7} />
+                </Button>
+                <span className="text-[9px] text-neutral-600 font-mono w-5 text-center">
+                  {lyricsFontSize}
+                </span>
+                <Button
+                  size="xxs"
+                  variant="ghost"
+                  onClick={() => setLyricsFontSize((s) => Math.min(24, s + 1))}
+                  title="Increase font size"
+                >
+                  <FaPlus size={7} />
+                </Button>
+              </div>
+              <pre
+                className="text-neutral-400 leading-relaxed font-sans whitespace-pre-wrap max-h-80 overflow-y-auto scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-transparent pr-2"
+                style={{ fontSize: `${lyricsFontSize}px` }}
+              >
+                {lyricsData.lyrics}
+              </pre>
+            </>
+          ) : (
+            <p className="text-neutral-600 text-xs font-mono py-2">
+              No lyrics found
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 }

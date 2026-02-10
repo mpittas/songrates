@@ -66,13 +66,13 @@ export default async function LatestRatedAlbums() {
         </h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 w-full">
-          {ratedAlbums.map((album) => {
+          {ratedAlbums.map((album, index) => {
             const imageUrl = album.thumbnailUrl || "/vinyl-placeholder.svg";
             const slug = createSlug(album.albumTitle, album.albumId);
 
             return (
               <Link
-                key={album.albumId}
+                key={`${album.albumId}-${index}`}
                 href={`/album/${slug}`}
                 className="group relative bg-neutral-900/40 border border-white/5 overflow-hidden transition-all duration-300 hover:bg-neutral-900/60 hover:border-white/10"
               >
