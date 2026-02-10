@@ -15,6 +15,8 @@ interface UserProfile {
   display_name: string | null;
   avatar_url: string | null;
   created_at: string;
+  show_favorites: boolean;
+  show_playlists: boolean;
 }
 
 interface RatedAlbum {
@@ -147,8 +149,12 @@ export default function UserProfileClient({ profile }: UserProfileClientProps) {
     };
 
     fetchUserAlbums();
-    fetchFavorites();
-  }, [profile.id]);
+    if (profile.show_favorites) {
+      fetchFavorites();
+    } else {
+      setLoadingFavorites(false);
+    }
+  }, [profile.id, profile.show_favorites]);
 
   const sortedAlbums = useMemo(() => {
     return [...albums].sort((a, b) => {
@@ -278,13 +284,15 @@ export default function UserProfileClient({ profile }: UserProfileClientProps) {
       </div>
 
       {/* Favorites Stats Bar */}
-      <div className="max-w-4xl mx-auto px-6 mt-10">
-        <FavoriteStatsBar
-          favorites={favorites}
-          loading={loadingFavorites}
-          albumRatings={albumRatingsLookup}
-        />
-      </div>
+      {profile.show_favorites && (
+        <div className="max-w-4xl mx-auto px-6 mt-10">
+          <FavoriteStatsBar
+            favorites={favorites}
+            loading={loadingFavorites}
+            albumRatings={albumRatingsLookup}
+          />
+        </div>
+      )}
 
       {/* Rated Albums Section */}
       <div className="max-w-4xl mx-auto px-6 mt-16 pb-20">

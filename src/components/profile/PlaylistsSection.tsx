@@ -2,9 +2,15 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { FaListUl, FaTimes, FaMusic, FaTrash } from "react-icons/fa";
+import {
+  FaListUl,
+  FaTimes,
+  FaMusic,
+  FaTrash,
+  FaCompactDisc,
+} from "react-icons/fa";
 import { usePlaylist } from "@/context/PlaylistContext";
-import { Playlist, PlaylistTrack } from "@/types/playlist";
+import { Playlist, PlaylistTrack, PlaylistAlbum } from "@/types/playlist";
 import { createSlug } from "@/lib/utils";
 import Button from "@/components/ui/Button";
 import OptimizedImage from "@/components/ui/OptimizedImage";
@@ -23,14 +29,18 @@ export default function PlaylistsSection({
     deletePlaylist,
     getPlaylistTracks,
     removeTrackFromPlaylist,
+    getPlaylistAlbums,
+    removeAlbumFromPlaylist,
   } = usePlaylist();
   const [selectedPlaylist, setSelectedPlaylist] = useState<Playlist | null>(
     null,
   );
   const [playlistTracks, setPlaylistTracks] = useState<PlaylistTrack[]>([]);
-  const [loadingTracks, setLoadingTracks] = useState(false);
+  const [playlistAlbums, setPlaylistAlbums] = useState<PlaylistAlbum[]>([]);
+  const [loadingItems, setLoadingItems] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [removingTrack, setRemovingTrack] = useState<string | null>(null);
+  const [removingAlbum, setRemovingAlbum] = useState<string | null>(null);
 
   useEffect(() => {
     fetchPlaylists();
@@ -38,10 +48,17 @@ export default function PlaylistsSection({
 
   const handleViewPlaylist = async (playlist: Playlist) => {
     setSelectedPlaylist(playlist);
-    setLoadingTracks(true);
-    const tracks = await getPlaylistTracks(playlist.id, true);
-    setPlaylistTracks(tracks);
-    setLoadingTracks(false);
+    setLoadingItems(true);
+    if (playlist.type === "albums") {
+      const albums = await getPlaylistAlbums(playlist.id, true);
+      setPlaylistAlbums(albums);
+      setPlaylistTracks([]);
+    } else {
+      const tracks = await getPlaylistTracks(playlist.id, true);
+      setPlaylistTracks(tracks);
+      setPlaylistAlbums([]);
+    }
+    setLoadingItems(false);
   };
 
   const handleDeletePlaylist = async (playlistId: string) => {
@@ -56,6 +73,13 @@ export default function PlaylistsSection({
     await removeTrackFromPlaylist(playlistId, trackId);
     setPlaylistTracks((prev) => prev.filter((t) => t.track_id !== trackId));
     setRemovingTrack(null);
+  };
+
+  const handleRemoveAlbum = async (playlistId: string, albumId: string) => {
+    setRemovingAlbum(albumId);
+    await removeAlbumFromPlaylist(playlistId, albumId);
+    setPlaylistAlbums((prev) => prev.filter((a) => a.album_id !== albumId));
+    setRemovingAlbum(null);
   };
 
   const formatDuration = (ms?: number | null) => {
@@ -86,7 +110,7 @@ export default function PlaylistsSection({
           <FaListUl size={24} className="text-neutral-700 mx-auto mb-3" />
           <p className="text-neutral-600 font-mono text-sm">No playlists yet</p>
           <p className="text-neutral-700 text-xs mt-1">
-            Add songs to a playlist from any album page
+            Add songs or albums to a playlist from any album page
           </p>
         </div>
       ) : (
@@ -99,15 +123,27 @@ export default function PlaylistsSection({
             >
               <div className="flex items-start gap-3">
                 <div className="w-12 h-12 flex items-center justify-center bg-neutral-800 rounded-sm shrink-0 group-hover:bg-neutral-700 transition-colors">
-                  <FaListUl
-                    size={20}
-                    className="text-neutral-500 group-hover:text-[#00f0ff]"
-                  />
+                  {playlist.type === "albums" ? (
+                    <FaCompactDisc
+                      size={20}
+                      className="text-neutral-500 group-hover:text-[#00f0ff]"
+                    />
+                  ) : (
+                    <FaListUl
+                      size={20}
+                      className="text-neutral-500 group-hover:text-[#00f0ff]"
+                    />
+                  )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-sm text-white truncate group-hover:text-[#00f0ff] transition-colors">
-                    {playlist.name}
-                  </h3>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm text-white truncate group-hover:text-[#00f0ff] transition-colors">
+                      {playlist.name}
+                    </h3>
+                    <span className="text-[9px] uppercase tracking-wider text-neutral-600 font-mono bg-neutral-800 px-1.5 py-0.5 rounded shrink-0">
+                      {playlist.type === "albums" ? "Albums" : "Songs"}
+                    </span>
+                  </div>
                   {playlist.description && (
                     <p className="text-xs text-neutral-500 truncate mt-0.5">
                       {playlist.description}
@@ -170,11 +206,109 @@ export default function PlaylistsSection({
 
             {/* Modal Content */}
             <div className="overflow-y-auto flex-1 p-4">
-              {loadingTracks ? (
+              {loadingItems ? (
                 <div className="py-12 flex items-center justify-center">
                   <div className="w-6 h-6 border-2 border-[#00f0ff] border-t-transparent rounded-full animate-spin" />
                 </div>
-              ) : playlistTracks.length === 0 ? (
+              ) : selectedPlaylist.type === "albums" ? (
+                /* Album Playlist Content */
+                playlistAlbums.length === 0 ? (
+                  <div className="py-12 text-center">
+                    <FaCompactDisc
+                      size={24}
+                      className="text-neutral-700 mx-auto mb-3"
+                    />
+                    <p className="text-neutral-600 font-mono text-sm">
+                      No albums in this playlist
+                    </p>
+                    <p className="text-neutral-700 text-xs mt-1">
+                      Add albums from album pages
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    {playlistAlbums.map((album, index) => {
+                      const albumSlug = album.album_name
+                        ? createSlug(album.album_name, album.album_id)
+                        : null;
+                      const href = albumSlug
+                        ? `/album/${albumSlug}`
+                        : undefined;
+
+                      const albumContent = (
+                        <>
+                          <span className="text-xs text-neutral-600 font-mono w-5 text-center">
+                            {index + 1}
+                          </span>
+                          <div className="relative w-10 h-10 shrink-0 bg-neutral-800 overflow-hidden rounded-sm">
+                            {album.thumbnail_url ? (
+                              <OptimizedImage
+                                src={album.thumbnail_url}
+                                alt={album.album_name || "Unknown"}
+                                fill
+                                className="object-cover"
+                                fallbackSrc="/vinyl-placeholder.svg"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center bg-neutral-800/80">
+                                <FaCompactDisc
+                                  size={14}
+                                  className="text-neutral-600"
+                                />
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm text-white truncate group-hover:text-[#00f0ff] transition-colors">
+                              {album.album_name || "Unknown Album"}
+                            </p>
+                            <p className="text-xs text-neutral-500 truncate">
+                              {album.artist_name || "Unknown Artist"}
+                              {album.total_tracks &&
+                                ` • ${album.total_tracks} tracks`}
+                            </p>
+                          </div>
+                          <Button
+                            size="xxs"
+                            variant="ghost"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleRemoveAlbum(
+                                selectedPlaylist.id,
+                                album.album_id,
+                              );
+                            }}
+                            disabled={removingAlbum === album.album_id}
+                            className="opacity-0 group-hover:opacity-100 transition-opacity text-neutral-500 hover:text-red-400"
+                          >
+                            <FaTimes size={10} />
+                          </Button>
+                        </>
+                      );
+
+                      return href ? (
+                        <Link
+                          key={album.id}
+                          href={href}
+                          onClick={() => setSelectedPlaylist(null)}
+                          className="group flex items-center gap-3 p-2 bg-neutral-900/30 border border-white/[0.04] hover:border-[#00f0ff]/20 hover:bg-neutral-900/50 rounded-sm transition-all duration-200"
+                        >
+                          {albumContent}
+                        </Link>
+                      ) : (
+                        <div
+                          key={album.id}
+                          className="group flex items-center gap-3 p-2 bg-neutral-900/30 border border-white/[0.04] hover:border-white/[0.08] rounded-sm"
+                        >
+                          {albumContent}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )
+              ) : /* Song Playlist Content */
+              playlistTracks.length === 0 ? (
                 <div className="py-12 text-center">
                   <FaMusic
                     size={24}
@@ -274,7 +408,9 @@ export default function PlaylistsSection({
             {/* Modal Footer */}
             <div className="px-6 py-3 border-t border-white/[0.06] shrink-0">
               <p className="text-xs text-neutral-600 font-mono">
-                {playlistTracks.length} tracks
+                {selectedPlaylist.type === "albums"
+                  ? `${playlistAlbums.length} albums`
+                  : `${playlistTracks.length} tracks`}
               </p>
             </div>
           </div>

@@ -11,6 +11,7 @@ import AlbumSkeleton from "@/components/album/AlbumSkeleton";
 import SearchInput from "@/components/search/SearchInput";
 import Button from "@/components/ui/Button";
 import FavoriteButton from "@/components/ui/FavoriteButton";
+import AddAlbumToPlaylistButton from "@/components/ui/AddAlbumToPlaylistButton";
 import { FaArrowLeft, FaLock } from "react-icons/fa";
 import AlbumRatingRow from "@/components/rating/AlbumRatingRow";
 import TrackItem from "@/components/album/TrackItem";
@@ -349,6 +350,15 @@ export default function AlbumPage() {
                   artistName={album.artist?.name}
                   thumbnailUrl={album.artworkUrl}
                   size="md"
+                />
+                <AddAlbumToPlaylistButton
+                  albumId={album.id}
+                  albumName={album.title}
+                  artistName={album.artist?.name}
+                  thumbnailUrl={album.artworkUrl}
+                  releaseDate={album.releaseDate}
+                  totalTracks={album.tracks?.length}
+                  variant="button"
                 />
               </div>
             )}

@@ -12,8 +12,10 @@ import { createClient } from "@/utils/supabase/client";
 import {
   Playlist,
   PlaylistTrack,
+  PlaylistAlbum,
   CreatePlaylistInput,
   AddTrackToPlaylistInput,
+  AddAlbumToPlaylistInput,
 } from "@/types/playlist";
 
 interface PlaylistContextType {
@@ -32,6 +34,16 @@ interface PlaylistContextType {
     forceRefresh?: boolean,
   ) => Promise<PlaylistTrack[]>;
   isTrackInPlaylist: (playlistId: string, trackId: string) => boolean;
+  addAlbumToPlaylist: (input: AddAlbumToPlaylistInput) => Promise<boolean>;
+  removeAlbumFromPlaylist: (
+    playlistId: string,
+    albumId: string,
+  ) => Promise<void>;
+  getPlaylistAlbums: (
+    playlistId: string,
+    forceRefresh?: boolean,
+  ) => Promise<PlaylistAlbum[]>;
+  isAlbumInPlaylist: (playlistId: string, albumId: string) => boolean;
 }
 
 const PlaylistContext = createContext<PlaylistContextType | undefined>(
@@ -45,6 +57,9 @@ export function PlaylistProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(false);
   const [playlistTracksCache, setPlaylistTracksCache] = useState<
     Record<string, PlaylistTrack[]>
+  >({});
+  const [playlistAlbumsCache, setPlaylistAlbumsCache] = useState<
+    Record<string, PlaylistAlbum[]>
   >({});
 
   // Fetch user's playlists
@@ -90,6 +105,7 @@ export function PlaylistProvider({ children }: { children: React.ReactNode }) {
             user_id: user.id,
             name: input.name,
             description: input.description || null,
+            type: input.type || "songs",
           })
           .select()
           .single();
@@ -130,6 +146,11 @@ export function PlaylistProvider({ children }: { children: React.ReactNode }) {
         setPlaylists((prev) => prev.filter((p) => p.id !== playlistId));
         // Clear cache for deleted playlist
         setPlaylistTracksCache((prev) => {
+          const next = { ...prev };
+          delete next[playlistId];
+          return next;
+        });
+        setPlaylistAlbumsCache((prev) => {
           const next = { ...prev };
           delete next[playlistId];
           return next;
@@ -307,6 +328,163 @@ export function PlaylistProvider({ children }: { children: React.ReactNode }) {
     [playlistTracksCache],
   );
 
+  // Add an album to a playlist
+  const addAlbumToPlaylist = useCallback(
+    async (input: AddAlbumToPlaylistInput): Promise<boolean> => {
+      if (!user) return false;
+
+      try {
+        const { data: existing, error: fetchError } = await supabase
+          .from("playlist_albums")
+          .select("position")
+          .eq("playlist_id", input.playlistId)
+          .order("position", { ascending: false })
+          .limit(1);
+
+        if (fetchError) {
+          console.error("Error fetching existing albums:", fetchError);
+          return false;
+        }
+
+        const nextPosition =
+          existing && existing.length > 0 ? existing[0].position + 1 : 0;
+
+        const { error } = await supabase.from("playlist_albums").insert({
+          playlist_id: input.playlistId,
+          album_id: input.albumId,
+          position: nextPosition,
+          album_name: input.albumName || null,
+          artist_name: input.artistName || null,
+          thumbnail_url: input.thumbnailUrl || null,
+          release_date: input.releaseDate || null,
+          total_tracks: input.totalTracks || null,
+        });
+
+        if (error) {
+          if (error.code === "23505") {
+            console.log("Album already in playlist");
+            return false;
+          }
+          console.error("Error adding album to playlist:", error);
+          return false;
+        }
+
+        setPlaylistAlbumsCache((prev) => {
+          const cached = prev[input.playlistId];
+          if (cached) {
+            return {
+              ...prev,
+              [input.playlistId]: [
+                ...cached,
+                {
+                  id: crypto.randomUUID(),
+                  playlist_id: input.playlistId,
+                  album_id: input.albumId,
+                  position: nextPosition,
+                  album_name: input.albumName || null,
+                  artist_name: input.artistName || null,
+                  thumbnail_url: input.thumbnailUrl || null,
+                  release_date: input.releaseDate || null,
+                  total_tracks: input.totalTracks || null,
+                  added_at: new Date().toISOString(),
+                },
+              ],
+            };
+          }
+          return prev;
+        });
+
+        return true;
+      } catch (err) {
+        console.error("Error adding album to playlist:", err);
+        return false;
+      }
+    },
+    [user, supabase],
+  );
+
+  // Remove an album from a playlist
+  const removeAlbumFromPlaylist = useCallback(
+    async (playlistId: string, albumId: string) => {
+      if (!user) return;
+
+      try {
+        const { error } = await supabase
+          .from("playlist_albums")
+          .delete()
+          .eq("playlist_id", playlistId)
+          .eq("album_id", albumId);
+
+        if (error) {
+          console.error("Error removing album from playlist:", error);
+          return;
+        }
+
+        setPlaylistAlbumsCache((prev) => {
+          const cached = prev[playlistId];
+          if (cached) {
+            return {
+              ...prev,
+              [playlistId]: cached.filter((a) => a.album_id !== albumId),
+            };
+          }
+          return prev;
+        });
+      } catch (err) {
+        console.error("Error removing album from playlist:", err);
+      }
+    },
+    [user, supabase],
+  );
+
+  // Get albums for a specific playlist
+  const getPlaylistAlbums = useCallback(
+    async (
+      playlistId: string,
+      forceRefresh = false,
+    ): Promise<PlaylistAlbum[]> => {
+      if (!user) return [];
+
+      if (!forceRefresh && playlistAlbumsCache[playlistId]) {
+        return playlistAlbumsCache[playlistId];
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from("playlist_albums")
+          .select("*")
+          .eq("playlist_id", playlistId)
+          .order("position", { ascending: true });
+
+        if (error) {
+          console.error("Error fetching playlist albums:", error);
+          return [];
+        }
+
+        const albums = data || [];
+        setPlaylistAlbumsCache((prev) => ({
+          ...prev,
+          [playlistId]: albums,
+        }));
+        return albums;
+      } catch (err) {
+        console.error("Error fetching playlist albums:", err);
+        return [];
+      }
+    },
+    [user, supabase, playlistAlbumsCache],
+  );
+
+  // Check if an album is in a playlist
+  const isAlbumInPlaylist = useCallback(
+    (playlistId: string, albumId: string): boolean => {
+      const cached = playlistAlbumsCache[playlistId];
+      if (!cached) return false;
+      return cached.some((a) => a.album_id === albumId);
+    },
+    [playlistAlbumsCache],
+  );
+
   return (
     <PlaylistContext.Provider
       value={{
@@ -319,6 +497,10 @@ export function PlaylistProvider({ children }: { children: React.ReactNode }) {
         removeTrackFromPlaylist,
         getPlaylistTracks,
         isTrackInPlaylist,
+        addAlbumToPlaylist,
+        removeAlbumFromPlaylist,
+        getPlaylistAlbums,
+        isAlbumInPlaylist,
       }}
     >
       {children}

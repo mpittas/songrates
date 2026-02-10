@@ -8,6 +8,9 @@ interface UserProfile {
   display_name: string | null;
   avatar_url: string | null;
   created_at: string;
+  is_public: boolean;
+  show_favorites: boolean;
+  show_playlists: boolean;
 }
 
 async function getUserProfile(username: string): Promise<UserProfile | null> {
@@ -15,7 +18,9 @@ async function getUserProfile(username: string): Promise<UserProfile | null> {
 
   const { data, error } = await supabase
     .from("profiles")
-    .select("id, username, display_name, avatar_url, created_at")
+    .select(
+      "id, username, display_name, avatar_url, created_at, is_public, show_favorites, show_playlists",
+    )
     .eq("username", username)
     .single();
 
@@ -27,6 +32,9 @@ async function getUserProfile(username: string): Promise<UserProfile | null> {
     display_name: data.display_name,
     avatar_url: data.avatar_url,
     created_at: data.created_at,
+    is_public: data.is_public ?? true,
+    show_favorites: data.show_favorites ?? true,
+    show_playlists: data.show_playlists ?? true,
   };
 }
 
@@ -38,7 +46,7 @@ export default async function UserProfilePage({ params }: PageProps) {
   const { username } = await params;
   const profile = await getUserProfile(username);
 
-  if (!profile) {
+  if (!profile || !profile.is_public) {
     notFound();
   }
 

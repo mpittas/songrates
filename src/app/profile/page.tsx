@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 import Link from "next/link";
-import { FaUser, FaStar, FaSignOutAlt } from "react-icons/fa";
+import { FaUser, FaStar, FaSignOutAlt, FaCog } from "react-icons/fa";
 import OptimizedImage from "@/components/ui/OptimizedImage";
 import AlbumGrid from "@/components/album/AlbumGrid";
 import PlaylistsSection from "@/components/profile/PlaylistsSection";
@@ -156,14 +156,23 @@ export default function ProfilePage() {
             </p>
           </div>
 
-          {/* Sign Out */}
-          <button
-            onClick={() => signOut()}
-            className="flex items-center gap-2 px-4 py-2 text-xs font-mono uppercase tracking-widest text-neutral-500 hover:text-red-400 border border-white/5 hover:border-red-400/20 bg-neutral-900/40 transition-all duration-200 shrink-0"
-          >
-            <FaSignOutAlt size={12} />
-            Log out
-          </button>
+          {/* Actions */}
+          <div className="flex items-center gap-2 shrink-0">
+            <Link
+              href="/settings"
+              className="flex items-center gap-2 px-4 py-2 text-xs font-mono uppercase tracking-widest text-neutral-500 hover:text-[#00f0ff] border border-white/5 hover:border-[#00f0ff]/20 bg-neutral-900/40 transition-all duration-200"
+            >
+              <FaCog size={12} />
+              Settings
+            </Link>
+            <button
+              onClick={() => signOut()}
+              className="flex items-center gap-2 px-4 py-2 text-xs font-mono uppercase tracking-widest text-neutral-500 hover:text-red-400 border border-white/5 hover:border-red-400/20 bg-neutral-900/40 transition-all duration-200"
+            >
+              <FaSignOutAlt size={12} />
+              Log out
+            </button>
+          </div>
         </div>
       </div>
 
