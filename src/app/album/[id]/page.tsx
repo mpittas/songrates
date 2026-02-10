@@ -77,7 +77,7 @@ export default function AlbumPage() {
 
       if (userRatings) {
         const map: Record<string, number> = {};
-        userRatings.forEach((r) => {
+        userRatings.forEach((r: any) => {
           map[r.track_id] = Number(r.rating);
         });
         setViewingUserRatings(map);
