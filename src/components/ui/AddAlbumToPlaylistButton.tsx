@@ -14,7 +14,7 @@ interface AddAlbumToPlaylistButtonProps {
   totalTracks?: number;
   size?: "sm" | "md" | "lg";
   className?: string;
-  variant?: "icon" | "button";
+  variant?: "icon" | "button" | "text";
 }
 
 export default function AddAlbumToPlaylistButton({
@@ -48,23 +48,28 @@ export default function AddAlbumToPlaylistButton({
     setIsModalOpen(true);
   };
 
-  if (variant === "button") {
+  if (variant === "button" || variant === "text") {
+    const isText = variant === "text";
     return (
       <>
         <button
           onClick={handleClick}
           className={`
-            flex items-center gap-2 px-3 py-2
-            text-xs font-mono uppercase tracking-wider
-            text-neutral-400 hover:text-white
-            border border-white/[0.06] hover:border-[#00f0ff]/30
-            bg-neutral-900/30 hover:bg-neutral-900/50
-            transition-all duration-200
+            flex items-center gap-2
+            ${isText ? "" : "px-3 py-2 text-xs font-mono uppercase tracking-wider border border-white/[0.06] hover:border-[#00f0ff]/30 bg-neutral-900/30 hover:bg-neutral-900/50"}
+            ${isText ? "text-neutral-500 hover:text-[#00f0ff] transition-colors group" : "text-neutral-400 hover:text-white transition-all duration-200"}
             ${className}
           `}
         >
-          <FaListUl size={12} />
-          Add to Playlist
+          <FaListUl
+            size={isText ? 10 : 12}
+            className={
+              isText
+                ? "group-hover:scale-110 transition-transform opacity-70 group-hover:opacity-100"
+                : ""
+            }
+          />
+          <span>Add to Playlist</span>
         </button>
 
         {isModalOpen && (

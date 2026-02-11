@@ -12,6 +12,7 @@ interface FavoriteButtonProps {
   thumbnailUrl?: string;
   size?: "sm" | "md" | "lg";
   className?: string;
+  variant?: "icon" | "text";
 }
 
 export default function FavoriteButton({
@@ -22,6 +23,7 @@ export default function FavoriteButton({
   thumbnailUrl,
   size = "md",
   className = "",
+  variant = "icon",
 }: FavoriteButtonProps) {
   const [isFavorite, setIsFavorite] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -105,6 +107,35 @@ export default function FavoriteButton({
       setLoading(false);
     }
   };
+
+  if (variant === "text") {
+    return (
+      <button
+        onClick={toggleFavorite}
+        disabled={loading}
+        className={`
+          flex items-center gap-2
+          text-neutral-500 hover:text-red-400
+          transition-all duration-200 group
+          ${loading ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
+          ${className}
+        `}
+      >
+        {isFavorite ? (
+          <FaHeart
+            size={10}
+            className="fill-current group-hover:scale-110 transition-transform opacity-70 group-hover:opacity-100"
+          />
+        ) : (
+          <FaRegHeart
+            size={10}
+            className="fill-current group-hover:scale-110 transition-transform opacity-70 group-hover:opacity-100"
+          />
+        )}
+        <span>{isFavorite ? "Favorited" : "Favorite"}</span>
+      </button>
+    );
+  }
 
   return (
     <button

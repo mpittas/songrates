@@ -2,7 +2,13 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
-import { FaHeart, FaTimes, FaMusic, FaCompactDisc, FaMicrophoneAlt } from "react-icons/fa";
+import {
+  FaHeart,
+  FaTimes,
+  FaMusic,
+  FaCompactDisc,
+  FaMicrophoneAlt,
+} from "react-icons/fa";
 import OptimizedImage from "@/components/ui/OptimizedImage";
 import { createSlug } from "@/lib/utils";
 
@@ -34,7 +40,9 @@ export default function FavoriteStatsBar({
   variant = "default",
   className = "",
 }: FavoriteStatsBarProps) {
-  const [modalType, setModalType] = useState<"artist" | "album" | "track" | null>(null);
+  const [modalType, setModalType] = useState<
+    "artist" | "album" | "track" | null
+  >(null);
 
   const stats = useMemo(
     () => ({
@@ -42,7 +50,7 @@ export default function FavoriteStatsBar({
       albums: favorites.filter((f) => f.item_type === "album").length,
       artists: favorites.filter((f) => f.item_type === "artist").length,
     }),
-    [favorites]
+    [favorites],
   );
 
   const modalItems = modalType
@@ -71,7 +79,7 @@ export default function FavoriteStatsBar({
     let href = "#";
     if (isTrack) {
       const parentAlbum = Object.values(albumRatings).find((a) =>
-        a.ratedTrackIds.includes(item.item_id)
+        a.ratedTrackIds.includes(item.item_id),
       );
       if (parentAlbum) {
         href = `/album/${createSlug(parentAlbum.title, parentAlbum.id)}?track=${item.item_id}`;
@@ -101,8 +109,12 @@ export default function FavoriteStatsBar({
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-neutral-800/80">
               {isTrack && <FaMusic size={16} className="text-neutral-600" />}
-              {isAlbum && <FaCompactDisc size={16} className="text-neutral-600" />}
-              {isArtist && <FaMicrophoneAlt size={16} className="text-neutral-600" />}
+              {isAlbum && (
+                <FaCompactDisc size={16} className="text-neutral-600" />
+              )}
+              {isArtist && (
+                <FaMicrophoneAlt size={16} className="text-neutral-600" />
+              )}
             </div>
           )}
         </div>
@@ -129,7 +141,7 @@ export default function FavoriteStatsBar({
   const baseButtonClasses =
     variant === "compact"
       ? "bg-neutral-900/30 border border-white/[0.04] p-3 text-center hover:border-[#00f0ff]/20 hover:bg-neutral-900/50 transition-all duration-200 cursor-pointer rounded-sm"
-      : "bg-neutral-900/30 border border-white/[0.04] p-4 text-center hover:border-[#00f0ff]/20 hover:bg-neutral-900/50 transition-all duration-200 cursor-pointer rounded-sm";
+      : "bg-neutral-900/30 border border-white/[0.04] p-4 text-center hover:border-[#00f0ff]/20 hover:bg-neutral-900/50 transition-all duration-200 cursor-pointer";
 
   const labelClasses =
     variant === "compact"

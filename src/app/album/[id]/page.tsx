@@ -12,7 +12,14 @@ import SearchInput from "@/components/search/SearchInput";
 import Button from "@/components/ui/Button";
 import FavoriteButton from "@/components/ui/FavoriteButton";
 import AddAlbumToPlaylistButton from "@/components/ui/AddAlbumToPlaylistButton";
-import { FaArrowLeft, FaLock } from "react-icons/fa";
+import {
+  FaArrowLeft,
+  FaLock,
+  FaHeart,
+  FaRegHeart,
+  FaListUl,
+  FaExternalLinkAlt,
+} from "react-icons/fa";
 import AlbumRatingRow from "@/components/rating/AlbumRatingRow";
 import TrackItem from "@/components/album/TrackItem";
 import { useAlbumInfo } from "@/hooks/useAlbumInfo";
@@ -287,7 +294,7 @@ export default function AlbumPage() {
           {/* Background Gradient/Blur Effect could go here if desired */}
 
           {/* Album Cover */}
-          <div className="w-52 md:w-72 shrink-0 relative group mx-auto md:mx-0">
+          <div className="w-40 sm:w-52 md:w-72 shrink-0 relative group self-start">
             <div className="aspect-square relative">
               <OptimizedImage
                 src={imageUrl}
@@ -306,12 +313,12 @@ export default function AlbumPage() {
           </div>
 
           {/* Album Details */}
-          <div className="flex-1 min-w-0 pt-2 w-full text-center md:text-left">
+          <div className="flex-1 min-w-0 pt-2 w-full">
             {/* Genres */}
             <div className="flex items-center gap-2 mb-6 pb-3 border-b border-neutral-900">
               <div className="text-xs">Genres:</div>
               {album.genres?.length > 0 && (
-                <div className="flex flex-wrap justify-center md:justify-start gap-x-1">
+                <div className="flex flex-wrap gap-x-1">
                   {album.genres.slice(0, 5).map((g, i, arr) => (
                     <span
                       key={g}
@@ -355,7 +362,7 @@ export default function AlbumPage() {
 
               {/* Album Type Badge */}
               <div className="flex items-center gap-2 mb-3">
-                <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-[#00f0ff]/10 text-[#00f0ff] border border-[#00f0ff]/20">
+                <span className="inline-flex items-center px-2.5 py-1 text-xs font-medium bg-[#00f0ff]/10 text-[#00f0ff] border border-[#00f0ff]/20">
                   {album.type}
                 </span>
               </div>
@@ -363,17 +370,27 @@ export default function AlbumPage() {
 
             {/* Actions / Links */}
             {album.url && (
-              <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mb-8">
-                <Button href={album.url} isExternal variant="border" size="xs">
-                  Apple Music
-                </Button>
+              <div className="flex flex-wrap items-center gap-4 mb-8 font-mono text-[10px] uppercase tracking-widest">
+                <a
+                  href={album.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center gap-2 text-neutral-500 hover:text-[#00f0ff] transition-colors group"
+                >
+                  <FaExternalLinkAlt
+                    size={10}
+                    className="group-hover:scale-110 transition-transform opacity-70 group-hover:opacity-100"
+                  />
+                  <span>Apple Music</span>
+                </a>
                 <FavoriteButton
                   itemId={album.id}
                   itemType="album"
                   itemName={album.title}
                   artistName={album.artist?.name}
                   thumbnailUrl={album.artworkUrl}
-                  size="md"
+                  size="sm"
+                  variant="text"
                 />
                 <AddAlbumToPlaylistButton
                   albumId={album.id}
@@ -382,7 +399,7 @@ export default function AlbumPage() {
                   thumbnailUrl={album.artworkUrl}
                   releaseDate={album.releaseDate}
                   totalTracks={album.tracks?.length}
-                  variant="button"
+                  variant="text"
                 />
               </div>
             )}
