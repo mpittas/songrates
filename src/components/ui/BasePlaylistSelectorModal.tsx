@@ -7,7 +7,10 @@ import {
   FaCheck,
   FaCompactDisc,
   FaMusic,
+  FaExclamationCircle,
+  FaExternalLinkAlt,
 } from "react-icons/fa";
+import Link from "next/link";
 import { Playlist } from "@/types/playlist";
 import Button from "./Button";
 
@@ -17,10 +20,11 @@ interface BasePlaylistSelectorModalProps {
   loading: boolean;
   playlists: Playlist[];
   onCreatePlaylist: (name: string, description: string) => Promise<void>;
-  onAddToPlaylist: (playlistId: string) => Promise<void>;
+  onAddToPlaylist: (playlistId: string) => Promise<boolean | void>;
   isItemInPlaylist: (playlistId: string) => boolean;
   getPlaylistSubtitle: (playlist: Playlist) => string;
   defaultIcon?: React.ReactNode;
+  itemHref?: string;
 }
 
 export default function BasePlaylistSelectorModal({
@@ -33,11 +37,15 @@ export default function BasePlaylistSelectorModal({
   isItemInPlaylist,
   getPlaylistSubtitle,
   defaultIcon,
+  itemHref,
 }: BasePlaylistSelectorModalProps) {
   const [creating, setCreating] = useState(false);
   const [newPlaylistName, setNewPlaylistName] = useState("");
   const [newPlaylistDesc, setNewPlaylistDesc] = useState("");
   const [addingTo, setAddingTo] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<Record<string, "success" | "error">>(
+    {},
+  );
 
   const handleCreate = async () => {
     if (!newPlaylistName.trim()) return;
@@ -50,7 +58,40 @@ export default function BasePlaylistSelectorModal({
   const handleAdd = async (playlistId: string) => {
     if (isItemInPlaylist(playlistId)) return;
     setAddingTo(playlistId);
-    await onAddToPlaylist(playlistId);
+    try {
+      const result = await onAddToPlaylist(playlistId);
+      const success = result !== false;
+      setFeedback((prev) => ({
+        ...prev,
+        [playlistId]: success ? "success" : "error",
+      }));
+      if (success) {
+        setTimeout(() => {
+          setFeedback((prev) => {
+            const next = { ...prev };
+            delete next[playlistId];
+            return next;
+          });
+        }, 3000);
+      } else {
+        setTimeout(() => {
+          setFeedback((prev) => {
+            const next = { ...prev };
+            delete next[playlistId];
+            return next;
+          });
+        }, 3000);
+      }
+    } catch {
+      setFeedback((prev) => ({ ...prev, [playlistId]: "error" }));
+      setTimeout(() => {
+        setFeedback((prev) => {
+          const next = { ...prev };
+          delete next[playlistId];
+          return next;
+        });
+      }, 3000);
+    }
     setAddingTo(null);
   };
 
@@ -169,44 +210,77 @@ export default function BasePlaylistSelectorModal({
                   {playlists.map((playlist) => {
                     const isInPlaylist = isItemInPlaylist(playlist.id);
                     const isAdding = addingTo === playlist.id;
+                    const itemFeedback = feedback[playlist.id];
 
                     return (
-                      <button
+                      <div
                         key={playlist.id}
-                        onClick={() => handleAdd(playlist.id)}
-                        disabled={isInPlaylist || isAdding}
                         className={`
                           w-full flex items-center gap-3 p-3 rounded-sm transition-all duration-200
                           ${
                             isInPlaylist
                               ? "bg-[#00f0ff]/5 border border-[#00f0ff]/20"
-                              : "bg-neutral-900/30 border border-white/[0.04] hover:border-[#00f0ff]/20 hover:bg-neutral-900/50"
+                              : itemFeedback === "error"
+                                ? "bg-red-500/5 border border-red-500/20"
+                                : "bg-neutral-900/30 border border-white/[0.04] hover:border-[#00f0ff]/20 hover:bg-neutral-900/50"
                           }
-                          ${isInPlaylist || isAdding ? "cursor-default" : "cursor-pointer"}
                         `}
                       >
-                        <div className="w-10 h-10 flex items-center justify-center bg-neutral-800 rounded-sm shrink-0">
-                          {isInPlaylist ? (
-                            <FaCheck size={14} className="text-[#00f0ff]" />
-                          ) : (
-                            // Render the passed icon or fallback
-                            defaultIcon || (
-                              <FaMusic size={14} className="text-neutral-500" />
-                            )
+                        <button
+                          onClick={() => handleAdd(playlist.id)}
+                          disabled={isInPlaylist || isAdding}
+                          className={`flex-1 flex items-center gap-3 min-w-0 ${isInPlaylist || isAdding ? "cursor-default" : "cursor-pointer"}`}
+                        >
+                          <div className="w-10 h-10 flex items-center justify-center bg-neutral-800 rounded-sm shrink-0">
+                            {isInPlaylist ? (
+                              <FaCheck size={14} className="text-[#00f0ff]" />
+                            ) : itemFeedback === "error" ? (
+                              <FaExclamationCircle
+                                size={14}
+                                className="text-red-400"
+                              />
+                            ) : (
+                              defaultIcon || (
+                                <FaMusic
+                                  size={14}
+                                  className="text-neutral-500"
+                                />
+                              )
+                            )}
+                          </div>
+                          <div className="flex-1 text-left min-w-0">
+                            <h4 className="text-sm text-white truncate">
+                              {playlist.name}
+                            </h4>
+                            <p className="text-xs text-neutral-500">
+                              {itemFeedback === "success"
+                                ? "Added successfully!"
+                                : itemFeedback === "error"
+                                  ? "Failed to add. Try again."
+                                  : getPlaylistSubtitle(playlist)}
+                            </p>
+                          </div>
+                          {isAdding && (
+                            <div className="w-4 h-4 border-2 border-[#00f0ff] border-t-transparent rounded-full animate-spin" />
                           )}
-                        </div>
-                        <div className="flex-1 text-left min-w-0">
-                          <h4 className="text-sm text-white truncate">
-                            {playlist.name}
-                          </h4>
-                          <p className="text-xs text-neutral-500">
-                            {getPlaylistSubtitle(playlist)}
-                          </p>
-                        </div>
-                        {isAdding && (
-                          <div className="w-4 h-4 border-2 border-[#00f0ff] border-t-transparent rounded-full animate-spin" />
+                          {itemFeedback === "success" && (
+                            <FaCheck
+                              size={12}
+                              className="text-green-400 shrink-0"
+                            />
+                          )}
+                        </button>
+                        {isInPlaylist && itemHref && (
+                          <Link
+                            href={itemHref}
+                            onClick={onClose}
+                            className="shrink-0 p-2 text-[#00f0ff] hover:text-white hover:bg-neutral-800 rounded transition-colors"
+                            title="Go to album"
+                          >
+                            <FaExternalLinkAlt size={12} />
+                          </Link>
                         )}
-                      </button>
+                      </div>
                     );
                   })}
                 </div>

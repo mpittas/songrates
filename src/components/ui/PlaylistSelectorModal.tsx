@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { FaMusic } from "react-icons/fa";
 import { usePlaylist } from "@/context/PlaylistContext";
 import BasePlaylistSelectorModal from "./BasePlaylistSelectorModal";
+import { createSlug } from "@/lib/utils";
 
 interface PlaylistSelectorModalProps {
   trackId: string;
@@ -109,11 +110,13 @@ export default function PlaylistSelectorModal({
         [playlistId]: (prev[playlistId] || 0) + 1,
       }));
     }
+
+    return success;
   };
 
   return (
     <BasePlaylistSelectorModal
-      title="Add to Playlist"
+      title="Add Song to Playlist"
       onClose={onClose}
       loading={loading}
       playlists={playlists}
@@ -122,6 +125,11 @@ export default function PlaylistSelectorModal({
       isItemInPlaylist={(id) => trackInPlaylist[id] || false}
       getPlaylistSubtitle={(p) => `${playlistTrackCounts[p.id] || 0} tracks`}
       defaultIcon={<FaMusic size={14} className="text-neutral-500" />}
+      itemHref={
+        albumId && albumName
+          ? `/album/${createSlug(albumName, albumId)}?track=${trackId}`
+          : undefined
+      }
     />
   );
 }

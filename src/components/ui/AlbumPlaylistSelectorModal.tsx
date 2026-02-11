@@ -5,6 +5,7 @@ import { FaCompactDisc } from "react-icons/fa";
 import { usePlaylist } from "@/context/PlaylistContext";
 import BasePlaylistSelectorModal from "./BasePlaylistSelectorModal";
 import { Playlist } from "@/types/playlist";
+import { createSlug } from "@/lib/utils";
 
 interface AlbumPlaylistSelectorModalProps {
   albumId: string;
@@ -108,6 +109,8 @@ export default function AlbumPlaylistSelectorModal({
         [playlistId]: (prev[playlistId] || 0) + 1,
       }));
     }
+
+    return success;
   };
 
   return (
@@ -121,6 +124,9 @@ export default function AlbumPlaylistSelectorModal({
       isItemInPlaylist={(id) => albumInPlaylist[id] || false}
       getPlaylistSubtitle={(p) => `${playlistAlbumCounts[p.id] || 0} albums`}
       defaultIcon={<FaCompactDisc size={14} className="text-neutral-500" />}
+      itemHref={
+        albumName ? `/album/${createSlug(albumName, albumId)}` : undefined
+      }
     />
   );
 }
