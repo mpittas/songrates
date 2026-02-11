@@ -26,6 +26,17 @@ import { useAlbumInfo } from "@/hooks/useAlbumInfo";
 
 import { AlbumInfo, TrackInfo, AlbumContext } from "@/types/music";
 
+/**
+ * Extract the numeric Apple Music ID from a slug like "album-name-1440833849"
+ */
+function resolveAlbumId(slug: string): string {
+  if (/^\d+$/.test(slug)) return slug;
+  const parts = slug.split("-");
+  const lastPart = parts[parts.length - 1];
+  if (/^\d+$/.test(lastPart)) return lastPart;
+  return slug;
+}
+
 interface UserRating {
   track_id: string;
   rating: number;
@@ -55,6 +66,7 @@ export default function AlbumPage() {
   const highlightTrackId = searchParams.get("track");
 
   const slug = Array.isArray(rawSlug) ? rawSlug[0] : rawSlug;
+  const albumId = slug ? resolveAlbumId(slug) : undefined;
 
   // React Query — cached across navigations, instant on revisit
   const { data: album = null, isLoading: loading } = useAlbumInfo(slug);
@@ -78,8 +90,9 @@ export default function AlbumPage() {
   );
 
   // Fetch target user ratings if userId is present
+  // Uses albumId extracted from slug so it starts immediately (no waiting for album fetch)
   useEffect(() => {
-    if (!album || !userId) {
+    if (!albumId || !userId) {
       setViewingUserRatings(null);
       setViewingUserName(null);
       return;
@@ -89,20 +102,12 @@ export default function AlbumPage() {
       const { createClient } = await import("@/utils/supabase/client");
       const supabase = createClient();
 
-      // Fetch user profile (name) - Requires Service Role usually if no public profiles,
-      // but here we are client side. We might get 403 fetching auth.users.
-      // However, we only need the ratings mostly.
-      // If we can't get the name easily client-side without public profiles,
-      // we might just show "User's Ratings".
-      // NOTE: We cannot fetch auth.users from client.
-      // We will skip name fetching for now or assume we can't get it easily.
-
       // Fetch ratings
       const { data: userRatings, error } = await supabase
         .from("ratings")
         .select("track_id, rating")
         .eq("user_id", userId)
-        .eq("album_id", album.id);
+        .eq("album_id", albumId);
 
       if (userRatings) {
         const map: Record<string, number> = {};
@@ -115,11 +120,12 @@ export default function AlbumPage() {
     };
 
     fetchUserRatings();
-  }, [album, userId]);
+  }, [albumId, userId]);
 
   // Fetch Public Track Ratings
+  // Uses albumId extracted from slug so it starts immediately (no waiting for album fetch)
   useEffect(() => {
-    if (!album) return;
+    if (!albumId) return;
 
     const fetchTrackRatings = async () => {
       const { createClient } = await import("@/utils/supabase/client");
@@ -128,7 +134,7 @@ export default function AlbumPage() {
       const { data, error } = await supabase
         .from("public_track_ratings")
         .select("*")
-        .eq("album_id", album.id);
+        .eq("album_id", albumId);
 
       if (data) {
         const map: Record<
@@ -154,14 +160,14 @@ export default function AlbumPage() {
       const supabase = createClient();
 
       const channel = supabase
-        .channel(`public_track_ratings:${album.id}`)
+        .channel(`public_track_ratings:${albumId}`)
         .on(
           "postgres_changes",
           {
             event: "*",
             schema: "public",
             table: "public_track_ratings",
-            filter: `album_id=eq.${album.id}`,
+            filter: `album_id=eq.${albumId}`,
           },
           (payload: RealtimePayload<PublicTrackRating>) => {
             if (
@@ -197,7 +203,7 @@ export default function AlbumPage() {
     return () => {
       unsub.then((fn) => fn());
     };
-  }, [album]);
+  }, [albumId]);
 
   if (loading) {
     return <AlbumSkeleton />;
