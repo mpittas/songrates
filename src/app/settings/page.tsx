@@ -162,6 +162,16 @@ export default function SettingsPage() {
         throw updateError;
       }
 
+      // Sync username to auth user_metadata so it's available everywhere
+      if (settings.username !== originalUsername) {
+        const { error: metaError } = await supabase.auth.updateUser({
+          data: { username: settings.username },
+        });
+        if (metaError) {
+          console.error("Error syncing username to auth metadata:", metaError);
+        }
+      }
+
       setOriginalUsername(settings.username);
       setSuccess("Settings saved successfully");
       setTimeout(() => setSuccess(null), 3000);

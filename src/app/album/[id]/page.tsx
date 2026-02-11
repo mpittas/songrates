@@ -102,21 +102,28 @@ export default function AlbumPage() {
       const { createClient } = await import("@/utils/supabase/client");
       const supabase = createClient();
 
-      // Fetch ratings
-      const { data: userRatings, error } = await supabase
-        .from("ratings")
-        .select("track_id, rating")
-        .eq("user_id", userId)
-        .eq("album_id", albumId);
+      // Fetch ratings and current username in parallel
+      const [ratingsResult, profileResult] = await Promise.all([
+        supabase
+          .from("ratings")
+          .select("track_id, rating")
+          .eq("user_id", userId)
+          .eq("album_id", albumId),
+        supabase.from("profiles").select("username").eq("id", userId).single(),
+      ]);
 
-      if (userRatings) {
+      if (ratingsResult.data) {
         const map: Record<string, number> = {};
-        userRatings.forEach((r: unknown) => {
+        ratingsResult.data.forEach((r: unknown) => {
           const rating = r as UserRating;
           map[rating.track_id] = Number(rating.rating);
         });
         setViewingUserRatings(map);
       }
+
+      // Use fresh username from profiles, fall back to URL param
+      const freshName = profileResult.data?.username;
+      setViewingUserName(freshName || searchParams.get("userName") || null);
     };
 
     fetchUserRatings();
@@ -256,16 +263,16 @@ export default function AlbumPage() {
                 </span>
               </div>
 
-              {searchParams.get("userName") && (
+              {(viewingUserName || searchParams.get("userName")) && (
                 <div className="flex flex-col">
                   <span className="text-[10px] uppercase tracking-widest text-[#00f0ff]/50 font-mono mb-1">
                     Viewing Ratings By
                   </span>
                   <Link
-                    href={`/user/${searchParams.get("userName")}`}
+                    href={`/user/${viewingUserName || searchParams.get("userName")}`}
                     className="text-md text-white leading-none hover:text-[#00f0ff] transition-colors"
                   >
-                    {searchParams.get("userName")}
+                    {viewingUserName || searchParams.get("userName")}
                   </Link>
                 </div>
               )}

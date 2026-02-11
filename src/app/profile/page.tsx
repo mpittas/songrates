@@ -21,6 +21,7 @@ export default function ProfilePage() {
   const router = useRouter();
   const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
   const [loadingFavorites, setLoadingFavorites] = useState(true);
+  const [profileUsername, setProfileUsername] = useState<string | null>(null);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -28,12 +29,25 @@ export default function ProfilePage() {
     }
   }, [user, loading, router]);
 
-  // Fetch favorites
+  // Fetch profile username and favorites
   useEffect(() => {
     if (!user) return;
 
+    const supabase = createClient();
+
+    const fetchProfile = async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("username")
+        .eq("id", user.id)
+        .single();
+
+      if (data?.username) {
+        setProfileUsername(data.username);
+      }
+    };
+
     const fetchFavorites = async () => {
-      const supabase = createClient();
       const { data, error } = await supabase
         .from("user_favorites")
         .select("*")
@@ -48,6 +62,7 @@ export default function ProfilePage() {
       setLoadingFavorites(false);
     };
 
+    fetchProfile();
     fetchFavorites();
   }, [user]);
 
@@ -111,7 +126,10 @@ export default function ProfilePage() {
   }
 
   const username =
-    user.user_metadata?.username || user.email?.split("@")[0] || "user";
+    profileUsername ||
+    user.user_metadata?.username ||
+    user.email?.split("@")[0] ||
+    "user";
   const avatarUrl = user.user_metadata?.avatar_url || null;
 
   return (
