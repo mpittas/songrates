@@ -8,6 +8,7 @@ import { createClient } from "@/utils/supabase/client";
 import FavoriteStatsBar, {
   FavoriteItem,
 } from "@/components/profile/FavoriteStatsBar";
+import PublicPlaylistsSection from "@/components/profile/PublicPlaylistsSection";
 
 interface UserProfile {
   id: string;
@@ -291,6 +292,13 @@ export default function UserProfileClient({ profile }: UserProfileClientProps) {
             loading={loadingFavorites}
             albumRatings={albumRatingsLookup}
           />
+        </div>
+      )}
+
+      {/* Playlists Section */}
+      {profile.show_playlists && (
+        <div className="max-w-4xl mx-auto px-6 mt-12">
+          <PublicPlaylistsSection userId={profile.id} />
         </div>
       )}
 

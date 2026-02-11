@@ -43,18 +43,21 @@ export default function PlaylistSelectorModal({
     Record<string, boolean>
   >({});
 
+  // Only show songs-type playlists
+  const songPlaylists = playlists.filter((p) => p.type === "songs");
+
   // Load playlists and check which ones contain this track
   useEffect(() => {
     fetchPlaylists();
   }, [fetchPlaylists]);
 
-  // Check track membership in each playlist
+  // Check track membership in each song playlist
   useEffect(() => {
     const checkTracks = async () => {
       const counts: Record<string, number> = {};
       const memberships: Record<string, boolean> = {};
 
-      for (const playlist of playlists) {
+      for (const playlist of songPlaylists) {
         const tracks = await getPlaylistTracks(playlist.id);
         counts[playlist.id] = tracks.length;
         memberships[playlist.id] = tracks.some((t) => t.track_id === trackId);
@@ -64,7 +67,7 @@ export default function PlaylistSelectorModal({
       setTrackInPlaylist(memberships);
     };
 
-    if (playlists.length > 0) {
+    if (songPlaylists.length > 0) {
       checkTracks();
     }
   }, [playlists, trackId, getPlaylistTracks]);
@@ -119,7 +122,7 @@ export default function PlaylistSelectorModal({
       title="Add Song to Playlist"
       onClose={onClose}
       loading={loading}
-      playlists={playlists}
+      playlists={songPlaylists}
       onCreatePlaylist={handleCreatePlaylist}
       onAddToPlaylist={handleAddToPlaylist}
       isItemInPlaylist={(id) => trackInPlaylist[id] || false}
