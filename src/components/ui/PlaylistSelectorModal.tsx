@@ -90,7 +90,9 @@ export default function PlaylistSelectorModal({
         thumbnailUrl,
         durationMs,
       });
-      onClose();
+      // Update local state so the new playlist shows as containing the track
+      setTrackInPlaylist((prev) => ({ ...prev, [playlist.id]: true }));
+      setPlaylistTrackCounts((prev) => ({ ...prev, [playlist.id]: 1 }));
     }
   };
 

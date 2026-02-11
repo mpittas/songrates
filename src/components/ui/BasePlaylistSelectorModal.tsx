@@ -270,14 +270,14 @@ export default function BasePlaylistSelectorModal({
                             />
                           )}
                         </button>
-                        {isInPlaylist && itemHref && (
+                        {isInPlaylist && (
                           <Link
-                            href={itemHref}
+                            href={`/playlist/${playlist.id}`}
                             onClick={onClose}
-                            className="shrink-0 p-2 text-[#00f0ff] hover:text-white hover:bg-neutral-800 rounded transition-colors"
-                            title="Go to album"
+                            className="shrink-0 px-2 py-1 text-[10px] font-mono uppercase tracking-wider text-[#00f0ff] hover:text-white hover:bg-neutral-800 rounded transition-colors"
+                            title="Go to playlist"
                           >
-                            <FaExternalLinkAlt size={12} />
+                            Go to playlist
                           </Link>
                         )}
                       </div>

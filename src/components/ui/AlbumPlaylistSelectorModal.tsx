@@ -87,7 +87,9 @@ export default function AlbumPlaylistSelectorModal({
         releaseDate,
         totalTracks,
       });
-      onClose();
+      // Update local state so the new playlist shows as containing the album
+      setAlbumInPlaylist((prev) => ({ ...prev, [playlist.id]: true }));
+      setPlaylistAlbumCounts((prev) => ({ ...prev, [playlist.id]: 1 }));
     }
   };
 
