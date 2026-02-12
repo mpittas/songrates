@@ -383,7 +383,7 @@ export default function AlbumPage() {
 
             {/* Actions / Links */}
             {album.url && (
-              <div className="flex flex-wrap items-center gap-4 mb-8 font-mono text-[10px] uppercase tracking-widest">
+              <div className="flex flex-wrap items-center gap-4 mb-0 md:mb-8 font-mono text-[10px] uppercase tracking-widest">
                 <a
                   href={album.url}
                   target="_blank"

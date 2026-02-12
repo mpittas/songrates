@@ -10,14 +10,15 @@ import {
   FaPlus,
   FaMinus,
 } from "react-icons/fa";
-import { HiOutlineMicrophone } from "react-icons/hi2";
+import { HiOutlineMicrophone, HiEllipsisVertical } from "react-icons/hi2";
 import { useRatingsContext as useRatings } from "@/context/RatingsContext";
 import { usePlayer } from "@/context/PlayerContext";
 import { formatTime, createSlug } from "@/lib/utils";
 import ColorRating from "@/components/rating/ColorRating";
 import Button from "@/components/ui/Button";
 import FavoriteButton from "@/components/ui/FavoriteButton";
-import AddToPlaylistButton from "@/components/ui/AddToPlaylistButton";
+import DropdownMenu from "@/components/ui/DropdownMenu";
+import PlaylistSelectorModal from "@/components/ui/PlaylistSelectorModal";
 import { useLyrics } from "@/hooks/useLyrics";
 import { TrackInfo, AlbumContext } from "@/types/music";
 
@@ -53,6 +54,7 @@ export default function TrackItem({
 }: TrackItemProps) {
   const trackRef = useRef<HTMLDivElement>(null);
   const [lyricsFontSize, setLyricsFontSize] = useState(12);
+  const [showPlaylistModal, setShowPlaylistModal] = useState(false);
   const { ratings, setRating } = useRatings();
   const { currentTrack, isPlaying, isLoading, playTrack } = usePlayer();
   const rating =
@@ -92,7 +94,7 @@ export default function TrackItem({
       }`}
     >
       <div className="flex items-center justify-between py-3 group hover:bg-[#0a0a0d] px-4 transition-colors">
-        <div className="flex items-center gap-4 min-w-0 flex-1">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
           <span className="text-neutral-600 font-mono text-xs w-2 shrink-0 text-left">
             {track.number}
           </span>
@@ -128,52 +130,11 @@ export default function TrackItem({
             )}
           </button>
 
-          <span className="text-[10px] text-neutral-600 font-mono hidden sm:block w-5 shrink-0 text-right mr-4">
-            {formatTime(track.length, "milliseconds")}
-          </span>
-
-          {/* Favorite Button */}
-          <FavoriteButton
-            itemId={track.id}
-            itemType="track"
-            itemName={track.title}
-            artistName={artistName}
-            size="sm"
-            className="mr-2"
-          />
-
-          {/* Add to Playlist Button */}
-          <AddToPlaylistButton
-            trackId={track.id}
-            trackName={track.title}
-            artistName={artistName}
-            albumName={albumContext.title}
-            albumId={albumId}
-            thumbnailUrl={albumImageUrl}
-            durationMs={track.length}
-            size="sm"
-            className="mr-2"
-          />
-
           <div className="flex flex-col min-w-0">
             <div className="flex items-center gap-2 min-w-0">
               <span className="text-neutral-300 group-hover:text-[#00f0ff] transition-colors truncate text-sm">
                 {track.title}
               </span>
-              {track.hasLyrics && (
-                <Button
-                  size="xxs"
-                  variant={lyricsOpen ? "primary" : "muted"}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onToggleLyrics?.(track.id);
-                  }}
-                  iconLeft={<HiOutlineMicrophone size={10} />}
-                  title={lyricsOpen ? "Hide lyrics" : "Show lyrics"}
-                >
-                  Lyrics
-                </Button>
-              )}
             </div>
             {(() => {
               const features = (track.artists || []).filter(
@@ -206,7 +167,7 @@ export default function TrackItem({
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           {/* Public Rating Display */}
           {publicRating && (
             <div
@@ -222,33 +183,93 @@ export default function TrackItem({
             </div>
           )}
 
-          <div
-            className={`flex items-center gap-2 ${isReadOnly ? "opacity-60" : ""}`}
-          >
-            {isReadOnly && <FaLock size={10} className="text-neutral-600" />}
-            <div className={isReadOnly ? "pointer-events-none" : ""}>
-              <ColorRating
-                rating={rating}
-                onRate={(val) =>
-                  !isReadOnly && setRating(track.id, val, albumContext)
-                }
-              />
+          <div className="flex items-center gap-0">
+            <div
+              className={`flex items-center gap-2 ${isReadOnly ? "opacity-60" : ""}`}
+            >
+              {isReadOnly && <FaLock size={10} className="text-neutral-600" />}
+              <div className={isReadOnly ? "pointer-events-none" : ""}>
+                <ColorRating
+                  rating={rating}
+                  onRate={(val) =>
+                    !isReadOnly && setRating(track.id, val, albumContext)
+                  }
+                />
+              </div>
+
+              {/* User Rating Digit (Read Only Mode) - Now on right side of progress bar */}
+              {isReadOnly && rating > 0 && (
+                <div className="flex items-center gap-1.5 ml-2 border-l border-neutral-800 pl-3">
+                  <span
+                    className="text-[11px] font-bold"
+                    style={{ color: "#00f0ff" }}
+                  >
+                    {rating}
+                  </span>
+                  <span className="text-[9px] text-neutral-600 font-mono uppercase">
+                    User
+                  </span>
+                </div>
+              )}
             </div>
 
-            {/* User Rating Digit (Read Only Mode) - Now on right side of progress bar */}
-            {isReadOnly && rating > 0 && (
-              <div className="flex items-center gap-1.5 ml-2 border-l border-neutral-800 pl-3">
-                <span
-                  className="text-[11px] font-bold"
-                  style={{ color: "#00f0ff" }}
-                >
-                  {rating}
-                </span>
-                <span className="text-[9px] text-neutral-600 font-mono uppercase">
-                  User
-                </span>
-              </div>
-            )}
+            <div className="ml-2 shrink-0 flex items-center justify-center">
+              <DropdownMenu
+                trigger={
+                  <button
+                    className="w-6 h-6 flex items-center justify-center rounded-full text-neutral-500 hover:text-white hover:bg-neutral-800 transition-colors"
+                    title="More options"
+                  >
+                    <HiEllipsisVertical size={20} />
+                  </button>
+                }
+                align="right"
+                className="relative"
+              >
+                <div className="w-48 py-1">
+                  {/* Favorite */}
+                  <FavoriteButton
+                    itemId={track.id}
+                    itemType="track"
+                    itemName={track.title}
+                    artistName={artistName}
+                    variant="menu-item"
+                  />
+
+                  {/* Add to Playlist */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowPlaylistModal(true);
+                    }}
+                    data-menu-close
+                    className="w-full text-left flex items-center gap-3 px-3 py-2 text-xs font-mono text-neutral-400 hover:text-white hover:bg-white/5 transition-colors"
+                  >
+                    <div className="w-4 flex justify-center">
+                      <FaPlus size={12} />
+                    </div>
+                    <span>Add to Playlist</span>
+                  </button>
+
+                  {/* Lyrics */}
+                  {track.hasLyrics && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onToggleLyrics?.(track.id);
+                      }}
+                      data-menu-close
+                      className="w-full text-left flex items-center gap-3 px-3 py-2 text-xs font-mono text-neutral-400 hover:text-white hover:bg-white/5 transition-colors"
+                    >
+                      <div className="w-4 flex justify-center">
+                        <HiOutlineMicrophone size={12} />
+                      </div>
+                      <span>{lyricsOpen ? "Hide Lyrics" : "Show Lyrics"}</span>
+                    </button>
+                  )}
+                </div>
+              </DropdownMenu>
+            </div>
           </div>
         </div>
       </div>
@@ -299,6 +320,20 @@ export default function TrackItem({
             </p>
           )}
         </div>
+      )}
+
+      {/* Playlist Selector Modal */}
+      {showPlaylistModal && (
+        <PlaylistSelectorModal
+          trackId={track.id}
+          trackName={track.title}
+          artistName={artistName}
+          albumName={albumContext.title}
+          albumId={albumId}
+          thumbnailUrl={albumImageUrl}
+          durationMs={track.length}
+          onClose={() => setShowPlaylistModal(false)}
+        />
       )}
     </div>
   );

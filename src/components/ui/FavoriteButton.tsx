@@ -12,7 +12,7 @@ interface FavoriteButtonProps {
   thumbnailUrl?: string;
   size?: "sm" | "md" | "lg";
   className?: string;
-  variant?: "icon" | "text";
+  variant?: "icon" | "text" | "menu-item";
 }
 
 export default function FavoriteButton({
@@ -132,6 +132,34 @@ export default function FavoriteButton({
             className="fill-current group-hover:scale-110 transition-transform opacity-70 group-hover:opacity-100"
           />
         )}
+        <span>{isFavorite ? "Favorited" : "Favorite"}</span>
+      </button>
+    );
+  }
+
+  if (variant === "menu-item") {
+    return (
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          toggleFavorite();
+        }}
+        disabled={loading}
+        className={`
+          w-full text-left flex items-center gap-3 px-3 py-2 
+          text-xs font-mono text-neutral-400 hover:text-white hover:bg-white/5 
+          transition-colors
+          ${loading ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
+          ${className}
+        `}
+      >
+        <div className="w-4 flex justify-center">
+          {isFavorite ? (
+            <FaHeart size={12} className="text-red-500" />
+          ) : (
+            <FaRegHeart size={12} />
+          )}
+        </div>
         <span>{isFavorite ? "Favorited" : "Favorite"}</span>
       </button>
     );
