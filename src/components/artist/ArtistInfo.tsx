@@ -18,9 +18,9 @@ export default function ArtistInfo({
   className = "",
 }: Props) {
   return (
-    <div className={`flex flex-col gap-6 text-sm ${className}`}>
-      <div className="space-y-4">
-        <div className="relative w-full aspect-square max-w-[100px] mx-auto lg:mx-0">
+    <div className={`flex flex-col gap-4 lg:gap-6 text-sm ${className}`}>
+      <div className="space-y-3 lg:space-y-4">
+        <div className="relative w-full aspect-square max-w-[80px] lg:max-w-[100px]">
           {data.image ? (
             <img
               src={data.image}
@@ -36,14 +36,14 @@ export default function ArtistInfo({
           )}
         </div>
 
-        <div className="text-center lg:text-left">
+        <div>
           <h1 className="text-xl text-white tracking-tight leading-tight mb-1">
             {artistName}
           </h1>
         </div>
 
         {/* Favorite Button */}
-        <div className="flex justify-center lg:justify-start">
+        <div>
           <FavoriteButton
             itemId={artistId}
             itemType="artist"
@@ -61,7 +61,7 @@ export default function ArtistInfo({
       )}
 
       {data.genres && data.genres.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 justify-center lg:justify-start">
+        <div className="flex flex-wrap gap-1.5">
           {data.genres.slice(0, 5).map((genre) => (
             <span
               key={genre}
@@ -74,7 +74,7 @@ export default function ArtistInfo({
       )}
 
       {data.url && (
-        <div className="flex flex-col gap-3 justify-center lg:justify-start pt-4 border-t border-white/5 font-mono text-[10px] uppercase tracking-widest">
+        <div className="flex flex-col gap-3 pt-4 border-t border-white/5 font-mono text-[10px] uppercase tracking-widest">
           <a
             href={data.url}
             target="_blank"

@@ -42,7 +42,7 @@ export default function ArtistPageContent({
   return (
     <main className="min-h-screen bg-[#050507] text-neutral-100">
       <MySection className="pt-8 pb-24">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4 pb-12">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-4 pb-6 md:pb-12">
           <Button
             href="/"
             iconLeft={<FaArrowLeft size={10} />}
@@ -67,7 +67,7 @@ export default function ArtistPageContent({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-12 items-start lg:grid-cols-[150px_1fr]">
+        <div className="grid grid-cols-1 gap-6 items-start lg:grid-cols-[150px_1fr] lg:gap-12">
           <div className="lg:sticky lg:top-20">
             <ArtistInfo
               artistId={artistId}
