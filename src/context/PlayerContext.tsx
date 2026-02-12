@@ -92,13 +92,15 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         const data = await res.json();
 
         if (data.videoId) {
+          // Capture ref locally to avoid race condition
+          const player = playerRef.current;
           // Use loadVideoById for faster switching if player exists
           if (
-            playerRef.current &&
-            typeof playerRef.current.loadVideoById === "function" &&
+            player &&
+            typeof player.loadVideoById === "function" &&
             videoId // Only use loadVideoById if we already have a video loaded
           ) {
-            playerRef.current.loadVideoById(data.videoId);
+            player.loadVideoById(data.videoId);
             setVideoId(data.videoId);
             setIsPlaying(true);
           } else {

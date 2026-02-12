@@ -118,7 +118,7 @@ export default function PublicPlaylistsSection({
               className="group p-4 bg-neutral-900/30 border border-white/[0.04] hover:border-[#00f0ff]/20 hover:bg-neutral-900/50 transition-all duration-200 text-left "
             >
               <div className="flex items-start gap-3">
-                <div className="w-12 h-12 flex items-center justify-center bg-neutral-800shrink-0 group-hover:bg-neutral-700 transition-colors">
+                <div className="w-12 h-12 flex items-center justify-center bg-neutral-800 shrink-0 group-hover:bg-neutral-700 transition-colors">
                   {playlist.type === "albums" ? (
                     <FaCompactDisc
                       size={20}

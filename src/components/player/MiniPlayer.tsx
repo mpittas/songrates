@@ -102,6 +102,14 @@ export default function MiniPlayer() {
   }, [videoId, isPlaying, updateProgress]);
 
   useEffect(() => {
+    // Reset player ref when videoId becomes null (player unmounts)
+    if (!videoId) {
+      playerRef.current = null;
+      setPlayerRef(null);
+    }
+  }, [videoId, setPlayerRef]);
+
+  useEffect(() => {
     const handleFocus = () => {
       if (
         playerRef.current &&

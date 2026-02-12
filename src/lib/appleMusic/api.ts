@@ -56,6 +56,10 @@ async function appleMusicFetch<T>(
       }
 
       if (!res.ok) {
+        // 404 with "No related resources" is expected when paginating past the end
+        if (res.status === 404) {
+          return null;
+        }
         const body = await res.text();
         console.error(
           `Apple Music API ${res.status} for ${path}:`,
