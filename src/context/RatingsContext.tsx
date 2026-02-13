@@ -10,6 +10,7 @@ import React, {
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/utils/supabase/client";
 import { AlbumContext, RatedAlbumData, PublicAlbumRating } from "@/types/music";
+import { generateUUID } from "@/lib/utils";
 
 interface RatingsContextType {
   ratings: Record<string, number>;
@@ -126,7 +127,7 @@ export function RatingsProvider({ children }: { children: React.ReactNode }) {
 
     // Generate guest ID if needed
     if (!user && !activeUserId) {
-      const newGuestId = crypto.randomUUID();
+      const newGuestId = generateUUID();
       localStorage.setItem("songrates_guest_id", newGuestId);
     }
 

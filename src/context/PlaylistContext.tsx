@@ -9,6 +9,7 @@ import React, {
 } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/utils/supabase/client";
+import { generateUUID } from "@/lib/utils";
 import {
   Playlist,
   PlaylistTrack,
@@ -217,7 +218,7 @@ export function PlaylistProvider({ children }: { children: React.ReactNode }) {
               [input.playlistId]: [
                 ...cached,
                 {
-                  id: crypto.randomUUID(),
+                  id: generateUUID(),
                   playlist_id: input.playlistId,
                   track_id: input.trackId,
                   position: nextPosition,
@@ -377,7 +378,7 @@ export function PlaylistProvider({ children }: { children: React.ReactNode }) {
               [input.playlistId]: [
                 ...cached,
                 {
-                  id: crypto.randomUUID(),
+                  id: generateUUID(),
                   playlist_id: input.playlistId,
                   album_id: input.albumId,
                   position: nextPosition,

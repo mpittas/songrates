@@ -259,7 +259,8 @@ export default function SearchResults({
   query,
   onClose,
   isFocused,
-}: SearchResultsProps) {
+  mobileMode = false,
+}: SearchResultsProps & { mobileMode?: boolean }) {
   const [category, setCategory] = useState<SearchCategory>("all");
 
   // History state
@@ -287,13 +288,20 @@ export default function SearchResults({
     }
   }, [isFocused, query, loadHistory]);
 
-  // ─── Determine loading state ───────────────────────────────────────
+  // ─── determine loading state ───────────────────────────────────────
   const showLoading = isFetching && results.length === 0;
 
-  if (!query && (!isFocused || history.length === 0)) return null;
+  // Hiding recent artists for now, so only show if query exists
+  if (!query) return null;
 
   return (
-    <div className="absolute top-full left-0 right-0 mt-0 bg-[#0a0a0d] border-x border-b border-[#1a1a1f] z-[9999] max-h-[420px] overflow-y-auto shadow-2xl">
+    <div
+      className={
+        mobileMode
+          ? "w-full h-full bg-transparent md:absolute md:top-full md:left-0 md:right-0 md:mt-0 md:bg-[#0a0a0d] md:border-x md:border-b md:border-[#1a1a1f] md:z-[9999] md:max-h-[420px] md:overflow-y-auto md:shadow-2xl"
+          : "absolute top-full left-0 right-0 mt-0 bg-[#0a0a0d] border-x border-b border-[#1a1a1f] z-[9999] max-h-[420px] overflow-y-auto shadow-2xl"
+      }
+    >
       {/* Category Filter Tabs */}
       {query && <CategoryTabs active={category} onChange={setCategory} />}
 
@@ -420,8 +428,8 @@ export default function SearchResults({
         </div>
       )}
 
-      {/* Recent Artists */}
-      {!query && isFocused && history.length > 0 && (
+      {/* Recent Artists (Hidden for now) */}
+      {/* {!query && isFocused && history.length > 0 && (
         <div className="py-2">
           <div className="px-4 py-2 border-b border-[#1a1a1f] mb-1">
             <h2 className="font-mono text-[10px] text-neutral-500 tracking-wider uppercase">
@@ -453,7 +461,7 @@ export default function SearchResults({
             ))}
           </div>
         </div>
-      )}
+      )} */}
     </div>
   );
 }

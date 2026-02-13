@@ -64,3 +64,25 @@ export function createSlug(name: string, id: string): string {
   const shortId = id.split("-")[0];
   return `${slug}-${shortId}`;
 }
+
+/**
+ * Generate a UUID v4
+ * Use crypto.randomUUID if available, otherwise fallback to Math.random
+ */
+export function generateUUID(): string {
+  // Check if we are in a browser environment and if randomUUID is supported
+  if (
+    typeof window !== "undefined" &&
+    window.crypto &&
+    typeof window.crypto.randomUUID === "function"
+  ) {
+    return window.crypto.randomUUID();
+  }
+
+  // Fallback for environments where crypto.randomUUID is not available
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
+    const r = (Math.random() * 16) | 0;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
