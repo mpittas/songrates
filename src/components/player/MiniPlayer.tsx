@@ -37,6 +37,8 @@ export default function MiniPlayer() {
     prevTrack,
     hasNext,
     hasPrev,
+    isRepeating,
+    toggleRepeat,
   } = usePlayer();
 
   const { ratings, setRating } = useRatings();
@@ -169,10 +171,15 @@ export default function MiniPlayer() {
       }
       // 0 = ended
       if (event.data === 0) {
+        if (isRepeating && playerRef.current) {
+          playerRef.current.seekTo(0, true);
+          playerRef.current.playVideo();
+          return;
+        }
         setIsPlaying(false);
       }
     },
-    [isPlaying, setIsPlaying],
+    [isPlaying, setIsPlaying, isRepeating],
   );
 
   const handleVolumeChange = useCallback(
@@ -292,6 +299,8 @@ export default function MiniPlayer() {
               onPrev={prevTrack}
               hasNext={hasNext}
               hasPrev={hasPrev}
+              isRepeating={isRepeating}
+              onToggleRepeat={toggleRepeat}
             />
 
             <div className="hidden md:flex items-center gap-4 w-[500px]">

@@ -23,6 +23,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [buffered, setBuffered] = useState(0);
+  const [isRepeating, setIsRepeating] = useState(false);
 
   const [queue, setQueue] = useState<Track[]>([]);
 
@@ -187,6 +188,10 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const toggleRepeat = useCallback(() => {
+    setIsRepeating((prev) => !prev);
+  }, []);
+
   return (
     <PlayerContext.Provider
       value={{
@@ -210,6 +215,8 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         hasPrev,
         setPlayerRef,
         updateProgress,
+        isRepeating,
+        toggleRepeat,
       }}
     >
       {children}

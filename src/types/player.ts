@@ -37,6 +37,8 @@ export interface PlayerContextType {
   hasPrev: boolean;
   setPlayerRef: (player: YouTubePlayer | null) => void;
   updateProgress: (current: number, total: number, buffered?: number) => void;
+  isRepeating: boolean;
+  toggleRepeat: () => void;
 }
 
 export interface PlaybackControlsProps {
@@ -48,6 +50,8 @@ export interface PlaybackControlsProps {
   onPrev: () => void;
   hasNext: boolean;
   hasPrev: boolean;
+  isRepeating: boolean;
+  onToggleRepeat: () => void;
 }
 
 export interface TrackInfoProps {

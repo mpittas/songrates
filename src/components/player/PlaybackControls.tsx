@@ -1,4 +1,10 @@
-import { FaPlay, FaPause, FaStepBackward, FaStepForward } from "react-icons/fa";
+import {
+  FaPlay,
+  FaPause,
+  FaStepBackward,
+  FaStepForward,
+  FaRedo,
+} from "react-icons/fa";
 
 import { PlaybackControlsProps } from "@/types/player";
 
@@ -11,6 +17,8 @@ export default function PlaybackControls({
   onPrev,
   hasNext,
   hasPrev,
+  isRepeating,
+  onToggleRepeat,
 }: PlaybackControlsProps) {
   return (
     <div className="flex items-center gap-4">
@@ -46,6 +54,16 @@ export default function PlaybackControls({
         }`}
       >
         <FaStepForward size={14} />
+      </button>
+
+      <button
+        onClick={onToggleRepeat}
+        className={`transition-colors ${
+          isRepeating ? "text-[#00f0ff]" : "text-neutral-400 hover:text-white"
+        }`}
+        title="Repeat Song"
+      >
+        <FaRedo size={14} />
       </button>
     </div>
   );
