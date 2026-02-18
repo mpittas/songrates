@@ -7,12 +7,19 @@ export default function PlaybackControls({
   isLoading,
   hasVideoId,
   onTogglePlay,
+  onNext,
+  onPrev,
+  hasNext,
+  hasPrev,
 }: PlaybackControlsProps) {
   return (
     <div className="flex items-center gap-4">
       <button
-        disabled
-        className="text-neutral-600 cursor-not-allowed hover:text-neutral-600"
+        onClick={onPrev}
+        disabled={!hasPrev}
+        className={`text-neutral-400 hover:text-white transition-colors ${
+          !hasPrev ? "opacity-30 cursor-not-allowed hover:text-neutral-400" : ""
+        }`}
       >
         <FaStepBackward size={14} />
       </button>
@@ -32,8 +39,11 @@ export default function PlaybackControls({
       </button>
 
       <button
-        disabled
-        className="text-neutral-600 cursor-not-allowed hover:text-neutral-600"
+        onClick={onNext}
+        disabled={!hasNext}
+        className={`text-neutral-400 hover:text-white transition-colors ${
+          !hasNext ? "opacity-30 cursor-not-allowed hover:text-neutral-400" : ""
+        }`}
       >
         <FaStepForward size={14} />
       </button>

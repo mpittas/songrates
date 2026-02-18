@@ -36,6 +36,7 @@ interface TrackItemProps {
   highlighted?: boolean;
   lyricsOpen?: boolean;
   onToggleLyrics?: (trackId: string) => void;
+  queue?: import("@/types/music").Track[];
 }
 
 export default function TrackItem({
@@ -51,6 +52,7 @@ export default function TrackItem({
   highlighted = false,
   lyricsOpen = false,
   onToggleLyrics,
+  queue,
 }: TrackItemProps) {
   const trackRef = useRef<HTMLDivElement>(null);
   const [lyricsFontSize, setLyricsFontSize] = useState(12);
@@ -101,18 +103,21 @@ export default function TrackItem({
 
           <button
             onClick={() =>
-              playTrack({
-                id: track.id,
-                title: track.title,
-                artistName: artistName,
-                artistId: artistId,
-                albumId: albumId,
-                albumImageUrl: albumImageUrl || "/vinyl-placeholder.svg",
-                albumTitle: albumContext.title,
-                releaseDate: albumContext.releaseDate,
-                totalTracks: albumContext.totalTracks,
-                artists: track.artists,
-              })
+              playTrack(
+                {
+                  id: track.id,
+                  title: track.title,
+                  artistName: artistName,
+                  artistId: artistId,
+                  albumId: albumId,
+                  albumImageUrl: albumImageUrl || "/vinyl-placeholder.svg",
+                  albumTitle: albumContext.title,
+                  releaseDate: albumContext.releaseDate,
+                  totalTracks: albumContext.totalTracks,
+                  artists: track.artists,
+                },
+                queue,
+              )
             }
             className={`flex items-center justify-center w-6 h-6 border shrink-0 transition-all ${
               isCurrentTrack && isPlaying

@@ -19,17 +19,22 @@ export interface YouTubePlayer {
 export interface PlayerContextType {
   currentTrack: Track | null;
   videoId: string | null;
+  queue: Track[];
   isPlaying: boolean;
   isLoading: boolean;
   currentTime: number;
   duration: number;
   buffered: number;
   setIsPlaying: (playing: boolean) => void;
-  playTrack: (track: Track) => Promise<void>;
+  playTrack: (track: Track, queue?: Track[]) => Promise<void>;
   stopPlayback: () => void;
   pausePlayback: () => void;
   togglePlayPause: () => void;
   seekTo: (seconds: number) => void;
+  nextTrack: () => void;
+  prevTrack: () => void;
+  hasNext: boolean;
+  hasPrev: boolean;
   setPlayerRef: (player: YouTubePlayer | null) => void;
   updateProgress: (current: number, total: number, buffered?: number) => void;
 }
@@ -39,6 +44,10 @@ export interface PlaybackControlsProps {
   isLoading: boolean;
   hasVideoId: boolean;
   onTogglePlay: () => void;
+  onNext: () => void;
+  onPrev: () => void;
+  hasNext: boolean;
+  hasPrev: boolean;
 }
 
 export interface TrackInfoProps {

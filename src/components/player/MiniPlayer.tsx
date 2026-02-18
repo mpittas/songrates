@@ -33,6 +33,10 @@ export default function MiniPlayer() {
     setPlayerRef,
     updateProgress,
     setIsPlaying,
+    nextTrack,
+    prevTrack,
+    hasNext,
+    hasPrev,
   } = usePlayer();
 
   const { ratings, setRating } = useRatings();
@@ -284,6 +288,10 @@ export default function MiniPlayer() {
               isLoading={isLoading}
               hasVideoId={!!videoId}
               onTogglePlay={togglePlayPause}
+              onNext={nextTrack}
+              onPrev={prevTrack}
+              hasNext={hasNext}
+              hasPrev={hasPrev}
             />
 
             <div className="hidden md:flex items-center gap-4 w-[500px]">

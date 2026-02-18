@@ -24,8 +24,15 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const [duration, setDuration] = useState(0);
   const [buffered, setBuffered] = useState(0);
 
+  const [queue, setQueue] = useState<Track[]>([]);
+
   const playerRef = useRef<YouTubePlayer | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  const currentIndex = queue.findIndex((t) => t.id === currentTrack?.id);
+  const hasNext =
+    queue.length > 0 && currentIndex !== -1 && currentIndex < queue.length - 1;
+  const hasPrev = queue.length > 0 && currentIndex !== -1 && currentIndex > 0;
 
   const setPlayerRef = useCallback((player: YouTubePlayer | null) => {
     playerRef.current = player;
@@ -49,8 +56,8 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const playTrack = useCallback(
-    async (track: Track) => {
-      // If same track, just toggle play
+    async (track: Track, newQueue?: Track[]) => {
+      // If same track, just toggle play (ignore queue update in this case usually)
       if (currentTrack?.id === track.id && videoId) {
         if (playerRef.current) {
           if (isPlaying) {
@@ -64,6 +71,14 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
           setIsPlaying(!isPlaying);
         }
         return;
+      }
+
+      // Update queue if provided, or default to single track if not (and different track)
+      if (newQueue) {
+        setQueue(newQueue);
+      } else if (!queue.find((t) => t.id === track.id)) {
+        // If playing a track not in current queue, replace queue
+        setQueue([track]);
       }
 
       // Cancel any pending search
@@ -118,8 +133,21 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
       setIsLoading(false);
     },
-    [currentTrack?.id, videoId, isPlaying],
+    [currentTrack?.id, videoId, isPlaying, queue],
   );
+
+  const nextTrack = useCallback(() => {
+    if (hasNext) {
+      // Pass current queue to preserve it
+      playTrack(queue[currentIndex + 1], queue);
+    }
+  }, [hasNext, queue, currentIndex, playTrack]);
+
+  const prevTrack = useCallback(() => {
+    if (hasPrev) {
+      playTrack(queue[currentIndex - 1], queue);
+    }
+  }, [hasPrev, queue, currentIndex, playTrack]);
 
   const stopPlayback = () => {
     setCurrentTrack(null);
@@ -169,12 +197,17 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         currentTime,
         duration,
         buffered,
+        queue,
         setIsPlaying,
         playTrack,
         stopPlayback,
         pausePlayback,
         togglePlayPause,
         seekTo,
+        nextTrack,
+        prevTrack,
+        hasNext,
+        hasPrev,
         setPlayerRef,
         updateProgress,
       }}

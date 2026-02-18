@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import OptimizedImage from "@/components/ui/OptimizedImage";
 import Link from "next/link";
@@ -212,6 +212,26 @@ export default function AlbumPage() {
     };
   }, [albumId]);
 
+  const imageUrl = album?.artworkUrl || "/vinyl-placeholder.svg";
+
+  const queue = useMemo(() => {
+    if (!album) return [];
+    return (album.tracks || []).map((t) => ({
+      id: t.id,
+      title: t.title,
+      artistName: album.artist?.name,
+      artistId: album.artist?.id,
+      albumId: album.id,
+      albumImageUrl: imageUrl,
+      albumTitle: album.title,
+      releaseDate: album.releaseDate,
+      totalTracks: album.tracks.length,
+      artists: t.artists,
+      length: t.length,
+      number: t.number,
+    }));
+  }, [album, imageUrl]);
+
   if (loading) {
     return <AlbumSkeleton />;
   }
@@ -223,8 +243,6 @@ export default function AlbumPage() {
       </div>
     );
   }
-
-  const imageUrl = album.artworkUrl || "/vinyl-placeholder.svg";
 
   const filteredTracks = (album.tracks || []).filter((track) =>
     track.title.toLowerCase().includes(searchQuery.toLowerCase()),
@@ -489,6 +507,7 @@ export default function AlbumPage() {
                       prev === trackId ? null : trackId,
                     )
                   }
+                  queue={queue}
                 />
               ))}
             </div>
