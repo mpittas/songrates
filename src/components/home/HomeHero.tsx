@@ -25,7 +25,7 @@ export default function HomeHero() {
             </p>
           </div>
 
-          <div className="w-full relative z-[100]">
+          <div className="w-full max-w-2xl mx-auto relative z-[100]">
             <Suspense fallback={null}>
               <SearchBar />
             </Suspense>

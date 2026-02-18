@@ -96,7 +96,7 @@ function LoginContent() {
         router.push("/");
         router.refresh();
       } else {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -107,7 +107,13 @@ function LoginContent() {
           },
         });
         if (error) throw error;
-        setSuccess("Check your email for the confirmation link!");
+
+        if (data.session) {
+          router.push("/");
+          router.refresh();
+        } else {
+          setSuccess("Check your email for the confirmation link!");
+        }
       }
     } catch (err: any) {
       if (err.message && err.message.includes("rate limit")) {

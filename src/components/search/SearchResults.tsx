@@ -298,8 +298,8 @@ export default function SearchResults({
     <div
       className={
         mobileMode
-          ? "w-full h-full bg-transparent md:absolute md:top-full md:left-0 md:right-0 md:mt-0 md:bg-[#0a0a0d] md:border-x md:border-b md:border-[#1a1a1f] md:z-[9999] md:max-h-[420px] md:overflow-y-auto md:shadow-2xl"
-          : "absolute top-full left-0 right-0 mt-0 bg-[#0a0a0d] border-x border-b border-[#1a1a1f] z-[9999] max-h-[420px] overflow-y-auto shadow-2xl"
+          ? "absolute top-full left-0 right-0 mt-0 bg-[#0a0a0d] border-x border-b border-[#1a1a1f] z-[9999] max-h-[60vh] overflow-y-auto shadow-2xl"
+          : "absolute top-full left-0 right-0 mt-0 bg-[#0a0a0d] border-x border-b border-[#1a1a1f] z-[9999] max-h-[60vh] overflow-y-auto shadow-2xl"
       }
     >
       {/* Category Filter Tabs */}
