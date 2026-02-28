@@ -18,6 +18,7 @@ import { createSlug } from "@/lib/utils";
 import { createClient } from "@/utils/supabase/client";
 import Button from "@/components/ui/Button";
 import OptimizedImage from "@/components/ui/OptimizedImage";
+import TrackItem from "@/components/album/TrackItem";
 
 export default function PlaylistPage() {
   const params = useParams();
@@ -172,7 +173,7 @@ export default function PlaylistPage() {
 
         {/* Playlist Header */}
         <div className="flex items-start gap-5 mb-10">
-          <div className="w-20 h-20 flex items-center justify-center bg-neutral-900 border border-white/[0.06] rounded-sm shrink-0">
+          <div className="w-20 h-20 flex items-center justify-center bg-neutral-900 border border-white/[0.06] shrink-0">
             {playlist?.type === "albums" ? (
               <FaCompactDisc size={32} className="text-neutral-600" />
             ) : (
@@ -184,7 +185,7 @@ export default function PlaylistPage() {
               <h1 className="text-2xl md:text-3xl font-light tracking-tight text-white truncate">
                 {playlist?.name}
               </h1>
-              <span className="text-[10px] uppercase tracking-wider text-neutral-600 font-mono bg-neutral-800 px-2 py-0.5 rounded shrink-0">
+              <span className="text-[10px] uppercase tracking-wider text-neutral-600 font-mono bg-neutral-800 px-2 py-0.5 shrink-0">
                 {playlist?.type === "albums" ? "Albums" : "Songs"}
               </span>
             </div>
@@ -247,7 +248,7 @@ export default function PlaylistPage() {
                     <span className="text-xs text-neutral-600 font-mono w-6 text-center shrink-0">
                       {index + 1}
                     </span>
-                    <div className="relative w-12 h-12 shrink-0 bg-neutral-800 overflow-hidden rounded-sm">
+                    <div className="relative w-12 h-12 shrink-0 bg-neutral-800 overflow-hidden">
                       {album.thumbnail_url ? (
                         <OptimizedImage
                           src={album.thumbnail_url}
@@ -295,14 +296,14 @@ export default function PlaylistPage() {
                   <Link
                     key={album.id}
                     href={href}
-                    className="group flex items-center gap-3 p-3 bg-neutral-900/30 border border-white/[0.04] hover:border-[#00f0ff]/20 hover:bg-neutral-900/50 rounded-sm transition-all duration-200"
+                    className="group flex items-center gap-3 p-3 bg-neutral-900/30 border border-white/[0.04] hover:border-[#00f0ff]/20 hover:bg-neutral-900/50 transition-all duration-200"
                   >
                     {albumContent}
                   </Link>
                 ) : (
                   <div
                     key={album.id}
-                    className="group flex items-center gap-3 p-3 bg-neutral-900/30 border border-white/[0.04] hover:border-white/[0.08] rounded-sm"
+                    className="group flex items-center gap-3 p-3 bg-neutral-900/30 border border-white/[0.04] hover:border-white/[0.08]"
                   >
                     {albumContent}
                   </div>
@@ -322,78 +323,36 @@ export default function PlaylistPage() {
             </p>
           </div>
         ) : (
-          <div className="space-y-1">
+          <div className="flex flex-col">
             {tracks.map((track, index) => {
-              const albumSlug =
-                track.album_id && track.album_name
-                  ? createSlug(track.album_name, track.album_id)
-                  : null;
-              const href = albumSlug
-                ? `/album/${albumSlug}?track=${track.track_id}`
-                : undefined;
+              const albumContext = {
+                albumId: track.album_id || "",
+                title: track.album_name || "Unknown Album",
+                artistName: track.artist_name || "Unknown Artist",
+                totalTracks: 0,
+              };
 
-              const trackContent = (
-                <>
-                  <span className="text-xs text-neutral-600 font-mono w-6 text-center shrink-0">
-                    {index + 1}
-                  </span>
-                  <div className="relative w-12 h-12 shrink-0 bg-neutral-800 overflow-hidden rounded-sm">
-                    {track.thumbnail_url ? (
-                      <OptimizedImage
-                        src={track.thumbnail_url}
-                        alt={track.track_name || "Unknown"}
-                        fill
-                        className="object-cover"
-                        fallbackSrc="/vinyl-placeholder.svg"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-neutral-800/80">
-                        <FaMusic size={16} className="text-neutral-600" />
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-white truncate group-hover:text-[#00f0ff] transition-colors">
-                      {track.track_name || "Unknown Track"}
-                    </p>
-                    <p className="text-xs text-neutral-500 truncate">
-                      {track.artist_name || "Unknown Artist"}
-                      {track.album_name && ` · ${track.album_name}`}
-                    </p>
-                  </div>
-                  <span className="text-xs text-neutral-600 font-mono shrink-0">
-                    {formatDuration(track.duration_ms)}
-                  </span>
-                  <Button
-                    size="xxs"
-                    variant="ghost"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      handleRemoveTrack(track.track_id);
+              return (
+                <div key={track.id} className="w-full">
+                  <TrackItem
+                    track={{
+                      id: track.track_id,
+                      number: String(index + 1),
+                      title: track.track_name || "Unknown Track",
+                      length: track.duration_ms || 0,
+                      artists: track.artist_name
+                        ? [{ id: "unknown", name: track.artist_name }]
+                        : [],
+                      hasLyrics: false,
                     }}
-                    disabled={removingTrack === track.track_id}
-                    className="opacity-0 group-hover:opacity-100 transition-opacity text-neutral-500 hover:text-red-400"
-                  >
-                    <FaTimes size={10} />
-                  </Button>
-                </>
-              );
-
-              return href ? (
-                <Link
-                  key={track.id}
-                  href={href}
-                  className="group flex items-center gap-3 p-3 bg-neutral-900/30 border border-white/[0.04] hover:border-[#00f0ff]/20 hover:bg-neutral-900/50 rounded-sm transition-all duration-200"
-                >
-                  {trackContent}
-                </Link>
-              ) : (
-                <div
-                  key={track.id}
-                  className="group flex items-center gap-3 p-3 bg-neutral-900/30 border border-white/[0.04] hover:border-white/[0.08] rounded-sm"
-                >
-                  {trackContent}
+                    artistName={track.artist_name || "Unknown Artist"}
+                    artistId="unknown"
+                    albumId={track.album_id || ""}
+                    albumImageUrl={track.thumbnail_url || ""}
+                    albumContext={albumContext}
+                    onRemove={() => handleRemoveTrack(track.track_id)}
+                    isRemoving={removingTrack === track.track_id}
+                  />
                 </div>
               );
             })}

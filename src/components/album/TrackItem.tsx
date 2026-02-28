@@ -9,6 +9,7 @@ import {
   FaLock,
   FaPlus,
   FaMinus,
+  FaTimes,
 } from "react-icons/fa";
 import { HiOutlineMicrophone, HiEllipsisVertical } from "react-icons/hi2";
 import { useRatingsContext as useRatings } from "@/context/RatingsContext";
@@ -37,6 +38,8 @@ interface TrackItemProps {
   lyricsOpen?: boolean;
   onToggleLyrics?: (trackId: string) => void;
   queue?: import("@/types/music").Track[];
+  onRemove?: () => void;
+  isRemoving?: boolean;
 }
 
 export default function TrackItem({
@@ -53,6 +56,8 @@ export default function TrackItem({
   lyricsOpen = false,
   onToggleLyrics,
   queue,
+  onRemove,
+  isRemoving,
 }: TrackItemProps) {
   const trackRef = useRef<HTMLDivElement>(null);
   const [lyricsFontSize, setLyricsFontSize] = useState(12);
@@ -270,6 +275,24 @@ export default function TrackItem({
                         <HiOutlineMicrophone size={12} />
                       </div>
                       <span>{lyricsOpen ? "Hide Lyrics" : "Show Lyrics"}</span>
+                    </button>
+                  )}
+
+                  {/* Remove from Playlist (if applicable) */}
+                  {onRemove && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onRemove();
+                      }}
+                      data-menu-close
+                      disabled={isRemoving}
+                      className="w-full text-left flex items-center gap-3 px-3 py-2 text-xs font-mono text-red-500/80 hover:text-red-400 hover:bg-white/5 transition-colors"
+                    >
+                      <div className="w-4 flex justify-center">
+                        <FaTimes size={12} />
+                      </div>
+                      <span>{isRemoving ? "Removing..." : "Remove"}</span>
                     </button>
                   )}
                 </div>

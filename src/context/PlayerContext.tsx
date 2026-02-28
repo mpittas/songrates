@@ -11,7 +11,23 @@ import {
 } from "react";
 
 import { Track } from "@/types/music";
-import { PlayerContextType, YouTubePlayer } from "@/types/player";
+import {
+  PlayerContextType,
+  YouTubePlayer,
+  PlaybackControlsProps,
+} from "@/types/player";
+
+const shuffleArray = (array: Track[], startTrackId?: string) => {
+  const remainingTracks = array.filter((t) => t.id !== startTrackId);
+  const shuffled = remainingTracks.slice();
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return startTrackId
+    ? [array.find((t) => t.id === startTrackId)!, ...shuffled]
+    : shuffled;
+};
 
 const PlayerContext = createContext<PlayerContextType | null>(null);
 
@@ -24,8 +40,10 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const [duration, setDuration] = useState(0);
   const [buffered, setBuffered] = useState(0);
   const [isRepeating, setIsRepeating] = useState(false);
+  const [isShuffling, setIsShuffling] = useState(false);
 
   const [queue, setQueue] = useState<Track[]>([]);
+  const [originalQueue, setOriginalQueue] = useState<Track[]>([]);
 
   const playerRef = useRef<YouTubePlayer | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -76,10 +94,19 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
       // Update queue if provided, or default to single track if not (and different track)
       if (newQueue) {
-        setQueue(newQueue);
+        if (isShuffling) {
+          setOriginalQueue(newQueue);
+          setQueue(shuffleArray(newQueue, track.id));
+        } else {
+          setQueue(newQueue);
+        }
       } else if (!queue.find((t) => t.id === track.id)) {
         // If playing a track not in current queue, replace queue
-        setQueue([track]);
+        const newQ = [track];
+        setQueue(newQ);
+        if (isShuffling) {
+          setOriginalQueue(newQ);
+        }
       }
 
       // Cancel any pending search
@@ -108,22 +135,8 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         const data = await res.json();
 
         if (data.videoId) {
-          // Capture ref locally to avoid race condition
-          const player = playerRef.current;
-          // Use loadVideoById for faster switching if player exists
-          if (
-            player &&
-            typeof player.loadVideoById === "function" &&
-            videoId // Only use loadVideoById if we already have a video loaded
-          ) {
-            player.loadVideoById(data.videoId);
-            setVideoId(data.videoId);
-            setIsPlaying(true);
-          } else {
-            // First time or player not ready - set videoId to trigger player mount
-            setVideoId(data.videoId);
-            setIsPlaying(true);
-          }
+          setVideoId(data.videoId);
+          setIsPlaying(true);
         }
       } catch (e: unknown) {
         // Ignore abort errors
@@ -134,19 +147,19 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
       setIsLoading(false);
     },
-    [currentTrack?.id, videoId, isPlaying, queue],
+    [currentTrack?.id, videoId, isPlaying, queue, isShuffling],
   );
 
   const nextTrack = useCallback(() => {
     if (hasNext) {
-      // Pass current queue to preserve it
-      playTrack(queue[currentIndex + 1], queue);
+      // Do not pass queue again to prevent re-shuffling logic
+      playTrack(queue[currentIndex + 1]);
     }
   }, [hasNext, queue, currentIndex, playTrack]);
 
   const prevTrack = useCallback(() => {
     if (hasPrev) {
-      playTrack(queue[currentIndex - 1], queue);
+      playTrack(queue[currentIndex - 1]);
     }
   }, [hasPrev, queue, currentIndex, playTrack]);
 
@@ -189,8 +202,46 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   };
 
   const toggleRepeat = useCallback(() => {
-    setIsRepeating((prev) => !prev);
-  }, []);
+    setIsRepeating((prev) => {
+      const next = !prev;
+      if (next && isShuffling) {
+        // If turning repeat ON and shuffle is ON, we need to turn shuffle OFF properly
+        // We can't call toggleShuffle inside set state callback easily if it depends on state.
+        // Instead, let's just do the queue restoration manually here if needed.
+        if (originalQueue.length > 0) {
+          setQueue(originalQueue);
+        }
+        setIsShuffling(false);
+      }
+      return next;
+    });
+  }, [isShuffling, originalQueue]);
+
+  const toggleShuffle = useCallback(() => {
+    setIsShuffling((prev) => {
+      const nextShuffle = !prev;
+      if (nextShuffle) {
+        // If turning shuffle ON, turn repeat OFF
+        setIsRepeating(false);
+
+        // Turning ON: Shuffle current queue
+        setOriginalQueue(queue);
+        if (currentTrack) {
+          setQueue(shuffleArray(queue, currentTrack.id));
+        } else {
+          setQueue(shuffleArray(queue));
+        }
+      } else {
+        // Turning OFF: Restore original queue
+        // We need to make sure we don't lose the expected queue if it wasn't saved correctly?
+        // But we save it when toggling on or when playing new track while on.
+        if (originalQueue.length > 0) {
+          setQueue(originalQueue);
+        }
+      }
+      return nextShuffle;
+    });
+  }, [queue, currentTrack, originalQueue]);
 
   return (
     <PlayerContext.Provider
@@ -217,6 +268,8 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         updateProgress,
         isRepeating,
         toggleRepeat,
+        isShuffling,
+        toggleShuffle,
       }}
     >
       {children}

@@ -39,6 +39,8 @@ export interface PlayerContextType {
   updateProgress: (current: number, total: number, buffered?: number) => void;
   isRepeating: boolean;
   toggleRepeat: () => void;
+  isShuffling: boolean;
+  toggleShuffle: () => void;
 }
 
 export interface PlaybackControlsProps {
@@ -52,6 +54,8 @@ export interface PlaybackControlsProps {
   hasPrev: boolean;
   isRepeating: boolean;
   onToggleRepeat: () => void;
+  isShuffling: boolean;
+  onToggleShuffle: () => void;
 }
 
 export interface TrackInfoProps {

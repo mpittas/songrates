@@ -4,6 +4,7 @@ import {
   FaStepBackward,
   FaStepForward,
   FaRedo,
+  FaRandom,
 } from "react-icons/fa";
 
 import { PlaybackControlsProps } from "@/types/player";
@@ -18,7 +19,10 @@ export default function PlaybackControls({
   hasNext,
   hasPrev,
   isRepeating,
+
   onToggleRepeat,
+  isShuffling,
+  onToggleShuffle,
 }: PlaybackControlsProps) {
   return (
     <div className="flex items-center gap-4">
@@ -54,6 +58,16 @@ export default function PlaybackControls({
         }`}
       >
         <FaStepForward size={14} />
+      </button>
+
+      <button
+        onClick={onToggleShuffle}
+        className={`transition-colors ${
+          isShuffling ? "text-[#00f0ff]" : "text-neutral-400 hover:text-white"
+        }`}
+        title="Shuffle"
+      >
+        <FaRandom size={14} />
       </button>
 
       <button

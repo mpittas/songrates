@@ -22,6 +22,7 @@ export default function ProfilePage() {
   const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
   const [loadingFavorites, setLoadingFavorites] = useState(true);
   const [profileUsername, setProfileUsername] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"all" | "full" | "partial">("all");
 
   useEffect(() => {
     if (!loading && !user) {
@@ -66,10 +67,31 @@ export default function ProfilePage() {
     fetchFavorites();
   }, [user]);
 
-  // Build rated albums from context
-  const ratedAlbums: Album[] = useMemo(() => {
+  const allUserAlbums = useMemo(
+    () => Object.values(albumRatings),
+    [albumRatings],
+  );
+
+  const fullAlbumsCount = allUserAlbums.filter(
+    (a) => a.ratedTrackIds.length >= a.totalTracks && a.totalTracks > 0,
+  ).length;
+
+  const partialAlbumsCount = allUserAlbums.filter(
+    (a) => a.ratedTrackIds.length > 0 && a.ratedTrackIds.length < a.totalTracks,
+  ).length;
+
+  // Build filtered albums from context
+  const filteredAlbums: Album[] = useMemo(() => {
     return Object.values(albumRatings)
-      .filter((a) => a.ratedTrackIds.length > 0)
+      .filter((a) => {
+        if (activeTab === "all") return true;
+        if (activeTab === "full") {
+          return a.ratedTrackIds.length >= a.totalTracks && a.totalTracks > 0;
+        }
+        return (
+          a.ratedTrackIds.length > 0 && a.ratedTrackIds.length < a.totalTracks
+        );
+      })
       .sort((a, b) => (b.ratedAt || "").localeCompare(a.ratedAt || ""))
       .map((a) => {
         let avgRating: number | null = null;
@@ -93,7 +115,7 @@ export default function ProfilePage() {
           rating: avgRating,
         };
       });
-  }, [albumRatings, ratings]);
+  }, [albumRatings, ratings, activeTab]);
 
   // Build album ratings lookup for track linking in favorites modal
   const albumRatingsLookup = useMemo(() => {
@@ -208,44 +230,67 @@ export default function ProfilePage() {
         {/* Playlists Section */}
         <PlaylistsSection />
 
-        {/* Rated Music Section */}
         <section>
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-1 h-5 bg-[#00f0ff]" />
-            <h2 className="text-lg font-light tracking-tight text-white">
-              Rated Music
-            </h2>
-            <span className="text-xs text-neutral-600 font-mono">
-              {ratedAlbums.length}
-            </span>
+          <div className="flex items-center gap-6 border-b border-white/10 mb-8">
+            {[
+              { id: "all", label: "All", count: allUserAlbums.length },
+              { id: "full", label: "Fully rated", count: fullAlbumsCount },
+              {
+                id: "partial",
+                label: "Partially rated",
+                count: partialAlbumsCount,
+              },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() =>
+                  setActiveTab(tab.id as "all" | "full" | "partial")
+                }
+                className={`pb-3 text-lg font-light tracking-tight transition-colors relative ${
+                  activeTab === tab.id
+                    ? "text-white"
+                    : "text-neutral-500 hover:text-neutral-300"
+                }`}
+              >
+                {tab.label}
+                <span className="ml-2 text-xs font-mono">{tab.count}</span>
+                {activeTab === tab.id && (
+                  <div className="absolute bottom-0 left-0 w-full h-0.5 bg-[#00f0ff]" />
+                )}
+              </button>
+            ))}
           </div>
 
-          {ratedAlbums.length === 0 ? (
+          {filteredAlbums.length === 0 ? (
             <div className="py-16 text-center border border-white/[0.04] bg-neutral-900/20">
               <FaStar size={24} className="text-neutral-700 mx-auto mb-3" />
               <p className="text-neutral-600 font-mono text-sm">
-                No rated albums yet
+                No albums match this filter
               </p>
               <p className="text-neutral-700 text-xs mt-1">
-                Rate tracks on any album page to see them here
+                {activeTab === "full"
+                  ? "You haven't fully rated any albums yet"
+                  : activeTab === "partial"
+                    ? "You have no partially rated albums"
+                    : "Rate tracks on any album page to see them here"}
               </p>
             </div>
           ) : (
             <>
               <AlbumGrid
-                albums={ratedAlbums.slice(0, 12)}
+                albums={filteredAlbums.slice(0, 12)}
                 onSelectAlbum={() => {}}
                 layout="grid"
                 gridCols={4}
                 priorityCount={4}
               />
-              {ratedAlbums.length > 12 && (
+              {filteredAlbums.length > 12 && (
                 <div className="mt-6 flex justify-center">
                   <Link
                     href={`/user/${username}`}
                     className="px-6 py-2.5 text-xs font-mono uppercase tracking-widest text-neutral-400 hover:text-white border border-white/[0.06] hover:border-[#00f0ff]/30 bg-neutral-900/30 hover:bg-neutral-900/50 transition-all duration-200"
                   >
-                    Show all {ratedAlbums.length} albums
+                    Show all {filteredAlbums.length} albums
                   </Link>
                 </div>
               )}

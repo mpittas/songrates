@@ -42,6 +42,7 @@ export default function UserProfileClient({ profile }: UserProfileClientProps) {
   const [loading, setLoading] = useState(true);
   const [loadingFavorites, setLoadingFavorites] = useState(true);
   const [sortFilter, setSortFilter] = useState<string>("newest");
+  const [activeTab, setActiveTab] = useState<"all" | "full" | "partial">("all");
 
   useEffect(() => {
     const fetchUserAlbums = async () => {
@@ -157,8 +158,24 @@ export default function UserProfileClient({ profile }: UserProfileClientProps) {
     }
   }, [profile.id, profile.show_favorites]);
 
+  const filteredAlbums = useMemo(() => {
+    return albums.filter((album) => {
+      if (activeTab === "all") return true;
+      if (activeTab === "full") {
+        return (
+          album.ratedTrackIds.length >= album.totalTracks &&
+          album.totalTracks > 0
+        );
+      }
+      return (
+        album.ratedTrackIds.length > 0 &&
+        album.ratedTrackIds.length < album.totalTracks
+      );
+    });
+  }, [albums, activeTab]);
+
   const sortedAlbums = useMemo(() => {
-    return [...albums].sort((a, b) => {
+    return [...filteredAlbums].sort((a, b) => {
       if (sortFilter === "newest") {
         return (b.ratedAt || "").localeCompare(a.ratedAt || "");
       }
@@ -182,7 +199,7 @@ export default function UserProfileClient({ profile }: UserProfileClientProps) {
       }
       return 0;
     });
-  }, [albums, sortFilter]);
+  }, [filteredAlbums, sortFilter]);
 
   const memberSince = new Date(profile.created_at).toLocaleDateString("en-US", {
     year: "numeric",
@@ -304,28 +321,47 @@ export default function UserProfileClient({ profile }: UserProfileClientProps) {
 
       {/* Rated Albums Section */}
       <div className="max-w-4xl mx-auto px-6 mt-16 pb-20">
-        <div className="flex items-center gap-3 mb-8">
-          <div className="w-1 h-5 bg-[#00f0ff]" />
-          <h2 className="text-lg font-light tracking-tight text-white">
-            Rated Music
-          </h2>
-          <span className="text-xs text-neutral-600 font-mono">
-            {albums.length}
-          </span>
+        <div className="flex items-center gap-6 border-b border-white/10 mb-8">
+          {[
+            { id: "all", label: "All", count: albums.length },
+            { id: "full", label: "Fully rated", count: fullAlbumsCount },
+            {
+              id: "partial",
+              label: "Partially rated",
+              count: partialAlbumsCount,
+            },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as "all" | "full" | "partial")}
+              className={`pb-3 text-lg font-light tracking-tight transition-colors relative ${
+                activeTab === tab.id
+                  ? "text-white"
+                  : "text-neutral-500 hover:text-neutral-300"
+              }`}
+            >
+              {tab.label}
+              <span className="ml-2 text-xs font-mono">{tab.count}</span>
+              {activeTab === tab.id && (
+                <div className="absolute bottom-0 left-0 w-full h-0.5 bg-[#00f0ff]" />
+              )}
+            </button>
+          ))}
         </div>
 
         {/* Sort Filter */}
         <div className="flex items-center justify-between mb-6">
           <p className="text-neutral-500 text-sm font-mono">
-            {albums.length} album{albums.length !== 1 ? "s" : ""} rated
+            {filteredAlbums.length} album
+            {filteredAlbums.length !== 1 ? "s" : ""}
           </p>
           <select
             value={sortFilter}
             onChange={(e) => setSortFilter(e.target.value)}
             className="bg-neutral-900 border border-white/10 text-white text-sm px-3 py-2 focus:outline-none focus:border-[#00f0ff]/50 rounded-sm"
           >
-            <option value="newest">Latest Rated</option>
-            <option value="oldest">Oldest Rated</option>
+            <option value="newest">Latest Added</option>
+            <option value="oldest">Oldest Added</option>
             <option value="rating">Highest Rated</option>
             <option value="artist">Artist (A-Z)</option>
             <option value="title">Album (A-Z)</option>
@@ -336,14 +372,18 @@ export default function UserProfileClient({ profile }: UserProfileClientProps) {
           <div className="py-20 flex items-center justify-center">
             <div className="w-8 h-8 border-2 border-[#00f0ff] border-t-transparent rounded-full animate-spin" />
           </div>
-        ) : albums.length === 0 ? (
+        ) : filteredAlbums.length === 0 ? (
           <div className="py-16 text-center border border-white/[0.04] bg-neutral-900/20 rounded-sm">
             <FaStar size={24} className="text-neutral-700 mx-auto mb-3" />
             <p className="text-neutral-600 font-mono text-sm">
-              No rated albums yet
+              No albums match this filter
             </p>
             <p className="text-neutral-700 text-xs mt-1">
-              This user hasn&apos;t rated any albums yet
+              {activeTab === "full"
+                ? "This user hasn't fully rated any albums yet"
+                : activeTab === "partial"
+                  ? "This user has no partially rated albums"
+                  : "This user hasn't added any albums yet"}
             </p>
           </div>
         ) : (
