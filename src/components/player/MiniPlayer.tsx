@@ -222,7 +222,7 @@ export default function MiniPlayer() {
       width: "100%",
       host: "https://www.youtube-nocookie.com",
       playerVars: {
-        autoplay: isPlaying ? 1 : 0,
+        autoplay: 1,
         controls: 0,
         rel: 0,
         iv_load_policy: 3,
@@ -232,7 +232,7 @@ export default function MiniPlayer() {
           typeof window !== "undefined" ? window.location.origin : undefined,
       },
     }),
-    [isPlaying],
+    [],
   );
 
   // No early return here to keep the YouTube instance mounted in VideoPlayer

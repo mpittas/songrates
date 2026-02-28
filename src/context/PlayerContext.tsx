@@ -122,6 +122,14 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       setDuration(0);
       setBuffered(0);
 
+      // Pause currently playing video so the user knows their click was instantly registered
+      if (
+        playerRef.current &&
+        typeof playerRef.current.pauseVideo === "function"
+      ) {
+        playerRef.current.pauseVideo();
+      }
+
       try {
         let searchQuery = `${track.artistName} ${track.title} audio`;
         if (track.artists && track.artists.length > 0) {
