@@ -4,7 +4,12 @@
  */
 
 import { getAppleMusicHeaders, APPLE_MUSIC_BASE_URL } from "./auth";
-import { searchCache, artistCache, albumCache } from "@/lib/cache";
+import {
+  searchCache,
+  artistCache,
+  albumCache,
+  playlistCache,
+} from "@/lib/cache";
 
 const STOREFRONT = process.env.APPLE_MUSIC_STOREFRONT || "us";
 
@@ -658,5 +663,134 @@ export async function getAlbumDetail(
   };
 
   albumCache.set(cacheKey, result, 86400);
+  return result;
+}
+
+// ─── Playlists ────────────────────────────────────────────────────────────────
+
+export interface ApplePlaylistResult {
+  id: string;
+  name: string;
+  curatorName: string;
+  artworkUrl?: string;
+  description?: string;
+  url?: string;
+}
+
+export function parsePlaylist(item: any): ApplePlaylistResult {
+  const a = item.attributes || {};
+  return {
+    id: item.id,
+    name: a.name || "",
+    curatorName: a.curatorName || "",
+    artworkUrl: a.artwork?.url,
+    description: a.description?.standard || a.description?.short || "",
+    url: a.url,
+  };
+}
+
+/**
+ * Apple Music Official Top 100 Playlist IDs
+ */
+export const TOP_100_PLAYLIST_IDS = [
+  "pl.d25f5d1181894928af76c85c967f8f31", // Top 100: Global
+  "pl.606afcbb70264d2eb2b51d8dbcfa6a12", // Top 100: USA
+  "pl.c121e42ba15949aba848d795a05b2df5", // Top 100: UK
+  "pl.23a4b6562b324ceb8dbbbdcdd13da2ef", // Top 100: Canada
+  "pl.4fc87e86cfab4a1eaa26edcc3fba8836", // Top 100: Australia
+  "pl.c86f26485ff743a3bb0f1c9fc1ae29e7", // Top 100: Mexico
+  "pl.043a2c9876114d95a4659988497567be", // Top 100: Japan
+  "pl.11ac7cc7d09741c5822e8c66e5c7edbb", // Top 100: Brazil
+  "pl.6e8cfd81d51042648fa36c9df5236b8d", // Top 100: France
+  "pl.c10a2c113db14685a0b09fa5834d8e8b", // Top 100: Germany
+  "pl.2fc68f6d68004ae993dadfe99de83877", // Top 100: Nigeria
+  "pl.d116fa6286734b74acff3d38a740fe0d", // Top 100: Colombia
+];
+
+/**
+ * Get Daily Top 100 playlists from Apple Music
+ */
+export async function getDailyTop100Playlists(
+  storefront: string = STOREFRONT,
+  limit: number = 12,
+): Promise<ApplePlaylistResult[]> {
+  const idsParam = TOP_100_PLAYLIST_IDS.slice(0, limit).join(",");
+  const cacheKey = `am-daily-top-100-ids-${storefront}-${idsParam}`;
+  const cached = playlistCache.get(cacheKey);
+  if (cached) return cached as ApplePlaylistResult[];
+
+  const data = await appleMusicFetch<any>(
+    `/catalog/${storefront}/playlists?ids=${idsParam}`,
+  );
+
+  const playlistsData = data?.data || [];
+
+  // Sort them so they match the order of the requested IDs
+  const parsed = playlistsData.map(parsePlaylist);
+  const playlists = TOP_100_PLAYLIST_IDS.slice(0, limit)
+    .map((id) => parsed.find((p: any) => p.id === id))
+    .filter(Boolean) as ApplePlaylistResult[];
+
+  if (playlists.length > 0) {
+    playlistCache.set(cacheKey, playlists, 3600 * 12);
+  }
+
+  return playlists;
+}
+
+export interface ApplePlaylistDetail extends ApplePlaylistResult {
+  tracks: AppleSongResult[];
+  trackCount: number;
+}
+
+/**
+ * Get detailed playlist information including tracks
+ */
+export async function getPlaylistDetail(
+  playlistId: string,
+  storefront: string = STOREFRONT,
+): Promise<ApplePlaylistDetail | null> {
+  const cacheKey = `am-playlist-detail-${storefront}-${playlistId}`;
+  const cached = playlistCache.get(cacheKey);
+  if (cached) return cached as ApplePlaylistDetail;
+
+  const data = await appleMusicFetch<any>(
+    `/catalog/${storefront}/playlists/${playlistId}?include=tracks`,
+  );
+
+  const item = data?.data?.[0];
+  if (!item) return null;
+
+  const basePlaylist = parsePlaylist(item);
+  const trackItems = item.relationships?.tracks?.data || [];
+
+  const tracks: AppleSongResult[] = trackItems.map((t: any) => {
+    const ta = t.attributes || {};
+    return {
+      id: t.id,
+      name: ta.name || "",
+      artistName: ta.artistName || "",
+      trackNumber: ta.trackNumber || 0,
+      discNumber: ta.discNumber || 1,
+      durationMs: ta.durationInMillis || 0,
+      artworkUrl: ta.artwork?.url,
+      url: ta.url,
+      hasLyrics: ta.hasLyrics,
+      genreNames: ta.genreNames || [],
+      // For playlist tracks, the album associated to the track isn't included in the relationship.
+      // Easiest is to fall back to the text field albumName. Wait until user enters album.
+      albumName: ta.albumName,
+      albumId: extractAlbumIdFromUrl(ta.url),
+    } as any;
+  });
+
+  const result: ApplePlaylistDetail = {
+    ...basePlaylist,
+    tracks,
+    trackCount: tracks.length,
+  };
+
+  playlistCache.set(cacheKey, result, 3600 * 2);
+
   return result;
 }

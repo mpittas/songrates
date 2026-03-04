@@ -83,3 +83,6 @@ export const searchCache = new LRUCache<any>(500, 3600);
 
 // YouTube video ID cache - 1 hour TTL, up to 500 entries (for faster track switching)
 export const youtubeCache = new LRUCache<string>(500, 3600);
+
+// Playlist cache - 1 hour TTL, up to 100 entries
+export const playlistCache = new LRUCache<any>(100, 3600);
