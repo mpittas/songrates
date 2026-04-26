@@ -124,6 +124,7 @@ export interface AppleSongResult {
   name: string;
   artistName: string;
   artistId?: string;
+  artists?: { id: string; name: string }[];
   albumName?: string;
   albumId?: string;
   artworkUrl?: string;
@@ -708,6 +709,18 @@ export const TOP_100_PLAYLIST_IDS = [
 ];
 
 /**
+ * Get trending songs (top tracks from Global Top 100 playlist)
+ */
+export async function getTrendingSongs(
+  limit: number = 10,
+): Promise<AppleSongResult[]> {
+  const playlistId = TOP_100_PLAYLIST_IDS[0]; // Global Top 100
+  const detail = await getPlaylistDetail(playlistId, STOREFRONT);
+  if (!detail || !detail.tracks) return [];
+  return detail.tracks.slice(0, limit);
+}
+
+/**
  * Get Daily Top 100 playlists from Apple Music
  */
 export async function getDailyTop100Playlists(
@@ -783,6 +796,58 @@ export async function getPlaylistDetail(
       albumId: extractAlbumIdFromUrl(ta.url),
     } as any;
   });
+
+  // Enrich tracks with artist relationships (for clickable artist links).
+  // Apple Music's playlist endpoint doesn't include artist relationships on
+  // nested tracks, so we batch-fetch the songs to get artistId + artists[].
+  if (tracks.length > 0) {
+    const ids = tracks.map((t) => t.id).join(",");
+    const songsData = await appleMusicFetch<{
+      data?: Array<{
+        id: string;
+        relationships?: {
+          artists?: {
+            data?: Array<{ id: string; attributes?: { name?: string } }>;
+          };
+          albums?: { data?: Array<{ id: string }> };
+        };
+      }>;
+    }>(`/catalog/${storefront}/songs?ids=${ids}&include=artists,albums`);
+
+    if (songsData?.data) {
+      const enrichmentMap = new Map<
+        string,
+        {
+          artists: { id: string; name: string }[];
+          albumId?: string;
+        }
+      >();
+      for (const song of songsData.data) {
+        const songArtists = song.relationships?.artists?.data || [];
+        const songAlbum = song.relationships?.albums?.data?.[0];
+        enrichmentMap.set(song.id, {
+          artists: songArtists.map((ar) => ({
+            id: ar.id,
+            name: ar.attributes?.name || "",
+          })),
+          albumId: songAlbum?.id,
+        });
+      }
+
+      for (const track of tracks) {
+        const enriched = enrichmentMap.get(track.id);
+        if (enriched) {
+          if (enriched.artists.length > 0) {
+            track.artists = enriched.artists;
+            track.artistId = enriched.artists[0].id;
+          }
+          if (enriched.albumId) {
+            track.albumId = enriched.albumId;
+          }
+        }
+      }
+    }
+  }
 
   const result: ApplePlaylistDetail = {
     ...basePlaylist,
