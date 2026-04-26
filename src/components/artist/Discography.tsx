@@ -39,12 +39,12 @@ function Section({
   if (count === 0) return null;
 
   return (
-    <div className="border border-white/5 bg-neutral-900/20">
+    <div className="border border-[#e1e1e1] bg-white rounded-md">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-white/5 transition-colors group"
+        className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-[#f6f6f6] transition-colors group"
       >
-        <span className="text-xs text-neutral-500 group-hover:text-neutral-300 transition-colors font-mono flex items-center gap-1 uppercase tracking-wider">
+        <span className="text-xs text-neutral-500 group-hover:text-neutral-900 transition-colors font-mono flex items-center gap-1 uppercase tracking-wider">
           {title}
           <span className="text-neutral-600 ml-1">({count})</span>
         </span>
@@ -53,7 +53,7 @@ function Section({
         </span>
       </button>
       {isOpen && (
-        <div className="bg-black/20 border-t border-white/5 p-4">
+        <div className="bg-[#fafafa] border-t border-[#ececec] p-4">
           {children}
         </div>
       )}
@@ -69,7 +69,7 @@ function TopSongsList({ songs }: { songs: TopSong[] }) {
 
   return (
     <div>
-      <div className="divide-y divide-white/5">
+      <div className="divide-y divide-[#ececec]">
         {visible.map((song, i) => {
           const albumSlug = song.albumId
             ? createSlug(song.albumName || song.name, song.albumId)
@@ -82,7 +82,7 @@ function TopSongsList({ songs }: { songs: TopSong[] }) {
           return (
             <div
               key={song.id}
-              className="flex items-center gap-3 py-2 px-1 group hover:bg-white/5 transition-colors"
+              className="flex items-center gap-3 py-2 px-1 group hover:bg-[#f5f5f5] transition-colors"
             >
               {/* Number */}
               <span className="w-6 text-right text-[11px] font-mono text-neutral-600 shrink-0">
@@ -91,7 +91,7 @@ function TopSongsList({ songs }: { songs: TopSong[] }) {
 
               {/* Artwork */}
               {song.artworkUrl && (
-                <div className="relative w-10 h-10 shrink-0 bg-neutral-800">
+                <div className="relative w-10 h-10 shrink-0 bg-[#efefef] rounded-sm overflow-hidden">
                   <OptimizedImage
                     src={song.artworkUrl}
                     alt={song.name}
@@ -107,19 +107,19 @@ function TopSongsList({ songs }: { songs: TopSong[] }) {
                 {trackLink ? (
                   <Link
                     href={trackLink}
-                    className="text-sm text-neutral-200 truncate group-hover:text-[#00f0ff] transition-colors block"
+                    className="text-sm text-neutral-900 truncate group-hover:text-black transition-colors block"
                   >
                     {song.name}
                   </Link>
                 ) : (
-                  <p className="text-sm text-neutral-200 truncate group-hover:text-white transition-colors">
+                  <p className="text-sm text-neutral-900 truncate group-hover:text-black transition-colors">
                     {song.name}
                   </p>
                 )}
                 {albumSlug && (
                   <Link
                     href={`/album/${albumSlug}`}
-                    className="text-[11px] text-neutral-600 hover:text-[#00f0ff] transition-colors truncate block"
+                    className="text-[11px] text-neutral-600 hover:text-neutral-900 transition-colors truncate block"
                   >
                     {song.albumName}
                   </Link>
@@ -138,10 +138,10 @@ function TopSongsList({ songs }: { songs: TopSong[] }) {
       </div>
 
       {songs.length > 10 && (
-        <div className="mt-3 pt-3 border-t border-white/5 flex justify-center">
+        <div className="mt-3 pt-3 border-t border-[#ececec] flex justify-center">
           <button
             onClick={() => setShowAll(!showAll)}
-            className="text-[10px] text-neutral-600 hover:text-cyan-400 transition-colors font-mono uppercase tracking-widest"
+            className="text-[10px] text-neutral-600 hover:text-neutral-900 transition-colors font-mono uppercase tracking-widest"
           >
             {showAll ? "show_less" : `show_all_${songs.length}_songs`}
           </button>
@@ -175,10 +175,10 @@ function AlbumGridSection({
         gridCols={gridCols}
       />
       {hasMore && (
-        <div className="mt-4 pt-4 border-t border-white/5 flex justify-center">
+        <div className="mt-4 pt-4 border-t border-[#ececec] flex justify-center">
           <button
             onClick={() => setShowAll(!showAll)}
-            className="text-[10px] text-neutral-600 hover:text-cyan-400 transition-colors font-mono uppercase tracking-widest"
+            className="text-[10px] text-neutral-600 hover:text-neutral-900 transition-colors font-mono uppercase tracking-widest"
           >
             {showAll ? "show_less" : `show_all_${albums.length}_releases`}
           </button>
@@ -191,8 +191,6 @@ function AlbumGridSection({
 // ─── Main Discography component ─────────────────────────────────────────────
 
 export default function Discography({
-  artistId,
-  artistName,
   topSongs,
   essentialAlbums,
   albums,

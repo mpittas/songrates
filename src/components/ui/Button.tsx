@@ -27,14 +27,15 @@ export default function Button({
 
   const variants = {
     primary:
-      "bg-[#00f0ff] text-[#050507] border border-[#00f0ff] hover:bg-[#00d8e6] hover:border-[#00d8e6]",
+      "bg-[#1f1f1f] text-white border border-[#1f1f1f] hover:bg-black hover:border-black",
     secondary:
       "bg-white text-black border border-white hover:bg-neutral-200 hover:border-neutral-200",
-    ghost: "bg-transparent text-neutral-400 hover:text-white hover:bg-white/5",
+    ghost:
+      "bg-transparent text-neutral-500 hover:text-neutral-900 hover:bg-neutral-200",
     muted:
-      "bg-neutral-900 text-neutral-300 hover:bg-neutral-700/60 hover:text-white",
+      "bg-[#f2f2f2] text-neutral-700 hover:bg-[#e8e8e8] hover:text-neutral-900",
     border:
-      "bg-transparent border border-white/10 text-neutral-300 hover:bg-white hover:text-black hover:border-white",
+      "bg-white border border-[#d5d5d5] text-neutral-800 hover:bg-[#f8f8f8] hover:text-black hover:border-[#c6c6c6]",
   };
 
   const sizes = {

@@ -5,7 +5,7 @@ import DailyTop100Playlists from "@/components/home/DailyTop100Playlists";
 
 export default function Home() {
   return (
-    <main className="min-h-screen text-neutral-100 flex flex-col relative">
+    <main className="min-h-screen text-neutral-900 flex flex-col relative">
       <Suspense fallback={null}>
         <HomeHero />
       </Suspense>

@@ -43,7 +43,7 @@ function AlbumOptionsMenu({ albumId }: { albumId: string }) {
       <Button
         variant="ghost"
         size="xs"
-        className="w-8 h-8 p-0 bg-black/60 hover:bg-black/80 text-white border border-white/10 backdrop-blur-sm"
+        className="w-8 h-8 p-0 bg-white/90 hover:bg-white text-neutral-700 border border-[#d7d7d7] backdrop-blur-sm"
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
@@ -56,7 +56,7 @@ function AlbumOptionsMenu({ albumId }: { albumId: string }) {
       </Button>
 
       {isOpen && (
-        <div className="absolute top-full right-0 mt-1 w-40 bg-neutral-900 border border-white/5 shadow-xl z-30 flex flex-col py-1 animate-in fade-in zoom-in-95 duration-100 origin-top-right rounded-md overflow-hidden">
+        <div className="absolute top-full right-0 mt-1 w-40 bg-white border border-[#d7d7d7] shadow-xl z-30 flex flex-col py-1 animate-in fade-in zoom-in-95 duration-100 origin-top-right rounded-md overflow-hidden">
           {hasAnyRating ? (
             !showConfirm ? (
               <button
@@ -65,7 +65,7 @@ function AlbumOptionsMenu({ albumId }: { albumId: string }) {
                   e.stopPropagation();
                   setShowConfirm(true);
                 }}
-                className="text-left px-3 py-2 text-xs font-mono text-neutral-400 hover:bg-white/5 hover:text-white transition-colors flex items-center gap-2 w-full"
+                className="text-left px-3 py-2 text-xs font-mono text-neutral-700 hover:bg-[#f5f5f5] hover:text-neutral-900 transition-colors flex items-center gap-2 w-full"
               >
                 Remove Rating
               </button>
@@ -92,7 +92,7 @@ function AlbumOptionsMenu({ albumId }: { albumId: string }) {
                       e.stopPropagation();
                       setShowConfirm(false);
                     }}
-                    className="flex-1 bg-neutral-800 hover:bg-neutral-700 text-neutral-400 text-[10px] py-1 rounded-sm border border-neutral-700 font-mono transition-colors"
+                    className="flex-1 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 text-[10px] py-1 rounded-sm border border-neutral-300 font-mono transition-colors"
                   >
                     No
                   </button>
@@ -183,9 +183,9 @@ export default function AlbumCard({
       <Link
         href={`/album/${slug}`}
         onMouseEnter={handleMouseEnter}
-        className="flex items-center gap-4 p-2 hover:bg-neutral-900 border-b border-white/5 last:border-0 group transition-colors"
+        className="flex items-center gap-4 p-2 hover:bg-[#f7f7f7] border-b border-[#ececec] last:border-0 group transition-colors"
       >
-        <div className="relative w-12 h-12 shrink-0 overflow-hidden bg-neutral-950">
+        <div className="relative w-12 h-12 shrink-0 overflow-hidden bg-[#efefef] rounded-sm">
           {!imageError ? (
             <OptimizedImage
               src={imageUrl}
@@ -200,14 +200,14 @@ export default function AlbumCard({
               <img
                 src="/vinyl-placeholder.svg"
                 alt=""
-                className="w-full h-full object-contain invert"
+                className="w-full h-full object-contain"
               />
             </div>
           )}
         </div>
         <div className="flex bg-transparent min-w-0 flex-1 justify-between items-center gap-4">
           <div>
-            <h3 className="text-neutral-200 truncate group-hover:text-cyan-400 transition-colors font-medium">
+            <h3 className="text-neutral-900 truncate group-hover:text-black transition-colors font-medium">
               {album.title}
             </h3>
             <p className="text-neutral-500 text-sm truncate">
@@ -229,7 +229,7 @@ export default function AlbumCard({
         onMouseEnter={handleMouseEnter}
         className="block relative mb-3"
       >
-        <div className="aspect-square bg-neutral-950 overflow-hidden relative border border-white/5 group-hover:border-cyan-400/30 transition-colors">
+        <div className="aspect-square bg-[#efefef] overflow-hidden relative border border-[#e1e1e1] group-hover:border-[#c9c9c9] transition-colors rounded-md">
           {!imageError ? (
             <OptimizedImage
               src={imageUrl}
@@ -245,7 +245,7 @@ export default function AlbumCard({
               <img
                 src="/vinyl-placeholder.svg"
                 alt=""
-                className="w-full h-full object-contain invert"
+                className="w-full h-full object-contain"
               />
             </div>
           )}
@@ -264,11 +264,11 @@ export default function AlbumCard({
           onMouseEnter={handleMouseEnter}
           className="flex-1 min-w-0 block"
         >
-          <h3 className="text-neutral-200 text-sm font-medium truncate group-hover:text-cyan-400 transition-colors leading-tight mb-0.5">
+          <h3 className="text-neutral-900 text-sm font-medium truncate group-hover:text-black transition-colors leading-tight mb-0.5">
             {album.title}
           </h3>
           <div className="flex flex-col gap-0 text-xs text-neutral-500">
-            <p className="truncate group-hover:text-neutral-300 transition-colors">
+            <p className="truncate group-hover:text-neutral-700 transition-colors">
               {album.artistName ? `${album.artistName} • ` : ""}
               {album.releaseDate?.split("-")[0] || "—"}
             </p>

@@ -29,8 +29,8 @@ export default function PlaybackControls({
       <button
         onClick={onPrev}
         disabled={!hasPrev}
-        className={`text-neutral-400 hover:text-white transition-colors ${
-          !hasPrev ? "opacity-30 cursor-not-allowed hover:text-neutral-400" : ""
+        className={`text-neutral-500 hover:text-neutral-900 transition-colors ${
+          !hasPrev ? "opacity-30 cursor-not-allowed hover:text-neutral-500" : ""
         }`}
       >
         <FaStepBackward size={14} />
@@ -39,7 +39,7 @@ export default function PlaybackControls({
       <button
         onClick={onTogglePlay}
         disabled={isLoading || !hasVideoId}
-        className="w-8 h-8 flex items-center justify-center bg-[#00f0ff] text-[#050507] rounded-full hover:bg-[#00f0ff]/80 transition-colors disabled:opacity-50"
+        className="w-8 h-8 flex items-center justify-center bg-[#1f1f1f] text-white rounded-full hover:bg-black transition-colors disabled:opacity-50"
       >
         {isLoading ? (
           <span className="animate-pulse text-[8px]">...</span>
@@ -53,8 +53,8 @@ export default function PlaybackControls({
       <button
         onClick={onNext}
         disabled={!hasNext}
-        className={`text-neutral-400 hover:text-white transition-colors ${
-          !hasNext ? "opacity-30 cursor-not-allowed hover:text-neutral-400" : ""
+        className={`text-neutral-500 hover:text-neutral-900 transition-colors ${
+          !hasNext ? "opacity-30 cursor-not-allowed hover:text-neutral-500" : ""
         }`}
       >
         <FaStepForward size={14} />
@@ -63,7 +63,9 @@ export default function PlaybackControls({
       <button
         onClick={onToggleShuffle}
         className={`transition-colors ${
-          isShuffling ? "text-[#00f0ff]" : "text-neutral-400 hover:text-white"
+          isShuffling
+            ? "text-neutral-900"
+            : "text-neutral-500 hover:text-neutral-900"
         }`}
         title="Shuffle"
       >
@@ -73,7 +75,9 @@ export default function PlaybackControls({
       <button
         onClick={onToggleRepeat}
         className={`transition-colors ${
-          isRepeating ? "text-[#00f0ff]" : "text-neutral-400 hover:text-white"
+          isRepeating
+            ? "text-neutral-900"
+            : "text-neutral-500 hover:text-neutral-900"
         }`}
         title="Repeat Song"
       >

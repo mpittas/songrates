@@ -25,11 +25,11 @@ export default function ArtistInfo({
             <img
               src={data.image}
               alt={artistName}
-              className="w-full h-full object-cover rounded-full bg-neutral-900"
+              className="w-full h-full object-cover rounded-full bg-[#efefef]"
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center bg-white/5 rounded-full">
-              <span className="text-xl font-mono text-white/10">
+            <div className="w-full h-full flex items-center justify-center bg-[#efefef] rounded-full">
+              <span className="text-xl font-mono text-neutral-400">
                 {artistName.slice(0, 2).toUpperCase()}
               </span>
             </div>
@@ -37,7 +37,7 @@ export default function ArtistInfo({
         </div>
 
         <div>
-          <h1 className="text-xl text-white tracking-tight leading-tight mb-1">
+          <h1 className="text-xl text-neutral-900 tracking-tight leading-tight mb-1">
             {artistName}
           </h1>
         </div>
@@ -65,7 +65,7 @@ export default function ArtistInfo({
           {data.genres.slice(0, 5).map((genre) => (
             <span
               key={genre}
-              className="px-2 py-0.5 bg-white/5 text-[9px] text-neutral-500 hover:text-neutral-300 transition-colors uppercase tracking-widest"
+              className="px-2 py-0.5 bg-[#f2f2f2] text-[9px] text-neutral-600 hover:text-neutral-900 transition-colors uppercase tracking-widest"
             >
               {genre}
             </span>
@@ -74,12 +74,12 @@ export default function ArtistInfo({
       )}
 
       {data.url && (
-        <div className="flex flex-col gap-3 pt-4 border-t border-white/5 font-mono text-[10px] uppercase tracking-widest">
+        <div className="flex flex-col gap-3 pt-4 border-t border-[#e7e7e7] font-mono text-[10px] uppercase tracking-widest">
           <a
             href={data.url}
             target="_blank"
             rel="noreferrer"
-            className="flex items-center gap-2 text-neutral-500 hover:text-cyan-400 transition-colors group"
+            className="flex items-center gap-2 text-neutral-500 hover:text-neutral-900 transition-colors group"
           >
             <FaGlobe
               size={12}

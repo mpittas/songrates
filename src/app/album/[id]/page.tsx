@@ -238,7 +238,7 @@ export default function AlbumPage() {
 
   if (!album) {
     return (
-      <div className="min-h-screen bg-[#050507] flex items-center justify-center text-neutral-600 font-mono text-sm">
+      <div className="min-h-screen flex items-center justify-center text-neutral-600 font-mono text-sm">
         album not found
       </div>
     );
@@ -267,14 +267,14 @@ export default function AlbumPage() {
   const publicData = album ? publicAlbumRatings[album.id] : null;
 
   return (
-    <main className="min-h-screen bg-[#050507] text-neutral-100">
+    <main className="min-h-screen text-neutral-900">
       <MySection className="pt-8 pb-24">
         {userId && (
-          <div className="w-full bg-neutral-900/40 border border-[#00f0ff]/20 p-4 mb-6 flex flex-col sm:flex-row items-center justify-between gap-4 relative overflow-hidden">
-            <div className="absolute inset-0 bg-[#00f0ff]/5 pointer-events-none" />
+          <div className="w-full bg-white border border-[#d9d9d9] p-4 mb-6 flex flex-col sm:flex-row items-center justify-between gap-4 relative overflow-hidden rounded-md">
+            <div className="absolute inset-0 bg-[#000000]/[0.01] pointer-events-none" />
 
             <div className="flex items-center gap-5 relative z-10">
-              <div className="flex items-center gap-2 text-[#00f0ff] bg-[#00f0ff]/10 px-3 py-1.5">
+              <div className="flex items-center gap-2 text-neutral-700 bg-[#f3f3f3] px-3 py-1.5 rounded">
                 <FaLock size={10} />
                 <span className="text-[10px] font-mono uppercase tracking-widest">
                   Read Only
@@ -283,12 +283,12 @@ export default function AlbumPage() {
 
               {(viewingUserName || searchParams.get("userName")) && (
                 <div className="flex flex-col">
-                  <span className="text-[10px] uppercase tracking-widest text-[#00f0ff]/50 font-mono mb-1">
+                  <span className="text-[10px] uppercase tracking-widest text-neutral-500 font-mono mb-1">
                     Viewing Ratings By
                   </span>
                   <Link
                     href={`/user/${viewingUserName || searchParams.get("userName")}`}
-                    className="text-md text-white leading-none hover:text-[#00f0ff] transition-colors"
+                    className="text-md text-neutral-900 leading-none hover:text-black transition-colors"
                   >
                     {viewingUserName || searchParams.get("userName")}
                   </Link>
@@ -314,7 +314,7 @@ export default function AlbumPage() {
             iconLeft={<FaArrowLeft size={10} />}
             variant="ghost"
             size="xs"
-            className="text-neutral-500 hover:text-white pl-0"
+            className="text-neutral-500 hover:text-neutral-900 pl-0"
           >
             Back to Artist
           </Button>
@@ -338,7 +338,7 @@ export default function AlbumPage() {
               />
             </div>
 
-            <span className=" absolute -bottom-2 left-2 text-[10px] font-bold font-mono text-neutral-400 uppercase tracking-widest px-2 py-1 bg-neutral-900">
+            <span className=" absolute -bottom-2 left-2 text-[10px] font-bold font-mono text-neutral-600 uppercase tracking-widest px-2 py-1 bg-white border border-[#e1e1e1] rounded-sm">
               {album.type}
             </span>
           </div>
@@ -346,7 +346,7 @@ export default function AlbumPage() {
           {/* Album Details */}
           <div className="flex-1 min-w-0 pt-2 w-full">
             {/* Genres */}
-            <div className="flex items-center gap-2 mb-6 pb-3 border-b border-neutral-900">
+            <div className="flex items-center gap-2 mb-6 pb-3 border-b border-[#dcdcdc]">
               <div className="text-xs">Genres:</div>
               {album.genres?.length > 0 && (
                 <div className="flex flex-wrap gap-x-1">
@@ -355,7 +355,7 @@ export default function AlbumPage() {
                       key={g}
                       className="text-xs text-neutral-500 capitalize"
                     >
-                      <span className="hover:text-neutral-300 transition-colors cursor-default">
+                      <span className="hover:text-neutral-900 transition-colors cursor-default">
                         {g}
                       </span>
                       {i < arr.length - 1 && ","}
@@ -376,7 +376,7 @@ export default function AlbumPage() {
             </div>
 
             <div className="mb-5">
-              <h1 className="text-2xl md:text-4xl font-light  tracking-tight text-neutral-200 mb-1">
+              <h1 className="text-2xl md:text-4xl font-light  tracking-tight text-neutral-900 mb-1">
                 {album.title}
               </h1>
 
@@ -386,14 +386,14 @@ export default function AlbumPage() {
                     ? createSlug(album.artist.name, album.artist.id)
                     : ""
                 }`}
-                className="block text-neutral-500 hover:text-[#00f0ff] transition-colors text-md mb-3"
+                className="block text-neutral-500 hover:text-neutral-900 transition-colors text-md mb-3"
               >
                 {album.artist?.name}
               </Link>
 
               {/* Album Type Badge */}
               <div className="flex items-center gap-2 mb-3">
-                <span className="inline-flex items-center px-2.5 py-1 text-xs font-medium bg-[#00f0ff]/10 text-[#00f0ff] border border-[#00f0ff]/20">
+                <span className="inline-flex items-center px-2.5 py-1 text-xs font-medium bg-[#f3f3f3] text-neutral-700 border border-[#dddddd] rounded-sm">
                   {album.type}
                 </span>
               </div>
@@ -406,7 +406,7 @@ export default function AlbumPage() {
                   href={album.url}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex items-center gap-2 text-neutral-500 hover:text-[#00f0ff] transition-colors group"
+                  className="flex items-center gap-2 text-neutral-500 hover:text-neutral-900 transition-colors group"
                 >
                   <FaExternalLinkAlt
                     size={10}
@@ -458,8 +458,8 @@ export default function AlbumPage() {
 
         {/* Tracklist Section */}
         <div className="w-full">
-          <div className="border border-[#1a1a1f] bg-[#0a0a0d]/30 overflow-hidden">
-            <div className="px-4 py-3 border-b border-[#1a1a1f] flex justify-between items-center group/search">
+          <div className="border border-[#dddddd] bg-white overflow-hidden rounded-md">
+            <div className="px-4 py-3 border-b border-[#e6e6e6] flex justify-between items-center group/search">
               <h3 className="text-neutral-600 font-mono tracking-wide text-xs uppercase">
                 tracklist
               </h3>
@@ -529,7 +529,7 @@ export default function AlbumPage() {
                     href={`/album/${versionSlug}`}
                     className="group"
                   >
-                    <div className="aspect-square relative bg-[#0f0f12] border border-[#1a1a1f] group-hover:border-[#00f0ff]/30 transition-colors overflow-hidden">
+                    <div className="aspect-square relative bg-white border border-[#dddddd] group-hover:border-[#c9c9c9] transition-colors overflow-hidden rounded-md">
                       <OptimizedImage
                         src={version.artworkUrl || "/vinyl-placeholder.svg"}
                         alt={version.name}
@@ -539,7 +539,7 @@ export default function AlbumPage() {
                       />
                     </div>
                     <div className="mt-2">
-                      <p className="text-sm text-neutral-300 group-hover:text-[#00f0ff] transition-colors truncate">
+                      <p className="text-sm text-neutral-900 group-hover:text-black transition-colors truncate">
                         {version.name}
                       </p>
                       <p className="text-[11px] text-neutral-600 truncate mt-0.5">

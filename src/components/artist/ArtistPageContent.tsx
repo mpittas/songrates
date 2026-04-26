@@ -40,7 +40,7 @@ export default function ArtistPageContent({
   }, [artistId, artistName]);
 
   return (
-    <main className="min-h-screen bg-[#050507] text-neutral-100">
+    <main className="min-h-screen text-neutral-900">
       <MySection className="pt-8 pb-24">
         <div className="flex flex-col md:flex-row items-center justify-between gap-4 pb-6 md:pb-12">
           <Button

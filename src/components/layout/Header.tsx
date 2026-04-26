@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import MySection from "@/components/ui/MySection";
 import HeaderSearchBar from "@/components/search/HeaderSearchBar";
-import { usePathname } from "next/navigation";
 import { FaBars } from "react-icons/fa";
 import { IoSearch } from "react-icons/io5";
 import MobileMenu from "@/components/layout/MobileMenu";
@@ -17,39 +17,38 @@ interface HeaderProps {
 }
 
 export default function Header({ showSearch }: HeaderProps) {
-  const pathname = usePathname();
   const { user, signOut, loading } = useAuth();
-  const isHomepage = pathname === "/";
+  const pathname = usePathname();
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
 
-  // Use the prop if provided, otherwise default to hiding on homepage
-  const shouldShowSearch = showSearch ?? !isHomepage;
+  // Use explicit prop if provided; otherwise hide search on homepage
+  const shouldShowSearch = showSearch ?? pathname !== "/";
 
   return (
     <>
-      <header className="border-b border-white/5 bg-[#050507]/40 backdrop-blur-md sticky top-0 z-50 mx-auto w-full transition-all duration-300">
+      <header className="border-b border-neutral-200 bg-white/95 backdrop-blur-md sticky top-0 z-50 mx-auto w-full transition-all duration-300">
         <MySection className="py-0">
           <div className="flex items-center justify-between gap-4 h-16 transition-all duration-300">
             <Link
               href="/"
-              className="font-mono text-sm tracking-wide text-neutral-50 transition-colors hover:text-[#00f0ff] flex-shrink-0"
+              className="text-[21px] font-semibold tracking-tight text-[#1b1b1b] transition-colors hover:text-black flex-shrink-0"
             >
-              Songrates
+              I Songrates.
             </Link>
 
             {/* Optional search bar - hide on very small screens if needed, or adjust */}
             {shouldShowSearch && (
               <>
                 {/* Desktop Search Bar */}
-                <div className="hidden md:flex flex-1 justify-center max-w-2xl mx-auto px-2 md:px-0 min-w-0">
+                <div className="hidden md:flex flex-1 justify-center max-w-xl mx-auto px-2 md:px-0 min-w-0">
                   <HeaderSearchBar />
                 </div>
 
                 {/* Mobile Search Icon */}
                 <button
-                  className="md:hidden text-neutral-100 p-2 ml-auto"
+                  className="md:hidden text-neutral-700 p-2 ml-auto"
                   onClick={() => setIsMobileSearchOpen(true)}
                   aria-label="Open search"
                 >
@@ -58,14 +57,14 @@ export default function Header({ showSearch }: HeaderProps) {
 
                 {/* Mobile Search Overlay */}
                 {isMobileSearchOpen && (
-                  <div className="fixed inset-0 z-[100] bg-[#050507] p-4 flex flex-col animate-in fade-in duration-200">
+                  <div className="fixed inset-0 z-[100] bg-[#ebe8e5] p-4 flex flex-col animate-in fade-in duration-200">
                     <div className="flex items-center gap-4">
                       <div className="flex-1">
                         <HeaderSearchBar />
                       </div>
                       <button
                         onClick={() => setIsMobileSearchOpen(false)}
-                        className="text-sm font-mono text-neutral-400 hover:text-white transition-colors"
+                        className="text-sm text-neutral-600 hover:text-neutral-900 transition-colors"
                       >
                         Cancel
                       </button>
@@ -79,11 +78,17 @@ export default function Header({ showSearch }: HeaderProps) {
             <nav className="hidden md:flex items-center gap-6 flex-shrink-0">
               <Link
                 href="#"
-                className="font-mono text-xs text-neutral-100 transition-colors hover:text-neutral-300"
+                className="text-sm text-neutral-700 transition-colors hover:text-neutral-900"
               >
                 Charts
               </Link>
-              <span className="h-3 w-px bg-neutral-100/20"></span>
+              <Link
+                href="#"
+                className="text-sm text-neutral-700 transition-colors hover:text-neutral-900"
+              >
+                Explore
+              </Link>
+              <span className="h-8 w-8 rounded-full bg-neutral-300/90"></span>
 
               {!loading && (
                 <>
@@ -93,7 +98,7 @@ export default function Header({ showSearch }: HeaderProps) {
                     <>
                       <Link
                         href="/login?view=login"
-                        className="font-mono text-xs text-neutral-100 transition-colors hover:text-[#00f0ff]"
+                        className="text-sm text-neutral-700 transition-colors hover:text-neutral-950"
                       >
                         Login
                       </Link>
@@ -116,7 +121,7 @@ export default function Header({ showSearch }: HeaderProps) {
               )}
               {/* Mobile Menu Button */}
               <button
-                className="text-neutral-100 p-2"
+                className="text-neutral-700 p-2"
                 onClick={() => setIsMobileMenuOpen(true)}
                 aria-label="Open menu"
               >

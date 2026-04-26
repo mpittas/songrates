@@ -10,6 +10,7 @@ import { FaUser, FaStar, FaSignOutAlt, FaCog } from "react-icons/fa";
 import OptimizedImage from "@/components/ui/OptimizedImage";
 import AlbumGrid from "@/components/album/AlbumGrid";
 import PlaylistsSection from "@/components/profile/PlaylistsSection";
+import MySection from "@/components/ui/MySection";
 import { Album } from "@/types/music";
 import FavoriteStatsBar, {
   FavoriteItem,
@@ -135,7 +136,7 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-[#050507] flex items-center justify-center">
+      <main className="min-h-screen flex items-center justify-center">
         <div className="font-mono text-neutral-500 animate-pulse text-xs tracking-widest uppercase">
           Initializing...
         </div>
@@ -155,7 +156,7 @@ export default function ProfilePage() {
   const avatarUrl = user.user_metadata?.avatar_url || null;
 
   return (
-    <main className="min-h-screen bg-[#050507]">
+    <main className="min-h-screen">
       {/* Cover Art Banner */}
       <div className="relative w-full h-48 md:h-64 overflow-hidden">
         <img
@@ -163,141 +164,147 @@ export default function ProfilePage() {
           alt=""
           className="w-full h-full object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#050507]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#ebe8e5]" />
       </div>
 
       {/* Profile Header — overlaps the banner */}
-      <div className="relative max-w-4xl mx-auto px-6 -mt-20 md:-mt-24 z-10">
-        <div className="flex flex-col sm:flex-row items-start sm:items-end gap-5">
-          {/* Avatar */}
-          <div className="relative w-28 h-28 md:w-36 md:h-36 rounded-full overflow-hidden bg-neutral-900 border-4 border-[#050507] shadow-2xl shrink-0">
-            {avatarUrl ? (
-              <OptimizedImage
-                src={avatarUrl}
-                alt={username}
-                fill
-                className="object-cover"
-                fallbackSrc="/vinyl-placeholder.svg"
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center bg-neutral-800">
-                <FaUser size={40} className="text-neutral-600" />
-              </div>
-            )}
-          </div>
-
-          {/* User Info */}
-          <div className="flex-1 min-w-0 pb-2">
-            <h1 className="text-2xl md:text-3xl font-light tracking-tight text-white">
-              @{username}
-            </h1>
-            <p className="text-sm text-neutral-500 font-mono mt-1">
-              {user.email}
-            </p>
-          </div>
-
-          {/* Actions */}
-          <div className="flex items-center gap-2 shrink-0">
-            <Link
-              href="/settings"
-              className="flex items-center gap-2 px-4 py-2 text-xs font-mono uppercase tracking-widest text-neutral-500 hover:text-[#00f0ff] border border-white/5 hover:border-[#00f0ff]/20 bg-neutral-900/40 transition-all duration-200"
-            >
-              <FaCog size={12} />
-              Settings
-            </Link>
-            <button
-              onClick={() => signOut()}
-              className="flex items-center gap-2 px-4 py-2 text-xs font-mono uppercase tracking-widest text-neutral-500 hover:text-red-400 border border-white/5 hover:border-red-400/20 bg-neutral-900/40 transition-all duration-200"
-            >
-              <FaSignOutAlt size={12} />
-              Log out
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Stats Bar */}
-      <div className="max-w-4xl mx-auto px-6 mt-8">
-        <FavoriteStatsBar
-          favorites={favorites}
-          loading={loadingFavorites}
-          albumRatings={albumRatingsLookup}
-        />
-      </div>
-
-      {/* Content Sections */}
-      <div className="max-w-4xl mx-auto px-6 mt-12 pb-20 space-y-16">
-        {/* Playlists Section */}
-        <PlaylistsSection />
-
-        <section>
-          <div className="flex items-center gap-6 border-b border-white/10 mb-8">
-            {[
-              { id: "all", label: "All", count: allUserAlbums.length },
-              { id: "full", label: "Fully rated", count: fullAlbumsCount },
-              {
-                id: "partial",
-                label: "Partially rated",
-                count: partialAlbumsCount,
-              },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() =>
-                  setActiveTab(tab.id as "all" | "full" | "partial")
-                }
-                className={`pb-3 text-lg font-light tracking-tight transition-colors relative ${
-                  activeTab === tab.id
-                    ? "text-white"
-                    : "text-neutral-500 hover:text-neutral-300"
-                }`}
-              >
-                {tab.label}
-                <span className="ml-2 text-xs font-mono">{tab.count}</span>
-                {activeTab === tab.id && (
-                  <div className="absolute bottom-0 left-0 w-full h-0.5 bg-[#00f0ff]" />
-                )}
-              </button>
-            ))}
-          </div>
-
-          {filteredAlbums.length === 0 ? (
-            <div className="py-16 text-center border border-white/[0.04] bg-neutral-900/20">
-              <FaStar size={24} className="text-neutral-700 mx-auto mb-3" />
-              <p className="text-neutral-600 font-mono text-sm">
-                No albums match this filter
-              </p>
-              <p className="text-neutral-700 text-xs mt-1">
-                {activeTab === "full"
-                  ? "You haven't fully rated any albums yet"
-                  : activeTab === "partial"
-                    ? "You have no partially rated albums"
-                    : "Rate tracks on any album page to see them here"}
-              </p>
-            </div>
-          ) : (
-            <>
-              <AlbumGrid
-                albums={filteredAlbums.slice(0, 12)}
-                onSelectAlbum={() => {}}
-                layout="grid"
-                gridCols={4}
-                priorityCount={4}
-              />
-              {filteredAlbums.length > 12 && (
-                <div className="mt-6 flex justify-center">
-                  <Link
-                    href={`/user/${username}`}
-                    className="px-6 py-2.5 text-xs font-mono uppercase tracking-widest text-neutral-400 hover:text-white border border-white/[0.06] hover:border-[#00f0ff]/30 bg-neutral-900/30 hover:bg-neutral-900/50 transition-all duration-200"
-                  >
-                    Show all {filteredAlbums.length} albums
-                  </Link>
+      <MySection className="relative -mt-20 md:-mt-24 z-10">
+        <div className="w-full max-w-4xl">
+          <div className="flex flex-col sm:flex-row items-start sm:items-end gap-5">
+            {/* Avatar */}
+            <div className="relative w-28 h-28 md:w-36 md:h-36 rounded-full overflow-hidden bg-white border-4 border-[#ebe8e5] shadow-xl shrink-0">
+              {avatarUrl ? (
+                <OptimizedImage
+                  src={avatarUrl}
+                  alt={username}
+                  fill
+                  className="object-cover"
+                  fallbackSrc="/vinyl-placeholder.svg"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-[#efefef]">
+                  <FaUser size={40} className="text-neutral-600" />
                 </div>
               )}
-            </>
-          )}
-        </section>
-      </div>
+            </div>
+
+            {/* User Info */}
+            <div className="flex-1 min-w-0 pb-2">
+              <h1 className="text-2xl md:text-3xl font-light tracking-tight text-neutral-900">
+                @{username}
+              </h1>
+              <p className="text-sm text-neutral-500 font-mono mt-1">
+                {user.email}
+              </p>
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center gap-2 shrink-0">
+              <Link
+                href="/settings"
+                className="flex items-center gap-2 px-4 py-2 text-xs font-mono uppercase tracking-widest text-neutral-600 hover:text-neutral-900 border border-[#d6d6d6] hover:border-[#c3c3c3] bg-white transition-all duration-200 rounded"
+              >
+                <FaCog size={12} />
+                Settings
+              </Link>
+              <button
+                onClick={() => signOut()}
+                className="flex items-center gap-2 px-4 py-2 text-xs font-mono uppercase tracking-widest text-neutral-600 hover:text-red-600 border border-[#d6d6d6] hover:border-red-300 bg-white transition-all duration-200 rounded"
+              >
+                <FaSignOutAlt size={12} />
+                Log out
+              </button>
+            </div>
+          </div>
+        </div>
+      </MySection>
+
+      {/* Stats Bar */}
+      <MySection className="mt-8">
+        <div className="w-full max-w-4xl">
+          <FavoriteStatsBar
+            favorites={favorites}
+            loading={loadingFavorites}
+            albumRatings={albumRatingsLookup}
+          />
+        </div>
+      </MySection>
+
+      {/* Content Sections */}
+      <MySection className="mt-12 pb-20">
+        <div className="w-full max-w-4xl space-y-16">
+          {/* Playlists Section */}
+          <PlaylistsSection />
+
+          <section>
+            <div className="flex items-center gap-6 border-b border-[#dadada] mb-8">
+              {[
+                { id: "all", label: "All", count: allUserAlbums.length },
+                { id: "full", label: "Fully rated", count: fullAlbumsCount },
+                {
+                  id: "partial",
+                  label: "Partially rated",
+                  count: partialAlbumsCount,
+                },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() =>
+                    setActiveTab(tab.id as "all" | "full" | "partial")
+                  }
+                  className={`pb-3 text-lg font-light tracking-tight transition-colors relative ${
+                    activeTab === tab.id
+                      ? "text-neutral-900"
+                      : "text-neutral-500 hover:text-neutral-700"
+                  }`}
+                >
+                  {tab.label}
+                  <span className="ml-2 text-xs font-mono">{tab.count}</span>
+                  {activeTab === tab.id && (
+                    <div className="absolute bottom-0 left-0 w-full h-0.5 bg-[#1f1f1f]" />
+                  )}
+                </button>
+              ))}
+            </div>
+
+            {filteredAlbums.length === 0 ? (
+              <div className="py-16 text-center border border-[#e1e1e1] bg-white rounded-md">
+                <FaStar size={24} className="text-neutral-700 mx-auto mb-3" />
+                <p className="text-neutral-600 font-mono text-sm">
+                  No albums match this filter
+                </p>
+                <p className="text-neutral-700 text-xs mt-1">
+                  {activeTab === "full"
+                    ? "You haven't fully rated any albums yet"
+                    : activeTab === "partial"
+                      ? "You have no partially rated albums"
+                      : "Rate tracks on any album page to see them here"}
+                </p>
+              </div>
+            ) : (
+              <>
+                <AlbumGrid
+                  albums={filteredAlbums.slice(0, 12)}
+                  onSelectAlbum={() => {}}
+                  layout="grid"
+                  gridCols={4}
+                  priorityCount={4}
+                />
+                {filteredAlbums.length > 12 && (
+                  <div className="mt-6 flex justify-center">
+                    <Link
+                      href={`/user/${username}`}
+                      className="px-6 py-2.5 text-xs font-mono uppercase tracking-widest text-neutral-600 hover:text-neutral-900 border border-[#d8d8d8] hover:border-[#c8c8c8] bg-white hover:bg-[#f8f8f8] transition-all duration-200 rounded"
+                    >
+                      Show all {filteredAlbums.length} albums
+                    </Link>
+                  </div>
+                )}
+              </>
+            )}
+          </section>
+        </div>
+      </MySection>
     </main>
   );
 }

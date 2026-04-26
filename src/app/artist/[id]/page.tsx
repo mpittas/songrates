@@ -41,7 +41,7 @@ export default async function ArtistPage({ params }: PageProps) {
 
   if (!discography) {
     return (
-      <main className="min-h-screen bg-[#050507] text-neutral-100 p-6 md:px-16 md:py-8 flex items-center justify-center">
+      <main className="min-h-screen text-neutral-900 p-6 md:px-16 md:py-8 flex items-center justify-center">
         <div className="text-neutral-500 font-mono">Artist not found</div>
       </main>
     );

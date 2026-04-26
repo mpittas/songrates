@@ -26,7 +26,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="bg-[#050507]">
+    <html lang="en">
       <head>
         <link rel="preconnect" href="https://www.youtube.com" />
         <link rel="dns-prefetch" href="https://www.youtube.com" />
@@ -39,9 +39,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://is1-ssl.mzstatic.com" />
         <link rel="dns-prefetch" href="https://is1-ssl.mzstatic.com" />
       </head>
-      <body
-        className={`${inter.variable} ${spaceMono.variable} antialiased bg-[#050507]`}
-      >
+      <body className={`${inter.variable} ${spaceMono.variable} antialiased`}>
         {/* Providers for auth, search, etc. */}
         <Providers>
           <Header />

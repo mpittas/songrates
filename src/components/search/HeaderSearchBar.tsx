@@ -73,7 +73,7 @@ export default function HeaderSearchBar() {
           isFocused={isFocused}
           placeholder="Search artists, albums, songs..."
           size="small"
-          variant="dark"
+          variant="light"
         />
       </form>
 

@@ -5,10 +5,8 @@ import {
   FaTimes,
   FaPlus,
   FaCheck,
-  FaCompactDisc,
   FaMusic,
   FaExclamationCircle,
-  FaExternalLinkAlt,
 } from "react-icons/fa";
 import Link from "next/link";
 import { Playlist } from "@/types/playlist";
@@ -24,7 +22,6 @@ interface BasePlaylistSelectorModalProps {
   isItemInPlaylist: (playlistId: string) => boolean;
   getPlaylistSubtitle: (playlist: Playlist) => string;
   defaultIcon?: React.ReactNode;
-  itemHref?: string;
 }
 
 export default function BasePlaylistSelectorModal({
@@ -37,7 +34,6 @@ export default function BasePlaylistSelectorModal({
   isItemInPlaylist,
   getPlaylistSubtitle,
   defaultIcon,
-  itemHref,
 }: BasePlaylistSelectorModalProps) {
   const [creating, setCreating] = useState(false);
   const [newPlaylistName, setNewPlaylistName] = useState("");
@@ -95,10 +91,6 @@ export default function BasePlaylistSelectorModal({
     setAddingTo(null);
   };
 
-  const Icon = defaultIcon || (
-    <FaMusic size={14} className="text-neutral-500" />
-  );
-
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
@@ -106,20 +98,20 @@ export default function BasePlaylistSelectorModal({
     >
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
       <div
-        className="relative w-full max-w-md max-h-[80vh] bg-[#0a0a0d] border border-white/[0.06] shadow-2xl flex flex-col rounded-lg"
+        className="relative w-full max-w-md max-h-[80vh] bg-white border border-[#e1e1e1] shadow-2xl flex flex-col rounded-lg"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.06] shrink-0">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[#ececec] shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-1 h-5 bg-[#00f0ff] rounded-full" />
-            <h2 className="text-lg font-light tracking-tight text-white">
+            <div className="w-1 h-5 bg-[#1f1f1f] rounded-full" />
+            <h2 className="text-lg font-light tracking-tight text-neutral-900">
               {title}
             </h2>
           </div>
           <button
             onClick={onClose}
-            className="text-neutral-500 hover:text-white transition-colors p-1 hover:bg-neutral-800 rounded"
+            className="text-neutral-500 hover:text-neutral-900 transition-colors p-1 hover:bg-neutral-200 rounded"
           >
             <FaTimes size={16} />
           </button>
@@ -129,7 +121,7 @@ export default function BasePlaylistSelectorModal({
         <div className="overflow-y-auto flex-1 p-4">
           {loading ? (
             <div className="py-12 flex items-center justify-center">
-              <div className="w-6 h-6 border-2 border-[#00f0ff] border-t-transparent rounded-full animate-spin" />
+              <div className="w-6 h-6 border-2 border-neutral-500 border-t-transparent rounded-full animate-spin" />
             </div>
           ) : (
             <>
@@ -137,26 +129,26 @@ export default function BasePlaylistSelectorModal({
               {!creating ? (
                 <button
                   onClick={() => setCreating(true)}
-                  className="w-full flex items-center gap-3 p-3 mb-4 bg-neutral-900/50 border border-dashed border-white/[0.1] hover:border-[#00f0ff]/30 hover:bg-neutral-900/80 transition-all duration-200 rounded-sm group"
+                  className="w-full flex items-center gap-3 p-3 mb-4 bg-[#f7f7f7] border border-dashed border-[#d6d6d6] hover:border-[#bdbdbd] hover:bg-[#efefef] transition-all duration-200 rounded-sm group"
                 >
-                  <div className="w-10 h-10 flex items-center justify-center bg-neutral-800 rounded-sm group-hover:bg-[#00f0ff]/10 transition-colors">
+                  <div className="w-10 h-10 flex items-center justify-center bg-[#ececec] rounded-sm group-hover:bg-[#e0e0e0] transition-colors">
                     <FaPlus
                       size={16}
-                      className="text-neutral-400 group-hover:text-[#00f0ff]"
+                      className="text-neutral-500 group-hover:text-neutral-900"
                     />
                   </div>
-                  <span className="text-sm text-neutral-300 group-hover:text-white">
+                  <span className="text-sm text-neutral-700 group-hover:text-neutral-900">
                     Create New Playlist
                   </span>
                 </button>
               ) : (
-                <div className="mb-4 p-4 bg-neutral-900/50 border border-white/[0.06] rounded-sm">
+                <div className="mb-4 p-4 bg-[#f7f7f7] border border-[#e1e1e1] rounded-sm">
                   <input
                     type="text"
                     placeholder="Playlist name"
                     value={newPlaylistName}
                     onChange={(e) => setNewPlaylistName(e.target.value)}
-                    className="w-full bg-neutral-800 border border-white/[0.06] rounded px-3 py-2 text-sm text-white placeholder-neutral-600 focus:border-[#00f0ff]/30 focus:outline-none mb-2"
+                    className="w-full bg-white border border-[#d8d8d8] rounded px-3 py-2 text-sm text-neutral-900 placeholder-neutral-500 focus:border-[#bcbcbc] focus:outline-none mb-2"
                     autoFocus
                   />
                   <input
@@ -164,7 +156,7 @@ export default function BasePlaylistSelectorModal({
                     placeholder="Description (optional)"
                     value={newPlaylistDesc}
                     onChange={(e) => setNewPlaylistDesc(e.target.value)}
-                    className="w-full bg-neutral-800 border border-white/[0.06] rounded px-3 py-2 text-sm text-white placeholder-neutral-600 focus:border-[#00f0ff]/30 focus:outline-none mb-3"
+                    className="w-full bg-white border border-[#d8d8d8] rounded px-3 py-2 text-sm text-neutral-900 placeholder-neutral-500 focus:border-[#bcbcbc] focus:outline-none mb-3"
                   />
                   <div className="flex gap-2">
                     <Button
@@ -219,10 +211,10 @@ export default function BasePlaylistSelectorModal({
                           w-full flex items-center gap-3 p-3 rounded-sm transition-all duration-200
                           ${
                             isInPlaylist
-                              ? "bg-[#00f0ff]/5 border border-[#00f0ff]/20"
+                              ? "bg-[#f2f2f2] border border-[#cccccc]"
                               : itemFeedback === "error"
                                 ? "bg-red-500/5 border border-red-500/20"
-                                : "bg-neutral-900/30 border border-white/[0.04] hover:border-[#00f0ff]/20 hover:bg-neutral-900/50"
+                                : "bg-white border border-[#e1e1e1] hover:border-[#cbcbcb] hover:bg-[#f8f8f8]"
                           }
                         `}
                       >
@@ -231,9 +223,9 @@ export default function BasePlaylistSelectorModal({
                           disabled={isInPlaylist || isAdding}
                           className={`flex-1 flex items-center gap-3 min-w-0 ${isInPlaylist || isAdding ? "cursor-default" : "cursor-pointer"}`}
                         >
-                          <div className="w-10 h-10 flex items-center justify-center bg-neutral-800 rounded-sm shrink-0">
+                          <div className="w-10 h-10 flex items-center justify-center bg-[#efefef] rounded-sm shrink-0">
                             {isInPlaylist ? (
-                              <FaCheck size={14} className="text-[#00f0ff]" />
+                              <FaCheck size={14} className="text-neutral-900" />
                             ) : itemFeedback === "error" ? (
                               <FaExclamationCircle
                                 size={14}
@@ -249,7 +241,7 @@ export default function BasePlaylistSelectorModal({
                             )}
                           </div>
                           <div className="flex-1 text-left min-w-0">
-                            <h4 className="text-sm text-white truncate">
+                            <h4 className="text-sm text-neutral-900 truncate">
                               {playlist.name}
                             </h4>
                             <p className="text-xs text-neutral-500">
@@ -274,7 +266,7 @@ export default function BasePlaylistSelectorModal({
                           <Link
                             href={`/playlist/${playlist.id}`}
                             onClick={onClose}
-                            className="shrink-0 px-2 py-1 text-[10px] font-mono uppercase tracking-wider text-[#00f0ff] hover:text-white hover:bg-neutral-800 rounded transition-colors"
+                            className="shrink-0 px-2 py-1 text-[10px] font-mono uppercase tracking-wider text-neutral-700 hover:text-neutral-900 hover:bg-neutral-200 rounded transition-colors"
                             title="Go to playlist"
                           >
                             Go to playlist

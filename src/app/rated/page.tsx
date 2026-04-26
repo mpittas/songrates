@@ -100,7 +100,7 @@ export default function RatedAlbumsPage() {
     });
   }, [albums, statusFilter, ratingFilter, categoryFilter, searchQuery]);
 
-  const statusOptions = [
+  const statusOptions: { label: string; value: FilterType }[] = [
     { label: "All Status", value: "all" },
     { label: "Fully Rated", value: "full" },
     { label: "Partially Rated", value: "partial" },
@@ -134,11 +134,11 @@ export default function RatedAlbumsPage() {
   ];
 
   return (
-    <main className="min-h-screen bg-[#050507] text-neutral-100">
+    <main className="min-h-screen text-neutral-900">
       <MySection className="pt-6 pb-24">
         <div className="flex flex-col gap-8 pb-8">
           <div>
-            <h1 className="text-3xl font-light tracking-tight text-neutral-200">
+            <h1 className="text-3xl font-light tracking-tight text-neutral-900">
               Rated Albums
             </h1>
             <p className="text-neutral-500 text-sm font-mono mt-2">

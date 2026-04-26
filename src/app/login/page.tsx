@@ -127,7 +127,7 @@ function LoginContent() {
   };
 
   return (
-    <div className="w-full h-[calc(100vh-65px)] grid grid-cols-1 md:grid-cols-2 bg-black">
+    <div className="w-full h-[calc(100vh-65px)] grid grid-cols-1 md:grid-cols-2 bg-[#ebe8e5]">
       {/* Left Column: Green Gradient */}
       <div className="relative hidden md:block h-full w-full overflow-hidden">
         <MeshGradient
@@ -137,9 +137,9 @@ function LoginContent() {
       </div>
 
       {/* Right Column: Form */}
-      <div className="flex flex-col justify-center p-6 md:p-12 bg-black relative w-full max-w-[600px] mx-auto">
+      <div className="flex flex-col justify-center p-6 md:p-12 bg-[#ebe8e5] relative w-full max-w-[600px] mx-auto">
         <div className="mb-8">
-          <h1 className="text-2xl text-white mb-2 tracking-tight">
+          <h1 className="text-2xl text-neutral-900 mb-2 tracking-tight">
             {isLogin ? "Welcome Back" : "Sign Up Account"}
           </h1>
           <p className="text-neutral-500 text-sm">
@@ -165,11 +165,11 @@ function LoginContent() {
 
         {/* Separator */}
         <div className="relative flex items-center py-2 mb-6">
-          <div className="flex-grow border-t border-white/10"></div>
+          <div className="flex-grow border-t border-[#d9d9d9]"></div>
           <span className="flex-shrink-0 mx-4 text-neutral-600 text-xs uppercase">
             Or
           </span>
-          <div className="flex-grow border-t border-white/10"></div>
+          <div className="flex-grow border-t border-[#d9d9d9]"></div>
         </div>
 
         <form onSubmit={handleAuth} className="flex flex-col gap-4">
@@ -182,7 +182,7 @@ function LoginContent() {
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="eg. musiclover99"
                 required
-                className="w-full bg-[#1A1A1A] border-none text-white text-sm px-4 py-3 placeholder:text-neutral-600 focus:ring-1 focus:ring-emerald-500/50 outline-none rounded-none"
+                className="w-full bg-white border border-[#d8d8d8] text-neutral-900 text-sm px-4 py-3 placeholder:text-neutral-500 focus:ring-1 focus:ring-neutral-400/50 outline-none rounded-md"
               />
             </div>
           )}
@@ -195,7 +195,7 @@ function LoginContent() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="eg. johnfrans@gmail.com"
               required
-              className="w-full bg-[#1A1A1A] border-none text-white text-sm px-4 py-3 placeholder:text-neutral-600 focus:ring-1 focus:ring-emerald-500/50 outline-none rounded-none"
+              className="w-full bg-white border border-[#d8d8d8] text-neutral-900 text-sm px-4 py-3 placeholder:text-neutral-500 focus:ring-1 focus:ring-neutral-400/50 outline-none rounded-md"
             />
           </div>
 
@@ -208,7 +208,7 @@ function LoginContent() {
                 onChange={(e) => updatePassword(e.target.value)}
                 placeholder="Enter your password"
                 required
-                className="w-full bg-[#1A1A1A] border-none text-white text-sm px-4 py-3 pr-10 placeholder:text-neutral-600 focus:ring-1 focus:ring-emerald-500/50 outline-none rounded-none"
+                className="w-full bg-white border border-[#d8d8d8] text-neutral-900 text-sm px-4 py-3 pr-10 placeholder:text-neutral-500 focus:ring-1 focus:ring-neutral-400/50 outline-none rounded-md"
               />
               <button
                 type="button"
@@ -279,7 +279,7 @@ function LoginContent() {
           {isLogin ? "Don't have an account? " : "Already have an account? "}
           <button
             onClick={toggleView}
-            className="text-white hover:underline font-medium"
+            className="text-neutral-900 hover:underline font-medium"
           >
             {isLogin ? "Sign Up" : "Log in"}
           </button>
@@ -291,7 +291,7 @@ function LoginContent() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-black" />}>
+    <Suspense fallback={<div className="min-h-screen bg-[#ebe8e5]" />}>
       <LoginContent />
     </Suspense>
   );

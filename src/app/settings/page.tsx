@@ -9,7 +9,6 @@ import {
   FaArrowLeft,
   FaCheck,
   FaTimes,
-  FaUser,
   FaEye,
   FaEyeSlash,
   FaSpinner,
@@ -17,6 +16,7 @@ import {
   FaGlobe,
 } from "react-icons/fa";
 import Button from "@/components/ui/Button";
+import MySection from "@/components/ui/MySection";
 
 interface ProfileSettings {
   username: string;
@@ -192,7 +192,7 @@ export default function SettingsPage() {
 
   if (authLoading || loading) {
     return (
-      <main className="min-h-screen bg-[#050507] flex items-center justify-center">
+      <main className="min-h-screen flex items-center justify-center">
         <div className="font-mono text-neutral-500 animate-pulse text-xs tracking-widest uppercase">
           Loading...
         </div>
@@ -203,266 +203,270 @@ export default function SettingsPage() {
   if (!user) return null;
 
   return (
-    <main className="min-h-screen bg-[#050507]">
-      <div className="max-w-2xl mx-auto px-6 py-12">
-        {/* Header */}
-        <div className="flex items-center gap-4 mb-10">
-          <Link
-            href="/profile"
-            className="text-neutral-500 hover:text-white transition-colors p-2 hover:bg-neutral-800 rounded"
-          >
-            <FaArrowLeft size={16} />
-          </Link>
-          <div>
-            <h1 className="text-2xl font-light tracking-tight text-white">
-              Settings
-            </h1>
-            <p className="text-sm text-neutral-500 font-mono mt-0.5">
-              Manage your account
-            </p>
-          </div>
-        </div>
-
-        {/* Username Section */}
-        <section className="mb-10">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-1 h-5 bg-[#00f0ff] rounded-full" />
-            <h2 className="text-lg font-light tracking-tight text-white">
-              Username
-            </h2>
-          </div>
-
-          <div className="bg-neutral-900/30 border border-white/[0.04] p-6 rounded-sm">
-            <label className="block text-xs text-neutral-500 uppercase tracking-wider font-mono mb-2">
-              Username
-            </label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-600 text-sm">
-                @
-              </span>
-              <input
-                type="text"
-                value={settings.username}
-                onChange={(e) =>
-                  setSettings((prev) => ({
-                    ...prev,
-                    username: e.target.value.toLowerCase().replace(/\s/g, ""),
-                  }))
-                }
-                className="w-full bg-neutral-800 border border-white/[0.06] rounded px-3 pl-8 py-2.5 text-sm text-white placeholder-neutral-600 focus:border-[#00f0ff]/30 focus:outline-none"
-                placeholder="username"
-                minLength={3}
-                maxLength={20}
-              />
-              {/* Status indicator */}
-              <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                {checkingUsername && (
-                  <FaSpinner
-                    size={14}
-                    className="text-neutral-500 animate-spin"
-                  />
-                )}
-                {!checkingUsername &&
-                  usernameChanged &&
-                  usernameAvailable === true &&
-                  hasValidUsername && (
-                    <FaCheck size={14} className="text-emerald-500" />
-                  )}
-                {!checkingUsername &&
-                  usernameChanged &&
-                  usernameAvailable === false && (
-                    <FaTimes size={14} className="text-red-500" />
-                  )}
-              </div>
-            </div>
-            <p className="text-[11px] text-neutral-600 mt-2">
-              3-20 characters, letters, numbers, and underscores only
-            </p>
-            {usernameChanged && usernameAvailable === false && (
-              <p className="text-xs text-red-400 mt-1">
-                This username is already taken
+    <main className="min-h-screen">
+      <MySection className="py-12">
+        <div className="w-full max-w-2xl mx-auto">
+          {/* Header */}
+          <div className="flex items-center gap-4 mb-10">
+            <Link
+              href="/profile"
+              className="text-neutral-500 hover:text-neutral-900 transition-colors p-2 hover:bg-neutral-200 rounded"
+            >
+              <FaArrowLeft size={16} />
+            </Link>
+            <div>
+              <h1 className="text-2xl font-light tracking-tight text-neutral-900">
+                Settings
+              </h1>
+              <p className="text-sm text-neutral-500 font-mono mt-0.5">
+                Manage your account
               </p>
-            )}
-            {usernameChanged &&
-              usernameAvailable === true &&
-              hasValidUsername && (
-                <p className="text-xs text-emerald-400 mt-1">
-                  Username is available
+            </div>
+          </div>
+
+          {/* Username Section */}
+          <section className="mb-10">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-1 h-5 bg-[#1f1f1f] rounded-full" />
+              <h2 className="text-lg font-light tracking-tight text-neutral-900">
+                Username
+              </h2>
+            </div>
+
+            <div className="bg-white border border-[#e1e1e1] p-6 rounded-md">
+              <label className="block text-xs text-neutral-500 uppercase tracking-wider font-mono mb-2">
+                Username
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-600 text-sm">
+                  @
+                </span>
+                <input
+                  type="text"
+                  value={settings.username}
+                  onChange={(e) =>
+                    setSettings((prev) => ({
+                      ...prev,
+                      username: e.target.value.toLowerCase().replace(/\s/g, ""),
+                    }))
+                  }
+                  className="w-full bg-[#f7f7f7] border border-[#dcdcdc] rounded px-3 pl-8 py-2.5 text-sm text-neutral-900 placeholder-neutral-500 focus:border-[#b9b9b9] focus:outline-none"
+                  placeholder="username"
+                  minLength={3}
+                  maxLength={20}
+                />
+                {/* Status indicator */}
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  {checkingUsername && (
+                    <FaSpinner
+                      size={14}
+                      className="text-neutral-500 animate-spin"
+                    />
+                  )}
+                  {!checkingUsername &&
+                    usernameChanged &&
+                    usernameAvailable === true &&
+                    hasValidUsername && (
+                      <FaCheck size={14} className="text-emerald-500" />
+                    )}
+                  {!checkingUsername &&
+                    usernameChanged &&
+                    usernameAvailable === false && (
+                      <FaTimes size={14} className="text-red-500" />
+                    )}
+                </div>
+              </div>
+              <p className="text-[11px] text-neutral-600 mt-2">
+                3-20 characters, letters, numbers, and underscores only
+              </p>
+              {usernameChanged && usernameAvailable === false && (
+                <p className="text-xs text-red-400 mt-1">
+                  This username is already taken
                 </p>
               )}
-          </div>
-        </section>
-
-        {/* Privacy Section */}
-        <section className="mb-10">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-1 h-5 bg-[#00f0ff] rounded-full" />
-            <h2 className="text-lg font-light tracking-tight text-white">
-              Privacy
-            </h2>
-          </div>
-
-          <div className="bg-neutral-900/30 border border-white/[0.04] rounded-sm divide-y divide-white/[0.04]">
-            {/* Profile Visibility Toggle */}
-            <div className="flex items-center justify-between p-5">
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 flex items-center justify-center bg-neutral-800 rounded-sm">
-                  {settings.is_public ? (
-                    <FaGlobe size={16} className="text-emerald-400" />
-                  ) : (
-                    <FaLock size={16} className="text-amber-400" />
-                  )}
-                </div>
-                <div>
-                  <h3 className="text-sm text-white">Profile Visibility</h3>
-                  <p className="text-xs text-neutral-500 mt-0.5">
-                    {settings.is_public
-                      ? "Your profile is public and can be found by others"
-                      : "Your profile is private and hidden from others"}
+              {usernameChanged &&
+                usernameAvailable === true &&
+                hasValidUsername && (
+                  <p className="text-xs text-emerald-400 mt-1">
+                    Username is available
                   </p>
+                )}
+            </div>
+          </section>
+
+          {/* Privacy Section */}
+          <section className="mb-10">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-1 h-5 bg-[#1f1f1f] rounded-full" />
+              <h2 className="text-lg font-light tracking-tight text-neutral-900">
+                Privacy
+              </h2>
+            </div>
+
+            <div className="bg-white border border-[#e1e1e1] rounded-md divide-y divide-[#ececec]">
+              {/* Profile Visibility Toggle */}
+              <div className="flex items-center justify-between p-5">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 flex items-center justify-center bg-[#f2f2f2] rounded-sm">
+                    {settings.is_public ? (
+                      <FaGlobe size={16} className="text-emerald-400" />
+                    ) : (
+                      <FaLock size={16} className="text-amber-400" />
+                    )}
+                  </div>
+                  <div>
+                    <h3 className="text-sm text-neutral-900">
+                      Profile Visibility
+                    </h3>
+                    <p className="text-xs text-neutral-500 mt-0.5">
+                      {settings.is_public
+                        ? "Your profile is public and can be found by others"
+                        : "Your profile is private and hidden from others"}
+                    </p>
+                  </div>
                 </div>
-              </div>
-              <button
-                onClick={() =>
-                  setSettings((prev) => ({
-                    ...prev,
-                    is_public: !prev.is_public,
-                  }))
-                }
-                className={`
+                <button
+                  onClick={() =>
+                    setSettings((prev) => ({
+                      ...prev,
+                      is_public: !prev.is_public,
+                    }))
+                  }
+                  className={`
                   relative w-11 h-6 rounded-full transition-colors duration-200
                   ${settings.is_public ? "bg-emerald-500" : "bg-amber-500"}
                 `}
-              >
-                <span
-                  className={`
+                >
+                  <span
+                    className={`
                     absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform duration-200 shadow-sm
                     ${settings.is_public ? "translate-x-5" : "translate-x-0"}
                   `}
-                />
-              </button>
-            </div>
-
-            {!settings.is_public && (
-              <div className="px-5 py-3 bg-amber-500/5">
-                <p className="text-xs text-amber-400/80 flex items-center gap-2">
-                  <FaLock size={10} />
-                  Your profile won&apos;t appear in search or be accessible via
-                  direct link. You can still use all features privately.
-                </p>
+                  />
+                </button>
               </div>
-            )}
 
-            {/* Favourites Toggle */}
-            <div className="flex items-center justify-between p-5">
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 flex items-center justify-center bg-neutral-800 rounded-sm">
-                  {settings.show_favorites ? (
-                    <FaEye size={16} className="text-emerald-400" />
-                  ) : (
-                    <FaEyeSlash size={16} className="text-neutral-500" />
-                  )}
-                </div>
-                <div>
-                  <h3 className="text-sm text-white">Favourites</h3>
-                  <p className="text-xs text-neutral-500 mt-0.5">
-                    Show liked artists, albums, and tracks on your public
-                    profile
+              {!settings.is_public && (
+                <div className="px-5 py-3 bg-amber-500/5">
+                  <p className="text-xs text-amber-400/80 flex items-center gap-2">
+                    <FaLock size={10} />
+                    Your profile won&apos;t appear in search or be accessible
+                    via direct link. You can still use all features privately.
                   </p>
                 </div>
-              </div>
-              <button
-                onClick={() =>
-                  setSettings((prev) => ({
-                    ...prev,
-                    show_favorites: !prev.show_favorites,
-                  }))
-                }
-                className={`
+              )}
+
+              {/* Favourites Toggle */}
+              <div className="flex items-center justify-between p-5">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 flex items-center justify-center bg-[#f2f2f2] rounded-sm">
+                    {settings.show_favorites ? (
+                      <FaEye size={16} className="text-emerald-400" />
+                    ) : (
+                      <FaEyeSlash size={16} className="text-neutral-500" />
+                    )}
+                  </div>
+                  <div>
+                    <h3 className="text-sm text-neutral-900">Favourites</h3>
+                    <p className="text-xs text-neutral-500 mt-0.5">
+                      Show liked artists, albums, and tracks on your public
+                      profile
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() =>
+                    setSettings((prev) => ({
+                      ...prev,
+                      show_favorites: !prev.show_favorites,
+                    }))
+                  }
+                  className={`
                   relative w-11 h-6 rounded-full transition-colors duration-200
                   ${settings.show_favorites ? "bg-emerald-500" : "bg-neutral-700"}
                 `}
-              >
-                <span
-                  className={`
+                >
+                  <span
+                    className={`
                     absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform duration-200 shadow-sm
                     ${settings.show_favorites ? "translate-x-5" : "translate-x-0"}
                   `}
-                />
-              </button>
-            </div>
-
-            {/* Playlists Toggle */}
-            <div className="flex items-center justify-between p-5">
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 flex items-center justify-center bg-neutral-800 rounded-sm">
-                  {settings.show_playlists ? (
-                    <FaEye size={16} className="text-emerald-400" />
-                  ) : (
-                    <FaEyeSlash size={16} className="text-neutral-500" />
-                  )}
-                </div>
-                <div>
-                  <h3 className="text-sm text-white">Playlists</h3>
-                  <p className="text-xs text-neutral-500 mt-0.5">
-                    Show your playlists on your public profile
-                  </p>
-                </div>
+                  />
+                </button>
               </div>
-              <button
-                onClick={() =>
-                  setSettings((prev) => ({
-                    ...prev,
-                    show_playlists: !prev.show_playlists,
-                  }))
-                }
-                className={`
+
+              {/* Playlists Toggle */}
+              <div className="flex items-center justify-between p-5">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 flex items-center justify-center bg-[#f2f2f2] rounded-sm">
+                    {settings.show_playlists ? (
+                      <FaEye size={16} className="text-emerald-400" />
+                    ) : (
+                      <FaEyeSlash size={16} className="text-neutral-500" />
+                    )}
+                  </div>
+                  <div>
+                    <h3 className="text-sm text-neutral-900">Playlists</h3>
+                    <p className="text-xs text-neutral-500 mt-0.5">
+                      Show your playlists on your public profile
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() =>
+                    setSettings((prev) => ({
+                      ...prev,
+                      show_playlists: !prev.show_playlists,
+                    }))
+                  }
+                  className={`
                   relative w-11 h-6 rounded-full transition-colors duration-200
                   ${settings.show_playlists ? "bg-emerald-500" : "bg-neutral-700"}
                 `}
-              >
-                <span
-                  className={`
+                >
+                  <span
+                    className={`
                     absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform duration-200 shadow-sm
                     ${settings.show_playlists ? "translate-x-5" : "translate-x-0"}
                   `}
-                />
-              </button>
+                  />
+                </button>
+              </div>
             </div>
-          </div>
-        </section>
+          </section>
 
-        {/* Messages */}
-        {error && (
-          <div className="mb-6 text-red-400 text-sm bg-red-500/10 p-3 border border-red-500/20 rounded-sm">
-            {error}
-          </div>
-        )}
-        {success && (
-          <div className="mb-6 text-emerald-400 text-sm bg-emerald-500/10 p-3 border border-emerald-500/20 rounded-sm flex items-center gap-2">
-            <FaCheck size={12} />
-            {success}
-          </div>
-        )}
+          {/* Messages */}
+          {error && (
+            <div className="mb-6 text-red-400 text-sm bg-red-500/10 p-3 border border-red-500/20 rounded-sm">
+              {error}
+            </div>
+          )}
+          {success && (
+            <div className="mb-6 text-emerald-400 text-sm bg-emerald-500/10 p-3 border border-emerald-500/20 rounded-sm flex items-center gap-2">
+              <FaCheck size={12} />
+              {success}
+            </div>
+          )}
 
-        {/* Save Button */}
-        <div className="flex items-center justify-between">
-          <Link
-            href="/profile"
-            className="text-sm text-neutral-500 hover:text-white transition-colors font-mono"
-          >
-            Cancel
-          </Link>
-          <Button
-            variant="primary"
-            size="md"
-            onClick={handleSave}
-            disabled={saving || !canSave}
-          >
-            {saving ? "Saving..." : "Save Changes"}
-          </Button>
+          {/* Save Button */}
+          <div className="flex items-center justify-between">
+            <Link
+              href="/profile"
+              className="text-sm text-neutral-500 hover:text-neutral-900 transition-colors font-mono"
+            >
+              Cancel
+            </Link>
+            <Button
+              variant="primary"
+              size="md"
+              onClick={handleSave}
+              disabled={saving || !canSave}
+            >
+              {saving ? "Saving..." : "Save Changes"}
+            </Button>
+          </div>
         </div>
-      </div>
+      </MySection>
     </main>
   );
 }

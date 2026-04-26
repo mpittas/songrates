@@ -14,7 +14,7 @@ import {
 import { HiOutlineMicrophone, HiEllipsisVertical } from "react-icons/hi2";
 import { useRatingsContext as useRatings } from "@/context/RatingsContext";
 import { usePlayer } from "@/context/PlayerContext";
-import { formatTime, createSlug } from "@/lib/utils";
+import { createSlug } from "@/lib/utils";
 import ColorRating from "@/components/rating/ColorRating";
 import Button from "@/components/ui/Button";
 import FavoriteButton from "@/components/ui/FavoriteButton";
@@ -94,13 +94,13 @@ export default function TrackItem({
   return (
     <div
       ref={trackRef}
-      className={`border-b border-[#1a1a1f] ${
+      className={`border-b border-[#e7e7e7] ${
         highlighted
-          ? "animate-highlight-track bg-[#00f0ff]/5 ring-1 ring-inset ring-[#00f0ff]/20"
+          ? "animate-highlight-track bg-[#f4f4f4] ring-1 ring-inset ring-[#cfcfcf]"
           : ""
       }`}
     >
-      <div className="flex items-center justify-between py-3 group hover:bg-[#0a0a0d] px-4 transition-colors">
+      <div className="flex items-center justify-between py-3 group hover:bg-[#f7f7f7] px-4 transition-colors">
         <div className="flex items-center gap-3 min-w-0 flex-1">
           <span className="text-neutral-600 font-mono text-xs w-2 shrink-0 text-left">
             {track.number}
@@ -126,8 +126,8 @@ export default function TrackItem({
             }
             className={`flex items-center justify-center w-6 h-6 border shrink-0 transition-all ${
               isCurrentTrack && isPlaying
-                ? "bg-[#00f0ff] border-[#00f0ff] text-[#050507]"
-                : "bg-[#0a0a0d] border-[#1a1a1f] text-neutral-500 hover:bg-[#00f0ff] hover:border-[#00f0ff] hover:text-[#050507]"
+                ? "bg-[#1f1f1f] border-[#1f1f1f] text-white"
+                : "bg-white border-[#d7d7d7] text-neutral-500 hover:bg-[#f0f0f0] hover:border-[#c7c7c7] hover:text-neutral-900"
             }`}
             title="Play"
           >
@@ -142,7 +142,7 @@ export default function TrackItem({
 
           <div className="flex flex-col min-w-0">
             <div className="flex items-center gap-2 min-w-0">
-              <span className="text-neutral-300 group-hover:text-[#00f0ff] transition-colors truncate text-sm">
+              <span className="text-neutral-900 group-hover:text-black transition-colors truncate text-sm">
                 {track.title}
               </span>
             </div>
@@ -161,7 +161,7 @@ export default function TrackItem({
                     <span key={a.id} className="text-[11px]">
                       <Link
                         href={`/artist/${createSlug(a.name, a.id)}`}
-                        className="text-neutral-500 hover:text-[#00f0ff] transition-colors"
+                        className="text-neutral-500 hover:text-neutral-900 transition-colors"
                         onClick={(e) => e.stopPropagation()}
                       >
                         {a.name}
@@ -184,7 +184,7 @@ export default function TrackItem({
               className="hidden md:flex items-center gap-1.5 opacity-60 hover:opacity-100 transition-opacity"
               title={`Public: ${publicRating} (${publicCount}) users`}
             >
-              <span className="text-[11px] text-neutral-50 font-medium">
+              <span className="text-[11px] text-neutral-900 font-medium">
                 {publicRating.toFixed(2)}
                 <span className="text-neutral-500 font-light ml-1">/ 10</span>
               </span>
@@ -209,10 +209,10 @@ export default function TrackItem({
 
               {/* User Rating Digit (Read Only Mode) - Now on right side of progress bar */}
               {isReadOnly && rating > 0 && (
-                <div className="flex items-center gap-1.5 ml-2 border-l border-neutral-800 pl-3">
+                <div className="flex items-center gap-1.5 ml-2 border-l border-[#d7d7d7] pl-3">
                   <span
                     className="text-[11px] font-bold"
-                    style={{ color: "#00f0ff" }}
+                    style={{ color: "#1f1f1f" }}
                   >
                     {rating}
                   </span>
@@ -227,7 +227,7 @@ export default function TrackItem({
               <DropdownMenu
                 trigger={
                   <button
-                    className="w-6 h-6 flex items-center justify-center rounded-full text-neutral-500 hover:text-white hover:bg-neutral-800 transition-colors"
+                    className="w-6 h-6 flex items-center justify-center rounded-full text-neutral-500 hover:text-neutral-900 hover:bg-neutral-200 transition-colors"
                     title="More options"
                   >
                     <HiEllipsisVertical size={20} />
@@ -253,7 +253,7 @@ export default function TrackItem({
                       setShowPlaylistModal(true);
                     }}
                     data-menu-close
-                    className="w-full text-left flex items-center gap-3 px-3 py-2 text-xs font-mono text-neutral-400 hover:text-white hover:bg-white/5 transition-colors"
+                    className="w-full text-left flex items-center gap-3 px-3 py-2 text-xs font-mono text-neutral-600 hover:text-neutral-900 hover:bg-[#f5f5f5] transition-colors"
                   >
                     <div className="w-4 flex justify-center">
                       <FaPlus size={12} />
@@ -269,7 +269,7 @@ export default function TrackItem({
                         onToggleLyrics?.(track.id);
                       }}
                       data-menu-close
-                      className="w-full text-left flex items-center gap-3 px-3 py-2 text-xs font-mono text-neutral-400 hover:text-white hover:bg-white/5 transition-colors"
+                      className="w-full text-left flex items-center gap-3 px-3 py-2 text-xs font-mono text-neutral-600 hover:text-neutral-900 hover:bg-[#f5f5f5] transition-colors"
                     >
                       <div className="w-4 flex justify-center">
                         <HiOutlineMicrophone size={12} />
@@ -287,7 +287,7 @@ export default function TrackItem({
                       }}
                       data-menu-close
                       disabled={isRemoving}
-                      className="w-full text-left flex items-center gap-3 px-3 py-2 text-xs font-mono text-red-500/80 hover:text-red-400 hover:bg-white/5 transition-colors"
+                      className="w-full text-left flex items-center gap-3 px-3 py-2 text-xs font-mono text-red-600 hover:text-red-700 hover:bg-[#f5f5f5] transition-colors"
                     >
                       <div className="w-4 flex justify-center">
                         <FaTimes size={12} />
@@ -304,10 +304,10 @@ export default function TrackItem({
 
       {/* Lyrics Accordion */}
       {lyricsOpen && (
-        <div className="px-4 pb-4 pt-2 bg-[#07070a] border-t border-[#1a1a1f]/50">
+        <div className="px-4 pb-4 pt-2 bg-[#fafafa] border-t border-[#e7e7e7]">
           {lyricsLoading ? (
             <div className="flex items-center gap-2 py-3">
-              <div className="w-3 h-3 border border-[#00f0ff]/40 border-t-[#00f0ff] rounded-full animate-spin" />
+              <div className="w-3 h-3 border border-neutral-400 border-t-neutral-700 rounded-full animate-spin" />
               <span className="text-neutral-500 text-xs font-mono">
                 Loading lyrics...
               </span>
@@ -336,7 +336,7 @@ export default function TrackItem({
                 </Button>
               </div>
               <pre
-                className="text-neutral-400 leading-relaxed font-sans whitespace-pre-wrap max-h-80 overflow-y-auto scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-transparent pr-2"
+                className="text-neutral-700 leading-relaxed font-sans whitespace-pre-wrap max-h-80 overflow-y-auto scrollbar-thin scrollbar-thumb-neutral-300 scrollbar-track-transparent pr-2"
                 style={{ fontSize: `${lyricsFontSize}px` }}
               >
                 {lyricsData.lyrics}
