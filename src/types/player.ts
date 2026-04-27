@@ -41,6 +41,8 @@ export interface PlayerContextType {
   toggleRepeat: () => void;
   isShuffling: boolean;
   toggleShuffle: () => void;
+  currentLyricsTrackId: string | null;
+  setCurrentLyricsTrackId: (id: string | null) => void;
 }
 
 export interface PlaybackControlsProps {

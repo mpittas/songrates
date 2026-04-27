@@ -41,6 +41,9 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const [buffered, setBuffered] = useState(0);
   const [isRepeating, setIsRepeating] = useState(false);
   const [isShuffling, setIsShuffling] = useState(false);
+  const [currentLyricsTrackId, setCurrentLyricsTrackId] = useState<
+    string | null
+  >(null);
 
   const [queue, setQueue] = useState<Track[]>([]);
   const [originalQueue, setOriginalQueue] = useState<Track[]>([]);
@@ -114,6 +117,11 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         abortControllerRef.current.abort();
       }
       abortControllerRef.current = new AbortController();
+
+      // If switching to a different track and it's not the one with open lyrics, close all lyrics
+      if (currentTrack?.id !== track.id && currentLyricsTrackId !== track.id) {
+        setCurrentLyricsTrackId(null);
+      }
 
       // Immediately update UI with new track info (optimistic update)
       setCurrentTrack(track);
@@ -278,6 +286,8 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         toggleRepeat,
         isShuffling,
         toggleShuffle,
+        currentLyricsTrackId,
+        setCurrentLyricsTrackId,
       }}
     >
       {children}

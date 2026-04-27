@@ -7,7 +7,15 @@ import {
   FaCheck,
   FaMusic,
   FaExclamationCircle,
+  FaSearch,
 } from "react-icons/fa";
+import {
+  HiPlus,
+  HiCheck,
+  HiOutlinePlusCircle,
+  HiArrowRight,
+  HiMagnifyingGlass,
+} from "react-icons/hi2";
 import Link from "next/link";
 import { Playlist } from "@/types/playlist";
 import Button from "./Button";
@@ -38,9 +46,23 @@ export default function BasePlaylistSelectorModal({
   const [creating, setCreating] = useState(false);
   const [newPlaylistName, setNewPlaylistName] = useState("");
   const [newPlaylistDesc, setNewPlaylistDesc] = useState("");
-  const [addingTo, setAddingTo] = useState<string | null>(null);
-  const [feedback, setFeedback] = useState<Record<string, "success" | "error">>(
-    {},
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedPlaylistIds, setSelectedPlaylistIds] = useState<Set<string>>(
+    new Set(),
+  );
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Initialize selected IDs based on what's already in playlists
+  useState(() => {
+    const initial = new Set<string>();
+    playlists.forEach((p) => {
+      if (isItemInPlaylist(p.id)) initial.add(p.id);
+    });
+    setSelectedPlaylistIds(initial);
+  });
+
+  const filteredPlaylists = playlists.filter((p) =>
+    p.name.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   const handleCreate = async () => {
@@ -51,234 +73,245 @@ export default function BasePlaylistSelectorModal({
     setNewPlaylistDesc("");
   };
 
-  const handleAdd = async (playlistId: string) => {
-    if (isItemInPlaylist(playlistId)) return;
-    setAddingTo(playlistId);
-    try {
-      const result = await onAddToPlaylist(playlistId);
-      const success = result !== false;
-      setFeedback((prev) => ({
-        ...prev,
-        [playlistId]: success ? "success" : "error",
-      }));
-      if (success) {
-        setTimeout(() => {
-          setFeedback((prev) => {
-            const next = { ...prev };
-            delete next[playlistId];
-            return next;
-          });
-        }, 3000);
+  const toggleSelection = (playlistId: string) => {
+    // If it was already in the playlist initially, we might want to prevent unselecting
+    // depending on requirements, but Spotify allows toggling.
+    setSelectedPlaylistIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(playlistId)) {
+        next.delete(playlistId);
       } else {
-        setTimeout(() => {
-          setFeedback((prev) => {
-            const next = { ...prev };
-            delete next[playlistId];
-            return next;
-          });
-        }, 3000);
+        next.add(playlistId);
       }
-    } catch {
-      setFeedback((prev) => ({ ...prev, [playlistId]: "error" }));
-      setTimeout(() => {
-        setFeedback((prev) => {
-          const next = { ...prev };
-          delete next[playlistId];
-          return next;
-        });
-      }, 3000);
+      return next;
+    });
+  };
+
+  const handleDone = async () => {
+    setIsSaving(true);
+    try {
+      // Find playlists that were selected but aren't currently marked as "in playlist"
+      const playlistsToAdd = Array.from(selectedPlaylistIds).filter(
+        (id) => !isItemInPlaylist(id),
+      );
+
+      // Perform all additions
+      await Promise.all(playlistsToAdd.map((id) => onAddToPlaylist(id)));
+
+      onClose();
+    } catch (error) {
+      console.error("Error saving to playlists:", error);
+    } finally {
+      setIsSaving(false);
     }
-    setAddingTo(null);
   };
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200"
       onClick={onClose}
     >
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+      <div className="absolute inset-0 bg-neutral-950/40 backdrop-blur-md" />
+
       <div
-        className="relative w-full max-w-md max-h-[80vh] bg-white border border-[#e1e1e1] shadow-2xl flex flex-col rounded-lg"
+        className="relative w-full max-w-sm max-h-[85vh] bg-white border border-neutral-200 shadow-2xl flex flex-col rounded-3xl overflow-hidden scale-in-center animate-in zoom-in-95 duration-300"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#ececec] shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-1 h-5 bg-[#1f1f1f] rounded-full" />
-            <h2 className="text-lg font-light tracking-tight text-neutral-900">
-              {title}
-            </h2>
+        <div className="p-6 flex flex-col gap-4 bg-white border-b border-neutral-200">
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <h2 className="text-xl font-bold tracking-tight text-neutral-900 leading-tight">
+                {title}
+              </h2>
+            </div>
+            <button
+              onClick={onClose}
+              className="w-8 h-8 flex items-center justify-center rounded-full bg-neutral-50 text-neutral-400 hover:text-neutral-900 hover:bg-neutral-100 transition-all border border-neutral-100"
+            >
+              <FaTimes size={14} />
+            </button>
           </div>
-          <button
-            onClick={onClose}
-            className="text-neutral-500 hover:text-neutral-900 transition-colors p-1 hover:bg-neutral-200 rounded"
-          >
-            <FaTimes size={16} />
-          </button>
+
+          {/* Search Bar - Spotify Style */}
+          <div className="relative group">
+            <HiMagnifyingGlass
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 group-focus-within:text-neutral-900 transition-colors"
+              size={18}
+            />
+            <input
+              type="text"
+              placeholder="Find a playlist"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-neutral-100 border border-neutral-200 rounded-xl py-2.5 pl-10 pr-4 text-sm font-medium focus:ring-2 focus:ring-neutral-900/5 outline-none transition-all placeholder:text-neutral-400"
+            />
+          </div>
         </div>
 
-        {/* Content */}
-        <div className="overflow-y-auto flex-1 p-4">
+        {/* Content Section */}
+        <div className="flex-1 overflow-y-auto p-6 scrollbar-none bg-blue-500/0">
           {loading ? (
-            <div className="py-12 flex items-center justify-center">
-              <div className="w-6 h-6 border-2 border-neutral-500 border-t-transparent rounded-full animate-spin" />
+            <div className="py-20 flex flex-col items-center justify-center gap-3">
+              <div className="w-8 h-8 border-3 border-neutral-200 border-t-neutral-900 rounded-full animate-spin" />
+              <span className="text-xs font-bold text-neutral-400 uppercase tracking-widest font-mono">
+                Loading
+              </span>
             </div>
           ) : (
-            <>
-              {/* Create New Playlist Button */}
-              {!creating ? (
-                <button
-                  onClick={() => setCreating(true)}
-                  className="w-full flex items-center gap-3 p-3 mb-4 bg-[#f7f7f7] border border-dashed border-[#d6d6d6] hover:border-[#bdbdbd] hover:bg-[#efefef] transition-all duration-200 rounded-sm group"
-                >
-                  <div className="w-10 h-10 flex items-center justify-center bg-[#ececec] rounded-sm group-hover:bg-[#e0e0e0] transition-colors">
-                    <FaPlus
-                      size={16}
-                      className="text-neutral-500 group-hover:text-neutral-900"
-                    />
-                  </div>
-                  <span className="text-sm text-neutral-700 group-hover:text-neutral-900">
-                    Create New Playlist
-                  </span>
-                </button>
-              ) : (
-                <div className="mb-4 p-4 bg-[#f7f7f7] border border-[#e1e1e1] rounded-sm">
-                  <input
-                    type="text"
-                    placeholder="Playlist name"
-                    value={newPlaylistName}
-                    onChange={(e) => setNewPlaylistName(e.target.value)}
-                    className="w-full bg-white border border-[#d8d8d8] rounded px-3 py-2 text-sm text-neutral-900 placeholder-neutral-500 focus:border-[#bcbcbc] focus:outline-none mb-2"
-                    autoFocus
-                  />
-                  <input
-                    type="text"
-                    placeholder="Description (optional)"
-                    value={newPlaylistDesc}
-                    onChange={(e) => setNewPlaylistDesc(e.target.value)}
-                    className="w-full bg-white border border-[#d8d8d8] rounded px-3 py-2 text-sm text-neutral-900 placeholder-neutral-500 focus:border-[#bcbcbc] focus:outline-none mb-3"
-                  />
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      variant="primary"
-                      onClick={handleCreate}
-                      disabled={!newPlaylistName.trim()}
-                    >
-                      Create & Add
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => {
-                        setCreating(false);
-                        setNewPlaylistName("");
-                        setNewPlaylistDesc("");
-                      }}
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                </div>
-              )}
-
-              {/* Existing Playlists */}
-              {playlists.length === 0 && !creating ? (
-                <div className="py-8 text-center">
-                  {/* Default fallback icon if list is empty */}
-                  <FaMusic
-                    size={24}
-                    className="text-neutral-700 mx-auto mb-3"
-                  />
-                  <p className="text-neutral-600 font-mono text-sm">
-                    No playlists available
-                  </p>
-                  <p className="text-neutral-700 text-xs mt-1">
-                    Create your first playlist above
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-1">
-                  {playlists.map((playlist) => {
-                    const isInPlaylist = isItemInPlaylist(playlist.id);
-                    const isAdding = addingTo === playlist.id;
-                    const itemFeedback = feedback[playlist.id];
-
-                    return (
-                      <div
-                        key={playlist.id}
-                        className={`
-                          w-full flex items-center gap-3 p-3 rounded-sm transition-all duration-200
-                          ${
-                            isInPlaylist
-                              ? "bg-[#f2f2f2] border border-[#cccccc]"
-                              : itemFeedback === "error"
-                                ? "bg-red-500/5 border border-red-500/20"
-                                : "bg-white border border-[#e1e1e1] hover:border-[#cbcbcb] hover:bg-[#f8f8f8]"
-                          }
-                        `}
+            <div className="space-y-4">
+              {/* Add New Section */}
+              <div>
+                {!creating ? (
+                  <button
+                    onClick={() => setCreating(true)}
+                    className="w-full group flex items-center gap-4 p-4 bg-neutral-900 rounded-2xl transition-all duration-300 hover:border-neutral-100"
+                  >
+                    <div className="w-10 h-10 flex items-center justify-center bg-neutral-100 rounded-xl group-hover:bg-neutral-200 transition-colors">
+                      <HiPlus size={20} className="text-neutral-900" />
+                    </div>
+                    <div className="text-left">
+                      <p className="text-sm font-bold text-white">
+                        Create new playlist
+                      </p>
+                    </div>
+                  </button>
+                ) : (
+                  <div className="p-5 bg-neutral-900 rounded-2xl space-y-3 animate-in slide-in-from-top-4 duration-300">
+                    <div className="space-y-4">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider ml-1">
+                          Playlist Name
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="e.g. Late Night Vibes"
+                          value={newPlaylistName}
+                          onChange={(e) => setNewPlaylistName(e.target.value)}
+                          className="w-full bg-white border border-neutral-200 rounded-xl px-4 py-2.5 text-sm font-medium focus:ring-2 focus:ring-neutral-900/5 focus:border-neutral-900 outline-none transition-all"
+                          autoFocus
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider ml-1">
+                          Description
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="What's this mood?"
+                          value={newPlaylistDesc}
+                          onChange={(e) => setNewPlaylistDesc(e.target.value)}
+                          className="w-full bg-white border border-neutral-200 rounded-xl px-4 py-2.5 text-sm font-medium focus:ring-2 focus:ring-neutral-900/5 focus:border-neutral-900 outline-none transition-all"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex gap-2 pt-2">
+                      <button
+                        onClick={handleCreate}
+                        disabled={!newPlaylistName.trim()}
+                        className="flex-1 bg-white text-neutral-950 text-xs font-bold py-3 rounded-xl transition-all shadow-lg shadow-neutral-950/10 active:scale-95 disabled:opacity-20"
                       >
+                        Create & Add
+                      </button>
+                      <button
+                        onClick={() => setCreating(false)}
+                        className="px-4 text-xs font-bold text-neutral-100 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Section Divider */}
+              <div className="h-px w-full bg-neutral-100" />
+
+              {/* Playlist List */}
+              <div className="space-y-3">
+                {filteredPlaylists.length === 0 && !creating ? (
+                  <div className="py-12 flex flex-col items-center justify-center text-center px-4">
+                    <div className="w-12 h-12 bg-neutral-50 rounded-full flex items-center justify-center mb-4">
+                      <FaMusic className="text-neutral-200" size={20} />
+                    </div>
+                    <p className="text-sm font-bold text-neutral-900 mb-1">
+                      No playlists found
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 gap-2">
+                    {filteredPlaylists.map((playlist) => {
+                      const isSelected = selectedPlaylistIds.has(playlist.id);
+
+                      return (
                         <button
-                          onClick={() => handleAdd(playlist.id)}
-                          disabled={isInPlaylist || isAdding}
-                          className={`flex-1 flex items-center gap-3 min-w-0 ${isInPlaylist || isAdding ? "cursor-default" : "cursor-pointer"}`}
+                          key={playlist.id}
+                          onClick={() => toggleSelection(playlist.id)}
+                          className={`w-full flex items-center gap-4 p-3 rounded-2xl transition-all duration-200 border
+                            ${
+                              isSelected
+                                ? "bg-neutral-900 border-neutral-300 hover:bg-neutral-800"
+                                : "bg-neutral-100 border-neutral-200 hover:bg-neutral-200"
+                            }
+                          `}
                         >
-                          <div className="w-10 h-10 flex items-center justify-center bg-[#efefef] rounded-sm shrink-0">
-                            {isInPlaylist ? (
-                              <FaCheck size={14} className="text-neutral-900" />
-                            ) : itemFeedback === "error" ? (
-                              <FaExclamationCircle
-                                size={14}
-                                className="text-red-400"
-                              />
-                            ) : (
-                              defaultIcon || (
-                                <FaMusic
-                                  size={14}
-                                  className="text-neutral-500"
-                                />
-                              )
-                            )}
+                          <div
+                            className={`w-12 h-12 flex items-center justify-center rounded-xl transition-colors shrink-0 border border-neutral-200
+                            ${isSelected ? "bg-white" : "bg-white"}
+                          `}
+                          >
+                            <div
+                              className={`transition-colors ${isSelected ? "text-white" : "text-neutral-400"}`}
+                            >
+                              {defaultIcon || <FaMusic size={16} />}
+                            </div>
                           </div>
+
                           <div className="flex-1 text-left min-w-0">
-                            <h4 className="text-sm text-neutral-900 truncate">
+                            <h4
+                              className={`text-sm font-bold truncate transition-colors ${isSelected ? "text-white" : "text-neutral-900"}`}
+                            >
                               {playlist.name}
                             </h4>
-                            <p className="text-xs text-neutral-500">
-                              {itemFeedback === "success"
-                                ? "Added successfully!"
-                                : itemFeedback === "error"
-                                  ? "Failed to add. Try again."
-                                  : getPlaylistSubtitle(playlist)}
-                            </p>
                           </div>
-                          {isAdding && (
-                            <div className="w-4 h-4 border-2 border-[#00f0ff] border-t-transparent rounded-full animate-spin" />
-                          )}
-                          {itemFeedback === "success" && (
-                            <FaCheck
-                              size={12}
-                              className="text-green-400 shrink-0"
-                            />
-                          )}
-                        </button>
-                        {isInPlaylist && (
-                          <Link
-                            href={`/playlist/${playlist.id}`}
-                            onClick={onClose}
-                            className="shrink-0 px-2 py-1 text-[10px] font-mono uppercase tracking-wider text-neutral-700 hover:text-neutral-900 hover:bg-neutral-200 rounded transition-colors"
-                            title="Go to playlist"
+
+                          {/* Selection Checkbox/Radio */}
+                          <div
+                            className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all
+                            ${
+                              isSelected
+                                ? "bg-green-500 border-green-500 text-white scale-110 shadow-sm"
+                                : "border-neutral-300"
+                            }
+                          `}
                           >
-                            Go to playlist
-                          </Link>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </>
+                            {isSelected && <FaCheck size={10} />}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
           )}
+        </div>
+
+        {/* Footer */}
+        <div className="p-6 bg-white border-t border-neutral-100 flex items-center justify-between">
+          <button
+            onClick={onClose}
+            className="text-sm font-bold text-neutral-500 hover:text-neutral-900 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleDone}
+            disabled={isSaving}
+            className="px-10 py-3 bg-neutral-900 text-white rounded-full text-sm font-bold hover:bg-neutral-800 transition-all shadow-lg shadow-neutral-950/10 active:scale-95 disabled:opacity-50"
+          >
+            {isSaving ? "Saving..." : "Done"}
+          </button>
         </div>
       </div>
     </div>
