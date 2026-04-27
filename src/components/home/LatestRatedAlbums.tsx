@@ -7,6 +7,7 @@ import MySection from "@/components/ui/MySection";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createSlug } from "@/lib/utils";
+import HeadingRow from "@/main-components/HeadingRow";
 
 interface RatedAlbum {
   userId: string;
@@ -106,9 +107,7 @@ export default function LatestRatedAlbums() {
       <section className="py-12 sm:py-14">
         <MySection>
           <div className="w-full">
-            <h2 className="mb-5 text-3xl font-semibold tracking-tight text-[#1d1d1d]">
-              Latest Community Rated Albums
-            </h2>
+            <HeadingRow title="Latest Community Rated Albums" badgeText="" />
             <div className="w-full flex items-center justify-center py-12">
               <div className="w-8 h-8 border-2 border-neutral-500 border-t-transparent rounded-full animate-spin" />
             </div>
@@ -124,14 +123,11 @@ export default function LatestRatedAlbums() {
     <section className="py-12 sm:py-14">
       <MySection>
         <div className="w-full">
-          <div className="mb-5 flex items-center justify-between">
-            <h2 className="text-3xl font-semibold tracking-tight text-[#1d1d1d]">
-              Latest Community Rated Albums
-            </h2>
-            <span className="rounded bg-black px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-white">
-              See all
-            </span>
-          </div>
+          <HeadingRow
+            title="Latest Community Rated Albums"
+            badgeText=""
+            seeAllHref="/rated"
+          />
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 w-full">
             {ratedAlbums.map((album, index) => {

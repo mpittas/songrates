@@ -2,6 +2,7 @@ import { getDailyTop100Playlists, artworkUrl } from "@/lib/appleMusic/api";
 import OptimizedImage from "@/components/ui/OptimizedImage";
 import MySection from "@/components/ui/MySection";
 import Link from "next/link";
+import HeadingRow from "@/main-components/HeadingRow";
 
 export default async function DailyTop100Playlists() {
   const playlists = await getDailyTop100Playlists("us", 12);
@@ -12,14 +13,7 @@ export default async function DailyTop100Playlists() {
     <section className="py-12 sm:py-14">
       <MySection>
         <div className="w-full">
-          <div className="mb-5 flex items-center justify-between">
-            <h2 className="text-3xl font-semibold tracking-tight text-[#1d1d1d]">
-              Latest Community Rated Albums
-            </h2>
-            <span className="rounded bg-black px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-white">
-              See all
-            </span>
-          </div>
+          <HeadingRow title="Daily Top 100 Playlists" seeAllHref="/playlists" />
 
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
             {playlists.slice(0, 5).map((playlist) => {

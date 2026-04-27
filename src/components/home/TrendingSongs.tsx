@@ -2,6 +2,7 @@ import { getTrendingSongs, artworkUrl } from "@/lib/appleMusic/api";
 import SongRow from "@/main-components/SongRow";
 import MySection from "@/components/ui/MySection";
 import { formatTime } from "@/lib/utils";
+import HeadingRow from "@/main-components/HeadingRow";
 
 export default async function TrendingSongs() {
   const songs = await getTrendingSongs(10);
@@ -12,14 +13,11 @@ export default async function TrendingSongs() {
     <section className="py-12 sm:py-14">
       <MySection>
         <div className="w-full">
-          <div className="mb-5 flex items-center justify-between">
-            <h2 className="text-3xl font-semibold tracking-tight text-[#1d1d1d]">
-              Trending Songs
-            </h2>
-            <span className="rounded bg-black px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-white">
-              Global Top 100
-            </span>
-          </div>
+          <HeadingRow
+            title="Trending Songs"
+            badgeText="Global top 100"
+            seeAllHref="/trending"
+          />
 
           <div className="flex flex-col gap-2">
             {songs.map((song, i) => (
