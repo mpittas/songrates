@@ -45,7 +45,6 @@ export default function BasePlaylistSelectorModal({
 }: BasePlaylistSelectorModalProps) {
   const [creating, setCreating] = useState(false);
   const [newPlaylistName, setNewPlaylistName] = useState("");
-  const [newPlaylistDesc, setNewPlaylistDesc] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPlaylistIds, setSelectedPlaylistIds] = useState<Set<string>>(
     new Set(),
@@ -67,10 +66,9 @@ export default function BasePlaylistSelectorModal({
 
   const handleCreate = async () => {
     if (!newPlaylistName.trim()) return;
-    await onCreatePlaylist(newPlaylistName.trim(), newPlaylistDesc.trim());
+    await onCreatePlaylist(newPlaylistName.trim(), "");
     setCreating(false);
     setNewPlaylistName("");
-    setNewPlaylistDesc("");
   };
 
   const toggleSelection = (playlistId: string) => {
@@ -180,7 +178,7 @@ export default function BasePlaylistSelectorModal({
                   <div className="p-5 bg-neutral-900 rounded-2xl space-y-3 animate-in slide-in-from-top-4 duration-300">
                     <div className="space-y-4">
                       <div className="space-y-1">
-                        <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider ml-1">
+                        <label className="text-sm text-white pb-0.5 block">
                           Playlist Name
                         </label>
                         <input
@@ -188,37 +186,28 @@ export default function BasePlaylistSelectorModal({
                           placeholder="e.g. Late Night Vibes"
                           value={newPlaylistName}
                           onChange={(e) => setNewPlaylistName(e.target.value)}
-                          className="w-full bg-white border border-neutral-200 rounded-xl px-4 py-2.5 text-sm font-medium focus:ring-2 focus:ring-neutral-900/5 focus:border-neutral-900 outline-none transition-all"
+                          className="w-full bg-white rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-neutral-900/5 focus:border-neutral-900 outline-none transition-all"
                           autoFocus
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider ml-1">
-                          Description
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="What's this mood?"
-                          value={newPlaylistDesc}
-                          onChange={(e) => setNewPlaylistDesc(e.target.value)}
-                          className="w-full bg-white border border-neutral-200 rounded-xl px-4 py-2.5 text-sm font-medium focus:ring-2 focus:ring-neutral-900/5 focus:border-neutral-900 outline-none transition-all"
                         />
                       </div>
                     </div>
                     <div className="flex gap-2 pt-2">
-                      <button
+                      <Button
                         onClick={handleCreate}
                         disabled={!newPlaylistName.trim()}
-                        className="flex-1 bg-white text-neutral-950 text-xs font-bold py-3 rounded-xl transition-all shadow-lg shadow-neutral-950/10 active:scale-95 disabled:opacity-20"
+                        variant="secondary"
+                        size="sm"
+                        className="flex-1"
                       >
                         Create & Add
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         onClick={() => setCreating(false)}
-                        className="px-4 text-xs font-bold text-neutral-100 transition-colors"
+                        variant="ghost"
+                        size="sm"
                       >
                         Cancel
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 )}
@@ -250,7 +239,7 @@ export default function BasePlaylistSelectorModal({
                           className={`w-full flex items-center gap-4 p-3 rounded-2xl transition-all duration-200 border
                             ${
                               isSelected
-                                ? "bg-neutral-900 border-neutral-300 hover:bg-neutral-800"
+                                ? "bg-neutral-100 border-neutral-300 hover:bg-neutral-200"
                                 : "bg-neutral-100 border-neutral-200 hover:bg-neutral-200"
                             }
                           `}
@@ -269,7 +258,7 @@ export default function BasePlaylistSelectorModal({
 
                           <div className="flex-1 text-left min-w-0">
                             <h4
-                              className={`text-sm font-bold truncate transition-colors ${isSelected ? "text-white" : "text-neutral-900"}`}
+                              className={`text-sm font-bold truncate transition-colors ${isSelected ? "text-neutral-900" : "text-neutral-900"}`}
                             >
                               {playlist.name}
                             </h4>
@@ -299,19 +288,12 @@ export default function BasePlaylistSelectorModal({
 
         {/* Footer */}
         <div className="p-6 bg-white border-t border-neutral-100 flex items-center justify-between">
-          <button
-            onClick={onClose}
-            className="text-sm font-bold text-neutral-500 hover:text-neutral-900 transition-colors"
-          >
+          <Button onClick={onClose} variant="ghost">
             Cancel
-          </button>
-          <button
-            onClick={handleDone}
-            disabled={isSaving}
-            className="px-10 py-3 bg-neutral-900 text-white rounded-full text-sm font-bold hover:bg-neutral-800 transition-all shadow-lg shadow-neutral-950/10 active:scale-95 disabled:opacity-50"
-          >
+          </Button>
+          <Button onClick={handleDone} disabled={isSaving} variant="primary">
             {isSaving ? "Saving..." : "Done"}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

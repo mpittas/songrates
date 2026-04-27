@@ -42,7 +42,6 @@ function AlbumOptionsMenu({ albumId }: { albumId: string }) {
     <div className="relative inline-block" ref={menuRef}>
       <Button
         variant="ghost"
-        size="xs"
         className="w-8 h-8 p-0 bg-white/90 hover:bg-white text-neutral-700 border border-[#d7d7d7] backdrop-blur-sm"
         onClick={(e) => {
           e.preventDefault();

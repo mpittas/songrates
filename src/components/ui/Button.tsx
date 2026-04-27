@@ -3,7 +3,7 @@ import Link from "next/link";
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: "primary" | "secondary" | "ghost" | "border" | "muted";
-  size?: "xxs" | "xs" | "sm" | "md" | "lg";
+  size?: "sm" | "md" | "lg";
   iconLeft?: React.ReactNode;
   iconRight?: React.ReactNode;
   href?: string;
@@ -14,7 +14,7 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 export default function Button({
   children,
   variant = "border",
-  size = "sm",
+  size = "md",
   iconLeft,
   iconRight,
   href,
@@ -23,7 +23,7 @@ export default function Button({
   ...props
 }: ButtonProps) {
   const baseStyles =
-    "inline-flex items-center justify-center font-mono font-medium transition-all duration-200 active:scale-95";
+    "inline-flex items-center justify-center font-mono font-medium transition-all duration-200 active:scale-95 rounded-full";
 
   const variants = {
     primary:
@@ -39,11 +39,9 @@ export default function Button({
   };
 
   const sizes = {
-    xxs: "px-1.5 py-0.5 text-[9px] gap-1",
-    xs: "px-2 py-1 text-[10px]",
-    sm: "px-4 py-2 text-xs",
-    md: "px-6 py-3 text-sm",
-    lg: "px-8 py-4 text-base",
+    sm: "px-4 py-2 text-sm",
+    md: "px-6 py-3 text-base",
+    lg: "px-6 py-3 text-lg",
   };
 
   const combinedClasses = `${baseStyles} ${variants[variant]} ${sizes[size]} ${className}`;
