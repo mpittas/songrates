@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { FaChevronDown, FaChevronUp } from "react-icons/fa";
-import AlbumGrid from "@/components/album/AlbumGrid";
 import OptimizedImage from "@/components/ui/OptimizedImage";
+import Button from "@/components/ui/Button";
+import SongRow from "@/main-components/SongRow";
+import ArtistAccordion from "./ArtistAccordion";
 import { useRatingsContext as useRatings } from "@/context/RatingsContext";
 import { createSlug, formatTime } from "@/lib/utils";
 
@@ -21,46 +22,6 @@ interface DiscographyProps {
   searchQuery?: string;
 }
 
-// ─── Collapsible accordion section ──────────────────────────────────────────
-
-function Section({
-  title,
-  count,
-  children,
-  defaultOpen = true,
-}: {
-  title: string;
-  count: number;
-  children: React.ReactNode;
-  defaultOpen?: boolean;
-}) {
-  const [isOpen, setIsOpen] = useState(defaultOpen);
-
-  if (count === 0) return null;
-
-  return (
-    <div className="border border-[#e1e1e1] bg-white rounded-md">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-[#f6f6f6] transition-colors group"
-      >
-        <span className="text-xs text-neutral-500 group-hover:text-neutral-900 transition-colors font-mono flex items-center gap-1 uppercase tracking-wider">
-          {title}
-          <span className="text-neutral-600 ml-1">({count})</span>
-        </span>
-        <span className="text-neutral-600">
-          {isOpen ? <FaChevronUp size={10} /> : <FaChevronDown size={10} />}
-        </span>
-      </button>
-      {isOpen && (
-        <div className="bg-[#fafafa] border-t border-[#ececec] p-4">
-          {children}
-        </div>
-      )}
-    </div>
-  );
-}
-
 // ─── Top Songs list ─────────────────────────────────────────────────────────
 
 function TopSongsList({ songs }: { songs: TopSong[] }) {
@@ -69,82 +30,58 @@ function TopSongsList({ songs }: { songs: TopSong[] }) {
 
   return (
     <div>
-      <div className="divide-y divide-[#ececec]">
+      <div className="flex flex-col gap-2">
         {visible.map((song, i) => {
-          const albumSlug = song.albumId
-            ? createSlug(song.albumName || song.name, song.albumId)
-            : null;
-
-          const trackLink = albumSlug
-            ? `/album/${albumSlug}?track=${song.id}`
-            : null;
-
           return (
-            <div
+            <SongRow
               key={song.id}
-              className="flex items-center gap-3 py-2 px-1 group hover:bg-[#f5f5f5] transition-colors"
-            >
-              {/* Number */}
-              <span className="w-6 text-right text-[11px] font-mono text-neutral-600 shrink-0">
-                {i + 1}
-              </span>
-
-              {/* Artwork */}
-              {song.artworkUrl && (
-                <div className="relative w-10 h-10 shrink-0 bg-[#efefef] rounded-sm overflow-hidden">
-                  <OptimizedImage
-                    src={song.artworkUrl}
-                    alt={song.name}
-                    fill
-                    className="object-cover"
-                    fallbackSrc="/vinyl-placeholder.svg"
-                  />
-                </div>
-              )}
-
-              {/* Title + Album link */}
-              <div className="flex-1 min-w-0">
-                {trackLink ? (
-                  <Link
-                    href={trackLink}
-                    className="text-sm text-neutral-900 truncate group-hover:text-black transition-colors block"
-                  >
-                    {song.name}
-                  </Link>
-                ) : (
-                  <p className="text-sm text-neutral-900 truncate group-hover:text-black transition-colors">
-                    {song.name}
-                  </p>
-                )}
-                {albumSlug && (
-                  <Link
-                    href={`/album/${albumSlug}`}
-                    className="text-[11px] text-neutral-600 hover:text-neutral-900 transition-colors truncate block"
-                  >
-                    {song.albumName}
-                  </Link>
-                )}
-              </div>
-
-              {/* Duration */}
-              {song.durationMs && (
-                <span className="text-[11px] font-mono text-neutral-600 shrink-0">
-                  {formatTime(song.durationMs, "milliseconds")}
-                </span>
-              )}
-            </div>
+              index={i + 1}
+              title={song.name}
+              artist={song.artistName}
+              album={song.albumName || "Unknown Album"}
+              duration={
+                song.durationMs ? formatTime(song.durationMs, "milliseconds") : "—"
+              }
+              artworkUrl={song.artworkUrl}
+              artistId={song.artistId}
+              albumId={song.albumId}
+              track={{
+                id: song.id,
+                title: song.name,
+                artistName: song.artistName,
+                artistId: song.artistId,
+                albumId: song.albumId,
+                albumTitle: song.albumName,
+                albumImageUrl: song.artworkUrl,
+                length: song.durationMs,
+              }}
+              albumContext={
+                song.albumId
+                  ? {
+                      albumId: song.albumId,
+                      title: song.albumName || "Unknown Album",
+                      artistName: song.artistName,
+                      totalTracks: 1,
+                      artworkUrl: song.artworkUrl,
+                      releaseDate: song.releaseDate,
+                    }
+                  : undefined
+              }
+            />
           );
         })}
       </div>
 
       {songs.length > 10 && (
-        <div className="mt-3 pt-3 border-t border-[#ececec] flex justify-center">
-          <button
+        <div className="mt-3 flex justify-center border-t border-[#ececec] pt-3">
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => setShowAll(!showAll)}
-            className="text-[10px] text-neutral-600 hover:text-neutral-900 transition-colors font-mono uppercase tracking-widest"
+            className="text-[10px] uppercase tracking-widest"
           >
             {showAll ? "show_less" : `show_all_${songs.length}_songs`}
-          </button>
+          </Button>
         </div>
       )}
     </div>
@@ -153,14 +90,37 @@ function TopSongsList({ songs }: { songs: TopSong[] }) {
 
 // ─── Album grid with show more ──────────────────────────────────────────────
 
+function ReleaseCard({ album }: { album: Album }) {
+  const slug = createSlug(album.title, album.id);
+  const year = album.releaseDate?.split("-")[0] || "—";
+
+  return (
+    <Link href={`/album/${slug}`} className="group block rounded-md bg-[#fbfaf9] p-2">
+      <div className="relative mb-2 aspect-square overflow-hidden rounded bg-[#efefef]">
+        <OptimizedImage
+          src={album.artworkUrl || "/vinyl-placeholder.svg"}
+          alt={album.title}
+          fill
+          className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+          fallbackSrc="/vinyl-placeholder.svg"
+        />
+      </div>
+      <h3 className="truncate text-[11px] font-semibold leading-tight text-neutral-950">
+        {album.title}
+      </h3>
+      <p className="truncate text-[9px] text-neutral-500">
+        {year} • {album.type || "Album"}
+      </p>
+    </Link>
+  );
+}
+
 function AlbumGridSection({
   albums,
   initialCount = 12,
-  gridCols = 3,
 }: {
   albums: Album[];
   initialCount?: number;
-  gridCols?: number;
 }) {
   const [showAll, setShowAll] = useState(false);
   const visible = showAll ? albums : albums.slice(0, initialCount);
@@ -168,20 +128,21 @@ function AlbumGridSection({
 
   return (
     <div>
-      <AlbumGrid
-        albums={visible}
-        onSelectAlbum={() => {}}
-        layout="grid"
-        gridCols={gridCols}
-      />
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        {visible.map((album) => (
+          <ReleaseCard key={album.id} album={album} />
+        ))}
+      </div>
       {hasMore && (
-        <div className="mt-4 pt-4 border-t border-[#ececec] flex justify-center">
-          <button
+        <div className="mt-4 flex justify-center border-t border-[#ececec] pt-4">
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => setShowAll(!showAll)}
-            className="text-[10px] text-neutral-600 hover:text-neutral-900 transition-colors font-mono uppercase tracking-widest"
+            className="text-[10px] uppercase tracking-widest"
           >
             {showAll ? "show_less" : `show_all_${albums.length}_releases`}
-          </button>
+          </Button>
         </div>
       )}
     </div>
@@ -237,36 +198,34 @@ export default function Discography({
   const filteredAppearsOn = filterAlbums(appearsOn);
 
   return (
-    <div className="space-y-4">
-      {/* ── Top Songs ── */}
+    <div className="space-y-6">
       {filteredTopSongs.length > 0 && (
-        <Section
+        <ArtistAccordion
           title="Top Songs"
           count={filteredTopSongs.length}
           defaultOpen={true}
         >
           <TopSongsList songs={filteredTopSongs} />
-        </Section>
+        </ArtistAccordion>
       )}
 
       {/* ── Essential Albums ── */}
       {filteredEssential.length > 0 && (
-        <Section
+        <ArtistAccordion
           title="Essential Albums"
           count={filteredEssential.length}
           defaultOpen={true}
         >
           <AlbumGridSection
             albums={filteredEssential}
-            initialCount={6}
-            gridCols={3}
+            initialCount={3}
           />
-        </Section>
+        </ArtistAccordion>
       )}
 
       {/* ── Albums ── */}
       {filteredAlbums.length > 0 && (
-        <Section
+        <ArtistAccordion
           title="Albums"
           count={filteredAlbums.length}
           defaultOpen={true}
@@ -274,39 +233,36 @@ export default function Discography({
           <AlbumGridSection
             albums={filteredAlbums}
             initialCount={12}
-            gridCols={3}
           />
-        </Section>
+        </ArtistAccordion>
       )}
 
       {/* ── EPs & Singles ── */}
       {filteredEpsAndSingles.length > 0 && (
-        <Section
+        <ArtistAccordion
           title="EPs & Singles"
           count={filteredEpsAndSingles.length}
           defaultOpen={false}
         >
           <AlbumGridSection
             albums={filteredEpsAndSingles}
-            initialCount={12}
-            gridCols={3}
+            initialCount={3}
           />
-        </Section>
+        </ArtistAccordion>
       )}
 
       {/* ── Appears On ── */}
       {filteredAppearsOn.length > 0 && (
-        <Section
+        <ArtistAccordion
           title="Appears On"
           count={filteredAppearsOn.length}
           defaultOpen={false}
         >
           <AlbumGridSection
             albums={filteredAppearsOn}
-            initialCount={12}
-            gridCols={3}
+            initialCount={3}
           />
-        </Section>
+        </ArtistAccordion>
       )}
     </div>
   );
