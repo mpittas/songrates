@@ -11,10 +11,13 @@ import { Album } from "@/types/music";
 import Button from "@/components/ui/Button";
 import { usePrefetchAlbum } from "@/hooks/useAlbumInfo";
 
-interface AlbumCardProps {
+export interface AlbumCardProps {
   album: Album;
   isPriority?: boolean;
   layout?: "grid" | "list";
+  showRating?: boolean;
+  ratingMode?: "any" | "full";
+  showOptionsMenu?: boolean;
 }
 
 function AlbumOptionsMenu({ albumId }: { albumId: string }) {
@@ -109,7 +112,13 @@ function AlbumOptionsMenu({ albumId }: { albumId: string }) {
   );
 }
 
-function RatingBadge({ album }: { album: Album }) {
+function RatingBadge({
+  album,
+  mode = "any",
+}: {
+  album: Album;
+  mode?: "any" | "full";
+}) {
   const { albumRatings, ratings, publicAlbumRatings } = useRatingsContext();
   const localAlbumData = albumRatings[album.id];
   const publicData = publicAlbumRatings[album.id];
@@ -143,15 +152,25 @@ function RatingBadge({ album }: { album: Album }) {
   }
 
   // If we have either personal or public rating, show badge
-  if (personalScore || publicData) {
+  const shouldShowPersonalScore =
+    personalScore !== null && (mode === "any" || isFull);
+  const shouldShowPublicScore = mode === "any" && publicData;
+
+  if (shouldShowPersonalScore || shouldShowPublicScore) {
     return (
       <AlbumRatingBadge
-        score={personalScore || "—"}
+        score={
+          shouldShowPersonalScore && personalScore !== null ? personalScore : "—"
+        }
         ratedCount={ratedCount}
         totalTracks={totalTracks}
         isFull={isFull}
-        publicRating={publicData?.averageRating}
-        publicCount={publicData?.ratingCount}
+        publicRating={
+          shouldShowPublicScore ? publicData?.averageRating : undefined
+        }
+        publicCount={
+          shouldShowPublicScore ? publicData?.ratingCount : undefined
+        }
       />
     );
   }
@@ -163,6 +182,9 @@ export default function AlbumCard({
   album,
   isPriority = false,
   layout = "grid",
+  showRating = true,
+  ratingMode = "any",
+  showOptionsMenu = true,
 }: AlbumCardProps) {
   const imageUrl = album.artworkUrl || "/vinyl-placeholder.svg";
   const [imageError, setImageError] = useState(false);
@@ -249,11 +271,13 @@ export default function AlbumCard({
             </div>
           )}
 
-          <div className="absolute top-2 right-2 flex gap-2 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-            <AlbumOptionsMenu albumId={album.id} />
-          </div>
+          {showOptionsMenu && (
+            <div className="absolute top-2 right-2 flex gap-2 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+              <AlbumOptionsMenu albumId={album.id} />
+            </div>
+          )}
 
-          <RatingBadge album={album} />
+          {showRating && <RatingBadge album={album} mode={ratingMode} />}
         </div>
       </Link>
 

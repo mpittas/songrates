@@ -237,7 +237,6 @@ export interface AppleArtistDetail {
   genres: string[];
   artworkUrl?: string;
   url?: string;
-  editorialNotes?: string;
 }
 
 /**
@@ -260,7 +259,7 @@ export interface ArtistDiscography {
 export async function getArtistWithViews(
   artistId: string,
 ): Promise<ArtistDiscography | null> {
-  const cacheKey = `am-artist-full:${artistId}`;
+  const cacheKey = `am-artist-full-v2:${artistId}`;
   const cached = artistCache.get(cacheKey);
   if (cached) return cached as ArtistDiscography;
 
@@ -280,8 +279,6 @@ export async function getArtistWithViews(
     genres: a.genreNames || [],
     artworkUrl: a.artwork?.url,
     url: a.url,
-    editorialNotes:
-      a.editorialNotes?.standard || a.editorialNotes?.short || undefined,
   };
 
   // Parse top songs from the view

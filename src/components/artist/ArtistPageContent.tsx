@@ -38,7 +38,7 @@ export default function ArtistPageContent({
   return (
     <main className="min-h-screen bg-[#F2EFED] text-neutral-900">
       <MySection className="py-10 md:py-16">
-        <div className="mx-auto grid max-w-[860px] grid-cols-1 gap-8 items-start lg:grid-cols-[160px_1fr] lg:gap-10">
+        <div className="grid grid-cols-1 gap-8 items-start lg:grid-cols-[220px_1fr] lg:gap-20">
           <div className="lg:sticky lg:top-20">
             <ArtistInfo
               artistId={artistId}

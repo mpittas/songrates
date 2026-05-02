@@ -90,7 +90,6 @@ export default async function ArtistPage({ params }: PageProps) {
 
   const artistInfo: ArtistInfo = {
     image: artist.artworkUrl ? artworkUrl(artist.artworkUrl, 300) : null,
-    description: artist.editorialNotes || null,
     url: artist.url || null,
     genres: artist.genres,
   };

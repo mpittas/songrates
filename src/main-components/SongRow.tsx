@@ -123,7 +123,7 @@ export default function SongRow({
 
   return (
     <div
-      className="flex flex-col bg-white rounded-lg border border-neutral-100 hover:border-neutral-200 transition-colors group"
+      className="flex flex-col bg-white rounded-lg border border-neutral-100 hover:border-neutral-100 hover:bg-neutral-100 transition-colors group"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => {
         setHovered(false);

@@ -1,13 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import OptimizedImage from "@/components/ui/OptimizedImage";
 import Button from "@/components/ui/Button";
 import SongRow from "@/main-components/SongRow";
 import ArtistAccordion from "./ArtistAccordion";
+import AlbumCard from "@/components/album/AlbumCard";
 import { useRatingsContext as useRatings } from "@/context/RatingsContext";
-import { createSlug, formatTime } from "@/lib/utils";
+import { formatTime } from "@/lib/utils";
 
 import { Album, TopSong } from "@/types/music";
 
@@ -78,7 +77,7 @@ function TopSongsList({ songs }: { songs: TopSong[] }) {
             variant="ghost"
             size="sm"
             onClick={() => setShowAll(!showAll)}
-            className="text-[10px] uppercase tracking-widest"
+            className="text-[10px]  tracking-widest"
           >
             {showAll ? "show_less" : `show_all_${songs.length}_songs`}
           </Button>
@@ -89,31 +88,6 @@ function TopSongsList({ songs }: { songs: TopSong[] }) {
 }
 
 // ─── Album grid with show more ──────────────────────────────────────────────
-
-function ReleaseCard({ album }: { album: Album }) {
-  const slug = createSlug(album.title, album.id);
-  const year = album.releaseDate?.split("-")[0] || "—";
-
-  return (
-    <Link href={`/album/${slug}`} className="group block rounded-md bg-[#fbfaf9] p-2">
-      <div className="relative mb-2 aspect-square overflow-hidden rounded bg-[#efefef]">
-        <OptimizedImage
-          src={album.artworkUrl || "/vinyl-placeholder.svg"}
-          alt={album.title}
-          fill
-          className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
-          fallbackSrc="/vinyl-placeholder.svg"
-        />
-      </div>
-      <h3 className="truncate text-[11px] font-semibold leading-tight text-neutral-950">
-        {album.title}
-      </h3>
-      <p className="truncate text-[9px] text-neutral-500">
-        {year} • {album.type || "Album"}
-      </p>
-    </Link>
-  );
-}
 
 function AlbumGridSection({
   albums,
@@ -130,7 +104,12 @@ function AlbumGridSection({
     <div>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         {visible.map((album) => (
-          <ReleaseCard key={album.id} album={album} />
+          <AlbumCard
+            key={album.id}
+            album={album}
+            ratingMode="full"
+            showOptionsMenu={false}
+          />
         ))}
       </div>
       {hasMore && (
@@ -198,7 +177,7 @@ export default function Discography({
   const filteredAppearsOn = filterAlbums(appearsOn);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {filteredTopSongs.length > 0 && (
         <ArtistAccordion
           title="Top Songs"

@@ -28,12 +28,12 @@ export default function ArtistAccordion({
         variant="ghost"
         size="sm"
         onClick={() => setIsOpen(!isOpen)}
-        className="h-6 w-full justify-between gap-4 rounded-md bg-white px-3 py-1 text-left hover:bg-white active:scale-100"
+        className="h-8 w-full justify-between gap-4 rounded-md bg-white px-3 py-1 text-left hover:bg-white active:scale-100 cursor-pointer"
       >
-        <span className="flex min-w-0 items-center gap-1.5 font-mono text-[9px] uppercase tracking-widest text-neutral-500">
-          <HiOutlineCollection size={11} className="text-neutral-500" />
+        <span className="flex min-w-0 items-center gap-1 font-mono text-xs uppercase text-neutral-950">
+          <HiOutlineCollection size={13} className="text-neutral-400 mr-0.5" />
           <span className="truncate">{title}</span>
-          <span className="text-neutral-700">({count})</span>
+          <span>({count})</span>
         </span>
         <span className="ml-auto shrink-0 text-neutral-500 transition-transform duration-300 ease-out">
           {isOpen ? <FaChevronUp size={10} /> : <FaChevronDown size={10} />}
