@@ -6,7 +6,7 @@ import TrendingSongs from "@/components/home/TrendingSongs";
 
 export default function Home() {
   return (
-    <main className="min-h-screen text-neutral-900 flex flex-col relative">
+    <main className="min-h-screen text-neutral-900 flex flex-col relative bg-[#F2EFED]">
       <Suspense fallback={null}>
         <HomeHero />
       </Suspense>
