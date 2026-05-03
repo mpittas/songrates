@@ -32,7 +32,7 @@ export default function FavoriteButton({
   const sizeClasses = {
     sm: "w-6 h-6",
     md: "w-8 h-8",
-    lg: "w-10 h-10",
+    lg: "w-11 h-11",
   };
 
   const iconSizes = {
