@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { FaHeart, FaRegHeart } from "react-icons/fa";
 import { createClient } from "@/utils/supabase/client";
+import Button from "./Button";
 
 interface FavoriteButtonProps {
   itemId: string;
@@ -12,7 +13,7 @@ interface FavoriteButtonProps {
   thumbnailUrl?: string;
   size?: "sm" | "md" | "lg";
   className?: string;
-  variant?: "icon" | "text" | "menu-item";
+  variant?: "icon" | "text" | "menu-item" | "secondary";
 }
 
 export default function FavoriteButton({
@@ -134,6 +135,26 @@ export default function FavoriteButton({
         )}
         <span>{isFavorite ? "Favorited" : "Favorite"}</span>
       </button>
+    );
+  }
+
+  if (variant === "secondary") {
+    return (
+      <Button
+        variant="secondary"
+        onClick={toggleFavorite}
+        disabled={loading}
+        className={className}
+        iconLeft={
+          isFavorite ? (
+            <FaHeart size={14} className="fill-current text-black mr-2" />
+          ) : (
+            <FaRegHeart size={14} className="fill-current text-black mr-2" />
+          )
+        }
+      >
+        {isFavorite ? "FAVORITED" : "LIKE ALBUM"}
+      </Button>
     );
   }
 

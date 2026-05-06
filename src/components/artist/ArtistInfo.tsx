@@ -17,8 +17,10 @@ export default function ArtistInfo({
   className = "",
 }: Props) {
   return (
-    <div className={`flex flex-col items-center gap-3 text-sm ${className}`}>
-      <div className="relative aspect-square w-[160px] overflow-visible">
+    <div
+      className={`flex flex-col items-center gap-3 text-sm pt-6 ${className}`}
+    >
+      <div className="relative aspect-square w-[140px] overflow-visible">
         {data.image ? (
           <img
             src={data.image}

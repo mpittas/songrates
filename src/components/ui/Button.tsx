@@ -3,7 +3,7 @@ import Link from "next/link";
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: "primary" | "secondary" | "ghost" | "border" | "muted";
-  size?: "sm" | "md" | "lg";
+  size?: "sm" | "md" | "lg" | "xs";
   iconLeft?: React.ReactNode;
   iconRight?: React.ReactNode;
   href?: string;
@@ -23,13 +23,13 @@ export default function Button({
   ...props
 }: ButtonProps) {
   const baseStyles =
-    "inline-flex items-center justify-center font-mono font-medium transition-all duration-200 active:scale-95 rounded-full";
+    "inline-flex items-center justify-center font-mono font-semibold transition-all duration-200 active:scale-95 rounded-full";
 
   const variants = {
     primary:
       "bg-[#1f1f1f] text-white border border-[#1f1f1f] hover:bg-black hover:border-black",
     secondary:
-      "bg-white text-black border border-white hover:bg-neutral-200 hover:border-neutral-200",
+      "bg-neutral-950/15 hover:bg-neutral-950/25 text-black border-transparent text-xs",
     ghost:
       "bg-transparent text-neutral-500 hover:text-neutral-900 hover:bg-neutral-200",
     muted:
@@ -39,6 +39,7 @@ export default function Button({
   };
 
   const sizes = {
+    xs: "px-2 py-1 text-xs",
     sm: "px-4 py-2 text-sm",
     md: "px-6 py-3 text-base",
     lg: "px-6 py-3 text-lg",

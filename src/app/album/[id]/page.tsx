@@ -10,21 +10,22 @@ import MySection from "@/components/ui/MySection";
 import AlbumSkeleton from "@/components/album/AlbumSkeleton";
 import SearchInput from "@/components/search/SearchInput";
 import Button from "@/components/ui/Button";
-import FavoriteButton from "@/components/ui/FavoriteButton";
-import AddAlbumToPlaylistButton from "@/components/ui/AddAlbumToPlaylistButton";
+import AlbumPlaylistSelectorModal from "@/components/ui/AlbumPlaylistSelectorModal";
 import {
   FaArrowLeft,
   FaLock,
+  FaExternalLinkAlt,
+  FaPlay,
   FaHeart,
   FaRegHeart,
-  FaListUl,
-  FaExternalLinkAlt,
+  FaPlus,
+  FaGlobeAmericas,
+  FaUser,
 } from "react-icons/fa";
-import AlbumRatingRow from "@/components/rating/AlbumRatingRow";
-import TrackItem from "@/components/album/TrackItem";
+import { usePlayer } from "@/context/PlayerContext";
+import SongRow from "@/main-components/SongRow";
 import { useAlbumInfo } from "@/hooks/useAlbumInfo";
-
-import { AlbumInfo, TrackInfo, AlbumContext } from "@/types/music";
+import { LuListMusic } from "react-icons/lu";
 
 /**
  * Extract the numeric Apple Music ID from a slug like "album-name-1440833849"
@@ -40,22 +41,6 @@ function resolveAlbumId(slug: string): string {
 interface UserRating {
   track_id: string;
   rating: number;
-}
-
-interface PublicTrackRating {
-  track_id: string;
-  average_rating: number;
-  rating_count: number;
-}
-
-interface RealtimePayload<T> {
-  eventType: "INSERT" | "UPDATE" | "DELETE";
-  new: T;
-  old: T;
-  schema: string;
-  table: string;
-  commit_timestamp: string;
-  errors: null | any[];
 }
 
 export default function AlbumPage() {
@@ -80,14 +65,13 @@ export default function AlbumPage() {
   > | null>(null);
   const [viewingUserName, setViewingUserName] = useState<string | null>(null);
 
-  const [publicTrackRatings, setPublicTrackRatings] = useState<
-    Record<string, { average_rating: number; rating_count: number }>
-  >({});
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
-  const [openLyricsTrackId, setOpenLyricsTrackId] = useState<string | null>(
-    null,
-  );
+  const { playTrack } = usePlayer();
+
+  const [isPlaylistModalOpen, setIsPlaylistModalOpen] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [isFavoriteLoading, setIsFavoriteLoading] = useState(false);
 
   // Fetch target user ratings if userId is present
   // Uses albumId extracted from slug so it starts immediately (no waiting for album fetch)
@@ -127,90 +111,82 @@ export default function AlbumPage() {
     };
 
     fetchUserRatings();
-  }, [albumId, userId]);
+  }, [albumId, userId, searchParams]);
 
-  // Fetch Public Track Ratings
   // Uses albumId extracted from slug so it starts immediately (no waiting for album fetch)
   useEffect(() => {
     if (!albumId) return;
-
-    const fetchTrackRatings = async () => {
+    const checkFavorite = async () => {
       const { createClient } = await import("@/utils/supabase/client");
       const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
 
       const { data, error } = await supabase
-        .from("public_track_ratings")
-        .select("*")
-        .eq("album_id", albumId);
+        .from("user_favorites")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("item_id", albumId)
+        .eq("item_type", "album")
+        .maybeSingle();
 
-      if (data) {
-        const map: Record<
-          string,
-          { average_rating: number; rating_count: number }
-        > = {};
-        data.forEach((r: unknown) => {
-          const rating = r as PublicTrackRating;
-          map[rating.track_id] = {
-            average_rating: Number(rating.average_rating),
-            rating_count: rating.rating_count,
-          };
-        });
-        setPublicTrackRatings(map);
+      if (!error && data) {
+        setIsFavorite(true);
       }
     };
+    checkFavorite();
+  }, [albumId]);
 
-    fetchTrackRatings();
-
-    // Realtime Subscription
-    const subscribeToTrackRatings = async () => {
+  const toggleFavorite = async () => {
+    if (!albumId) return;
+    setIsFavoriteLoading(true);
+    try {
       const { createClient } = await import("@/utils/supabase/client");
       const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
 
-      const channel = supabase
-        .channel(`public_track_ratings:${albumId}`)
-        .on(
-          "postgres_changes",
-          {
-            event: "*",
-            schema: "public",
-            table: "public_track_ratings",
-            filter: `album_id=eq.${albumId}`,
-          },
-          (payload: RealtimePayload<PublicTrackRating>) => {
-            if (
-              payload.eventType === "INSERT" ||
-              payload.eventType === "UPDATE"
-            ) {
-              const newRecord = payload.new as PublicTrackRating;
-              setPublicTrackRatings((prev) => ({
-                ...prev,
-                [newRecord.track_id]: {
-                  average_rating: Number(newRecord.average_rating),
-                  rating_count: newRecord.rating_count,
-                },
-              }));
-            } else if (payload.eventType === "DELETE") {
-              const oldRecord = payload.old as PublicTrackRating;
-              setPublicTrackRatings((prev) => {
-                const next = { ...prev };
-                delete next[oldRecord.track_id];
-                return next;
-              });
-            }
-          },
-        )
-        .subscribe();
+      if (isFavorite) {
+        const { error } = await supabase
+          .from("user_favorites")
+          .delete()
+          .eq("user_id", user.id)
+          .eq("item_id", albumId)
+          .eq("item_type", "album");
+        if (error) throw error;
+        setIsFavorite(false);
+      } else {
+        const { error } = await supabase.from("user_favorites").upsert({
+          user_id: user.id,
+          item_id: albumId,
+          item_type: "album",
+          item_name: album?.title,
+          artist_name: album?.artist?.name,
+          thumbnail_url: album?.artworkUrl,
+        });
+        if (error) throw error;
+        setIsFavorite(true);
+      }
+    } catch (err) {
+      console.error("Error toggling favorite:", err);
+    } finally {
+      setIsFavoriteLoading(false);
+    }
+  };
 
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    };
-
-    const unsub = subscribeToTrackRatings();
-    return () => {
-      unsub.then((fn) => fn());
-    };
-  }, [albumId]);
+  const handleOpenPlaylistModal = async () => {
+    const { createClient } = await import("@/utils/supabase/client");
+    const supabase = createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return;
+    setIsPlaylistModalOpen(true);
+  };
 
   const imageUrl = album?.artworkUrl || "/vinyl-placeholder.svg";
 
@@ -269,114 +245,201 @@ export default function AlbumPage() {
   return (
     <main className="min-h-screen text-neutral-900">
       <MySection className="pt-8 pb-24">
-        {userId && (
-          <div className="w-full bg-white border border-[#d9d9d9] p-4 mb-6 flex flex-col sm:flex-row items-center justify-between gap-4 relative overflow-hidden rounded-md">
-            <div className="absolute inset-0 bg-[#000000]/[0.01] pointer-events-none" />
+        <div className="bg-linear-to-b from-[#f0e5df] to-[#f0e5df]/0 absolute top-0 left-0 w-full h-[500px] z-0"></div>
+        <div className="relative z-10">
+          {" "}
+          {/* READ ONLY USER RATING BANNER */}
+          {userId && (
+            <div className="w-full bg-white border border-[#d9d9d9] p-4 mb-6 flex flex-col sm:flex-row items-center justify-between gap-4 relative overflow-hidden rounded-md">
+              <div className="absolute inset-0 bg-[#000000]/[0.01] pointer-events-none" />
 
-            <div className="flex items-center gap-5 relative z-10">
-              <div className="flex items-center gap-2 text-neutral-700 bg-[#f3f3f3] px-3 py-1.5 rounded">
-                <FaLock size={10} />
-                <span className="text-[10px] font-mono uppercase tracking-widest">
-                  Read Only
-                </span>
+              <div className="flex items-center gap-5 relative z-10">
+                <div className="flex items-center gap-2 text-neutral-700 bg-[#f3f3f3] px-3 py-1.5 rounded">
+                  <FaLock size={10} />
+                  <span className="text-[10px] font-mono uppercase tracking-widest">
+                    Read Only
+                  </span>
+                </div>
+
+                {(viewingUserName || searchParams.get("userName")) && (
+                  <div className="flex flex-col">
+                    <span className="text-[10px] uppercase tracking-widest text-neutral-500 font-mono mb-1">
+                      Viewing Ratings By
+                    </span>
+                    <Link
+                      href={`/user/${viewingUserName || searchParams.get("userName")}`}
+                      className="text-md text-neutral-900 leading-none hover:text-black transition-colors"
+                    >
+                      {viewingUserName || searchParams.get("userName")}
+                    </Link>
+                  </div>
+                )}
               </div>
 
-              {(viewingUserName || searchParams.get("userName")) && (
-                <div className="flex flex-col">
-                  <span className="text-[10px] uppercase tracking-widest text-neutral-500 font-mono mb-1">
-                    Viewing Ratings By
-                  </span>
-                  <Link
-                    href={`/user/${viewingUserName || searchParams.get("userName")}`}
-                    className="text-md text-neutral-900 leading-none hover:text-black transition-colors"
-                  >
-                    {viewingUserName || searchParams.get("userName")}
-                  </Link>
-                </div>
-              )}
+              <div className="flex items-center gap-4 relative z-10">
+                <Button
+                  href={`/album/${album.id}`}
+                  variant="secondary"
+                  size="sm"
+                >
+                  My Ratings
+                </Button>
+              </div>
             </div>
+          )}
+          <div className="mb-12 flex flex-wrap items-center gap-3 justify-between">
+            <Button
+              href={`/artist/${
+                album.artist?.id
+                  ? createSlug(album.artist.name, album.artist.id)
+                  : ""
+              }`}
+              variant="secondary"
+              size="xs"
+              iconLeft={<FaArrowLeft size={14} className=" mr-2" />}
+            >
+              BACK TO ARTIST
+            </Button>
 
-            <div className="flex items-center gap-4 relative z-10">
-              <Button href={`/album/${album.id}`} variant="secondary" size="sm">
-                My Ratings
+            <div className="flex items-center gap-3">
+              <Button
+                onClick={toggleFavorite}
+                disabled={isFavoriteLoading}
+                variant="secondary"
+                size="xs"
+                iconLeft={
+                  isFavorite ? (
+                    <FaHeart size={14} className="fill-current mr-2" />
+                  ) : (
+                    <FaRegHeart size={14} className="fill-current mr-2" />
+                  )
+                }
+              >
+                {isFavorite ? "FAVORITED" : "LIKE ALBUM"}
               </Button>
-            </div>
-          </div>
-        )}
 
-        <div className="mb-4 flex items-center justify-between">
-          <Button
-            href={`/artist/${
-              album.artist?.id
-                ? createSlug(album.artist.name, album.artist.id)
-                : ""
-            }`}
-            iconLeft={<FaArrowLeft size={10} />}
-            variant="ghost"
-            size="xs"
-            className="text-neutral-500 hover:text-neutral-900 pl-0"
-          >
-            Back to Artist
-          </Button>
-        </div>
+              <Button
+                onClick={handleOpenPlaylistModal}
+                variant="secondary"
+                size="xs"
+                iconLeft={<FaPlus size={14} className=" mr-2" />}
+              >
+                SAVE ALBUM
+              </Button>
 
-        {/* New Hero Section */}
-        <div className="flex flex-col md:flex-row gap-8 md:gap-12 items-start mb-8 relative">
-          {/* Background Gradient/Blur Effect could go here if desired */}
-
-          {/* Album Cover */}
-          <div className="w-40 sm:w-52 md:w-72 shrink-0 relative group self-start">
-            <div className="aspect-square relative">
-              <OptimizedImage
-                src={imageUrl}
-                alt={album.title}
-                fill
-                className="object-cover"
-                priority
-                fallbackText={album.title?.slice(0, 2).toUpperCase() || "??"}
-                fallbackSrc="/vinyl-placeholder.svg"
-              />
-            </div>
-
-            <span className=" absolute -bottom-2 left-2 text-[10px] font-bold font-mono text-neutral-600 uppercase tracking-widest px-2 py-1 bg-white border border-[#e1e1e1] rounded-sm">
-              {album.type}
-            </span>
-          </div>
-
-          {/* Album Details */}
-          <div className="flex-1 min-w-0 pt-2 w-full">
-            {/* Genres */}
-            <div className="flex items-center gap-2 mb-6 pb-3 border-b border-[#dcdcdc]">
-              <div className="text-xs">Genres:</div>
-              {album.genres?.length > 0 && (
-                <div className="flex flex-wrap gap-x-1">
-                  {album.genres.slice(0, 5).map((g, i, arr) => (
-                    <span
-                      key={g}
-                      className="text-xs text-neutral-500 capitalize"
-                    >
-                      <span className="hover:text-neutral-900 transition-colors cursor-default">
-                        {g}
-                      </span>
-                      {i < arr.length - 1 && ","}
-                    </span>
-                  ))}
-                </div>
+              {isPlaylistModalOpen && (
+                <AlbumPlaylistSelectorModal
+                  albumId={album.id}
+                  albumName={album.title}
+                  artistName={album.artist?.name}
+                  thumbnailUrl={album.artworkUrl}
+                  releaseDate={album.releaseDate}
+                  totalTracks={album.tracks?.length}
+                  onClose={() => setIsPlaylistModalOpen(false)}
+                />
               )}
             </div>
-
-            <div className="flex flex-wrap items-center gap-1.5 text-xs text-neutral-600 mb-2">
-              <span className="font-mono">
-                {album.releaseDate?.split("-")[0]}
-              </span>
-              <span className="text-neutral-600">•</span>
-              <span className="font-mono">
-                {album.tracks?.length || 0} tracks
-              </span>
+          </div>
+          {/* Rating Row Section */}
+          <div className="w-full mb-8 grid grid-cols-1 md:grid-cols-2 ">
+            {/* Public Rating */}
+            <div className="flex items-center justify-between p-4 bg-neutral-800 rounded-l-xl">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-full flex items-center justify-center bg-neutral-700 text-neutral-50">
+                  <FaGlobeAmericas size={16} />
+                </div>
+                <div className="flex flex-col text-left">
+                  <span className="text-xs uppercase text-neutral-400">
+                    Public
+                  </span>
+                  {publicData?.ratingCount ? (
+                    <span className="text-[10px] text-white font-mono uppercase mt-0.5">
+                      {publicData.ratingCount} ratings
+                    </span>
+                  ) : (
+                    <span className="text-[10px] text-white font-mono uppercase mt-0.5">
+                      No ratings
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="text-2xl font-bold text-white ml-6">
+                {publicData?.averageRating
+                  ? publicData.averageRating.toFixed(1)
+                  : "-"}
+              </div>
             </div>
 
-            <div className="mb-5">
-              <h1 className="text-2xl md:text-4xl font-light  tracking-tight text-neutral-900 mb-1">
+            {/* Personal Rating */}
+            <div className="flex items-center justify-between p-4 bg-neutral-800 border-l border-white/10 rounded-r-xl">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-full bg-neutral-700 flex items-center justify-center text-white">
+                  <FaUser size={16} />
+                </div>
+                <div className="flex flex-col text-left">
+                  <span className="text-xs uppercase text-neutral-400">
+                    {viewingUserRatings
+                      ? viewingUserName
+                        ? viewingUserName
+                        : "User"
+                      : "You"}
+                  </span>
+                  {averageScore && parseFloat(averageScore) > 0 ? (
+                    <span className="text-[10px] text-neutral-400 font-mono uppercase mt-0.5">
+                      {isFullyRated
+                        ? "Completed"
+                        : `${ratedTracksCount}/${totalTracks} rated`}
+                    </span>
+                  ) : (
+                    <span className="text-[10px] text-neutral-400 font-mono uppercase mt-0.5">
+                      Rate below
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="text-2xl font-bold text-white ml-6">
+                {averageScore && parseFloat(averageScore) > 0
+                  ? averageScore
+                  : "-"}
+              </div>
+            </div>
+          </div>
+          {/* New Hero Section */}
+          <div className="flex flex-col md:flex-row gap-8 md:gap-12 items-start mb-8 relative">
+            {/* Album Cover */}
+            <div className="w-40 sm:w-52 md:w-72 shrink-0 relative group self-start">
+              <div className="aspect-square relative">
+                <OptimizedImage
+                  src={imageUrl}
+                  alt={album.title}
+                  fill
+                  className="object-cover rounded-xl"
+                  priority
+                  fallbackText={album.title?.slice(0, 2).toUpperCase() || "??"}
+                  fallbackSrc="/vinyl-placeholder.svg"
+                />
+              </div>
+            </div>
+
+            {/* Album Details */}
+            <div className="flex-1 min-w-0 pt-4 w-full flex flex-col items-start justify-center">
+              <button
+                onClick={() => {
+                  if (queue && queue.length > 0) {
+                    playTrack(queue[0], queue);
+                  }
+                }}
+                className="flex items-center gap-2 group mb-8 bg-white p-3 rounded-full cursor-pointer hover:scale-105 transition-transform"
+              >
+                <div className="w-7 h-7 bg-[#e76418] text-white rounded-full flex items-center justify-center group-hover:scale-105 transition-transform">
+                  <FaPlay className="ml-1" size={12} />
+                </div>
+                <span className="text-lg font-bold text-black tracking-tight">
+                  Play album
+                </span>
+              </button>
+
+              <h1 className="text-3xl md:text-4xl font-bold tracking-tight leading-11 text-neutral-900 mb-4">
                 {album.title}
               </h1>
 
@@ -386,176 +449,142 @@ export default function AlbumPage() {
                     ? createSlug(album.artist.name, album.artist.id)
                     : ""
                 }`}
-                className="block text-neutral-500 hover:text-neutral-900 transition-colors text-md mb-3"
+                className="text-md text-neutral-600 hover:text-neutral-900 transition-colors mb-4"
               >
                 {album.artist?.name}
               </Link>
 
-              {/* Album Type Badge */}
-              <div className="flex items-center gap-2 mb-3">
-                <span className="inline-flex items-center px-2.5 py-1 text-xs font-medium bg-[#f3f3f3] text-neutral-700 border border-[#dddddd] rounded-sm">
+              <div className="border-t border-neutral-950/10 w-full pt-4 flex flex-wrap items-center gap-2 text-sm text-neutral-00 mb-6 font-mono">
+                <span className="bg-neutral-100 px-2 py-1 rounded text-xs font-semibold text-neutral-700">
                   {album.type}
                 </span>
+                <span>•</span>
+                <span>{album.releaseDate?.split("-")[0]}</span>
+                <span>•</span>
+                <span>{album.tracks?.length || 0} tracks</span>
+
+                {album.genres?.length > 0 && (
+                  <>
+                    <span>•</span>
+                    <span>{album.genres.slice(0, 3).join(", ")}</span>
+                  </>
+                )}
               </div>
             </div>
 
-            {/* Actions / Links */}
-            {album.url && (
-              <div className="flex flex-wrap items-center gap-4 mb-0 md:mb-8 font-mono text-[10px] uppercase tracking-widest">
-                <a
-                  href={album.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center gap-2 text-neutral-500 hover:text-neutral-900 transition-colors group"
-                >
-                  <FaExternalLinkAlt
-                    size={10}
-                    className="group-hover:scale-110 transition-transform opacity-70 group-hover:opacity-100"
+            <div className="flex flex-col gap-3 min-w-[240px] shrink-0 mt-4"></div>
+          </div>
+          {/* Tracklist Section */}
+          <div className="w-full">
+            <div className="rounded-md">
+              <div className="flex justify-between items-center mb-3">
+                <div className="flex items-center gap-2">
+                  <LuListMusic size={18} />
+                  <h3 className="text-xs uppercase">Tracklist</h3>
+                </div>
+
+                <div className="w-32 focus-within:w-48 transition-all duration-300">
+                  <SearchInput
+                    value={searchQuery}
+                    onChange={setSearchQuery}
+                    onClear={() => setSearchQuery("")}
+                    onFocus={() => setIsSearchFocused(true)}
+                    onBlur={() => setIsSearchFocused(false)}
+                    isFocused={isSearchFocused}
+                    placeholder="search tracks..."
+                    size="compact"
                   />
-                  <span>Apple Music</span>
-                </a>
-                <FavoriteButton
-                  itemId={album.id}
-                  itemType="album"
-                  itemName={album.title}
-                  artistName={album.artist?.name}
-                  thumbnailUrl={album.artworkUrl}
-                  size="sm"
-                  variant="text"
-                />
-                <AddAlbumToPlaylistButton
-                  albumId={album.id}
-                  albumName={album.title}
-                  artistName={album.artist?.name}
-                  thumbnailUrl={album.artworkUrl}
-                  releaseDate={album.releaseDate}
-                  totalTracks={album.tracks?.length}
-                  variant="text"
-                />
+                </div>
               </div>
-            )}
-          </div>
-        </div>
 
-        {/* Rating Row Section */}
-        <div className="w-full mb-8">
-          <AlbumRatingRow
-            score={averageScore}
-            ratedCount={ratedTracksCount}
-            totalTracks={totalTracks}
-            isFull={isFullyRated}
-            publicRating={publicData?.averageRating}
-            publicCount={publicData?.ratingCount}
-            userLabel={
-              viewingUserRatings
-                ? viewingUserName
-                  ? `${viewingUserName.toUpperCase()}'S RATING`
-                  : "USER RATING"
-                : "MY AVERAGE"
-            }
-          />
-        </div>
-
-        {/* Tracklist Section */}
-        <div className="w-full">
-          <div className="border border-[#dddddd] bg-white overflow-hidden rounded-md">
-            <div className="px-4 py-3 border-b border-[#e6e6e6] flex justify-between items-center group/search">
-              <h3 className="text-neutral-600 font-mono tracking-wide text-xs uppercase">
-                tracklist
-              </h3>
-              <div className="w-32 focus-within:w-48 transition-all duration-300">
-                <SearchInput
-                  value={searchQuery}
-                  onChange={setSearchQuery}
-                  onClear={() => setSearchQuery("")}
-                  onFocus={() => setIsSearchFocused(true)}
-                  onBlur={() => setIsSearchFocused(false)}
-                  isFocused={isSearchFocused}
-                  placeholder="search tracks..."
-                  size="compact"
-                />
-              </div>
-            </div>
-            <div>
-              {filteredTracks.map((track) => (
-                <TrackItem
-                  key={track.id}
-                  track={track}
-                  artistName={album.artist?.name || ""}
-                  artistId={album.artist?.id || ""}
-                  albumId={album.id}
-                  albumImageUrl={imageUrl}
-                  albumContext={{
-                    albumId: album.id,
-                    title: album.title,
-                    artistName: album.artist?.name || "Unknown Artist",
-                    releaseDate: album.releaseDate,
-                    totalTracks: album.tracks?.length || 0,
-                    artworkUrl: album.artworkUrl,
-                  }}
-                  publicRating={publicTrackRatings[track.id]?.average_rating}
-                  publicCount={publicTrackRatings[track.id]?.rating_count}
-                  forcedRating={
-                    viewingUserRatings
-                      ? viewingUserRatings[track.id] || 0
-                      : undefined
-                  }
-                  highlighted={track.id === highlightTrackId}
-                  lyricsOpen={openLyricsTrackId === track.id}
-                  onToggleLyrics={(trackId) =>
-                    setOpenLyricsTrackId((prev) =>
-                      prev === trackId ? null : trackId,
-                    )
-                  }
-                  queue={queue}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Other Versions */}
-        {album.otherVersions && album.otherVersions.length > 0 && (
-          <div className="w-full mt-10">
-            <h3 className="text-neutral-600 font-mono tracking-wide text-xs uppercase mb-4">
-              other versions
-            </h3>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-              {album.otherVersions.map((version) => {
-                const versionSlug = createSlug(version.name, version.id);
-                return (
-                  <Link
-                    key={version.id}
-                    href={`/album/${versionSlug}`}
-                    className="group"
+              <div className="flex flex-col gap-y-1.5">
+                {filteredTracks.map((track, i) => (
+                  <div
+                    key={track.id}
+                    className={
+                      track.id === highlightTrackId
+                        ? "ring-2 ring-neutral-300 rounded-lg"
+                        : ""
+                    }
                   >
-                    <div className="aspect-square relative bg-white border border-[#dddddd] group-hover:border-[#c9c9c9] transition-colors overflow-hidden rounded-md">
-                      <OptimizedImage
-                        src={version.artworkUrl || "/vinyl-placeholder.svg"}
-                        alt={version.name}
-                        fill
-                        className="object-cover"
-                        fallbackSrc="/vinyl-placeholder.svg"
-                      />
-                    </div>
-                    <div className="mt-2">
-                      <p className="text-sm text-neutral-900 group-hover:text-black transition-colors truncate">
-                        {version.name}
-                      </p>
-                      <p className="text-[11px] text-neutral-600 truncate mt-0.5">
-                        {version.releaseDate?.slice(0, 4) || ""}
-                        {version.type ? ` · ${version.type}` : ""}
-                        {version.trackCount
-                          ? ` · ${version.trackCount} tracks`
-                          : ""}
-                      </p>
-                    </div>
-                  </Link>
-                );
-              })}
+                    <SongRow
+                      index={Number(track.number) || i + 1}
+                      title={track.title}
+                      artist={
+                        track.artists?.[0]?.name ||
+                        album.artist?.name ||
+                        "Unknown"
+                      }
+                      album={album.title}
+                      duration={String(track.length || "")}
+                      artworkUrl={imageUrl}
+                      rating={
+                        viewingUserRatings
+                          ? viewingUserRatings[track.id] || 0
+                          : undefined
+                      }
+                      track={track}
+                      artistId={
+                        track.artists?.[0]?.id || album.artist?.id || ""
+                      }
+                      albumId={album.id}
+                      albumContext={{
+                        albumId: album.id,
+                        title: album.title,
+                        artistName: album.artist?.name || "Unknown Artist",
+                        releaseDate: album.releaseDate,
+                        totalTracks: album.tracks?.length || 0,
+                        artworkUrl: album.artworkUrl,
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
-        )}
+          {/* Other Versions */}
+          {album.otherVersions && album.otherVersions.length > 0 && (
+            <div className="w-full mt-10">
+              <h3 className="text-neutral-600 font-mono tracking-wide text-xs uppercase mb-4">
+                other versions
+              </h3>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                {album.otherVersions.map((version) => {
+                  const versionSlug = createSlug(version.name, version.id);
+                  return (
+                    <Link
+                      key={version.id}
+                      href={`/album/${versionSlug}`}
+                      className="group"
+                    >
+                      <div className="aspect-square relative bg-white border border-[#dddddd] group-hover:border-[#c9c9c9] transition-colors overflow-hidden rounded-md">
+                        <OptimizedImage
+                          src={version.artworkUrl || "/vinyl-placeholder.svg"}
+                          alt={version.name}
+                          fill
+                          className="object-cover"
+                          fallbackSrc="/vinyl-placeholder.svg"
+                        />
+                      </div>
+                      <div className="mt-2">
+                        <p className="text-sm text-neutral-900 group-hover:text-black transition-colors truncate">
+                          {version.name}
+                        </p>
+                        <p className="text-[11px] text-neutral-600 truncate mt-0.5">
+                          {version.releaseDate?.slice(0, 4) || ""}
+                          {version.type ? ` · ${version.type}` : ""}
+                          {version.trackCount
+                            ? ` · ${version.trackCount} tracks`
+                            : ""}
+                        </p>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
       </MySection>
     </main>
   );

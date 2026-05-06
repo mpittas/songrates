@@ -4,6 +4,7 @@ import { useState } from "react";
 import { FaPlus, FaListUl } from "react-icons/fa";
 import { useAuth } from "@/context/AuthContext";
 import AlbumPlaylistSelectorModal from "./AlbumPlaylistSelectorModal";
+import Button from "./Button";
 
 interface AddAlbumToPlaylistButtonProps {
   albumId: string;
@@ -14,7 +15,7 @@ interface AddAlbumToPlaylistButtonProps {
   totalTracks?: number;
   size?: "sm" | "md" | "lg";
   className?: string;
-  variant?: "icon" | "button" | "text";
+  variant?: "icon" | "button" | "text" | "secondary";
 }
 
 export default function AddAlbumToPlaylistButton({
@@ -71,6 +72,33 @@ export default function AddAlbumToPlaylistButton({
           />
           <span>Add to Playlist</span>
         </button>
+
+        {isModalOpen && (
+          <AlbumPlaylistSelectorModal
+            albumId={albumId}
+            albumName={albumName}
+            artistName={artistName}
+            thumbnailUrl={thumbnailUrl}
+            releaseDate={releaseDate}
+            totalTracks={totalTracks}
+            onClose={() => setIsModalOpen(false)}
+          />
+        )}
+      </>
+    );
+  }
+
+  if (variant === "secondary") {
+    return (
+      <>
+        <Button
+          variant="secondary"
+          onClick={handleClick}
+          className={className}
+          iconLeft={<FaPlus size={14} className="text-black mr-2" />}
+        >
+          SAVE ALBUM
+        </Button>
 
         {isModalOpen && (
           <AlbumPlaylistSelectorModal
