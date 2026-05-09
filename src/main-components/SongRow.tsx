@@ -10,9 +10,28 @@ import { useLyrics } from "@/hooks/useLyrics";
 import { Track, AlbumContext } from "@/types/music";
 import { createSlug } from "@/lib/utils";
 import PlaylistSelectorModal from "@/components/ui/PlaylistSelectorModal";
+import MainModal, { MainModalHeader } from "@/components/ui/MainModal";
 import SongRowLyrics from "./SongRowLyrics";
 import SongRowDropdown from "./SongRowDropdown";
 import SongRowRating from "./SongRowRating";
+
+async function copyTextToClipboard(text: string) {
+  if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("readonly", "true");
+  textarea.style.position = "fixed";
+  textarea.style.left = "-9999px";
+  textarea.style.top = "0";
+  document.body.appendChild(textarea);
+  textarea.select();
+  document.execCommand("copy");
+  document.body.removeChild(textarea);
+}
 
 interface SongRowProps {
   index: number;
@@ -30,8 +49,6 @@ interface SongRowProps {
   onRate?: (rating: number) => void;
   onAddToPlaylist?: () => void;
   onShare?: () => void;
-  onGoToAlbum?: () => void;
-  onGoToArtist?: () => void;
 }
 
 export default function SongRow({
@@ -50,11 +67,10 @@ export default function SongRow({
   onRate,
   onAddToPlaylist,
   onShare,
-  onGoToAlbum,
-  onGoToArtist,
 }: SongRowProps) {
   const [hovered, setHovered] = useState(false);
   const [showPlaylistModal, setShowPlaylistModal] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   const [lyricsFontSize, setLyricsFontSize] = useState(18);
 
   const {
@@ -67,7 +83,7 @@ export default function SongRow({
   } = usePlayer();
   const isCurrentTrack = currentTrack?.id === track?.id;
 
-  const { ratings } = useRatingsContext();
+  const { ratings, publicAlbumRatings } = useRatingsContext();
   const trackId = track?.id;
   const lyricsOpen = currentLyricsTrackId === trackId;
   const contextRating = trackId ? (ratings[trackId] ?? 0) : 0;
@@ -75,6 +91,9 @@ export default function SongRow({
 
   const effectiveArtistId = track?.artistId ?? artistId;
   const effectiveAlbumId = track?.albumId ?? albumId;
+  const publicRating = effectiveAlbumId
+    ? (publicAlbumRatings[effectiveAlbumId]?.averageRating ?? null)
+    : null;
 
   const { data: lyricsData, isLoading: lyricsLoading } = useLyrics(
     title,
@@ -82,6 +101,10 @@ export default function SongRow({
     track?.length,
     lyricsOpen,
   );
+
+  const shareUrl =
+    typeof window !== "undefined" ? window.location.href : "";
+  const [shareCopied, setShareCopied] = useState(false);
 
   const formatDuration = (val: string) => {
     if (!val) return "--:--";
@@ -96,7 +119,7 @@ export default function SongRow({
 
   return (
     <div
-      className="flex flex-col bg-white rounded-lg border border-neutral-100 hover:border-neutral-100 hover:bg-neutral-100 transition-colors group"
+      className="flex flex-col bg-white rounded-lg border border-neutral-100 hover:border-neutral-300/90 group transition-colors duration-200 ease-in-out"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
@@ -128,7 +151,7 @@ export default function SongRow({
                 )}
               </button>
             ) : (
-              <span className="text-sm text-neutral-400 font-mono w-8 text-center">
+              <span className="text-xs text-neutral-400 font-mono w-8 text-center">
                 {index}
               </span>
             )}
@@ -149,10 +172,11 @@ export default function SongRow({
 
           {/* Song Info */}
           <div className="flex flex-col min-w-0">
-            {effectiveAlbumId ? (
+            <div className="flex items-center gap-x-2">
+              {effectiveAlbumId ? (
               <Link
                 href={`/album/${effectiveAlbumId}`}
-                className="text-sm font-semibold text-neutral-900 truncate hover:underline"
+                className="text-sm font-bold text-neutral-900 truncate hover:underline"
               >
                 {title}
               </Link>
@@ -161,6 +185,9 @@ export default function SongRow({
                 {title}
               </span>
             )}
+            
+           
+            </div>
             <div className="flex items-center gap-1 text-xs text-neutral-500 min-w-0">
               <span className="truncate min-w-0">
                 {track?.artists && track.artists.length > 0 ? (
@@ -204,22 +231,25 @@ export default function SongRow({
               ) : (
                 <span className="truncate">{album}</span>
               )}
+              <span className="text-neutral-300">/</span>
+              <div className="text-xs text-neutral-500">
+                {formatDuration(duration)}
+              </div>
             </div>
           </div>
         </div>
 
         {/* Right Section */}
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex items-center gap-1.5 shrink-0">
           {/* Duration */}
-          <span className="text-xs text-neutral-500 font-mono">
-            {formatDuration(duration)}
-          </span>
+         
 
           {/* Rating Circle */}
           <SongRowRating
             trackId={trackId}
             albumContext={albumContext}
             displayRating={displayRating}
+            publicRating={publicRating}
             onRate={onRate}
           />
 
@@ -228,9 +258,10 @@ export default function SongRow({
             isLyricsOpen={lyricsOpen}
             onToggleLyrics={() => setCurrentLyricsTrackId(lyricsOpen ? null : trackId || null)}
             onAddToPlaylist={() => setShowPlaylistModal(true)}
-            onGoToAlbum={onGoToAlbum}
-            onGoToArtist={onGoToArtist}
-            onShare={onShare}
+            onShare={() => {
+              setShowShareModal(true);
+              onShare?.();
+            }}
           />
         </div>
       </div>
@@ -258,6 +289,43 @@ export default function SongRow({
           durationMs={track?.length}
           onClose={() => setShowPlaylistModal(false)}
         />
+      )}
+
+      {showShareModal && (
+        <MainModal
+          onClose={() => setShowShareModal(false)}
+          maxWidthClassName="max-w-md"
+        >
+          <MainModalHeader
+            title="Share"
+            onClose={() => setShowShareModal(false)}
+          />
+
+          <div className="p-6">
+            <div className="text-xs uppercase tracking-widest font-mono text-neutral-400 mb-3">
+              Copy link
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                value={shareUrl}
+                readOnly
+                className="flex-1 min-w-0 rounded-xl border border-neutral-200 bg-neutral-100 px-4 py-3 text-xs font-mono text-neutral-800 outline-none"
+              />
+              <button
+                type="button"
+                onClick={async () => {
+                  await copyTextToClipboard(shareUrl);
+                  setShareCopied(true);
+                  window.setTimeout(() => setShareCopied(false), 900);
+                }}
+                className="shrink-0 rounded-xl border border-neutral-200 bg-white px-4 py-3 text-xs font-mono text-neutral-700 hover:text-neutral-900 hover:bg-neutral-50 transition-colors"
+                disabled={!shareUrl}
+              >
+                {shareCopied ? "Copied" : "Copy"}
+              </button>
+            </div>
+          </div>
+        </MainModal>
       )}
     </div>
   );

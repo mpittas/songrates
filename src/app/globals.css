@@ -71,23 +71,25 @@ textarea,
   outline-offset: 2px;
 }
 
-/* Smooth transitions globally */
-* {
-  transition-property: background-color, border-color, color, opacity;
-  transition-duration: 150ms;
-  transition-timing-function: ease-out;
-}
+/* Smooth transitions globally; in @layer base so Tailwind utilities can override (e.g. duration-300 on hover). */
+@layer base {
+  * {
+    transition-property: background-color, border-color, color, opacity;
+    transition-duration: 150ms;
+    transition-timing-function: ease-out;
+  }
 
-/* Disable transitions for non-interactive elements */
-p,
-span,
-div,
-section,
-main,
-article,
-header,
-footer {
-  transition: none;
+  /* Disable transitions for non-interactive elements */
+  p,
+  span,
+  div,
+  section,
+  main,
+  article,
+  header,
+  footer {
+    transition: none;
+  }
 }
 
 /* Track highlight animation — used when navigating from search to a specific song */

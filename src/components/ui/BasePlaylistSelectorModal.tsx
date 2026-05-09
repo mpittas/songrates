@@ -19,6 +19,7 @@ import {
 import Link from "next/link";
 import { Playlist } from "@/types/playlist";
 import Button from "./Button";
+import MainModal, { MainModalHeader } from "./MainModal";
 
 interface BasePlaylistSelectorModalProps {
   title: string;
@@ -105,50 +106,26 @@ export default function BasePlaylistSelectorModal({
   };
 
   return (
-    <div
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200"
-      onClick={onClose}
-    >
-      <div className="absolute inset-0 bg-neutral-950/40 backdrop-blur-md" />
-
-      <div
-        className="relative w-full max-w-sm max-h-[85vh] bg-white border border-neutral-200 shadow-2xl flex flex-col rounded-3xl overflow-hidden scale-in-center animate-in zoom-in-95 duration-300"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="p-6 flex flex-col gap-4 bg-white border-b border-neutral-200">
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <h2 className="text-xl font-bold tracking-tight text-neutral-900 leading-tight">
-                {title}
-              </h2>
-            </div>
-            <button
-              onClick={onClose}
-              className="w-8 h-8 flex items-center justify-center rounded-full bg-neutral-50 text-neutral-400 hover:text-neutral-900 hover:bg-neutral-100 transition-all border border-neutral-100"
-            >
-              <FaTimes size={14} />
-            </button>
-          </div>
-
-          {/* Search Bar - Spotify Style */}
-          <div className="relative group">
-            <HiMagnifyingGlass
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 group-focus-within:text-neutral-900 transition-colors"
-              size={18}
-            />
-            <input
-              type="text"
-              placeholder="Find a playlist"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-neutral-100 border border-neutral-200 rounded-xl py-2.5 pl-10 pr-4 text-sm font-medium focus:ring-2 focus:ring-neutral-900/5 outline-none transition-all placeholder:text-neutral-400"
-            />
-          </div>
+    <MainModal onClose={onClose} maxWidthClassName="max-w-sm">
+      <MainModalHeader title={title} onClose={onClose}>
+        {/* Search Bar - Spotify Style */}
+        <div className="relative group">
+          <HiMagnifyingGlass
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 group-focus-within:text-neutral-900 transition-colors"
+            size={18}
+          />
+          <input
+            type="text"
+            placeholder="Find a playlist"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full bg-neutral-100 border border-neutral-200 rounded-xl py-2.5 pl-10 pr-4 text-sm font-medium focus:ring-2 focus:ring-neutral-900/5 outline-none transition-all placeholder:text-neutral-400"
+          />
         </div>
+      </MainModalHeader>
 
         {/* Content Section */}
-        <div className="flex-1 overflow-y-auto p-6 scrollbar-none bg-blue-500/0">
+        <div className="flex-1 overflow-y-auto p-5 scrollbar-none bg-blue-500/0">
           {loading ? (
             <div className="py-20 flex flex-col items-center justify-center gap-3">
               <div className="w-8 h-8 border-3 border-neutral-200 border-t-neutral-900 rounded-full animate-spin" />
@@ -287,7 +264,7 @@ export default function BasePlaylistSelectorModal({
         </div>
 
         {/* Footer */}
-        <div className="p-6 bg-white border-t border-neutral-100 flex items-center justify-between">
+        <div className="p-5 bg-white border-t border-neutral-100 flex items-center justify-between">
           <Button onClick={onClose} variant="ghost">
             Cancel
           </Button>
@@ -295,7 +272,6 @@ export default function BasePlaylistSelectorModal({
             {isSaving ? "Saving..." : "Done"}
           </Button>
         </div>
-      </div>
-    </div>
+    </MainModal>
   );
 }

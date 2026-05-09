@@ -4,13 +4,12 @@ import { useState, useRef, useEffect } from "react";
 import { FaPlus } from "react-icons/fa6";
 import { BsThreeDotsVertical } from "react-icons/bs";
 import { HiOutlineMicrophone } from "react-icons/hi2";
+import { FiShare2 } from "react-icons/fi";
 
 interface SongRowDropdownProps {
   isLyricsOpen: boolean;
   onToggleLyrics: () => void;
   onAddToPlaylist: () => void;
-  onGoToAlbum?: () => void;
-  onGoToArtist?: () => void;
   onShare?: () => void;
 }
 
@@ -18,12 +17,32 @@ export default function SongRowDropdown({
   isLyricsOpen,
   onToggleLyrics,
   onAddToPlaylist,
-  onGoToAlbum,
-  onGoToArtist,
   onShare,
 }: SongRowDropdownProps) {
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const MenuItem = ({
+    icon,
+    label,
+    onClick,
+  }: {
+    icon?: React.ReactNode;
+    label: string;
+    onClick: () => void;
+  }) => (
+    <button
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick();
+        setShowDropdown(false);
+      }}
+      className="w-full text-left flex items-center gap-3 px-3 py-2 text-sm font-mono text-neutral-600 hover:text-neutral-900 hover:bg-[#f5f5f5] transition-colors"
+    >
+      <div className="w-4 flex justify-center">{icon}</div>
+      <span>{label}</span>
+    </button>
+  );
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -50,71 +69,22 @@ export default function SongRowDropdown({
 
       {showDropdown && (
         <div className="absolute right-0 top-full mt-1 bg-white border border-neutral-200 rounded-lg shadow-xl py-1 z-50 w-48">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onAddToPlaylist();
-              setShowDropdown(false);
-            }}
-            className="w-full text-left flex items-center gap-3 px-3 py-2 text-xs font-mono text-neutral-600 hover:text-neutral-900 hover:bg-[#f5f5f5] transition-colors"
-          >
-            <div className="w-4 flex justify-center">
-              <FaPlus size={12} />
-            </div>
-            <span>Add to Playlist</span>
-          </button>
+          <MenuItem
+            icon={<FaPlus size={12} />}
+            label="Add to Playlist"
+            onClick={onAddToPlaylist}
+          />
 
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onToggleLyrics();
-              setShowDropdown(false);
-            }}
-            className="w-full text-left flex items-center gap-3 px-3 py-2 text-xs font-mono text-neutral-600 hover:text-neutral-900 hover:bg-[#f5f5f5] transition-colors"
-          >
-            <div className="w-4 flex justify-center">
-              <HiOutlineMicrophone size={12} />
-            </div>
-            <span>{isLyricsOpen ? "Hide Lyrics" : "Show Lyrics"}</span>
-          </button>
+          <MenuItem
+            icon={<HiOutlineMicrophone size={12} />}
+            label={isLyricsOpen ? "Hide Lyrics" : "Show Lyrics"}
+            onClick={onToggleLyrics}
+          />
 
           <div className="border-t border-neutral-100 my-1" />
 
-          {onGoToAlbum && (
-            <button
-              onClick={() => {
-                onGoToAlbum();
-                setShowDropdown(false);
-              }}
-              className="w-full text-left flex items-center gap-3 px-3 py-2 text-xs font-mono text-neutral-600 hover:text-neutral-900 hover:bg-[#f5f5f5] transition-colors"
-            >
-              <div className="w-4 flex justify-center" />
-              <span>Go to Album</span>
-            </button>
-          )}
-          {onGoToArtist && (
-            <button
-              onClick={() => {
-                onGoToArtist();
-                setShowDropdown(false);
-              }}
-              className="w-full text-left flex items-center gap-3 px-3 py-2 text-xs font-mono text-neutral-600 hover:text-neutral-900 hover:bg-[#f5f5f5] transition-colors"
-            >
-              <div className="w-4 flex justify-center" />
-              <span>Go to Artist</span>
-            </button>
-          )}
           {onShare && (
-            <button
-              onClick={() => {
-                onShare();
-                setShowDropdown(false);
-              }}
-              className="w-full text-left flex items-center gap-3 px-3 py-2 text-xs font-mono text-neutral-600 hover:text-neutral-900 hover:bg-[#f5f5f5] transition-colors"
-            >
-              <div className="w-4 flex justify-center" />
-              <span>Share</span>
-            </button>
+            <MenuItem icon={<FiShare2 size={12} />} label="Share" onClick={onShare} />
           )}
         </div>
       )}
