@@ -3,7 +3,7 @@ import Link from "next/link";
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: "primary" | "secondary" | "ghost" | "border" | "muted";
-  size?: "sm" | "md" | "lg" | "xs";
+  size?: "xxs" | "xs" | "sm" | "md" | "lg";
   iconLeft?: React.ReactNode;
   iconRight?: React.ReactNode;
   href?: string;
@@ -39,6 +39,7 @@ export default function Button({
   };
 
   const sizes = {
+    xxs: "px-1 py-0.5 text-[10px]",
     xs: "px-2 py-1 text-xs",
     sm: "px-3 py-1.5 text-sm",
     md: "px-6 py-3 text-base",

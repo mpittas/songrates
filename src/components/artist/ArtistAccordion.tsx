@@ -44,7 +44,11 @@ export default function ArtistAccordion({
           isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
         }`}
       >
-        <div className="min-h-0 overflow-hidden">
+        {/* overflow-hidden is required for the 0fr collapse animation; when open,
+            overflow-visible so absolutely positioned popovers (e.g. SongRowRating) are not clipped. */}
+        <div
+          className={`min-h-0 ${isOpen ? "overflow-visible" : "overflow-hidden"}`}
+        >
           <div className="bg-transparent pt-2">{children}</div>
         </div>
       </div>

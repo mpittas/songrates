@@ -6,23 +6,15 @@ import OptimizedImage from "@/components/ui/OptimizedImage";
 import Link from "next/link";
 import { useRatingsContext as useRatings } from "@/context/RatingsContext";
 import { createSlug } from "@/lib/utils";
-import MySection from "@/components/ui/MySection";
+import AlbumDetailPageLayout from "@/components/album/AlbumDetailPageLayout";
 import AlbumRatingRowSection from "@/components/album/AlbumRatingRowSection";
 import AlbumSkeleton from "@/components/album/AlbumSkeleton";
-import SearchInput from "@/components/search/SearchInput";
 import Button from "@/components/ui/Button";
 import AlbumPlaylistSelectorModal from "@/components/ui/AlbumPlaylistSelectorModal";
-import {
-  FaArrowLeft,
-  FaPlay,
-  FaHeart,
-  FaRegHeart,
-  FaPlus,
-} from "react-icons/fa";
+import { FaArrowLeft, FaHeart, FaRegHeart, FaPlus } from "react-icons/fa";
 import { usePlayer } from "@/context/PlayerContext";
 import SongRow from "@/main-components/SongRow";
 import { useAlbumInfo } from "@/hooks/useAlbumInfo";
-import { LuListMusic } from "react-icons/lu";
 
 /**
  * Extract the numeric Apple Music ID from a slug like "album-name-1440833849"
@@ -240,10 +232,9 @@ export default function AlbumPage() {
   const publicData = album ? publicAlbumRatings[album.id] : null;
 
   return (
-    <main className="min-h-screen text-neutral-900">
-      <MySection className="pb-24" container={false}>
-        <div className="bg-linear-to-b from-[#f0e5df] to-[#f0e5df]/0 absolute top-0 left-0 w-full h-[500px] z-0"></div>
-        {userId && (
+    <AlbumDetailPageLayout
+      beforeConstrained={
+        userId ? (
           <div
             className="relative z-10 w-full py-3.5 sm:py-4"
             style={{
@@ -260,7 +251,7 @@ export default function AlbumPage() {
             <div className="mx-auto flex w-full max-w-[1180px] flex-col gap-3 px-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
               <div className="text-sm leading-snug text-white">
                 <span className="text-white/70">Read only · </span>
-                {(viewingUserName || searchParams.get("userName")) ? (
+                {viewingUserName || searchParams.get("userName") ? (
                   <>
                     Viewing ratings by{" "}
                     <Link
@@ -284,259 +275,198 @@ export default function AlbumPage() {
               </Button>
             </div>
           </div>
-        )}
+        ) : undefined
+      }
+      topBarLeft={
+        <Button
+          href={`/artist/${
+            album.artist?.id
+              ? createSlug(album.artist.name, album.artist.id)
+              : ""
+          }`}
+          variant="secondary"
+          size="xs"
+          iconLeft={<FaArrowLeft size={14} className=" mr-2" />}
+        >
+          BACK TO ARTIST
+        </Button>
+      }
+      topBarRight={
+        <>
+          <Button
+            onClick={toggleFavorite}
+            disabled={isFavoriteLoading}
+            variant="secondary"
+            size="xs"
+            iconLeft={
+              isFavorite ? (
+                <FaHeart size={14} className="fill-current mr-2" />
+              ) : (
+                <FaRegHeart size={14} className="fill-current mr-2" />
+              )
+            }
+          >
+            {isFavorite ? "FAVORITED" : "LIKE ALBUM"}
+          </Button>
 
-        <div className="mt-10  relative z-10 mx-auto w-full max-w-[1180px] px-4 sm:px-6">
-          <div className="mb-12 flex flex-wrap items-center gap-3 justify-between">
-            <Button
-              href={`/artist/${
-                album.artist?.id
-                  ? createSlug(album.artist.name, album.artist.id)
-                  : ""
-              }`}
-              variant="secondary"
-              size="xs"
-              iconLeft={<FaArrowLeft size={14} className=" mr-2" />}
-            >
-              BACK TO ARTIST
-            </Button>
+          <Button
+            onClick={handleOpenPlaylistModal}
+            variant="secondary"
+            size="xs"
+            iconLeft={<FaPlus size={14} className=" mr-2" />}
+          >
+            SAVE ALBUM
+          </Button>
 
-            <div className="flex items-center gap-3">
-              <Button
-                onClick={toggleFavorite}
-                disabled={isFavoriteLoading}
-                variant="secondary"
-                size="xs"
-                iconLeft={
-                  isFavorite ? (
-                    <FaHeart size={14} className="fill-current mr-2" />
-                  ) : (
-                    <FaRegHeart size={14} className="fill-current mr-2" />
-                  )
-                }
-              >
-                {isFavorite ? "FAVORITED" : "LIKE ALBUM"}
-              </Button>
-
-              <Button
-                onClick={handleOpenPlaylistModal}
-                variant="secondary"
-                size="xs"
-                iconLeft={<FaPlus size={14} className=" mr-2" />}
-              >
-                SAVE ALBUM
-              </Button>
-
-              {isPlaylistModalOpen && (
-                <AlbumPlaylistSelectorModal
-                  albumId={album.id}
-                  albumName={album.title}
-                  artistName={album.artist?.name}
-                  thumbnailUrl={album.artworkUrl}
-                  releaseDate={album.releaseDate}
-                  totalTracks={album.tracks?.length}
-                  onClose={() => setIsPlaylistModalOpen(false)}
-                />
-              )}
-            </div>
-          </div>
-
-          
-
-
-          {/* New Hero Section */}
-          <div className="flex flex-col md:flex-row gap-8 md:gap-12 items-start mb-8 relative">
-            {/* Album Cover */}
-            <div className="w-40 sm:w-52 md:w-72 shrink-0 relative group self-start">
-              <div className="aspect-square relative">
-                <OptimizedImage
-                  src={imageUrl}
-                  alt={album.title}
-                  fill
-                  className="object-cover rounded-xl"
-                  priority
-                  fallbackText={album.title?.slice(0, 2).toUpperCase() || "??"}
-                  fallbackSrc="/vinyl-placeholder.svg"
-                />
-              </div>
-            </div>
-
-            {/* Album Details */}
-            <div className="flex-1 min-w-0 pt-4 w-full flex flex-col items-start justify-center">
-              <button
-                onClick={() => {
-                  if (queue && queue.length > 0) {
-                    playTrack(queue[0], queue);
-                  }
-                }}
-                className="flex items-center gap-2 group mb-8 bg-white p-3 rounded-full cursor-pointer hover:scale-105 transition-transform"
-              >
-                <div className="w-7 h-7 bg-[#e76418] text-white rounded-full flex items-center justify-center group-hover:scale-105 transition-transform">
-                  <FaPlay className="ml-1" size={12} />
-                </div>
-                <span className="text-lg font-bold text-black tracking-tight">
-                  Play album
-                </span>
-              </button>
-
-              <h1 className="text-3xl md:text-4xl font-bold tracking-tight leading-11 text-neutral-900 mb-4">
-                {album.title}
-              </h1>
-
-              <Link
-                href={`/artist/${
-                  album.artist?.id
-                    ? createSlug(album.artist.name, album.artist.id)
-                    : ""
-                }`}
-                className="text-md text-neutral-600 hover:text-neutral-900 transition-colors mb-4"
-              >
-                {album.artist?.name}
-              </Link>
-
-              <div className="border-t border-neutral-950/10 w-full pt-4 flex flex-wrap items-center gap-2 text-sm text-neutral-00 mb-6 font-mono">
-                <span className="bg-neutral-100 px-2 py-1 rounded text-xs font-semibold text-neutral-700">
-                  {album.type}
-                </span>
-                <span>•</span>
-                <span>{album.releaseDate?.split("-")[0]}</span>
-                <span>•</span>
-                <span>{album.tracks?.length || 0} tracks</span>
-
-                {album.genres?.length > 0 && (
-                  <>
-                    <span>•</span>
-                    <span>{album.genres.slice(0, 3).join(", ")}</span>
-                  </>
-                )}
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-3 min-w-[240px] shrink-0 mt-4"></div>
-          </div>
-
-          <AlbumRatingRowSection
-            publicData={publicData}
-            viewingUserRatings={viewingUserRatings}
-            viewingUserName={viewingUserName}
-            averageScore={averageScore}
-            isFullyRated={isFullyRated}
-            ratedTracksCount={ratedTracksCount}
-            totalTracks={totalTracks}
-          />
-
-          {/* Tracklist Section */}
-          <div className="w-full">
-            <div className="rounded-md">
-              <div className="flex justify-between items-center mb-3">
-                <div className="flex items-center gap-2">
-                  <LuListMusic size={18} />
-                  <h3 className="text-xs uppercase">Tracklist</h3>
-                </div>
-
-                <div className="w-32 focus-within:w-48 transition-all duration-300">
-                  <SearchInput
-                    value={searchQuery}
-                    onChange={setSearchQuery}
-                    onClear={() => setSearchQuery("")}
-                    onFocus={() => setIsSearchFocused(true)}
-                    onBlur={() => setIsSearchFocused(false)}
-                    isFocused={isSearchFocused}
-                    placeholder="search tracks..."
-                    size="compact"
-                  />
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-y-1.5">
-                {filteredTracks.map((track, i) => (
-                  <div
-                    key={track.id}
-                    className={
-                      track.id === highlightTrackId
-                        ? "ring-2 ring-neutral-300 rounded-lg"
-                        : ""
-                    }
-                  >
-                    <SongRow
-                      index={Number(track.number) || i + 1}
-                      title={track.title}
-                      artist={
-                        track.artists?.[0]?.name ||
-                        album.artist?.name ||
-                        "Unknown"
-                      }
-                      album={album.title}
-                      duration={String(track.length || "")}
-                      artworkUrl={imageUrl}
-                      rating={
-                        viewingUserRatings
-                          ? viewingUserRatings[track.id] || 0
-                          : undefined
-                      }
-                      track={track}
-                      artistId={
-                        track.artists?.[0]?.id || album.artist?.id || ""
-                      }
-                      albumId={album.id}
-                      albumContext={{
-                        albumId: album.id,
-                        title: album.title,
-                        artistName: album.artist?.name || "Unknown Artist",
-                        releaseDate: album.releaseDate,
-                        totalTracks: album.tracks?.length || 0,
-                        artworkUrl: album.artworkUrl,
-                      }}
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-          {/* Other Versions */}
-          {album.otherVersions && album.otherVersions.length > 0 && (
-            <div className="w-full mt-10">
-              <h3 className="text-neutral-600 font-mono tracking-wide text-xs uppercase mb-4">
-                other versions
-              </h3>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                {album.otherVersions.map((version) => {
-                  const versionSlug = createSlug(version.name, version.id);
-                  return (
-                    <Link
-                      key={version.id}
-                      href={`/album/${versionSlug}`}
-                      className="group"
-                    >
-                      <div className="aspect-square relative bg-white border border-[#dddddd] group-hover:border-[#c9c9c9] transition-colors overflow-hidden rounded-md">
-                        <OptimizedImage
-                          src={version.artworkUrl || "/vinyl-placeholder.svg"}
-                          alt={version.name}
-                          fill
-                          className="object-cover"
-                          fallbackSrc="/vinyl-placeholder.svg"
-                        />
-                      </div>
-                      <div className="mt-2">
-                        <p className="text-sm text-neutral-900 group-hover:text-black transition-colors truncate">
-                          {version.name}
-                        </p>
-                        <p className="text-[11px] text-neutral-600 truncate mt-0.5">
-                          {version.releaseDate?.slice(0, 4) || ""}
-                          {version.type ? ` · ${version.type}` : ""}
-                          {version.trackCount
-                            ? ` · ${version.trackCount} tracks`
-                            : ""}
-                        </p>
-                      </div>
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
+          {isPlaylistModalOpen && (
+            <AlbumPlaylistSelectorModal
+              albumId={album.id}
+              albumName={album.title}
+              artistName={album.artist?.name}
+              thumbnailUrl={album.artworkUrl}
+              releaseDate={album.releaseDate}
+              totalTracks={album.tracks?.length}
+              onClose={() => setIsPlaylistModalOpen(false)}
+            />
           )}
+        </>
+      }
+      artworkSrc={imageUrl}
+      artworkAlt={album.title}
+      onPlayClick={() => {
+        if (queue.length > 0) {
+          playTrack(queue[0], queue);
+        }
+      }}
+      playLabel="Play album"
+      title={album.title}
+      subtitle={
+        <Link
+          href={`/artist/${
+            album.artist?.id
+              ? createSlug(album.artist.name, album.artist.id)
+              : ""
+          }`}
+          className="text-md mb-4 text-neutral-600 transition-colors hover:text-neutral-900"
+        >
+          {album.artist?.name}
+        </Link>
+      }
+      metaRow={
+        <>
+          <span className="rounded bg-neutral-100 px-2 py-1 text-xs font-semibold text-neutral-700">
+            {album.type}
+          </span>
+          <span>•</span>
+          <span>{album.releaseDate?.split("-")[0]}</span>
+          <span>•</span>
+          <span>{album.tracks?.length || 0} tracks</span>
+
+          {album.genres?.length ? (
+            <>
+              <span>•</span>
+              <span>{album.genres.slice(0, 3).join(", ")}</span>
+            </>
+          ) : null}
+        </>
+      }
+      afterHero={
+        <AlbumRatingRowSection
+          publicData={publicData}
+          viewingUserRatings={viewingUserRatings}
+          viewingUserName={viewingUserName}
+          averageScore={averageScore}
+          isFullyRated={isFullyRated}
+          ratedTracksCount={ratedTracksCount}
+          totalTracks={totalTracks}
+        />
+      }
+      searchQuery={searchQuery}
+      onSearchQueryChange={setSearchQuery}
+      onSearchClear={() => setSearchQuery("")}
+      onSearchFocus={() => setIsSearchFocused(true)}
+      onSearchBlur={() => setIsSearchFocused(false)}
+      searchFocused={isSearchFocused}
+      trackRows={filteredTracks.map((track, i) => (
+        <div
+          key={track.id}
+          className={
+            track.id === highlightTrackId
+              ? "rounded-lg ring-2 ring-neutral-300"
+              : ""
+          }
+        >
+          <SongRow
+            index={Number(track.number) || i + 1}
+            title={track.title}
+            artist={
+              track.artists?.[0]?.name || album.artist?.name || "Unknown"
+            }
+            album={album.title}
+            duration={String(track.length || "")}
+            artworkUrl={imageUrl}
+            rating={
+              viewingUserRatings
+                ? viewingUserRatings[track.id] || 0
+                : undefined
+            }
+            track={track}
+            artistId={track.artists?.[0]?.id || album.artist?.id || ""}
+            albumId={album.id}
+            albumContext={{
+              albumId: album.id,
+              title: album.title,
+              artistName: album.artist?.name || "Unknown Artist",
+              releaseDate: album.releaseDate,
+              totalTracks: album.tracks?.length || 0,
+              artworkUrl: album.artworkUrl,
+            }}
+          />
         </div>
-      </MySection>
-    </main>
+      ))}
+      bottom={
+        album.otherVersions && album.otherVersions.length > 0 ? (
+          <div className="mt-10 w-full">
+            <h3 className="mb-4 font-mono text-xs uppercase tracking-wide text-neutral-600">
+              other versions
+            </h3>
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+              {album.otherVersions.map((version) => {
+                const versionSlug = createSlug(version.name, version.id);
+                return (
+                  <Link
+                    key={version.id}
+                    href={`/album/${versionSlug}`}
+                    className="group"
+                  >
+                    <div className="relative aspect-square overflow-hidden rounded-md border border-[#dddddd] bg-white transition-colors group-hover:border-[#c9c9c9]">
+                      <OptimizedImage
+                        src={version.artworkUrl || "/vinyl-placeholder.svg"}
+                        alt={version.name}
+                        fill
+                        className="object-cover"
+                        fallbackSrc="/vinyl-placeholder.svg"
+                      />
+                    </div>
+                    <div className="mt-2">
+                      <p className="truncate text-sm text-neutral-900 transition-colors group-hover:text-black">
+                        {version.name}
+                      </p>
+                      <p className="mt-0.5 truncate text-[11px] text-neutral-600">
+                        {version.releaseDate?.slice(0, 4) || ""}
+                        {version.type ? ` · ${version.type}` : ""}
+                        {version.trackCount
+                          ? ` · ${version.trackCount} tracks`
+                          : ""}
+                      </p>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        ) : undefined
+      }
+    />
   );
 }

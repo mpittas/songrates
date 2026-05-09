@@ -134,6 +134,7 @@ export interface AppleSongResult {
   discNumber?: number;
   genreNames?: string[];
   url?: string;
+  hasLyrics?: boolean;
 }
 
 function parseArtist(item: any): AppleArtistResult {

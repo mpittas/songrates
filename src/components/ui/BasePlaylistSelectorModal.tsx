@@ -31,6 +31,8 @@ interface BasePlaylistSelectorModalProps {
   isItemInPlaylist: (playlistId: string) => boolean;
   getPlaylistSubtitle: (playlist: Playlist) => string;
   defaultIcon?: React.ReactNode;
+  /** Optional link shown in the footer (e.g. open current album / track context). */
+  itemHref?: string;
 }
 
 export default function BasePlaylistSelectorModal({
@@ -43,6 +45,7 @@ export default function BasePlaylistSelectorModal({
   isItemInPlaylist,
   getPlaylistSubtitle,
   defaultIcon,
+  itemHref,
 }: BasePlaylistSelectorModalProps) {
   const [creating, setCreating] = useState(false);
   const [newPlaylistName, setNewPlaylistName] = useState("");
@@ -264,10 +267,20 @@ export default function BasePlaylistSelectorModal({
         </div>
 
         {/* Footer */}
-        <div className="p-5 bg-white border-t border-neutral-100 flex items-center justify-between">
-          <Button onClick={onClose} variant="ghost">
-            Cancel
-          </Button>
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-neutral-100 bg-white p-5">
+          <div className="flex items-center gap-3">
+            {itemHref ? (
+              <Link
+                href={itemHref}
+                className="font-mono text-xs font-semibold text-neutral-600 underline underline-offset-2 hover:text-neutral-900"
+              >
+                Open
+              </Link>
+            ) : null}
+            <Button onClick={onClose} variant="ghost">
+              Cancel
+            </Button>
+          </div>
           <Button onClick={handleDone} disabled={isSaving} variant="primary">
             {isSaving ? "Saving..." : "Done"}
           </Button>
