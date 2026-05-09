@@ -711,10 +711,92 @@ export const TOP_100_PLAYLIST_IDS = [
 export async function getTrendingSongs(
   limit: number = 10,
 ): Promise<AppleSongResult[]> {
+  // IMPORTANT: The full playlist detail call enriches *all* tracks (up to 100)
+  // with a second /songs?ids=... batch call. The homepage only needs a handful,
+  // so we fetch + enrich only the first N tracks to keep TTFB low.
   const playlistId = TOP_100_PLAYLIST_IDS[0]; // Global Top 100
-  const detail = await getPlaylistDetail(playlistId, STOREFRONT);
-  if (!detail || !detail.tracks) return [];
-  return detail.tracks.slice(0, limit);
+  const safeLimit = Math.max(1, Math.min(limit, 25));
+
+  const cacheKey = `am-trending-songs-${STOREFRONT}-${playlistId}-${safeLimit}`;
+  const cached = playlistCache.get(cacheKey);
+  if (cached) return cached as AppleSongResult[];
+
+  const data = await appleMusicFetch<any>(
+    `/catalog/${STOREFRONT}/playlists/${playlistId}?include=tracks`,
+  );
+
+  const item = data?.data?.[0];
+  if (!item) return [];
+
+  const trackItems = (item.relationships?.tracks?.data || []).slice(0, safeLimit);
+
+  const tracks: AppleSongResult[] = trackItems.map((t: any) => {
+    const ta = t.attributes || {};
+    return {
+      id: t.id,
+      name: ta.name || "",
+      artistName: ta.artistName || "",
+      trackNumber: ta.trackNumber || 0,
+      discNumber: ta.discNumber || 1,
+      durationMs: ta.durationInMillis || 0,
+      artworkUrl: ta.artwork?.url,
+      url: ta.url,
+      hasLyrics: ta.hasLyrics,
+      genreNames: ta.genreNames || [],
+      albumName: ta.albumName,
+      albumId: extractAlbumIdFromUrl(ta.url),
+    } as any;
+  });
+
+  // Enrich only these N tracks for clickable artist/album links.
+  if (tracks.length > 0) {
+    const ids = tracks.map((t) => t.id).join(",");
+    const songsData = await appleMusicFetch<{
+      data?: Array<{
+        id: string;
+        relationships?: {
+          artists?: {
+            data?: Array<{ id: string; attributes?: { name?: string } }>;
+          };
+          albums?: { data?: Array<{ id: string }> };
+        };
+      }>;
+    }>(`/catalog/${STOREFRONT}/songs?ids=${ids}&include=artists,albums`);
+
+    if (songsData?.data) {
+      const enrichmentMap = new Map<
+        string,
+        { artists: { id: string; name: string }[]; albumId?: string }
+      >();
+
+      for (const song of songsData.data) {
+        const songArtists = song.relationships?.artists?.data || [];
+        const songAlbum = song.relationships?.albums?.data?.[0];
+        enrichmentMap.set(song.id, {
+          artists: songArtists.map((ar) => ({
+            id: ar.id,
+            name: ar.attributes?.name || "",
+          })),
+          albumId: songAlbum?.id,
+        });
+      }
+
+      for (const track of tracks) {
+        const enriched = enrichmentMap.get(track.id);
+        if (!enriched) continue;
+        if (enriched.artists.length > 0) {
+          track.artists = enriched.artists;
+          track.artistId = enriched.artists[0].id;
+        }
+        if (enriched.albumId) {
+          track.albumId = enriched.albumId;
+        }
+      }
+    }
+  }
+
+  playlistCache.set(cacheKey, tracks, 3600 * 2);
+  return tracks;
 }
 
 /**
