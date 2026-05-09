@@ -3,6 +3,8 @@
 import { useRatingsContext as useRatings } from "@/context/RatingsContext";
 import { useMemo, useState } from "react";
 import MySection from "@/components/ui/MySection";
+import { cn } from "@/lib/utils";
+import { PAGE_CONTENT_TOP } from "@/lib/pageLayout";
 import AlbumGrid from "@/components/album/AlbumGrid";
 import DropdownFilter from "@/components/ui/DropdownFilter";
 import SearchInput from "@/components/search/SearchInput";
@@ -135,7 +137,7 @@ export default function RatedAlbumsPage() {
 
   return (
     <main className="min-h-screen text-neutral-900">
-      <MySection className="pt-6 pb-24">
+      <MySection className={cn(PAGE_CONTENT_TOP, "pb-24")}>
         <div className="flex flex-col gap-8 pb-8">
           <div>
             <h1 className="text-3xl font-light tracking-tight text-neutral-900">

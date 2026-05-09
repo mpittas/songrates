@@ -7,6 +7,8 @@ import { LuListMusic } from "react-icons/lu";
 import MySection from "@/components/ui/MySection";
 import OptimizedImage from "@/components/ui/OptimizedImage";
 import SearchInput from "@/components/search/SearchInput";
+import { PAGE_CONTENT_TOP } from "@/lib/pageLayout";
+import { cn } from "@/lib/utils";
 
 export interface AlbumDetailPageLayoutProps {
   /** Renders above the max-width column (e.g. full-bleed read-only banner). */
@@ -66,7 +68,12 @@ export default function AlbumDetailPageLayout({
         <div className="absolute left-0 top-0 z-0 h-[500px] w-full bg-linear-to-b from-[#f0e5df] to-[#f0e5df]/0" />
         {beforeConstrained}
 
-        <div className="relative z-10 mx-auto pt-10 w-full max-w-[1180px] px-4 sm:px-6">
+        <div
+          className={cn(
+            "relative z-10 mx-auto w-full max-w-[1180px] px-4 sm:px-6",
+            PAGE_CONTENT_TOP,
+          )}
+        >
           <div className="mb-12 flex flex-wrap items-center justify-between gap-3">
             {topBarLeft}
             <div className="flex items-center gap-3">{topBarRight}</div>

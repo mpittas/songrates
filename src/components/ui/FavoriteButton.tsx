@@ -12,6 +12,8 @@ interface FavoriteButtonProps {
   artistName?: string;
   thumbnailUrl?: string;
   size?: "sm" | "md" | "lg";
+  /** Passed to underlying `Button` when `variant="secondary"` */
+  buttonSize?: "xxs" | "xs" | "sm" | "md" | "lg";
   className?: string;
   variant?: "icon" | "text" | "menu-item" | "secondary";
 }
@@ -23,6 +25,7 @@ export default function FavoriteButton({
   artistName,
   thumbnailUrl,
   size = "md",
+  buttonSize = "sm",
   className = "",
   variant = "icon",
 }: FavoriteButtonProps) {
@@ -139,9 +142,16 @@ export default function FavoriteButton({
   }
 
   if (variant === "secondary") {
+    const likeLabel =
+      itemType === "artist"
+        ? "LIKE ARTIST"
+        : itemType === "track"
+          ? "LIKE TRACK"
+          : "LIKE ALBUM";
     return (
       <Button
         variant="secondary"
+        size={buttonSize}
         onClick={toggleFavorite}
         disabled={loading}
         className={className}
@@ -153,7 +163,7 @@ export default function FavoriteButton({
           )
         }
       >
-        {isFavorite ? "FAVORITED" : "LIKE ALBUM"}
+        {isFavorite ? "FAVORITED" : likeLabel}
       </Button>
     );
   }

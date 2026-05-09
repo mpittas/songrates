@@ -1,9 +1,13 @@
 import MySection from "@/components/ui/MySection";
+import { cn } from "@/lib/utils";
+import { PAGE_CONTENT_TOP } from "@/lib/pageLayout";
 
 export default function ArtistSkeleton() {
   return (
     <main className="min-h-screen bg-[#f7f7f7] text-neutral-900">
-      <MySection className="pt-8 pb-28 md:pt-12 md:pb-32 animate-pulse">
+      <MySection
+        className={cn(PAGE_CONTENT_TOP, "pb-28 md:pb-32 animate-pulse")}
+      >
         {/* Header Skeleton */}
         <div className="flex flex-col md:flex-row justify-between items-baseline mb-12 gap-4">
           <div className="flex items-baseline gap-6 w-full">

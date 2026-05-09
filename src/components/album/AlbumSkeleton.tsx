@@ -1,9 +1,11 @@
 import MySection from "@/components/ui/MySection";
+import { cn } from "@/lib/utils";
+import { PAGE_CONTENT_TOP } from "@/lib/pageLayout";
 
 export default function AlbumSkeleton() {
   return (
     <main className="min-h-screen bg-[#f7f7f7] text-neutral-900">
-      <MySection className="pt-7 pb-24 animate-pulse">
+      <MySection className={cn(PAGE_CONTENT_TOP, "pb-24 animate-pulse")}>
         {/* Hero Section */}
         <div className="flex flex-col md:flex-row gap-10 items-start mb-16">
           {/* Album Cover */}

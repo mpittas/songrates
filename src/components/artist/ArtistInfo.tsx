@@ -1,17 +1,14 @@
 "use client";
 
 import { ArtistInfo as ArtistInfoType } from "@/types/music";
-import FavoriteButton from "@/components/ui/FavoriteButton";
 
 interface Props {
-  artistId: string;
   artistName: string;
   data: ArtistInfoType;
   className?: string;
 }
 
 export default function ArtistInfo({
-  artistId,
   artistName,
   data,
   className = "",
@@ -20,29 +17,20 @@ export default function ArtistInfo({
     <div
       className={`flex flex-col items-center gap-3 text-sm pt-6 ${className}`}
     >
-      <div className="relative aspect-square w-[140px] overflow-visible">
+      <div className="relative aspect-square w-[140px] overflow-hidden rounded-full bg-white">
         {data.image ? (
           <img
             src={data.image}
             alt={artistName}
-            className="w-full h-full object-cover rounded-full bg-white"
+            className="h-full w-full object-cover"
           />
         ) : (
-          <div className="w-full flex items-center justify-center bg-white rounded-xl">
+          <div className="flex h-full w-full items-center justify-center">
             <span className="text-xl font-mono text-neutral-400">
               {artistName.slice(0, 2).toUpperCase()}
             </span>
           </div>
         )}
-        <div className="absolute -bottom-4 right-1/2 translate-x-1/2 rounded-full bg-white">
-          <FavoriteButton
-            itemId={artistId}
-            itemType="artist"
-            itemName={artistName}
-            thumbnailUrl={data.image || undefined}
-            size="md"
-          />
-        </div>
       </div>
 
       <div className="mt-3 text-2xl text-center font-semibold text-neutral-950">

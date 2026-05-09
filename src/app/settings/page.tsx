@@ -17,6 +17,8 @@ import {
 } from "react-icons/fa";
 import Button from "@/components/ui/Button";
 import MySection from "@/components/ui/MySection";
+import { cn } from "@/lib/utils";
+import { PAGE_CONTENT_TOP } from "@/lib/pageLayout";
 
 interface ProfileSettings {
   username: string;
@@ -204,7 +206,7 @@ export default function SettingsPage() {
 
   return (
     <main className="min-h-screen">
-      <MySection className="py-12">
+      <MySection className={cn(PAGE_CONTENT_TOP, "pb-12")}>
         <div className="w-full max-w-2xl mx-auto">
           {/* Header */}
           <div className="flex items-center gap-4 mb-10">

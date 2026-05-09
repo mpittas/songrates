@@ -7,6 +7,8 @@ import {
   type AppleArtistAlbum,
 } from "@/lib/appleMusic/api";
 import ArtistPageContent from "@/components/artist/ArtistPageContent";
+import { PAGE_CONTENT_TOP } from "@/lib/pageLayout";
+import { cn } from "@/lib/utils";
 import type { Album, ArtistInfo, TopSong } from "@/types/music";
 
 interface PageProps {
@@ -41,7 +43,12 @@ export default async function ArtistPage({ params }: PageProps) {
 
   if (!discography) {
     return (
-      <main className="min-h-screen text-neutral-900 p-6 md:px-16 md:py-8 flex items-center justify-center">
+      <main
+        className={cn(
+          "min-h-screen text-neutral-900 px-4 sm:px-6 flex items-center justify-center",
+          PAGE_CONTENT_TOP,
+        )}
+      >
         <div className="text-neutral-500 font-mono">Artist not found</div>
       </main>
     );

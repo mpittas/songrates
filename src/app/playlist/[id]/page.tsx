@@ -20,6 +20,8 @@ import Button from "@/components/ui/Button";
 import OptimizedImage from "@/components/ui/OptimizedImage";
 import TrackItem from "@/components/album/TrackItem";
 import MySection from "@/components/ui/MySection";
+import { cn } from "@/lib/utils";
+import { PAGE_CONTENT_TOP } from "@/lib/pageLayout";
 
 export default function PlaylistPage() {
   const params = useParams();
@@ -141,7 +143,7 @@ export default function PlaylistPage() {
   if (notFound || !playlist) {
     return (
       <main className="min-h-screen">
-        <MySection className="pt-20">
+        <MySection className={cn(PAGE_CONTENT_TOP)}>
           <div className="w-full max-w-4xl">
             <Link
               href="/profile"
@@ -164,7 +166,7 @@ export default function PlaylistPage() {
 
   return (
     <main className="min-h-screen">
-      <MySection className="pt-20 pb-20">
+      <MySection className={cn(PAGE_CONTENT_TOP, "pb-20")}>
         <div className="w-full max-w-4xl">
           {/* Back link */}
           <Link

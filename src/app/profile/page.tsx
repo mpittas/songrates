@@ -220,7 +220,7 @@ export default function ProfilePage() {
       </MySection>
 
       {/* Stats Bar */}
-      <MySection className="mt-8">
+      <MySection className="mt-10">
         <div className="w-full max-w-4xl">
           <FavoriteStatsBar
             favorites={favorites}

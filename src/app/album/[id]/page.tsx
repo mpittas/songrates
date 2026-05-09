@@ -15,6 +15,8 @@ import { FaArrowLeft, FaHeart, FaRegHeart, FaPlus } from "react-icons/fa";
 import { usePlayerCore } from "@/context/PlayerContext";
 import SongRow from "@/main-components/SongRow";
 import { useAlbumInfo } from "@/hooks/useAlbumInfo";
+import { PAGE_CONTENT_TOP } from "@/lib/pageLayout";
+import { cn } from "@/lib/utils";
 
 /**
  * Extract the numeric Apple Music ID from a slug like "album-name-1440833849"
@@ -203,7 +205,12 @@ export default function AlbumPage() {
 
   if (!album) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-neutral-600 font-mono text-sm">
+      <div
+        className={cn(
+          "min-h-screen px-4 text-neutral-600 font-mono text-sm sm:px-6",
+          PAGE_CONTENT_TOP,
+        )}
+      >
         album not found
       </div>
     );
