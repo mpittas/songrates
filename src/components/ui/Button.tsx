@@ -33,7 +33,7 @@ export default function Button({
     ghost:
       "bg-transparent text-neutral-500 hover:text-neutral-900 hover:bg-neutral-200",
     muted:
-      "bg-[#f2f2f2] text-neutral-700 hover:bg-[#e8e8e8] hover:text-neutral-900",
+      "bg-[#fff] text-neutral-900 hover:bg-[#e8e8e8] hover:text-neutral-900",
     border:
       "bg-white border border-[#d5d5d5] text-neutral-800 hover:bg-[#f8f8f8] hover:text-black hover:border-[#c6c6c6]",
   };

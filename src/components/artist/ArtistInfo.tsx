@@ -40,12 +40,12 @@ export default function ArtistInfo({
             itemType="artist"
             itemName={artistName}
             thumbnailUrl={data.image || undefined}
-            size="lg"
+            size="md"
           />
         </div>
       </div>
 
-      <div className="mt-3 text-2xl font-semibold text-neutral-950">
+      <div className="mt-3 text-2xl text-center font-semibold text-neutral-950">
         {artistName}
       </div>
 

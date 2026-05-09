@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { IoDiscOutline } from "react-icons/io5";
+import { LuStar,LuListMusic, LuDiscAlbum, LuUsersRound } from "react-icons/lu";
 import Button from "@/components/ui/Button";
 import SongRow from "@/main-components/SongRow";
 import ArtistAccordion from "./ArtistAccordion";
@@ -72,14 +74,14 @@ function TopSongsList({ songs }: { songs: TopSong[] }) {
       </div>
 
       {songs.length > 10 && (
-        <div className="mt-3 flex justify-center border-t border-[#ececec] pt-3">
+        <div className="mt-4 flex justify-center pb-6">
           <Button
-            variant="ghost"
-            size="sm"
+            variant="secondary"
+            size="xs"
             onClick={() => setShowAll(!showAll)}
-            className="text-[10px]  tracking-widest"
+            className="w-full"
           >
-            {showAll ? "show_less" : `show_all_${songs.length}_songs`}
+            {showAll ? "Show less" : `Show all ${songs.length} songs`}
           </Button>
         </div>
       )}
@@ -113,14 +115,14 @@ function AlbumGridSection({
         ))}
       </div>
       {hasMore && (
-        <div className="mt-4 flex justify-center border-t border-[#ececec] pt-4">
+        <div className="mt-4 flex justify-center pb-6">
           <Button
-            variant="ghost"
-            size="sm"
+            variant="secondary"
+            size="xs"
             onClick={() => setShowAll(!showAll)}
-            className="text-[10px] uppercase tracking-widest"
+            className="w-full"
           >
-            {showAll ? "show_less" : `show_all_${albums.length}_releases`}
+            {showAll ? "Show less" : `Show all ${albums.length} releases`}
           </Button>
         </div>
       )}
@@ -182,6 +184,7 @@ export default function Discography({
         <ArtistAccordion
           title="Top Songs"
           count={filteredTopSongs.length}
+          icon={<LuListMusic aria-hidden />}
           defaultOpen={true}
         >
           <TopSongsList songs={filteredTopSongs} />
@@ -193,6 +196,7 @@ export default function Discography({
         <ArtistAccordion
           title="Essential Albums"
           count={filteredEssential.length}
+          icon={<LuStar aria-hidden />}
           defaultOpen={true}
         >
           <AlbumGridSection
@@ -207,6 +211,7 @@ export default function Discography({
         <ArtistAccordion
           title="Albums"
           count={filteredAlbums.length}
+          icon={<IoDiscOutline aria-hidden />}
           defaultOpen={true}
         >
           <AlbumGridSection
@@ -221,6 +226,7 @@ export default function Discography({
         <ArtistAccordion
           title="EPs & Singles"
           count={filteredEpsAndSingles.length}
+          icon={<LuDiscAlbum aria-hidden />}
           defaultOpen={false}
         >
           <AlbumGridSection
@@ -235,6 +241,7 @@ export default function Discography({
         <ArtistAccordion
           title="Appears On"
           count={filteredAppearsOn.length}
+          icon={<LuUsersRound aria-hidden />}
           defaultOpen={false}
         >
           <AlbumGridSection

@@ -66,7 +66,7 @@ export default function AlbumDetailPageLayout({
         <div className="absolute left-0 top-0 z-0 h-[500px] w-full bg-linear-to-b from-[#f0e5df] to-[#f0e5df]/0" />
         {beforeConstrained}
 
-        <div className="relative z-10 mx-auto mt-10 w-full max-w-[1180px] px-4 sm:px-6">
+        <div className="relative z-10 mx-auto pt-10 w-full max-w-[1180px] px-4 sm:px-6">
           <div className="mb-12 flex flex-wrap items-center justify-between gap-3">
             {topBarLeft}
             <div className="flex items-center gap-3">{topBarRight}</div>

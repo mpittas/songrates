@@ -3,7 +3,7 @@ import MySection from "@/components/ui/MySection";
 export default function ArtistSkeleton() {
   return (
     <main className="min-h-screen bg-[#f7f7f7] text-neutral-900">
-      <MySection className="py-8 md:py-12 animate-pulse">
+      <MySection className="pt-8 pb-28 md:pt-12 md:pb-32 animate-pulse">
         {/* Header Skeleton */}
         <div className="flex flex-col md:flex-row justify-between items-baseline mb-12 gap-4">
           <div className="flex items-baseline gap-6 w-full">
