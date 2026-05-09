@@ -45,6 +45,20 @@ export interface PlayerContextType {
   setCurrentLyricsTrackId: (id: string | null) => void;
 }
 
+/** High-frequency playback position (MiniPlayer progress only). */
+export interface PlayerProgressContextType {
+  currentTime: number;
+  duration: number;
+  buffered: number;
+  updateProgress: (current: number, total: number, buffered?: number) => void;
+}
+
+/** Player state without progress fields — safe for list rows (avoids re-render every tick). */
+export type PlayerCoreContextType = Omit<
+  PlayerContextType,
+  keyof PlayerProgressContextType
+>;
+
 export interface PlaybackControlsProps {
   isPlaying: boolean;
   isLoading: boolean;

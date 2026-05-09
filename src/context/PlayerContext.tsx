@@ -4,17 +4,18 @@ import {
   createContext,
   useContext,
   useState,
-  useEffect,
   ReactNode,
   useRef,
   useCallback,
+  useMemo,
 } from "react";
 
 import { Track } from "@/types/music";
 import {
   PlayerContextType,
+  PlayerCoreContextType,
+  PlayerProgressContextType,
   YouTubePlayer,
-  PlaybackControlsProps,
 } from "@/types/player";
 
 const shuffleArray = (array: Track[], startTrackId?: string) => {
@@ -29,7 +30,10 @@ const shuffleArray = (array: Track[], startTrackId?: string) => {
     : shuffled;
 };
 
-const PlayerContext = createContext<PlayerContextType | null>(null);
+const PlayerCoreContext = createContext<PlayerCoreContextType | null>(null);
+const PlayerProgressContext = createContext<PlayerProgressContextType | null>(
+  null,
+);
 
 export function PlayerProvider({ children }: { children: ReactNode }) {
   const [currentTrack, setCurrentTrack] = useState<Track | null>(null);
@@ -79,7 +83,6 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
   const playTrack = useCallback(
     async (track: Track, newQueue?: Track[]) => {
-      // If same track, just toggle play (ignore queue update in this case usually)
       if (currentTrack?.id === track.id && videoId) {
         if (playerRef.current) {
           if (isPlaying) {
@@ -95,7 +98,6 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      // Update queue if provided, or default to single track if not (and different track)
       if (newQueue) {
         if (isShuffling) {
           setOriginalQueue(newQueue);
@@ -104,7 +106,6 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
           setQueue(newQueue);
         }
       } else if (!queue.find((t) => t.id === track.id)) {
-        // If playing a track not in current queue, replace queue
         const newQ = [track];
         setQueue(newQ);
         if (isShuffling) {
@@ -112,25 +113,21 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      // Cancel any pending search
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
       abortControllerRef.current = new AbortController();
 
-      // If switching to a different track and it's not the one with open lyrics, close all lyrics
       if (currentTrack?.id !== track.id && currentLyricsTrackId !== track.id) {
         setCurrentLyricsTrackId(null);
       }
 
-      // Immediately update UI with new track info (optimistic update)
       setCurrentTrack(track);
       setIsLoading(true);
       setCurrentTime(0);
       setDuration(0);
       setBuffered(0);
 
-      // Pause currently playing video so the user knows their click was instantly registered
       if (
         playerRef.current &&
         typeof playerRef.current.pauseVideo === "function"
@@ -155,7 +152,6 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
           setIsPlaying(true);
         }
       } catch (e: unknown) {
-        // Ignore abort errors
         if (e instanceof Error && e.name !== "AbortError") {
           console.error("Failed to search YouTube:", e);
         }
@@ -163,12 +159,18 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
       setIsLoading(false);
     },
-    [currentTrack?.id, videoId, isPlaying, queue, isShuffling],
+    [
+      currentTrack?.id,
+      currentLyricsTrackId,
+      videoId,
+      isPlaying,
+      queue,
+      isShuffling,
+    ],
   );
 
   const nextTrack = useCallback(() => {
     if (hasNext) {
-      // Do not pass queue again to prevent re-shuffling logic
       playTrack(queue[currentIndex + 1]);
     }
   }, [hasNext, queue, currentIndex, playTrack]);
@@ -179,15 +181,14 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     }
   }, [hasPrev, queue, currentIndex, playTrack]);
 
-  const stopPlayback = () => {
+  const stopPlayback = useCallback(() => {
     setCurrentTrack(null);
-    // Keep videoId to avoid unmounting the player instance
     setIsPlaying(false);
     setCurrentTime(0);
     setDuration(0);
-  };
+  }, []);
 
-  const pausePlayback = () => {
+  const pausePlayback = useCallback(() => {
     setIsPlaying(false);
     if (
       playerRef.current &&
@@ -195,15 +196,14 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     ) {
       playerRef.current.pauseVideo();
     }
-  };
+  }, []);
 
-  const togglePlayPause = () => {
+  const togglePlayPause = useCallback(() => {
     if (
       playerRef.current &&
       typeof playerRef.current.getPlayerState === "function"
     ) {
       const state = playerRef.current.getPlayerState();
-      // 1 = playing, 2 = paused
       if (state === 1) {
         playerRef.current.pauseVideo();
         setIsPlaying(false);
@@ -212,18 +212,14 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         setIsPlaying(true);
       }
     } else {
-      // Fallback state toggle
-      setIsPlaying(!isPlaying);
+      setIsPlaying((p) => !p);
     }
-  };
+  }, []);
 
   const toggleRepeat = useCallback(() => {
     setIsRepeating((prev) => {
       const next = !prev;
       if (next && isShuffling) {
-        // If turning repeat ON and shuffle is ON, we need to turn shuffle OFF properly
-        // We can't call toggleShuffle inside set state callback easily if it depends on state.
-        // Instead, let's just do the queue restoration manually here if needed.
         if (originalQueue.length > 0) {
           setQueue(originalQueue);
         }
@@ -237,10 +233,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     setIsShuffling((prev) => {
       const nextShuffle = !prev;
       if (nextShuffle) {
-        // If turning shuffle ON, turn repeat OFF
         setIsRepeating(false);
-
-        // Turning ON: Shuffle current queue
         setOriginalQueue(queue);
         if (currentTrack) {
           setQueue(shuffleArray(queue, currentTrack.id));
@@ -248,9 +241,6 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
           setQueue(shuffleArray(queue));
         }
       } else {
-        // Turning OFF: Restore original queue
-        // We need to make sure we don't lose the expected queue if it wasn't saved correctly?
-        // But we save it when toggling on or when playing new track while on.
         if (originalQueue.length > 0) {
           setQueue(originalQueue);
         }
@@ -259,46 +249,92 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     });
   }, [queue, currentTrack, originalQueue]);
 
+  const coreValue = useMemo<PlayerCoreContextType>(
+    () => ({
+      currentTrack,
+      videoId,
+      isPlaying,
+      isLoading,
+      queue,
+      setIsPlaying,
+      playTrack,
+      stopPlayback,
+      pausePlayback,
+      togglePlayPause,
+      seekTo,
+      nextTrack,
+      prevTrack,
+      hasNext,
+      hasPrev,
+      setPlayerRef,
+      isRepeating,
+      toggleRepeat,
+      isShuffling,
+      toggleShuffle,
+      currentLyricsTrackId,
+      setCurrentLyricsTrackId,
+    }),
+    [
+      currentTrack,
+      videoId,
+      isPlaying,
+      isLoading,
+      queue,
+      playTrack,
+      stopPlayback,
+      pausePlayback,
+      togglePlayPause,
+      seekTo,
+      nextTrack,
+      prevTrack,
+      hasNext,
+      hasPrev,
+      setPlayerRef,
+      isRepeating,
+      toggleRepeat,
+      isShuffling,
+      toggleShuffle,
+      currentLyricsTrackId,
+    ],
+  );
+
+  const progressValue = useMemo<PlayerProgressContextType>(
+    () => ({
+      currentTime,
+      duration,
+      buffered,
+      updateProgress,
+    }),
+    [currentTime, duration, buffered, updateProgress],
+  );
+
   return (
-    <PlayerContext.Provider
-      value={{
-        currentTrack,
-        videoId,
-        isPlaying,
-        isLoading,
-        currentTime,
-        duration,
-        buffered,
-        queue,
-        setIsPlaying,
-        playTrack,
-        stopPlayback,
-        pausePlayback,
-        togglePlayPause,
-        seekTo,
-        nextTrack,
-        prevTrack,
-        hasNext,
-        hasPrev,
-        setPlayerRef,
-        updateProgress,
-        isRepeating,
-        toggleRepeat,
-        isShuffling,
-        toggleShuffle,
-        currentLyricsTrackId,
-        setCurrentLyricsTrackId,
-      }}
-    >
-      {children}
-    </PlayerContext.Provider>
+    <PlayerCoreContext.Provider value={coreValue}>
+      <PlayerProgressContext.Provider value={progressValue}>
+        {children}
+      </PlayerProgressContext.Provider>
+    </PlayerCoreContext.Provider>
   );
 }
 
-export function usePlayer() {
-  const context = useContext(PlayerContext);
-  if (!context) {
+/** Full player API — re-renders on progress ticks (use in MiniPlayer only). */
+export function usePlayer(): PlayerContextType {
+  const core = useContext(PlayerCoreContext);
+  const progress = useContext(PlayerProgressContext);
+  if (!core || !progress) {
     throw new Error("usePlayer must be used within a PlayerProvider");
   }
-  return context;
+  return useMemo(
+    () => ({ ...core, ...progress }),
+    [core, progress],
+  ) as PlayerContextType;
+}
+
+/** Core playback + queue — stable while audio position updates (SongRow, track lists). */
+export function usePlayerCore(): PlayerCoreContextType {
+  const core = useContext(PlayerCoreContext);
+  if (!core) {
+    throw new Error("usePlayerCore must be used within a PlayerProvider");
+  }
+  return core;
 }

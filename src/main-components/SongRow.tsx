@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { FaPlay, FaPause } from "react-icons/fa6";
 import { IoDiscOutline } from "react-icons/io5";
-import { usePlayer } from "@/context/PlayerContext";
+import { usePlayerCore } from "@/context/PlayerContext";
 import { useRatingsContext } from "@/context/RatingsContext";
 import { useLyrics } from "@/hooks/useLyrics";
 import { Track, AlbumContext } from "@/types/music";
@@ -80,7 +80,7 @@ export default function SongRow({
     playTrack,
     currentLyricsTrackId,
     setCurrentLyricsTrackId,
-  } = usePlayer();
+  } = usePlayerCore();
   const isCurrentTrack = currentTrack?.id === track?.id;
 
   const { ratings, publicAlbumRatings } = useRatingsContext();

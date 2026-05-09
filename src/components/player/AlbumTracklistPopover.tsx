@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { formatTime } from "@/lib/utils";
 import { useEffect, useRef } from "react";
 import { FaPlay, FaPause } from "react-icons/fa";
-import { usePlayer } from "@/context/PlayerContext";
+import { usePlayerCore } from "@/context/PlayerContext";
 import { useRatingsContext as useRatings } from "@/context/RatingsContext";
 import { RATING_COLORS } from "@/components/rating/constants";
 import { AlbumInfo } from "@/types/music";
@@ -20,7 +20,7 @@ export default function AlbumTracklistPopover({
   currentTrackId,
   isVisible,
 }: AlbumTracklistPopoverProps) {
-  const { playTrack, isPlaying } = usePlayer();
+  const { playTrack, isPlaying } = usePlayerCore();
   const { ratings } = useRatings();
   const listRef = useRef<HTMLDivElement>(null);
 

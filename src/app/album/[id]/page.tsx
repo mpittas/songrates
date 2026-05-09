@@ -12,7 +12,7 @@ import AlbumSkeleton from "@/components/album/AlbumSkeleton";
 import Button from "@/components/ui/Button";
 import AlbumPlaylistSelectorModal from "@/components/ui/AlbumPlaylistSelectorModal";
 import { FaArrowLeft, FaHeart, FaRegHeart, FaPlus } from "react-icons/fa";
-import { usePlayer } from "@/context/PlayerContext";
+import { usePlayerCore } from "@/context/PlayerContext";
 import SongRow from "@/main-components/SongRow";
 import { useAlbumInfo } from "@/hooks/useAlbumInfo";
 
@@ -56,7 +56,7 @@ export default function AlbumPage() {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
-  const { playTrack } = usePlayer();
+  const { playTrack } = usePlayerCore();
 
   const [isPlaylistModalOpen, setIsPlaylistModalOpen] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);

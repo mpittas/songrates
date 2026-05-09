@@ -13,7 +13,7 @@ import {
 } from "react-icons/fa";
 import { HiOutlineMicrophone, HiEllipsisVertical } from "react-icons/hi2";
 import { useRatingsContext as useRatings } from "@/context/RatingsContext";
-import { usePlayer } from "@/context/PlayerContext";
+import { usePlayerCore } from "@/context/PlayerContext";
 import { createSlug } from "@/lib/utils";
 import ColorRating from "@/components/rating/ColorRating";
 import Button from "@/components/ui/Button";
@@ -63,7 +63,7 @@ export default function TrackItem({
   const [lyricsFontSize, setLyricsFontSize] = useState(12);
   const [showPlaylistModal, setShowPlaylistModal] = useState(false);
   const { ratings, setRating } = useRatings();
-  const { currentTrack, isPlaying, isLoading, playTrack } = usePlayer();
+  const { currentTrack, isPlaying, isLoading, playTrack } = usePlayerCore();
   const rating =
     forcedRating !== undefined ? forcedRating : ratings[track.id] || 0;
   const isCurrentTrack = currentTrack?.id === track.id;

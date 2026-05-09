@@ -7,7 +7,7 @@ import AlbumDetailPageLayout from "@/components/album/AlbumDetailPageLayout";
 import Button from "@/components/ui/Button";
 import { artworkUrl, type ApplePlaylistDetail } from "@/lib/appleMusic/api";
 import { mapAppleSongToTrackInfo } from "@/lib/appleMusic/mapAppleSongToTrackInfo";
-import { usePlayer } from "@/context/PlayerContext";
+import { usePlayerCore } from "@/context/PlayerContext";
 import SongRow from "@/main-components/SongRow";
 import type { AlbumContext, Track } from "@/types/music";
 import { FaArrowLeft } from "react-icons/fa";
@@ -39,7 +39,7 @@ export default function ApplePlaylistDetailClient({
 
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
-  const { playTrack } = usePlayer();
+  const { playTrack } = usePlayerCore();
 
   const heroImageUrl =
     artworkUrl(playlist.artworkUrl, 600) || "/vinyl-placeholder.svg";
