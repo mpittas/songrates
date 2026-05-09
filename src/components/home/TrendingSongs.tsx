@@ -16,7 +16,6 @@ export default async function TrendingSongs() {
           <HeadingRow
             title="Trending Songs"
             badgeText="Global top 100"
-            seeAllHref="/trending"
           />
 
           <div className="flex flex-col gap-2">

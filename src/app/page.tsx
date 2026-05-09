@@ -33,7 +33,7 @@ function TrendingSongsFallback() {
 
 export default function Home() {
   return (
-    <main className="min-h-screen text-neutral-900 flex flex-col relative bg-[#F2EFED]">
+    <main className="min-h-screen text-neutral-900 flex flex-col relative bg-[#F2EFED] pb-14">
       <Suspense fallback={null}>
         <HomeHero />
       </Suspense>

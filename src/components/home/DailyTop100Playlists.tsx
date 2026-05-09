@@ -13,7 +13,7 @@ export default async function DailyTop100Playlists() {
     <section className="py-12 sm:py-14">
       <MySection>
         <div className="w-full">
-          <HeadingRow title="Daily Top 100 Playlists" seeAllHref="/playlists" />
+          <HeadingRow title="Daily Top 100 Playlists" />
 
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
             {playlists.slice(0, 5).map((playlist) => {

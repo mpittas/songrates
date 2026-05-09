@@ -7,20 +7,17 @@ import Link from "next/link";
 import { useRatingsContext as useRatings } from "@/context/RatingsContext";
 import { createSlug } from "@/lib/utils";
 import MySection from "@/components/ui/MySection";
+import AlbumRatingRowSection from "@/components/album/AlbumRatingRowSection";
 import AlbumSkeleton from "@/components/album/AlbumSkeleton";
 import SearchInput from "@/components/search/SearchInput";
 import Button from "@/components/ui/Button";
 import AlbumPlaylistSelectorModal from "@/components/ui/AlbumPlaylistSelectorModal";
 import {
   FaArrowLeft,
-  FaLock,
-  FaExternalLinkAlt,
   FaPlay,
   FaHeart,
   FaRegHeart,
   FaPlus,
-  FaGlobeAmericas,
-  FaUser,
 } from "react-icons/fa";
 import { usePlayer } from "@/context/PlayerContext";
 import SongRow from "@/main-components/SongRow";
@@ -244,49 +241,52 @@ export default function AlbumPage() {
 
   return (
     <main className="min-h-screen text-neutral-900">
-      <MySection className="pt-8 pb-24">
+      <MySection className="pb-24" container={false}>
         <div className="bg-linear-to-b from-[#f0e5df] to-[#f0e5df]/0 absolute top-0 left-0 w-full h-[500px] z-0"></div>
-        <div className="relative z-10">
-          {" "}
-          {/* READ ONLY USER RATING BANNER */}
-          {userId && (
-            <div className="w-full bg-white border border-[#d9d9d9] p-4 mb-6 flex flex-col sm:flex-row items-center justify-between gap-4 relative overflow-hidden rounded-md">
-              <div className="absolute inset-0 bg-[#000000]/[0.01] pointer-events-none" />
-
-              <div className="flex items-center gap-5 relative z-10">
-                <div className="flex items-center gap-2 text-neutral-700 bg-[#f3f3f3] px-3 py-1.5 rounded">
-                  <FaLock size={10} />
-                  <span className="text-[10px] font-mono uppercase tracking-widest">
-                    Read Only
-                  </span>
-                </div>
-
-                {(viewingUserName || searchParams.get("userName")) && (
-                  <div className="flex flex-col">
-                    <span className="text-[10px] uppercase tracking-widest text-neutral-500 font-mono mb-1">
-                      Viewing Ratings By
-                    </span>
+        {userId && (
+          <div
+            className="relative z-10 w-full py-3.5 sm:py-4"
+            style={{
+              backgroundColor: "#0f0f0f",
+              backgroundImage: `repeating-linear-gradient(
+                -36deg,
+                transparent,
+                transparent 5px,
+                rgba(255, 255, 255, 0.018) 3px,
+                rgba(255, 255, 255, 0.018) 10px
+              )`,
+            }}
+          >
+            <div className="mx-auto flex w-full max-w-[1180px] flex-col gap-3 px-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+              <div className="text-sm leading-snug text-white">
+                <span className="text-white/70">Read only · </span>
+                {(viewingUserName || searchParams.get("userName")) ? (
+                  <>
+                    Viewing ratings by{" "}
                     <Link
                       href={`/user/${viewingUserName || searchParams.get("userName")}`}
-                      className="text-md text-neutral-900 leading-none hover:text-black transition-colors"
+                      className="text-white underline decoration-white/40 underline-offset-2 transition-colors hover:decoration-white"
                     >
-                      {viewingUserName || searchParams.get("userName")}
+                      @{viewingUserName || searchParams.get("userName")}
                     </Link>
-                  </div>
+                  </>
+                ) : (
+                  <span>Viewing another user&apos;s ratings</span>
                 )}
               </div>
-
-              <div className="flex items-center gap-4 relative z-10">
-                <Button
-                  href={`/album/${album.id}`}
-                  variant="secondary"
-                  size="sm"
-                >
-                  My Ratings
-                </Button>
-              </div>
+              <Button
+                href={`/album/${slug}`}
+                variant="border"
+                size="sm"
+                className="shrink-0 self-start border-0 bg-white text-neutral-950 hover:bg-neutral-100 sm:self-auto"
+              >
+                My ratings
+              </Button>
             </div>
-          )}
+          </div>
+        )}
+
+        <div className="mt-10  relative z-10 mx-auto w-full max-w-[1180px] px-4 sm:px-6">
           <div className="mb-12 flex flex-wrap items-center gap-3 justify-between">
             <Button
               href={`/artist/${
@@ -340,70 +340,10 @@ export default function AlbumPage() {
               )}
             </div>
           </div>
-          {/* Rating Row Section */}
-          <div className="w-full mb-8 grid grid-cols-1 md:grid-cols-2 ">
-            {/* Public Rating */}
-            <div className="flex items-center justify-between p-4 bg-neutral-800 rounded-l-xl">
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-full flex items-center justify-center bg-neutral-700 text-neutral-50">
-                  <FaGlobeAmericas size={16} />
-                </div>
-                <div className="flex flex-col text-left">
-                  <span className="text-xs uppercase text-neutral-400">
-                    Public
-                  </span>
-                  {publicData?.ratingCount ? (
-                    <span className="text-[10px] text-white font-mono uppercase mt-0.5">
-                      {publicData.ratingCount} ratings
-                    </span>
-                  ) : (
-                    <span className="text-[10px] text-white font-mono uppercase mt-0.5">
-                      No ratings
-                    </span>
-                  )}
-                </div>
-              </div>
-              <div className="text-2xl font-bold text-white ml-6">
-                {publicData?.averageRating
-                  ? publicData.averageRating.toFixed(1)
-                  : "-"}
-              </div>
-            </div>
 
-            {/* Personal Rating */}
-            <div className="flex items-center justify-between p-4 bg-neutral-800 border-l border-white/10 rounded-r-xl">
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-full bg-neutral-700 flex items-center justify-center text-white">
-                  <FaUser size={16} />
-                </div>
-                <div className="flex flex-col text-left">
-                  <span className="text-xs uppercase text-neutral-400">
-                    {viewingUserRatings
-                      ? viewingUserName
-                        ? viewingUserName
-                        : "User"
-                      : "You"}
-                  </span>
-                  {averageScore && parseFloat(averageScore) > 0 ? (
-                    <span className="text-[10px] text-neutral-400 font-mono uppercase mt-0.5">
-                      {isFullyRated
-                        ? "Completed"
-                        : `${ratedTracksCount}/${totalTracks} rated`}
-                    </span>
-                  ) : (
-                    <span className="text-[10px] text-neutral-400 font-mono uppercase mt-0.5">
-                      Rate below
-                    </span>
-                  )}
-                </div>
-              </div>
-              <div className="text-2xl font-bold text-white ml-6">
-                {averageScore && parseFloat(averageScore) > 0
-                  ? averageScore
-                  : "-"}
-              </div>
-            </div>
-          </div>
+          
+
+
           {/* New Hero Section */}
           <div className="flex flex-col md:flex-row gap-8 md:gap-12 items-start mb-8 relative">
             {/* Album Cover */}
@@ -474,6 +414,17 @@ export default function AlbumPage() {
 
             <div className="flex flex-col gap-3 min-w-[240px] shrink-0 mt-4"></div>
           </div>
+
+          <AlbumRatingRowSection
+            publicData={publicData}
+            viewingUserRatings={viewingUserRatings}
+            viewingUserName={viewingUserName}
+            averageScore={averageScore}
+            isFullyRated={isFullyRated}
+            ratedTracksCount={ratedTracksCount}
+            totalTracks={totalTracks}
+          />
+
           {/* Tracklist Section */}
           <div className="w-full">
             <div className="rounded-md">

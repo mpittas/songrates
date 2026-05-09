@@ -126,7 +126,6 @@ export default function LatestRatedAlbums() {
           <HeadingRow
             title="Latest Community Rated Albums"
             badgeText=""
-            seeAllHref="/rated"
           />
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 w-full">
