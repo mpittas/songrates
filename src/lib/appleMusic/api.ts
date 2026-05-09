@@ -473,6 +473,11 @@ export interface AppleAlbumDetail {
   id: string;
   name: string;
   artistName: string;
+  /**
+   * Primary album artist resolved from relationships.artists[0].
+   * Apple's attributes.artistName can be a display string like "A & B".
+   */
+  primaryArtistName?: string;
   artistId?: string;
   artworkUrl?: string;
   releaseDate?: string;
@@ -544,6 +549,10 @@ export async function getAlbumDetail(
   }
 
   const albumArtistName = a.artistName || "";
+  const primaryArtistName =
+    (artistRel?.id
+      ? includedMap[`artists:${artistRel.id}`]?.attributes?.name
+      : undefined) || undefined;
 
   const tracks: AppleTrack[] = trackItems.map((t: any) => {
     const ta = t.attributes || {};
@@ -631,6 +640,7 @@ export async function getAlbumDetail(
     id: item.id,
     name: a.name || "",
     artistName: a.artistName || "",
+    primaryArtistName,
     artistId: artistRel?.id,
     artworkUrl: a.artwork?.url,
     releaseDate: a.releaseDate,

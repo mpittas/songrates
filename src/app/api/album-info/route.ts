@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
         id: album.id,
         title: album.name,
         artist: {
-          name: album.artistName,
+          name: album.primaryArtistName || album.artistName,
           id: album.artistId || "",
         },
         type: albumType,

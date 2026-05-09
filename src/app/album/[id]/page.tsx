@@ -231,6 +231,15 @@ export default function AlbumPage() {
 
   const publicData = album ? publicAlbumRatings[album.id] : null;
 
+  const primaryArtist = album.tracks?.[0]?.artists?.[0] ?? album.artist ?? null;
+
+  const subtitleArtists =
+    album.tracks?.[0]?.artists && album.tracks[0].artists.length > 0
+      ? album.tracks[0].artists
+      : album.artist
+        ? [album.artist]
+        : [];
+
   return (
     <AlbumDetailPageLayout
       beforeConstrained={
@@ -279,11 +288,11 @@ export default function AlbumPage() {
       }
       topBarLeft={
         <Button
-          href={`/artist/${
-            album.artist?.id
-              ? createSlug(album.artist.name, album.artist.id)
-              : ""
-          }`}
+          href={
+            primaryArtist?.id
+              ? `/artist/${createSlug(primaryArtist.name, primaryArtist.id)}`
+              : "/"
+          }
           variant="secondary"
           size="xs"
           iconLeft={<FaArrowLeft size={14} className=" mr-2" />}
@@ -341,16 +350,23 @@ export default function AlbumPage() {
       playLabel="Play album"
       title={album.title}
       subtitle={
-        <Link
-          href={`/artist/${
-            album.artist?.id
-              ? createSlug(album.artist.name, album.artist.id)
-              : ""
-          }`}
-          className="text-md mb-4 text-neutral-600 transition-colors hover:text-neutral-900"
-        >
-          {album.artist?.name}
-        </Link>
+        <div className="text-md mb-4 text-neutral-600">
+          {subtitleArtists.map((a, i, arr) => (
+            <span key={a.id ?? `${a.name}-${i}`}>
+              {a.id ? (
+                <Link
+                  href={`/artist/${createSlug(a.name, a.id)}`}
+                  className="transition-colors hover:text-neutral-900 hover:underline"
+                >
+                  {a.name}
+                </Link>
+              ) : (
+                <span>{a.name}</span>
+              )}
+              {i < arr.length - 1 && <span className="text-neutral-400">, </span>}
+            </span>
+          ))}
+        </div>
       }
       metaRow={
         <>
