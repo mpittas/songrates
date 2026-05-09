@@ -1,11 +1,15 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 import AlbumDetailPageLayout from "@/components/album/AlbumDetailPageLayout";
 import Button from "@/components/ui/Button";
-import { artworkUrl, type ApplePlaylistDetail } from "@/lib/appleMusic/api";
+import {
+  artworkUrl,
+  type ApplePlaylistDetail,
+  type AppleSongResult,
+} from "@/lib/appleMusic/api";
 import { mapAppleSongToTrackInfo } from "@/lib/appleMusic/mapAppleSongToTrackInfo";
 import { usePlayerCore } from "@/context/PlayerContext";
 import SongRow from "@/main-components/SongRow";
@@ -39,17 +43,80 @@ export default function ApplePlaylistDetailClient({
 
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [tracks, setTracks] = useState<AppleSongResult[]>(playlist.tracks);
   const { playTrack } = usePlayerCore();
+
+  useEffect(() => {
+    setTracks(playlist.tracks);
+  }, [playlist.id, playlist.tracks]);
+
+  useEffect(() => {
+    const idsToEnrich = playlist.tracks
+      .filter(
+        (t) =>
+          !(t.artists && t.artists.length > 0) && !t.artistId,
+      )
+      .map((t) => t.id);
+    if (idsToEnrich.length === 0) return;
+
+    const ac = new AbortController();
+
+    (async () => {
+      try {
+        const res = await fetch("/api/apple-playlist-enrich", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ids: idsToEnrich }),
+          signal: ac.signal,
+        });
+        if (!res.ok) return;
+        const data = (await res.json()) as {
+          enrichments?: Record<
+            string,
+            {
+              artists?: { id: string; name: string }[];
+              artistId?: string;
+              albumId?: string;
+            }
+          >;
+        };
+        const en = data.enrichments;
+        if (!en) return;
+
+        setTracks((prev) =>
+          prev.map((t) => {
+            const e = en[t.id];
+            if (!e) return t;
+            const next = { ...t };
+            if (e.artists && e.artists.length > 0) {
+              next.artists = e.artists;
+              next.artistId = e.artistId ?? e.artists[0]?.id;
+            }
+            if (e.albumId) {
+              next.albumId = e.albumId;
+            }
+            return next;
+          }),
+        );
+      } catch (err) {
+        if (err instanceof DOMException && err.name === "AbortError") return;
+      }
+    })();
+
+    return () => ac.abort();
+  }, [playlist.id, playlist.tracks]);
 
   const heroImageUrl =
     artworkUrl(playlist.artworkUrl, 600) || "/vinyl-placeholder.svg";
 
   const trackInfos = useMemo(
     () =>
-      playlist.tracks.map((s) =>
-        mapAppleSongToTrackInfo(s, heroImageUrl),
-      ),
-    [playlist.tracks, heroImageUrl],
+      tracks.map((s, i) => ({
+        ...mapAppleSongToTrackInfo(s, heroImageUrl),
+        // Playlist order, not album track number (Apple's trackNumber per album).
+        number: String(i + 1),
+      })),
+    [tracks, heroImageUrl],
   );
 
   const filteredTracks = useMemo(() => {

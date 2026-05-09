@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import { LuStar } from "react-icons/lu";
 import { RiUserStarLine } from "react-icons/ri";
 
 import Tooltip from "@/components/ui/Tooltip";
@@ -151,12 +152,16 @@ export default function SongRowRating({
           className={`w-8 h-8 rounded-full ${ratingBg} flex items-center justify-center text-xs font-semibold transition-all hover:scale-105 ${
             displayRating && displayRating > 0
               ? "text-white"
-              : "text-neutral-500"
+              : "text-neutral-400"
           }`}
           aria-expanded={popoverMounted && popoverEntering}
           aria-label="Rate song"
         >
-          {displayRating && displayRating > 0 ? displayRating : "−"}
+          {displayRating && displayRating > 0 ? (
+            displayRating
+          ) : (
+            <LuStar size={16} className="shrink-0" aria-hidden />
+          )}
         </button>
 
         {popoverMounted && (
@@ -166,7 +171,7 @@ export default function SongRowRating({
             onMouseLeave={scheduleClosePopover}
           >
             <div
-              className={`rounded-lg bg-white border border-neutral-200 p-3 flex flex-col items-center justify-center shadow-xl origin-bottom transition-[opacity,transform] ease-out motion-reduce:transition-none ${
+              className={`relative rounded-2xl bg-neutral-800 p-3 flex flex-col items-center justify-center shadow-2xl/15 origin-bottom transition-[opacity,transform] ease-out motion-reduce:transition-none ${
                 popoverEntering
                   ? "pointer-events-auto opacity-100 translate-y-0 scale-100"
                   : "pointer-events-none opacity-0 translate-y-1 scale-[0.96]"
@@ -177,7 +182,7 @@ export default function SongRowRating({
                 }ms`,
               }}
             >
-              <div className="text-xs uppercase text-neutral-400 mb-3">
+              <div className="text-xs font-medium uppercase text-neutral-300 mb-3">
                 Rate this track
               </div>
               <div className="grid grid-cols-5 gap-1.5">
@@ -195,12 +200,18 @@ export default function SongRowRating({
                     className={`w-8 h-8 rounded-full text-xs line-height-7 font-bold transition-all ${
                       displayRating === n
                         ? `${ratingColors[n]} text-white`
-                        : "bg-neutral-200 text-neutral-950 hover:bg-neutral-400/60"
+                        : "bg-neutral-700 text-neutral-100 hover:bg-neutral-400/60"
                     }`}
                   >
                     {n}
                   </button>
                 ))}
+              </div>
+              <div
+                className="pointer-events-none absolute left-1/2 top-full -translate-x-1/2"
+                aria-hidden
+              >
+                <div className="h-0 w-0 border-x-[7px] border-t-[6px] border-x-transparent border-t-neutral-800" />
               </div>
             </div>
           </div>

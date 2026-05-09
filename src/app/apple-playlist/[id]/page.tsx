@@ -1,5 +1,3 @@
-import { Suspense } from "react";
-
 import ApplePlaylistDetailClient from "@/components/apple-playlist/ApplePlaylistDetailClient";
 import { getPlaylistDetail } from "@/lib/appleMusic/api";
 import { PAGE_CONTENT_TOP } from "@/lib/pageLayout";
@@ -43,22 +41,5 @@ export default async function ApplePlaylistPage({ params }: PageProps) {
     );
   }
 
-  return (
-    <Suspense
-      fallback={
-        <main className="min-h-screen bg-[#f0e5df]/30">
-          <div
-            className={cn(
-              "mx-auto max-w-[1180px] px-4 sm:px-6 pb-24",
-              PAGE_CONTENT_TOP,
-            )}
-          >
-            <div className="h-8 w-48 animate-pulse rounded bg-neutral-200" />
-          </div>
-        </main>
-      }
-    >
-      <ApplePlaylistDetailClient playlist={playlist} />
-    </Suspense>
-  );
+  return <ApplePlaylistDetailClient playlist={playlist} />;
 }

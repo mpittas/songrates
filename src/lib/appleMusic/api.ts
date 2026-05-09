@@ -159,6 +159,57 @@ function artistsFromCatalogSongResource(song: {
     .filter((x) => x.id && x.name);
 }
 
+/** Apple `ids=` URLs get long; chunk to stay under practical limits. */
+const APPLE_SONG_ENRICH_CHUNK_SIZE = 60;
+
+export type AppleSongEnrichment = {
+  artists: { id: string; name: string }[];
+  albumId?: string;
+};
+
+/**
+ * Batch-fetch catalog songs with artist + album relationships (for playlist rows).
+ * Used after the playlist response so the first HTML paint is not blocked.
+ */
+export async function fetchAppleSongEnrichmentsByIds(
+  songIds: string[],
+  storefront: string = STOREFRONT,
+): Promise<Map<string, AppleSongEnrichment>> {
+  const enrichmentMap = new Map<string, AppleSongEnrichment>();
+  const uniqueIds = [...new Set(songIds.filter(Boolean))];
+
+  for (let i = 0; i < uniqueIds.length; i += APPLE_SONG_ENRICH_CHUNK_SIZE) {
+    const chunk = uniqueIds.slice(i, i + APPLE_SONG_ENRICH_CHUNK_SIZE);
+    const ids = chunk.join(",");
+    const songsData = await appleMusicFetch<{
+      data?: Array<{
+        id: string;
+        relationships?: {
+          artists?: {
+            data?: Array<{ id: string; attributes?: { name?: string } }>;
+          };
+          "featured-artists"?: {
+            data?: Array<{ id: string; attributes?: { name?: string } }>;
+          };
+          albums?: { data?: Array<{ id: string }> };
+        };
+      }>;
+    }>(`/catalog/${storefront}/songs?ids=${ids}&include=artists,albums`);
+
+    if (!songsData?.data) continue;
+
+    for (const song of songsData.data) {
+      const songAlbum = song.relationships?.albums?.data?.[0];
+      enrichmentMap.set(song.id, {
+        artists: artistsFromCatalogSongResource(song),
+        albumId: songAlbum?.id,
+      });
+    }
+  }
+
+  return enrichmentMap;
+}
+
 function parseArtist(item: any): AppleArtistResult {
   const a = item.attributes || {};
   return {
@@ -805,43 +856,18 @@ export async function getTrendingSongs(
 
   // Enrich only these N tracks for clickable artist/album links.
   if (tracks.length > 0) {
-    const ids = tracks.map((t) => t.id).join(",");
-    const songsData = await appleMusicFetch<{
-      data?: Array<{
-        id: string;
-        relationships?: {
-          artists?: {
-            data?: Array<{ id: string; attributes?: { name?: string } }>;
-          };
-          albums?: { data?: Array<{ id: string }> };
-        };
-      }>;
-    }>(`/catalog/${STOREFRONT}/songs?ids=${ids}&include=artists,albums`);
-
-    if (songsData?.data) {
-      const enrichmentMap = new Map<
-        string,
-        { artists: { id: string; name: string }[]; albumId?: string }
-      >();
-
-      for (const song of songsData.data) {
-        const songAlbum = song.relationships?.albums?.data?.[0];
-        enrichmentMap.set(song.id, {
-          artists: artistsFromCatalogSongResource(song),
-          albumId: songAlbum?.id,
-        });
+    const enrichmentMap = await fetchAppleSongEnrichmentsByIds(
+      tracks.map((t) => t.id),
+    );
+    for (const track of tracks) {
+      const enriched = enrichmentMap.get(track.id);
+      if (!enriched) continue;
+      if (enriched.artists.length > 0) {
+        track.artists = enriched.artists;
+        track.artistId = enriched.artists[0].id;
       }
-
-      for (const track of tracks) {
-        const enriched = enrichmentMap.get(track.id);
-        if (!enriched) continue;
-        if (enriched.artists.length > 0) {
-          track.artists = enriched.artists;
-          track.artistId = enriched.artists[0].id;
-        }
-        if (enriched.albumId) {
-          track.albumId = enriched.albumId;
-        }
+      if (enriched.albumId) {
+        track.albumId = enriched.albumId;
       }
     }
   }
@@ -927,53 +953,9 @@ export async function getPlaylistDetail(
     } as any;
   });
 
-  // Enrich tracks with artist relationships (for clickable artist links).
-  // Apple Music's playlist endpoint doesn't include artist relationships on
-  // nested tracks, so we batch-fetch the songs to get artistId + artists[].
-  if (tracks.length > 0) {
-    const ids = tracks.map((t) => t.id).join(",");
-    const songsData = await appleMusicFetch<{
-      data?: Array<{
-        id: string;
-        relationships?: {
-          artists?: {
-            data?: Array<{ id: string; attributes?: { name?: string } }>;
-          };
-          albums?: { data?: Array<{ id: string }> };
-        };
-      }>;
-    }>(`/catalog/${storefront}/songs?ids=${ids}&include=artists,albums`);
-
-    if (songsData?.data) {
-      const enrichmentMap = new Map<
-        string,
-        {
-          artists: { id: string; name: string }[];
-          albumId?: string;
-        }
-      >();
-      for (const song of songsData.data) {
-        const songAlbum = song.relationships?.albums?.data?.[0];
-        enrichmentMap.set(song.id, {
-          artists: artistsFromCatalogSongResource(song),
-          albumId: songAlbum?.id,
-        });
-      }
-
-      for (const track of tracks) {
-        const enriched = enrichmentMap.get(track.id);
-        if (enriched) {
-          if (enriched.artists.length > 0) {
-            track.artists = enriched.artists;
-            track.artistId = enriched.artists[0].id;
-          }
-          if (enriched.albumId) {
-            track.albumId = enriched.albumId;
-          }
-        }
-      }
-    }
-  }
+  // Artist/album IDs for links are filled in on the client via
+  // /api/apple-playlist-enrich so this page is not blocked on a second
+  // full-playlist catalog songs request.
 
   const result: ApplePlaylistDetail = {
     ...basePlaylist,
