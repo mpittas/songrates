@@ -194,35 +194,42 @@ export default function SongRow({
             
            
             </div>
-            <div className="flex items-center gap-1 text-xs text-neutral-500 min-w-0 w-full">
-              <span className="truncate min-w-0">
+            <div className="flex min-w-0 w-full flex-wrap items-center gap-x-1 gap-y-0.5 text-xs text-neutral-500">
+              <span className="inline-flex min-w-0 max-w-full flex-wrap items-center gap-x-0">
                 {track?.artists && track.artists.length > 0 ? (
-                  track.artists.map((a, i, arr) => (
-                    <span key={a.id ?? `${a.name}-${i}`}>
+                  track.artists.map((a, i) => (
+                    <span
+                      key={`${a.id || "noid"}-${i}-${a.name}`}
+                      className="inline-flex items-center"
+                    >
+                      {i > 0 ? (
+                        <span className="px-1 text-[10px] font-mono tracking-tight text-neutral-400">
+                          ft.
+                        </span>
+                      ) : null}
                       {a.id ? (
                         <Link
                           href={`/artist/${createSlug(a.name, a.id)}`}
-                          className="hover:underline hover:text-neutral-700"
+                          className="shrink-0 hover:text-neutral-700 hover:underline"
                         >
                           {truncateText(a.name, 50)}
                         </Link>
                       ) : (
-                        <span>{truncateText(a.name, 50)}</span>
-                      )}
-                      {i < arr.length - 1 && (
-                        <span className="text-neutral-400">, </span>
+                        <span className="shrink-0">
+                          {truncateText(a.name, 50)}
+                        </span>
                       )}
                     </span>
                   ))
                 ) : effectiveArtistId ? (
                   <Link
                     href={`/artist/${createSlug(artist, effectiveArtistId)}`}
-                    className="hover:underline hover:text-neutral-700"
+                    className="shrink-0 hover:text-neutral-700 hover:underline"
                   >
                     {truncateText(artist, 50)}
                   </Link>
                 ) : (
-                  <span>{truncateText(artist, 50)}</span>
+                  <span className="min-w-0">{truncateText(artist, 50)}</span>
                 )}
               </span>
               <span className="text-neutral-300">/</span>

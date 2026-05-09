@@ -38,6 +38,7 @@ export function mapArtistDiscographyToPageData(
     name: s.name,
     artistName: s.artistName,
     artistId: s.artistId,
+    artists: s.artists,
     albumName: s.albumName,
     albumId: s.albumId,
     artworkUrl: s.artworkUrl ? artworkUrl(s.artworkUrl, 100) : undefined,

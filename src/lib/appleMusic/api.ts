@@ -137,6 +137,28 @@ export interface AppleSongResult {
   hasLyrics?: boolean;
 }
 
+/** Primary + featured credits from a catalog `songs` resource (deduped by id). */
+function artistsFromCatalogSongResource(song: {
+  relationships?: {
+    artists?: { data?: Array<{ id: string; attributes?: { name?: string } }> };
+    "featured-artists"?: {
+      data?: Array<{ id: string; attributes?: { name?: string } }>;
+    };
+  };
+}): { id: string; name: string }[] {
+  const refs = [
+    ...(song.relationships?.artists?.data || []),
+    ...(song.relationships?.["featured-artists"]?.data || []),
+  ];
+  const unique = Array.from(new Map(refs.map((r) => [r.id, r])).values());
+  return unique
+    .map((ar) => ({
+      id: ar.id,
+      name: (ar.attributes?.name || "").trim(),
+    }))
+    .filter((x) => x.id && x.name);
+}
+
 function parseArtist(item: any): AppleArtistResult {
   const a = item.attributes || {};
   return {
@@ -260,7 +282,7 @@ export interface ArtistDiscography {
 export async function getArtistWithViews(
   artistId: string,
 ): Promise<ArtistDiscography | null> {
-  const cacheKey = `am-artist-full-v2:${artistId}`;
+  const cacheKey = `am-artist-full-v3:${artistId}`;
   const cached = artistCache.get(cacheKey);
   if (cached) return cached as ArtistDiscography;
 
@@ -301,6 +323,34 @@ export async function getArtistWithViews(
       url: sa.url,
     };
   });
+
+  if (topSongs.length > 0) {
+    const ids = topSongs.map((t) => t.id).join(",");
+    const songsData = await appleMusicFetch<any>(
+      `/catalog/${STOREFRONT}/songs?ids=${ids}&include=artists,albums`,
+    );
+    if (songsData?.data) {
+      const artistMap = new Map<string, { id: string; name: string }[]>();
+      for (const song of songsData.data) {
+        artistMap.set(song.id, artistsFromCatalogSongResource(song));
+      }
+      for (const ts of topSongs) {
+        const list = artistMap.get(ts.id);
+        if (list && list.length > 0) {
+          ts.artists = list;
+          ts.artistId = list[0].id;
+        } else if (artist.id && ts.artistName) {
+          ts.artists = [{ id: artist.id, name: ts.artistName }];
+        }
+      }
+    } else {
+      for (const ts of topSongs) {
+        if (artist.id && ts.artistName) {
+          ts.artists = [{ id: artist.id, name: ts.artistName }];
+        }
+      }
+    }
+  }
 
   const result: ArtistDiscography = {
     artist,
@@ -458,6 +508,7 @@ export interface AppleTopSong {
   name: string;
   artistName: string;
   artistId?: string;
+  artists?: { id: string; name: string }[];
   albumName?: string;
   albumId?: string;
   artworkUrl?: string;
@@ -608,14 +659,7 @@ export async function getAlbumDetail(
     if (songsData?.data) {
       const artistMap = new Map<string, { id: string; name: string }[]>();
       for (const song of songsData.data) {
-        const songArtists = song.relationships?.artists?.data || [];
-        artistMap.set(
-          song.id,
-          songArtists.map((ar: any) => ({
-            id: ar.id,
-            name: ar.attributes?.name || "",
-          })),
-        );
+        artistMap.set(song.id, artistsFromCatalogSongResource(song));
       }
 
       for (const track of tracksNeedingArtists) {
@@ -781,13 +825,9 @@ export async function getTrendingSongs(
       >();
 
       for (const song of songsData.data) {
-        const songArtists = song.relationships?.artists?.data || [];
         const songAlbum = song.relationships?.albums?.data?.[0];
         enrichmentMap.set(song.id, {
-          artists: songArtists.map((ar) => ({
-            id: ar.id,
-            name: ar.attributes?.name || "",
-          })),
+          artists: artistsFromCatalogSongResource(song),
           albumId: songAlbum?.id,
         });
       }
@@ -913,13 +953,9 @@ export async function getPlaylistDetail(
         }
       >();
       for (const song of songsData.data) {
-        const songArtists = song.relationships?.artists?.data || [];
         const songAlbum = song.relationships?.albums?.data?.[0];
         enrichmentMap.set(song.id, {
-          artists: songArtists.map((ar) => ({
-            id: ar.id,
-            name: ar.attributes?.name || "",
-          })),
+          artists: artistsFromCatalogSongResource(song),
           albumId: songAlbum?.id,
         });
       }

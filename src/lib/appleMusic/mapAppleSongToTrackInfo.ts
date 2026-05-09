@@ -16,9 +16,9 @@ export function mapAppleSongToTrackInfo(
 
   const artists =
     song.artists && song.artists.length > 0
-      ? song.artists
-      : song.artistName
-        ? [{ id: song.artistId || "", name: song.artistName }]
+      ? song.artists.filter((a) => a.id && a.name)
+      : song.artistId && song.artistName
+        ? [{ id: song.artistId, name: song.artistName }]
         : [];
 
   return {

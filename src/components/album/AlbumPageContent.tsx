@@ -203,7 +203,11 @@ export default function AlbumPageContent({
               ) : (
                 <span>{a.name}</span>
               )}
-              {i < arr.length - 1 && <span className="text-neutral-400">, </span>}
+              {i < arr.length - 1 && (
+                <span className="px-1 tracking-tight text-neutral-400">
+                  ft.
+                </span>
+              )}
             </span>
           ))}
         </div>

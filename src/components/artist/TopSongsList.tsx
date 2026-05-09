@@ -31,6 +31,7 @@ export default function TopSongsList({ songs }: { songs: TopSong[] }) {
               title: song.name,
               artistName: song.artistName,
               artistId: song.artistId,
+              artists: song.artists,
               albumId: song.albumId,
               albumTitle: song.albumName,
               albumImageUrl: song.artworkUrl,

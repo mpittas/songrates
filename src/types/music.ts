@@ -83,6 +83,8 @@ export interface TopSong {
   name: string;
   artistName: string;
   artistId?: string;
+  /** Full credits when available (collaborations / features). */
+  artists?: { id: string; name: string }[];
   albumName?: string;
   albumId?: string;
   artworkUrl?: string;
