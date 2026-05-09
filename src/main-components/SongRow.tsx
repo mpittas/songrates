@@ -15,6 +15,12 @@ import SongRowLyrics from "./SongRowLyrics";
 import SongRowDropdown from "./SongRowDropdown";
 import SongRowRating from "./SongRowRating";
 
+function truncateText(text: string, maxChars: number) {
+  const s = (text || "").trim();
+  if (s.length <= maxChars) return s;
+  return `${s.slice(0, Math.max(0, maxChars - 1))}…`;
+}
+
 async function copyTextToClipboard(text: string) {
   if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
     await navigator.clipboard.writeText(text);
@@ -178,17 +184,17 @@ export default function SongRow({
                 href={`/album/${effectiveAlbumId}`}
                 className="text-sm font-bold text-neutral-900 truncate hover:underline"
               >
-                {title}
+                {truncateText(title, 80)}
               </Link>
             ) : (
               <span className="text-sm font-semibold text-neutral-900 truncate">
-                {title}
+                {truncateText(title, 80)}
               </span>
             )}
             
            
             </div>
-            <div className="flex items-center gap-1 text-xs text-neutral-500 min-w-0">
+            <div className="flex items-center gap-1 text-xs text-neutral-500 min-w-0 w-full">
               <span className="truncate min-w-0">
                 {track?.artists && track.artists.length > 0 ? (
                   track.artists.map((a, i, arr) => (
@@ -198,10 +204,10 @@ export default function SongRow({
                           href={`/artist/${createSlug(a.name, a.id)}`}
                           className="hover:underline hover:text-neutral-700"
                         >
-                          {a.name}
+                          {truncateText(a.name, 50)}
                         </Link>
                       ) : (
-                        <span>{a.name}</span>
+                        <span>{truncateText(a.name, 50)}</span>
                       )}
                       {i < arr.length - 1 && (
                         <span className="text-neutral-400">, </span>
@@ -213,24 +219,26 @@ export default function SongRow({
                     href={`/artist/${createSlug(artist, effectiveArtistId)}`}
                     className="hover:underline hover:text-neutral-700"
                   >
-                    {artist}
+                    {truncateText(artist, 50)}
                   </Link>
                 ) : (
-                  <span>{artist}</span>
+                  <span>{truncateText(artist, 50)}</span>
                 )}
               </span>
               <span className="text-neutral-300">/</span>
               <IoDiscOutline size={10} className="text-neutral-400 shrink-0" />
-              {effectiveAlbumId ? (
-                <Link
-                  href={`/album/${effectiveAlbumId}`}
-                  className="truncate hover:underline hover:text-neutral-700"
-                >
-                  {album}
-                </Link>
-              ) : (
-                <span className="truncate">{album}</span>
-              )}
+              <span className="truncate min-w-0">
+                {effectiveAlbumId ? (
+                  <Link
+                    href={`/album/${effectiveAlbumId}`}
+                    className="hover:underline hover:text-neutral-700"
+                  >
+                    {truncateText(album, 50)}
+                  </Link>
+                ) : (
+                  <span>{truncateText(album, 50)}</span>
+                )}
+              </span>
               <span className="text-neutral-300">/</span>
               <div className="text-xs text-neutral-500">
                 {formatDuration(duration)}

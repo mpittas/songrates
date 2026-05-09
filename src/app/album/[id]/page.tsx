@@ -240,6 +240,14 @@ export default function AlbumPage() {
         ? [album.artist]
         : [];
 
+  const playLabel = (() => {
+    const type = (album.type || "").toLowerCase();
+    if (type.includes("single")) return "Play single";
+    if (type.includes("ep")) return "Play EP";
+    if (type.includes("compilation")) return "Play compilation";
+    return "Play album";
+  })();
+
   return (
     <AlbumDetailPageLayout
       beforeConstrained={
@@ -347,7 +355,7 @@ export default function AlbumPage() {
           playTrack(queue[0], queue);
         }
       }}
-      playLabel="Play album"
+      playLabel={playLabel}
       title={album.title}
       subtitle={
         <div className="text-md mb-4 text-neutral-600">

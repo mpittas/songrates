@@ -161,7 +161,7 @@ export default function SongRowRating({
 
         {popoverMounted && (
           <div
-            className="absolute bottom-[calc(100%-20px)] left-1/2 z-50 w-[220px] -translate-x-1/2 pb-6"
+            className="absolute bottom-[calc(100%-5px)] left-1/2 z-50 w-[220px] -translate-x-1/2 pb-4"
             onMouseEnter={openPopover}
             onMouseLeave={scheduleClosePopover}
           >
