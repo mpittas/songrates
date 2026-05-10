@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import {
   FaPlay,
@@ -20,7 +21,7 @@ import Button from "@/components/ui/Button";
 import FavoriteButton from "@/components/ui/FavoriteButton";
 import DropdownMenu from "@/components/ui/DropdownMenu";
 import PlaylistSelectorModal from "@/components/ui/PlaylistSelectorModal";
-import { useLyrics } from "@/hooks/useLyrics";
+import { lyricsQueryOptions, useLyrics } from "@/hooks/useLyrics";
 import { TrackInfo, AlbumContext } from "@/types/music";
 
 interface TrackItemProps {
@@ -68,6 +69,13 @@ export default function TrackItem({
     forcedRating !== undefined ? forcedRating : ratings[track.id] || 0;
   const isCurrentTrack = currentTrack?.id === track.id;
   const isReadOnly = forcedRating !== undefined;
+
+  const queryClient = useQueryClient();
+  const prefetchLyrics = useCallback(() => {
+    queryClient.prefetchQuery(
+      lyricsQueryOptions(track.title, artistName, track.length),
+    );
+  }, [queryClient, track.title, artistName, track.length]);
 
   // Only fetch lyrics when user opens the panel
   const { data: lyricsData, isLoading: lyricsLoading } = useLyrics(
@@ -264,6 +272,8 @@ export default function TrackItem({
                   {/* Lyrics */}
                   {track.hasLyrics && (
                     <button
+                      type="button"
+                      onMouseEnter={prefetchLyrics}
                       onClick={(e) => {
                         e.stopPropagation();
                         onToggleLyrics?.(track.id);

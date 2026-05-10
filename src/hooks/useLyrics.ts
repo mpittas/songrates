@@ -1,77 +1,66 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import {
+  useQuery,
+  type QueryFunctionContext,
+  type UseQueryResult,
+} from "@tanstack/react-query";
 
 interface LyricsData {
   lyrics: string | null;
   syncedLyrics: string | null;
 }
 
-const LRCLIB_BASE = "https://lrclib.net/api";
-
 /**
- * Fetch lyrics directly from lrclib.net (CORS-enabled, no API key).
- * Tries exact /get first (fastest), falls back to /search.
+ * Lyrics via same-origin API: races LRCLIB + lyrics.ovh on the server, CDN-cached responses.
  */
 async function fetchLyrics(
   trackName: string,
   artistName: string,
   durationMs?: number,
+  signal?: AbortSignal,
 ): Promise<LyricsData> {
   const empty: LyricsData = { lyrics: null, syncedLyrics: null };
 
-  // 1. Try exact match (fastest endpoint)
-  const params = new URLSearchParams({
-    track_name: trackName,
-    artist_name: artistName,
-  });
+  const t = trackName.trim();
+  const a = artistName.trim();
+  if (!t || !a) return empty;
+
+  const params = new URLSearchParams({ track: t, artist: a });
   if (durationMs) {
-    params.set("duration", String(Math.round(durationMs / 1000)));
+    params.set("durationSec", String(Math.round(durationMs / 1000)));
   }
 
   try {
-    const res = await fetch(`${LRCLIB_BASE}/get?${params}`, {
-      headers: { "User-Agent": "songrates/1.0.0" },
-    });
-
-    if (res.ok) {
-      const data = await res.json();
-      return {
-        lyrics: data.plainLyrics || null,
-        syncedLyrics: data.syncedLyrics || null,
-      };
-    }
-
-    // 2. Fallback: search endpoint (broader matching)
-    if (res.status === 404) {
-      const searchParams = new URLSearchParams({
-        track_name: trackName,
-        artist_name: artistName,
-      });
-      const searchRes = await fetch(`${LRCLIB_BASE}/search?${searchParams}`, {
-        headers: { "User-Agent": "songrates/1.0.0" },
-      });
-
-      if (searchRes.ok) {
-        const results = await searchRes.json();
-        if (results?.length > 0) {
-          return {
-            lyrics: results[0].plainLyrics || null,
-            syncedLyrics: results[0].syncedLyrics || null,
-          };
-        }
-      }
-    }
+    const res = await fetch(`/api/lyrics?${params}`, { signal });
+    if (!res.ok) return empty;
+    return (await res.json()) as LyricsData;
   } catch {
-    // Network error — return empty
+    return empty;
   }
+}
 
-  return empty;
+const LYRICS_STALE_MS = 60 * 60 * 1000;
+const LYRICS_GC_MS = 24 * 60 * 60 * 1000;
+
+export function lyricsQueryOptions(
+  trackName: string,
+  artistName: string,
+  durationMs?: number,
+) {
+  return {
+    queryKey: ["lyrics", trackName, artistName, durationMs ?? null] as const,
+    queryFn: ({ signal }: QueryFunctionContext) =>
+      fetchLyrics(trackName, artistName, durationMs, signal),
+    staleTime: LYRICS_STALE_MS,
+    gcTime: LYRICS_GC_MS,
+    refetchOnWindowFocus: false as const,
+    retry: false as const,
+  };
 }
 
 /**
  * Fetches lyrics on demand (enabled = true when user expands the lyrics panel).
- * Calls lrclib.net directly from the browser (CORS-enabled) — no server hop.
  * Uses react-query for caching — subsequent opens are instant.
  */
 export function useLyrics(
@@ -79,14 +68,9 @@ export function useLyrics(
   artistName: string,
   durationMs?: number,
   enabled = false,
-) {
-  return useQuery<LyricsData>({
-    queryKey: ["lyrics", trackName, artistName],
-    queryFn: () => fetchLyrics(trackName, artistName, durationMs),
+): UseQueryResult<LyricsData, Error> {
+  return useQuery<LyricsData, Error>({
+    ...lyricsQueryOptions(trackName, artistName, durationMs),
     enabled,
-    staleTime: 60 * 60 * 1000, // 1 hour
-    gcTime: 24 * 60 * 60 * 1000, // 24 hours
-    refetchOnWindowFocus: false,
-    retry: 1,
   });
 }

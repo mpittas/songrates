@@ -11,6 +11,8 @@ interface SongRowDropdownProps {
   onToggleLyrics: () => void;
   onAddToPlaylist: () => void;
   onShare?: () => void;
+  /** Warm lyrics cache when user hovers "Show Lyrics" before clicking */
+  onPrefetchLyrics?: () => void;
 }
 
 export default function SongRowDropdown({
@@ -18,6 +20,7 @@ export default function SongRowDropdown({
   onToggleLyrics,
   onAddToPlaylist,
   onShare,
+  onPrefetchLyrics,
 }: SongRowDropdownProps) {
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -26,12 +29,16 @@ export default function SongRowDropdown({
     icon,
     label,
     onClick,
+    onMouseEnter,
   }: {
     icon?: React.ReactNode;
     label: string;
     onClick: () => void;
+    onMouseEnter?: () => void;
   }) => (
     <button
+      type="button"
+      onMouseEnter={onMouseEnter}
       onClick={(e) => {
         e.stopPropagation();
         onClick();
@@ -79,6 +86,7 @@ export default function SongRowDropdown({
             icon={<HiOutlineMicrophone size={12} />}
             label={isLyricsOpen ? "Hide Lyrics" : "Show Lyrics"}
             onClick={onToggleLyrics}
+            onMouseEnter={onPrefetchLyrics}
           />
 
           <div className="border-t border-neutral-100 my-1" />

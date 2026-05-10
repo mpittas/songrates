@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { FaPlay, FaPause } from "react-icons/fa6";
 import { IoDiscOutline } from "react-icons/io5";
 import { usePlayerCore } from "@/context/PlayerContext";
 import { useRatingsContext } from "@/context/RatingsContext";
-import { useLyrics } from "@/hooks/useLyrics";
+import { lyricsQueryOptions, useLyrics } from "@/hooks/useLyrics";
 import { Track, AlbumContext } from "@/types/music";
 import { createSlug } from "@/lib/utils";
 import PlaylistSelectorModal from "@/components/ui/PlaylistSelectorModal";
@@ -100,6 +101,11 @@ export default function SongRow({
   const publicRating = effectiveAlbumId
     ? (publicAlbumRatings[effectiveAlbumId]?.averageRating ?? null)
     : null;
+
+  const queryClient = useQueryClient();
+  const prefetchLyrics = useCallback(() => {
+    queryClient.prefetchQuery(lyricsQueryOptions(title, artist, track?.length));
+  }, [queryClient, title, artist, track?.length]);
 
   const { data: lyricsData, isLoading: lyricsLoading } = useLyrics(
     title,
@@ -273,6 +279,7 @@ export default function SongRow({
             isLyricsOpen={lyricsOpen}
             onToggleLyrics={() => setCurrentLyricsTrackId(lyricsOpen ? null : trackId || null)}
             onAddToPlaylist={() => setShowPlaylistModal(true)}
+            onPrefetchLyrics={prefetchLyrics}
             onShare={() => {
               setShowShareModal(true);
               onShare?.();
