@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
 import {
   FaTimes,
   FaPlus,
@@ -13,7 +14,6 @@ import {
   HiPlus,
   HiCheck,
   HiOutlinePlusCircle,
-  HiArrowRight,
   HiMagnifyingGlass,
 } from "react-icons/hi2";
 import Link from "next/link";
@@ -28,6 +28,10 @@ interface BasePlaylistSelectorModalProps {
   playlists: Playlist[];
   onCreatePlaylist: (name: string, description: string) => Promise<void>;
   onAddToPlaylist: (playlistId: string) => Promise<boolean | void>;
+  /** Optional remove handler. If provided, already-added rows can remove via checkbox confirm. */
+  onRemoveFromPlaylist?: (playlistId: string) => Promise<boolean | void>;
+  /** Copy for the remove confirmation popover. */
+  removeConfirmTitle?: string;
   isItemInPlaylist: (playlistId: string) => boolean;
   getPlaylistSubtitle: (playlist: Playlist) => string;
   defaultIcon?: React.ReactNode;
@@ -42,11 +46,14 @@ export default function BasePlaylistSelectorModal({
   playlists,
   onCreatePlaylist,
   onAddToPlaylist,
+  onRemoveFromPlaylist,
+  removeConfirmTitle = "Remove from playlist?",
   isItemInPlaylist,
   getPlaylistSubtitle,
   defaultIcon,
   itemHref,
 }: BasePlaylistSelectorModalProps) {
+  const MAX_PLAYLIST_NAME_CHARS = 40;
   const [creating, setCreating] = useState(false);
   const [newPlaylistName, setNewPlaylistName] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
@@ -54,6 +61,18 @@ export default function BasePlaylistSelectorModal({
     new Set(),
   );
   const [isSaving, setIsSaving] = useState(false);
+  const [confirmRemovePlaylistId, setConfirmRemovePlaylistId] = useState<
+    string | null
+  >(null);
+  const [removingPlaylistId, setRemovingPlaylistId] = useState<string | null>(
+    null,
+  );
+
+  const truncateToChars = (text: string, maxChars: number) => {
+    const s = (text || "").trim();
+    if (s.length <= maxChars) return s;
+    return `${s.slice(0, Math.max(0, maxChars - 1))}…`;
+  };
 
   // Initialize selected IDs based on what's already in playlists
   useState(() => {
@@ -69,16 +88,25 @@ export default function BasePlaylistSelectorModal({
   );
 
   const handleCreate = async () => {
-    if (!newPlaylistName.trim()) return;
-    await onCreatePlaylist(newPlaylistName.trim(), "");
+    const name = newPlaylistName.trim();
+    if (!name) return;
+    if (name.length > MAX_PLAYLIST_NAME_CHARS) {
+      toast.error("Playlist name is too long", {
+        description: `Max ${MAX_PLAYLIST_NAME_CHARS} characters.`,
+      });
+      return;
+    }
+    await onCreatePlaylist(name, "");
     setCreating(false);
     setNewPlaylistName("");
   };
 
   const toggleSelection = (playlistId: string) => {
-    // If it was already in the playlist initially, we might want to prevent unselecting
-    // depending on requirements, but Spotify allows toggling.
     setSelectedPlaylistIds((prev) => {
+      // This modal only adds items (no remove). If it's already in the playlist,
+      // don't allow toggling at all.
+      if (isItemInPlaylist(playlistId)) return prev;
+
       const next = new Set(prev);
       if (next.has(playlistId)) {
         next.delete(playlistId);
@@ -97,22 +125,54 @@ export default function BasePlaylistSelectorModal({
         (id) => !isItemInPlaylist(id),
       );
 
-      // Perform all additions
-      await Promise.all(playlistsToAdd.map((id) => onAddToPlaylist(id)));
+      if (playlistsToAdd.length === 0) {
+        onClose();
+        return;
+      }
 
-      onClose();
+      const results = await Promise.all(
+        playlistsToAdd.map((id) => onAddToPlaylist(id)),
+      );
+
+      if (results.some(Boolean)) {
+        onClose();
+      }
     } catch (error) {
       console.error("Error saving to playlists:", error);
+      toast.error("Couldn't save playlist changes", {
+        description: "Please try again in a moment.",
+      });
     } finally {
       setIsSaving(false);
     }
   };
 
+  const handleConfirmRemove = async (playlistId: string) => {
+    if (!onRemoveFromPlaylist) return;
+    setRemovingPlaylistId(playlistId);
+    try {
+      const res = await onRemoveFromPlaylist(playlistId);
+      if (!res) {
+        toast.error("Couldn't remove from playlist", {
+          description: "Please try again.",
+        });
+      }
+    } catch (e) {
+      console.error("Error removing from playlist:", e);
+      toast.error("Couldn't remove from playlist", {
+        description: "Please try again.",
+      });
+    } finally {
+      setRemovingPlaylistId(null);
+      setConfirmRemovePlaylistId(null);
+    }
+  };
+
   return (
-    <MainModal onClose={onClose} maxWidthClassName="max-w-sm">
+    <MainModal onClose={onClose} maxWidthClassName="max-w-md">
       <MainModalHeader title={title} onClose={onClose}>
         {/* Search Bar - Spotify Style */}
-        <div className="relative group">
+        {/* <div className="relative group">
           <HiMagnifyingGlass
             className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 group-focus-within:text-neutral-900 transition-colors"
             size={18}
@@ -124,7 +184,7 @@ export default function BasePlaylistSelectorModal({
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full bg-neutral-100 border border-neutral-200 rounded-xl py-2.5 pl-10 pr-4 text-sm font-medium focus:ring-2 focus:ring-neutral-900/5 outline-none transition-all placeholder:text-neutral-400"
           />
-        </div>
+        </div> */}
       </MainModalHeader>
 
         {/* Content Section */}
@@ -143,13 +203,13 @@ export default function BasePlaylistSelectorModal({
                 {!creating ? (
                   <button
                     onClick={() => setCreating(true)}
-                    className="w-full group flex items-center gap-4 p-4 bg-neutral-900 rounded-2xl transition-all duration-300 hover:border-neutral-100"
+                    className="w-full group flex items-center gap-4 p-3 bg-neutral-900 rounded-2xl transition-all duration-300 hover:border-neutral-100"
                   >
-                    <div className="w-10 h-10 flex items-center justify-center bg-neutral-100 rounded-xl group-hover:bg-neutral-200 transition-colors">
+                    <div className="w-14 h-14 flex items-center justify-center bg-neutral-100 rounded-xl group-hover:bg-neutral-200 transition-colors">
                       <HiPlus size={20} className="text-neutral-900" />
                     </div>
                     <div className="text-left">
-                      <p className="text-sm font-bold text-white">
+                      <p className="text-md font-medium text-white">
                         Create new playlist
                       </p>
                     </div>
@@ -158,7 +218,7 @@ export default function BasePlaylistSelectorModal({
                   <div className="p-5 bg-neutral-900 rounded-2xl space-y-3 animate-in slide-in-from-top-4 duration-300">
                     <div className="space-y-4">
                       <div className="space-y-1">
-                        <label className="text-sm text-white pb-0.5 block">
+                        <label className="text-sm text-white/70 pb-0.5 block">
                           Playlist Name
                         </label>
                         <input
@@ -166,7 +226,8 @@ export default function BasePlaylistSelectorModal({
                           placeholder="e.g. Late Night Vibes"
                           value={newPlaylistName}
                           onChange={(e) => setNewPlaylistName(e.target.value)}
-                          className="w-full bg-white rounded-xl px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-neutral-900/5 focus:border-neutral-900 outline-none transition-all"
+                          maxLength={MAX_PLAYLIST_NAME_CHARS}
+                          className="w-full bg-white/20 text-white rounded-xl p-3 focus:ring-1 focus:ring-neutral-100/60 focus:border-neutral-900 outline-none placeholder:text-neutral-300 transition-all"
                           autoFocus
                         />
                       </div>
@@ -175,7 +236,7 @@ export default function BasePlaylistSelectorModal({
                       <Button
                         onClick={handleCreate}
                         disabled={!newPlaylistName.trim()}
-                        variant="secondary"
+                        variant="white"
                         size="sm"
                         className="flex-1"
                       >
@@ -183,7 +244,7 @@ export default function BasePlaylistSelectorModal({
                       </Button>
                       <Button
                         onClick={() => setCreating(false)}
-                        variant="ghost"
+                        variant="whiteMuted"
                         size="sm"
                       >
                         Cancel
@@ -200,7 +261,7 @@ export default function BasePlaylistSelectorModal({
               <div className="space-y-3">
                 {filteredPlaylists.length === 0 && !creating ? (
                   <div className="py-12 flex flex-col items-center justify-center text-center px-4">
-                    <div className="w-12 h-12 bg-neutral-50 rounded-full flex items-center justify-center mb-4">
+                    <div className="w-16 h-16 bg-neutral-50 rounded-full flex items-center justify-center mb-4">
                       <FaMusic className="text-neutral-200" size={20} />
                     </div>
                     <p className="text-sm font-bold text-neutral-900 mb-1">
@@ -211,51 +272,133 @@ export default function BasePlaylistSelectorModal({
                   <div className="grid grid-cols-1 gap-2">
                     {filteredPlaylists.map((playlist) => {
                       const isSelected = selectedPlaylistIds.has(playlist.id);
+                      const isAlreadyInPlaylist = isItemInPlaylist(playlist.id);
+                      const showRemove =
+                        Boolean(onRemoveFromPlaylist) && isAlreadyInPlaylist;
 
                       return (
                         <button
                           key={playlist.id}
-                          onClick={() => toggleSelection(playlist.id)}
-                          className={`w-full flex items-center gap-4 p-3 rounded-2xl transition-all duration-200 border
+                          onClick={() => {
+                            if (isAlreadyInPlaylist) return;
+                            toggleSelection(playlist.id);
+                          }}
+                          className={`relative w-full flex items-center gap-4 p-3 rounded-2xl transition-all duration-200
                             ${
-                              isSelected
-                                ? "bg-neutral-100 border-neutral-300 hover:bg-neutral-200"
-                                : "bg-neutral-100 border-neutral-200 hover:bg-neutral-200"
+                              isAlreadyInPlaylist
+                                ? "bg-neutral-100"
+                                : isSelected
+                                  ? "bg-green-500/20"
+                                  : "bg-neutral-200"
                             }
                           `}
                         >
                           <div
-                            className={`w-12 h-12 flex items-center justify-center rounded-xl transition-colors shrink-0 border border-neutral-200
-                            ${isSelected ? "bg-white" : "bg-white"}
+                            className={`w-14 h-14 flex items-center justify-center rounded-xl transition-colors shrink-0
+                            ${
+                              isAlreadyInPlaylist
+                                ? "bg-neutral-200"
+                                : isSelected
+                                  ? "bg-green-500/30"
+                                  : "bg-white"
+                            }
                           `}
                           >
                             <div
-                              className={`transition-colors ${isSelected ? "text-white" : "text-neutral-400"}`}
+                              className={
+                                isAlreadyInPlaylist
+                                  ? "[&_svg]:text-neutral-600 transition-colors"
+                                  : isSelected
+                                    ? "[&_svg]:text-green-800 transition-colors"
+                                    : "[&_svg]:text-neutral-800 transition-colors"
+                              }
                             >
-                              {defaultIcon || <FaMusic size={16} />}
+                              {defaultIcon || <FaMusic size={18} />}
                             </div>
                           </div>
 
                           <div className="flex-1 text-left min-w-0">
-                            <h4
-                              className={`text-sm font-bold truncate transition-colors ${isSelected ? "text-neutral-900" : "text-neutral-900"}`}
+                            <Link
+                              href={`/playlist/${playlist.id}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className={` text-md font-medium truncate transition-colors hover:underline ${
+                                isSelected ? "text-green-950" : "text-neutral-950"
+                              }`}
+                              aria-label={`Open playlist ${playlist.name} in new tab`}
                             >
-                              {playlist.name}
-                            </h4>
+                              {truncateToChars(playlist.name, 25)}
+                            </Link>
+                            {isAlreadyInPlaylist ? (
+                              <div className="absolute top-1/2 -translate-y-1/2 right-12 -mt-0.5">
+                                <span className="inline-flex items-center rounded-full bg-neutral-700 px-1.5 py-0.25 text-[11px] font-medium tracking-wide text-white">
+                                  Added
+                                </span>
+                              </div>
+                            ) : null}
                           </div>
 
                           {/* Selection Checkbox/Radio */}
                           <div
                             className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all
                             ${
-                              isSelected
-                                ? "bg-green-500 border-green-500 text-white scale-110 shadow-sm"
-                                : "border-neutral-300"
+                              isAlreadyInPlaylist
+                                ? "bg-neutral-900 border-neutral-900 text-white"
+                                : isSelected
+                                  ? "bg-green-500 border-green-500 text-white scale-110 shadow-sm"
+                                  : "border-neutral-400"
                             }
                           `}
+                            role={showRemove ? "button" : undefined}
+                            tabIndex={showRemove ? 0 : undefined}
+                            onClick={(e) => {
+                              if (!showRemove) return;
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setConfirmRemovePlaylistId(playlist.id);
+                            }}
                           >
-                            {isSelected && <FaCheck size={10} />}
+                            {(isAlreadyInPlaylist || isSelected) && (
+                              <FaCheck size={10} />
+                            )}
                           </div>
+
+                          {showRemove && confirmRemovePlaylistId === playlist.id ? (
+                            <div
+                              className="absolute right-3 top-1/2 z-50 -translate-y-1/2"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <div className="w-[220px] rounded-xl border border-neutral-800 bg-neutral-950 p-3 text-white shadow-xl">
+                                <div className="text-xs font-semibold">
+                                  {removeConfirmTitle}
+                                </div>
+                                <div className="mt-2 flex items-center justify-end gap-2">
+                                  <button
+                                    type="button"
+                                    className="rounded-lg bg-neutral-900 px-2.5 py-1.5 text-xs font-semibold text-neutral-200 hover:bg-neutral-800"
+                                    onClick={() =>
+                                      setConfirmRemovePlaylistId(null)
+                                    }
+                                  >
+                                    Cancel
+                                  </button>
+                                  <button
+                                    type="button"
+                                    disabled={removingPlaylistId === playlist.id}
+                                    className="rounded-lg bg-white px-2.5 py-1.5 text-xs font-semibold text-neutral-950 hover:bg-neutral-200 disabled:opacity-60"
+                                    onClick={() =>
+                                      handleConfirmRemove(playlist.id)
+                                    }
+                                  >
+                                    {removingPlaylistId === playlist.id
+                                      ? "Removing…"
+                                      : "Yes, remove"}
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          ) : null}
                         </button>
                       );
                     })}
@@ -269,14 +412,6 @@ export default function BasePlaylistSelectorModal({
         {/* Footer */}
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-neutral-100 bg-white p-5">
           <div className="flex items-center gap-3">
-            {itemHref ? (
-              <Link
-                href={itemHref}
-                className="font-mono text-xs font-semibold text-neutral-600 underline underline-offset-2 hover:text-neutral-900"
-              >
-                Open
-              </Link>
-            ) : null}
             <Button onClick={onClose} variant="ghost">
               Cancel
             </Button>

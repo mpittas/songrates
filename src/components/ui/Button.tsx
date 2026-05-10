@@ -2,7 +2,7 @@ import React from "react";
 import Link from "next/link";
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: "primary" | "secondary" | "ghost" | "border" | "muted";
+  variant?: "primary" | "secondary" | "ghost" | "border" | "white" | "whiteMuted";
   size?: "xxs" | "xs" | "sm" | "md" | "lg";
   iconLeft?: React.ReactNode;
   iconRight?: React.ReactNode;
@@ -30,10 +30,13 @@ export default function Button({
       "bg-[#1f1f1f] text-white border border-[#1f1f1f] hover:bg-black hover:border-black",
     secondary:
       "bg-neutral-950/15 hover:bg-neutral-950/25 text-black border-transparent text-xs",
+    
     ghost:
       "bg-transparent text-neutral-500 hover:text-neutral-900 hover:bg-neutral-200",
-    muted:
-      "bg-[#fff] text-neutral-900 hover:bg-[#e8e8e8] hover:text-neutral-900",
+    white:
+      "bg-[#fff] text-neutral-900 hover:bg-[#e8e8e8]",
+    whiteMuted:
+      "bg-[#fff]/20 text-neutral-50 hover:bg-white/30",
     border:
       "bg-white border border-[#d5d5d5] text-neutral-800 hover:bg-[#f8f8f8] hover:text-black hover:border-[#c6c6c6]",
   };

@@ -1,5 +1,7 @@
 "use client";
 
+import "sonner/dist/styles.css";
+import { Toaster } from "sonner";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { getQueryClient } from "@/lib/queryClient";
 import { PlayerProvider } from "@/context/PlayerContext";
@@ -20,6 +22,24 @@ export default function Providers({ children }: { children: React.ReactNode }) {
             <PlaylistProvider>
               {children}
               <MiniPlayer />
+              <Toaster
+                position="bottom-right"
+                closeButton
+                toastOptions={{
+                  classNames: {
+                    toast:
+                      "bg-neutral-950 text-white border border-neutral-800 shadow-xl",
+                    title: "text-white",
+                    description: "text-neutral-300",
+                    actionButton:
+                      "bg-white text-neutral-950 hover:bg-neutral-200",
+                    cancelButton:
+                      "bg-neutral-900 text-neutral-200 hover:bg-neutral-800",
+                    closeButton:
+                      "bg-transparent text-neutral-300 hover:text-white border-neutral-700",
+                  },
+                }}
+              />
             </PlaylistProvider>
           </RatingsProvider>
         </PlayerProvider>

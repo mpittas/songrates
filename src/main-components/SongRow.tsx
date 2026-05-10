@@ -149,7 +149,7 @@ export default function SongRow({
                     onPlay();
                   }
                 }}
-                className="w-8 h-8 flex items-center justify-center rounded-full text-neutral-100 bg-neutral-800 hover:bg-neutral-700 transition-all"
+                className="w-7 h-7 flex items-center justify-center rounded-full text-neutral-100 bg-neutral-800 hover:bg-neutral-700 transition-all"
                 aria-label={
                   isCurrentTrack && isPlayerPlaying ? "Pause" : "Play"
                 }
