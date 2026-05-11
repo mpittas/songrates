@@ -30,7 +30,7 @@ export default function Header({ showSearch }: HeaderProps) {
 
   return (
     <>
-      <header className="relative z-50 w-full bg-[#f7f5f2]/92 backdrop-blur-md">
+      <header className="relative z-50 w-full bg-[#f7f5f2]/92 backdrop-blur-md py-2">
         <MySection className="py-0">
           <div className="flex h-[3.25rem] items-center justify-between gap-3 transition-all duration-300 md:gap-4">
             <Link
