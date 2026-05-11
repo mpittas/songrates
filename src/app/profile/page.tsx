@@ -9,7 +9,6 @@ import Link from "next/link";
 import { FaUser, FaStar, FaSignOutAlt, FaCog } from "react-icons/fa";
 import OptimizedImage from "@/components/ui/OptimizedImage";
 import AlbumGrid from "@/components/album/AlbumGrid";
-import PlaylistsSection from "@/components/profile/PlaylistsSection";
 import MySection from "@/components/ui/MySection";
 import { Album } from "@/types/music";
 import FavoriteStatsBar, {
@@ -233,8 +232,34 @@ export default function ProfilePage() {
       {/* Content Sections */}
       <MySection className="mt-12 pb-20">
         <div className="w-full max-w-4xl space-y-16">
-          {/* Playlists Section */}
-          <PlaylistsSection />
+          {/* Playlists */}
+          <section>
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-1 h-5 bg-[#1f1f1f]" />
+              <h2 className="text-lg font-light tracking-tight text-neutral-900">
+                Playlists
+              </h2>
+            </div>
+
+            <Link
+              href="/profile/playlists"
+              className="group block rounded-md border border-[#e1e1e1] bg-white p-5 hover:border-[#cbcbcb] hover:bg-[#f8f8f8] transition-all duration-200"
+            >
+              <div className="flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <div className="text-sm font-mono uppercase tracking-widest text-neutral-500">
+                    Dedicated page
+                  </div>
+                  <div className="mt-1 text-lg font-light tracking-tight text-neutral-900">
+                    View all my playlists
+                  </div>
+                </div>
+                <div className="shrink-0 h-9 w-9 rounded-full border border-neutral-200 bg-neutral-50 flex items-center justify-center text-neutral-500 group-hover:text-neutral-900 group-hover:bg-neutral-100">
+                  →
+                </div>
+              </div>
+            </Link>
+          </section>
 
           <section>
             <div className="flex items-center gap-6 border-b border-[#dadada] mb-8">

@@ -48,7 +48,6 @@ export default function PlaylistPage() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [savingEdits, setSavingEdits] = useState(false);
   const [editName, setEditName] = useState("");
-  const [editDescription, setEditDescription] = useState("");
 
   // Fetch playlist + items directly from Supabase in one shot
   const loadPlaylistData = useCallback(async () => {
@@ -104,7 +103,6 @@ export default function PlaylistPage() {
   useEffect(() => {
     if (!playlist) return;
     setEditName(playlist.name || "");
-    setEditDescription(playlist.description || "");
   }, [playlist]);
 
   const handleDeletePlaylist = async () => {
@@ -127,7 +125,6 @@ export default function PlaylistPage() {
         .from("playlists")
         .update({
           name: nextName,
-          description: editDescription.trim() || null,
           updated_at: new Date().toISOString(),
         })
         .eq("id", playlist.id)
@@ -458,18 +455,6 @@ export default function PlaylistPage() {
                   onChange={(e) => setEditName(e.target.value)}
                   className="w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-900 outline-none"
                   placeholder="Playlist name"
-                />
-              </div>
-
-              <div>
-                <div className="text-xs uppercase tracking-widest font-mono text-neutral-400 mb-2">
-                  Description
-                </div>
-                <textarea
-                  value={editDescription}
-                  onChange={(e) => setEditDescription(e.target.value)}
-                  className="w-full min-h-[96px] rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-900 outline-none resize-none"
-                  placeholder="Optional"
                 />
               </div>
 

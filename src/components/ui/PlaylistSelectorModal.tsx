@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { FaMusic } from "react-icons/fa";
 import { usePlaylist } from "@/context/PlaylistContext";
 import BasePlaylistSelectorModal from "./BasePlaylistSelectorModal";
+import ToastContent from "./ToastContent";
 import { createSlug } from "@/lib/utils";
 
 interface PlaylistSelectorModalProps {
@@ -75,14 +76,22 @@ export default function PlaylistSelectorModal({
 
   const openPlaylistToast = (playlistId: string, playlistName: string) => {
     const titleLine = trackName?.trim() || "Song";
-    toast.success(`Added to ${playlistName}`, {
-      description: artistName?.trim()
-        ? `${titleLine} · ${artistName.trim()}`
-        : titleLine,
-      action: {
-        label: "Open playlist",
-        onClick: () => router.push(`/playlist/${playlistId}`),
-      },
+    const description = artistName?.trim()
+      ? `${titleLine} · ${artistName.trim()}`
+      : titleLine;
+
+    toast.custom((id) => {
+      return (
+        <ToastContent
+          title={`Added to ${playlistName}`}
+          description={description}
+          actionLabel="Open playlist"
+          onAction={() => {
+            toast.dismiss(id);
+            router.push(`/playlist/${playlistId}`);
+          }}
+        />
+      );
     });
   };
 
@@ -115,13 +124,18 @@ export default function PlaylistSelectorModal({
       setPlaylistTrackCounts((prev) => ({ ...prev, [playlist.id]: 1 }));
       openPlaylistToast(playlist.id, playlist.name);
     } else {
-      toast.error("Playlist created, but the song wasn't added", {
-        description:
-          "Open the playlist and try again, or add the track from the album page.",
-        action: {
-          label: "Open playlist",
-          onClick: () => router.push(`/playlist/${playlist.id}`),
-        },
+      toast.custom((id) => {
+        return (
+          <ToastContent
+            title="Playlist created, but the song wasn't added"
+            description="Open the playlist and try again, or add the track from the album page."
+            actionLabel="Open playlist"
+            onAction={() => {
+              toast.dismiss(id);
+              router.push(`/playlist/${playlist.id}`);
+            }}
+          />
+        );
       });
     }
   };
@@ -168,14 +182,22 @@ export default function PlaylistSelectorModal({
         ...prev,
         [playlistId]: Math.max(0, (prev[playlistId] || 0) - 1),
       }));
-      toast.message(`Removed from ${playlistName}`, {
-        description: trackName?.trim()
-          ? `${trackName.trim()}${artistName?.trim() ? ` · ${artistName.trim()}` : ""}`
-          : undefined,
-        action: {
-          label: "Open playlist",
-          onClick: () => router.push(`/playlist/${playlistId}`),
-        },
+      toast.custom((id) => {
+        return (
+          <ToastContent
+            title={`Removed from ${playlistName}`}
+            description={
+              trackName?.trim()
+                ? `${trackName.trim()}${artistName?.trim() ? ` · ${artistName.trim()}` : ""}`
+                : undefined
+            }
+            actionLabel="Open playlist"
+            onAction={() => {
+              toast.dismiss(id);
+              router.push(`/playlist/${playlistId}`);
+            }}
+          />
+        );
       });
       return true;
     } catch (e) {

@@ -45,7 +45,7 @@ export default function Button({
     xxs: "px-1 py-0.5 text-[10px]",
     xs: "px-2 py-1 text-xs",
     sm: "px-3 py-1.5 text-sm",
-    md: "px-6 py-3 text-base",
+    md: "px-6 py-2 text-base",
     lg: "px-6 py-3 text-lg",
   };
 

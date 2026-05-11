@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { FaCompactDisc } from "react-icons/fa";
 import { usePlaylist } from "@/context/PlaylistContext";
 import BasePlaylistSelectorModal from "./BasePlaylistSelectorModal";
+import ToastContent from "./ToastContent";
 import { createSlug } from "@/lib/utils";
 
 interface AlbumPlaylistSelectorModalProps {
@@ -72,14 +73,22 @@ export default function AlbumPlaylistSelectorModal({
 
   const openPlaylistToast = (playlistId: string, playlistName: string) => {
     const titleLine = albumName?.trim() || "Album";
-    toast.success(`Album added to ${playlistName}`, {
-      description: artistName?.trim()
-        ? `${titleLine} · ${artistName.trim()}`
-        : titleLine,
-      action: {
-        label: "Open playlist",
-        onClick: () => router.push(`/playlist/${playlistId}`),
-      },
+    const description = artistName?.trim()
+      ? `${titleLine} · ${artistName.trim()}`
+      : titleLine;
+
+    toast.custom((id) => {
+      return (
+        <ToastContent
+          title={`Album added to ${playlistName}`}
+          description={description}
+          actionLabel="Open playlist"
+          onAction={() => {
+            toast.dismiss(id);
+            router.push(`/playlist/${playlistId}`);
+          }}
+        />
+      );
     });
   };
 
@@ -112,13 +121,18 @@ export default function AlbumPlaylistSelectorModal({
       setPlaylistAlbumCounts((prev) => ({ ...prev, [playlist.id]: 1 }));
       openPlaylistToast(playlist.id, playlist.name);
     } else {
-      toast.error("Playlist created, but the album wasn't added", {
-        description:
-          "Open the playlist and try again, or add the album from its page.",
-        action: {
-          label: "Open playlist",
-          onClick: () => router.push(`/playlist/${playlist.id}`),
-        },
+      toast.custom((id) => {
+        return (
+          <ToastContent
+            title="Playlist created, but the album wasn't added"
+            description="Open the playlist and try again, or add the album from its page."
+            actionLabel="Open playlist"
+            onAction={() => {
+              toast.dismiss(id);
+              router.push(`/playlist/${playlist.id}`);
+            }}
+          />
+        );
       });
     }
   };

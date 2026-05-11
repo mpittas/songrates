@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
   FaTimes,
@@ -67,6 +67,17 @@ export default function BasePlaylistSelectorModal({
   const [removingPlaylistId, setRemovingPlaylistId] = useState<string | null>(
     null,
   );
+
+  useEffect(() => {
+    if (!confirmRemovePlaylistId) return;
+
+    const handleClickOutside = () => {
+      setConfirmRemovePlaylistId(null);
+    };
+
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
+  }, [confirmRemovePlaylistId]);
 
   const truncateToChars = (text: string, maxChars: number) => {
     const s = (text || "").trim();
@@ -277,9 +288,17 @@ export default function BasePlaylistSelectorModal({
                         Boolean(onRemoveFromPlaylist) && isAlreadyInPlaylist;
 
                       return (
-                        <button
+                        <div
                           key={playlist.id}
+                          role="button"
+                          tabIndex={0}
                           onClick={() => {
+                            if (isAlreadyInPlaylist) return;
+                            toggleSelection(playlist.id);
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key !== "Enter" && e.key !== " ") return;
+                            e.preventDefault();
                             if (isAlreadyInPlaylist) return;
                             toggleSelection(playlist.id);
                           }}
@@ -328,11 +347,11 @@ export default function BasePlaylistSelectorModal({
                               }`}
                               aria-label={`Open playlist ${playlist.name} in new tab`}
                             >
-                              {truncateToChars(playlist.name, 30)}
+                              {truncateToChars(playlist.name, 26)}
                             </Link>
                             {isAlreadyInPlaylist ? (
-                              <div className="absolute top-1/2 -translate-y-1/2 right-12 -mt-0.5">
-                                <span className="inline-flex items-center rounded-full bg-neutral-700 px-1.5 py-0.25 text-[11px] font-medium tracking-wide text-white">
+                              <div className="absolute top-1/2 -translate-y-1/2 right-10 -mt-0.5">
+                                <span className="inline-flex items-center rounded-full bg-neutral-300 px-1.5 text-[11px] font-semibold tracking-wide text-neutral-800">
                                   Added
                                 </span>
                               </div>
@@ -366,17 +385,18 @@ export default function BasePlaylistSelectorModal({
 
                           {showRemove && confirmRemovePlaylistId === playlist.id ? (
                             <div
-                              className="absolute right-3 top-1/2 z-50 -translate-y-1/2"
+                              className="absolute right-12 top-1/2 z-50 -translate-y-1/2"
                               onClick={(e) => e.stopPropagation()}
                             >
-                              <div className="w-[220px] rounded-xl border border-neutral-800 bg-neutral-950 p-3 text-white shadow-xl">
-                                <div className="text-xs font-semibold">
+                              <div className="relative w-[220px] rounded-xl bg-neutral-800 p-3 text-white shadow-xl text-center">
+                                <div className="absolute left-full top-1/2 -translate-y-1/2 border-8 border-transparent border-l-neutral-800" />
+                                <div className="text-sm pb-2">
                                   {removeConfirmTitle}
                                 </div>
                                 <div className="mt-2 flex items-center justify-end gap-2">
                                   <button
                                     type="button"
-                                    className="rounded-lg bg-neutral-900 px-2.5 py-1.5 text-xs font-semibold text-neutral-200 hover:bg-neutral-800"
+                                    className="shrink-0 rounded-lg bg-neutral-900 px-2.5 py-1.5 text-xs font-semibold text-neutral-200 hover:bg-neutral-950"
                                     onClick={() =>
                                       setConfirmRemovePlaylistId(null)
                                     }
@@ -386,7 +406,7 @@ export default function BasePlaylistSelectorModal({
                                   <button
                                     type="button"
                                     disabled={removingPlaylistId === playlist.id}
-                                    className="rounded-lg bg-white px-2.5 py-1.5 text-xs font-semibold text-neutral-950 hover:bg-neutral-200 disabled:opacity-60"
+                                    className="flex-1 rounded-lg bg-white px-2.5 py-1.5 text-xs font-semibold text-neutral-950 hover:bg-neutral-200 disabled:opacity-60"
                                     onClick={() =>
                                       handleConfirmRemove(playlist.id)
                                     }
@@ -399,7 +419,7 @@ export default function BasePlaylistSelectorModal({
                               </div>
                             </div>
                           ) : null}
-                        </button>
+                        </div>
                       );
                     })}
                   </div>

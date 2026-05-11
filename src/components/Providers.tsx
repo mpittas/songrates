@@ -28,13 +28,13 @@ export default function Providers({ children }: { children: React.ReactNode }) {
                 toastOptions={{
                   classNames: {
                     toast:
-                      "bg-neutral-950 text-white border border-neutral-800 shadow-xl",
+                      "rounded-3xl bg-neutral-950 text-white border border-neutral-800 shadow-xl p-4",
                     title: "text-white",
                     description: "text-neutral-300",
                     actionButton:
-                      "bg-white text-neutral-950 hover:bg-neutral-200",
+                      "rounded-full bg-white text-neutral-950 hover:bg-neutral-200",
                     cancelButton:
-                      "bg-neutral-900 text-neutral-200 hover:bg-neutral-800",
+                      "rounded-full bg-neutral-900 text-neutral-200 hover:bg-neutral-800",
                     closeButton:
                       "bg-transparent text-neutral-300 hover:text-white border-neutral-700",
                   },
