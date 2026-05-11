@@ -203,7 +203,7 @@ export default function BasePlaylistSelectorModal({
                 {!creating ? (
                   <button
                     onClick={() => setCreating(true)}
-                    className="w-full group flex items-center gap-4 p-3 bg-neutral-900 rounded-2xl transition-all duration-300 hover:border-neutral-100"
+                    className="w-full group flex items-center gap-4 p-2 bg-neutral-900 rounded-2xl transition-all duration-300 hover:border-neutral-100"
                   >
                     <div className="w-14 h-14 flex items-center justify-center bg-neutral-100 rounded-xl group-hover:bg-neutral-200 transition-colors">
                       <HiPlus size={20} className="text-neutral-900" />
@@ -237,7 +237,7 @@ export default function BasePlaylistSelectorModal({
                         onClick={handleCreate}
                         disabled={!newPlaylistName.trim()}
                         variant="white"
-                        size="sm"
+                        size="md"
                         className="flex-1"
                       >
                         Create & Add
@@ -245,7 +245,7 @@ export default function BasePlaylistSelectorModal({
                       <Button
                         onClick={() => setCreating(false)}
                         variant="whiteMuted"
-                        size="sm"
+                        size="md"
                       >
                         Cancel
                       </Button>
@@ -283,7 +283,7 @@ export default function BasePlaylistSelectorModal({
                             if (isAlreadyInPlaylist) return;
                             toggleSelection(playlist.id);
                           }}
-                          className={`relative w-full flex items-center gap-4 p-3 rounded-2xl transition-all duration-200
+                          className={`relative w-full flex items-center gap-4 p-2 rounded-2xl transition-all duration-200
                             ${
                               isAlreadyInPlaylist
                                 ? "bg-neutral-100"
@@ -328,7 +328,7 @@ export default function BasePlaylistSelectorModal({
                               }`}
                               aria-label={`Open playlist ${playlist.name} in new tab`}
                             >
-                              {truncateToChars(playlist.name, 25)}
+                              {truncateToChars(playlist.name, 30)}
                             </Link>
                             {isAlreadyInPlaylist ? (
                               <div className="absolute top-1/2 -translate-y-1/2 right-12 -mt-0.5">

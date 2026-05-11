@@ -20,7 +20,7 @@ export default function AlbumReadOnlyBanner({
     <div
       className="relative z-10 w-full py-3.5 sm:py-4"
       style={{
-        backgroundColor: "#0f0f0f",
+        backgroundColor: "#5d2301",
         backgroundImage: `repeating-linear-gradient(
                 -36deg,
                 transparent,
