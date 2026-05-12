@@ -114,8 +114,7 @@ export default function SongRow({
     lyricsOpen,
   );
 
-  const shareUrl =
-    typeof window !== "undefined" ? window.location.href : "";
+  const shareUrl = typeof window !== "undefined" ? window.location.href : "";
   const [shareCopied, setShareCopied] = useState(false);
 
   const formatDuration = (val: string) => {
@@ -186,74 +185,50 @@ export default function SongRow({
           <div className="flex flex-col min-w-0">
             <div className="flex items-center gap-x-2">
               {effectiveAlbumId ? (
-              <Link
-                href={`/album/${effectiveAlbumId}`}
-                className="text-sm font-bold text-neutral-900 truncate hover:underline"
-              >
-                {truncateText(title, 80)}
-              </Link>
-            ) : (
-              <span className="text-sm font-semibold text-neutral-900 truncate">
-                {truncateText(title, 80)}
-              </span>
-            )}
-            
-           
+                <Link
+                  href={`/album/${effectiveAlbumId}`}
+                  className="text-md font-semibold text-neutral-900 truncate hover:underline"
+                >
+                  {truncateText(title, 80)}
+                </Link>
+              ) : (
+                <span className="text-md font-semibold text-neutral-900 truncate">
+                  {truncateText(title, 80)}
+                </span>
+              )}
             </div>
-            <div className="flex min-w-0 w-full flex-wrap items-center gap-x-1 gap-y-0.5 text-xs text-neutral-500">
-              <span className="inline-flex min-w-0 max-w-full flex-wrap items-center gap-x-0">
-                {track?.artists && track.artists.length > 0 ? (
-                  track.artists.map((a, i) => (
-                    <span
-                      key={`${a.id || "noid"}-${i}-${a.name}`}
-                      className="inline-flex items-center"
-                    >
-                      {i > 0 ? (
-                        <span className="px-1 text-[10px] font-mono tracking-tight text-neutral-400">
-                          ft.
-                        </span>
-                      ) : null}
-                      {a.id ? (
-                        <Link
-                          href={`/artist/${createSlug(a.name, a.id)}`}
-                          className="shrink-0 hover:text-neutral-700 hover:underline"
-                        >
-                          {truncateText(a.name, 50)}
-                        </Link>
-                      ) : (
-                        <span className="shrink-0">
-                          {truncateText(a.name, 50)}
-                        </span>
-                      )}
-                    </span>
-                  ))
-                ) : effectiveArtistId ? (
-                  <Link
-                    href={`/artist/${createSlug(artist, effectiveArtistId)}`}
-                    className="shrink-0 hover:text-neutral-700 hover:underline"
+            <div className="flex min-w-0 w-full flex-wrap items-center gap-x-0.5 text-sm text-neutral-500">
+              <span className="flex gap-x-1 min-w-0 max-w-full flex-wrap items-center">
+                {(track?.artists?.length
+                  ? track.artists
+                  : [{ id: effectiveArtistId, name: artist }]
+                ).map((a, i) => (
+                  <span
+                    key={`${a.id || "noid"}-${i}-${a.name}`}
+                    className="inline-flex items-center gap-x-1"
                   >
-                    {truncateText(artist, 50)}
-                  </Link>
-                ) : (
-                  <span className="min-w-0">{truncateText(artist, 50)}</span>
-                )}
+                    {i > 0 && (
+                      <span className="font-mono tracking-tight text-neutral-400">
+                        ft.
+                      </span>
+                    )}
+                    {a.id ? (
+                      <Link
+                        href={`/artist/${createSlug(a.name, a.id)}`}
+                        className="shrink-0 hover:text-neutral-700 hover:underline"
+                      >
+                        {truncateText(a.name, 50)}
+                      </Link>
+                    ) : (
+                      <span className="shrink-0">
+                        {truncateText(a.name, 50)}
+                      </span>
+                    )}
+                  </span>
+                ))}
               </span>
-              <span className="text-neutral-300">/</span>
-              <IoDiscOutline size={10} className="text-neutral-400 shrink-0" />
-              <span className="truncate min-w-0">
-                {effectiveAlbumId ? (
-                  <Link
-                    href={`/album/${effectiveAlbumId}`}
-                    className="hover:underline hover:text-neutral-700"
-                  >
-                    {truncateText(album, 50)}
-                  </Link>
-                ) : (
-                  <span>{truncateText(album, 50)}</span>
-                )}
-              </span>
-              <span className="text-neutral-300">/</span>
-              <div className="text-xs text-neutral-500">
+              <span className="text-neutral-300">-</span>
+              <div className="text-neutral-500 text-[14px]">
                 {formatDuration(duration)}
               </div>
             </div>
@@ -263,7 +238,6 @@ export default function SongRow({
         {/* Right Section */}
         <div className="flex items-center gap-1.5 shrink-0">
           {/* Duration */}
-         
 
           {/* Rating Circle */}
           <SongRowRating
@@ -277,7 +251,9 @@ export default function SongRow({
           {/* Three Dots Menu */}
           <SongRowDropdown
             isLyricsOpen={lyricsOpen}
-            onToggleLyrics={() => setCurrentLyricsTrackId(lyricsOpen ? null : trackId || null)}
+            onToggleLyrics={() =>
+              setCurrentLyricsTrackId(lyricsOpen ? null : trackId || null)
+            }
             onAddToPlaylist={() => setShowPlaylistModal(true)}
             onPrefetchLyrics={prefetchLyrics}
             onShare={() => {
