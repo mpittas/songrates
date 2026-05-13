@@ -92,10 +92,9 @@ export default function AlbumPlaylistSelectorModal({
     });
   };
 
-  const handleCreatePlaylist = async (name: string, description: string) => {
+  const handleCreatePlaylist = async (name: string) => {
     const playlist = await createPlaylist({
       name,
-      description: description || undefined,
       type: "albums",
     });
 

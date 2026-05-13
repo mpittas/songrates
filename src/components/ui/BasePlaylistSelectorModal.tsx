@@ -26,7 +26,7 @@ interface BasePlaylistSelectorModalProps {
   onClose: () => void;
   loading: boolean;
   playlists: Playlist[];
-  onCreatePlaylist: (name: string, description: string) => Promise<void>;
+  onCreatePlaylist: (name: string) => Promise<void>;
   onAddToPlaylist: (playlistId: string) => Promise<boolean | void>;
   /** Optional remove handler. If provided, already-added rows can remove via checkbox confirm. */
   onRemoveFromPlaylist?: (playlistId: string) => Promise<boolean | void>;
@@ -107,7 +107,7 @@ export default function BasePlaylistSelectorModal({
       });
       return;
     }
-    await onCreatePlaylist(name, "");
+    await onCreatePlaylist(name);
     setCreating(false);
     setNewPlaylistName("");
   };

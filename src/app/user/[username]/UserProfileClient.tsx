@@ -2,14 +2,19 @@
 
 import { useEffect, useMemo, useState } from "react";
 import AlbumGrid from "@/components/album/AlbumGrid";
-import { FaUser, FaCalendarAlt, FaStar } from "react-icons/fa";
-import OptimizedImage from "@/components/ui/OptimizedImage";
+import {
+  FaCalendarAlt,
+  FaStar,
+  FaMusic,
+  FaCompactDisc,
+  FaMicrophoneAlt,
+  FaList,
+  FaLayerGroup,
+} from "react-icons/fa";
 import { createClient } from "@/utils/supabase/client";
-import FavoriteStatsBar, {
-  FavoriteItem,
-} from "@/components/profile/FavoriteStatsBar";
+import { FavoriteItem } from "@/components/profile/FavoriteStatsBar";
 import PublicPlaylistsSection from "@/components/profile/PublicPlaylistsSection";
-import MySection from "@/components/ui/MySection";
+import ProfileLayout, { QuickLink } from "@/components/profile/ProfileLayout";
 
 interface UserProfile {
   id: string;
@@ -233,103 +238,56 @@ export default function UserProfileClient({ profile }: UserProfileClientProps) {
   }, [albums]);
 
   return (
-    <main className="min-h-screen">
-      {/* Cover Art Banner */}
-      <div className="relative w-full h-48 md:h-64 overflow-hidden">
-        <img
-          src="/profile-cover.svg"
-          alt=""
-          className="w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#ebe8e5]" />
-      </div>
-
-      {/* Profile Header */}
-      <MySection className="relative -mt-20 md:-mt-24 z-10">
-        <div className="w-full max-w-4xl">
-          <div className="flex flex-col sm:flex-row items-start sm:items-end gap-5">
-            {/* Avatar */}
-            <div className="relative w-28 h-28 md:w-36 md:h-36 rounded-full overflow-hidden bg-white border-4 border-[#ebe8e5] shadow-xl shrink-0">
-              {profile.avatar_url ? (
-                <OptimizedImage
-                  src={profile.avatar_url}
-                  alt={profile.username}
-                  fill
-                  className="object-cover"
-                  fallbackSrc="/vinyl-placeholder.svg"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center bg-[#efefef]">
-                  <FaUser size={40} className="text-neutral-600" />
-                </div>
-              )}
-            </div>
-
-            {/* User Info */}
-            <div className="flex-1 min-w-0 pb-2">
-              <h1 className="text-2xl md:text-3xl font-light tracking-tight text-neutral-900">
-                @{profile.username}
-              </h1>
-              {profile.display_name && (
-                <p className="text-sm text-neutral-400 mt-1">
-                  {profile.display_name}
-                </p>
-              )}
-              <div className="flex items-center gap-2 text-neutral-500 text-xs mt-2">
-                <FaCalendarAlt size={12} />
-                <span>Member since {memberSince}</span>
-              </div>
-            </div>
-
-            {/* Rating Stats */}
-            <div className="flex gap-4 shrink-0 pb-2">
-              <div className="text-center px-4 py-2 bg-white border border-[#d9d9d9] rounded-sm">
-                <div className="text-xl font-light text-neutral-900">
-                  {fullAlbumsCount}
-                </div>
-                <div className="text-[9px] uppercase tracking-wider text-neutral-500">
-                  Full Ratings
-                </div>
-              </div>
-              <div className="text-center px-4 py-2 bg-white border border-[#d9d9d9] rounded-sm">
-                <div className="text-xl font-light text-neutral-900">
-                  {partialAlbumsCount}
-                </div>
-                <div className="text-[9px] uppercase tracking-wider text-neutral-500">
-                  Partial
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </MySection>
-
-      {/* Favorites Stats Bar */}
-      {profile.show_favorites && (
-        <MySection className="mt-10">
-          <div className="w-full max-w-4xl">
-            <FavoriteStatsBar
-              favorites={favorites}
-              loading={loadingFavorites}
-              albumRatings={albumRatingsLookup}
-            />
-          </div>
-        </MySection>
-      )}
-
+    <ProfileLayout
+      user={{
+        username: profile.username,
+        avatarUrl: profile.avatar_url,
+        subtitle: (
+          <>
+            <FaCalendarAlt size={12} className="text-neutral-400" />
+            <span>Member since {memberSince}</span>
+          </>
+        )
+      }}
+      quickLinks={
+        profile.show_favorites || profile.show_playlists ? (
+          <>
+            <QuickLink icon={FaStar} label="Rated music" href="#" active />
+            {profile.show_favorites && (
+              <>
+                <QuickLink icon={FaMusic} label="Liked songs" href="#" />
+                <QuickLink icon={FaCompactDisc} label="Liked albums" href="#" />
+                <QuickLink icon={FaMicrophoneAlt} label="Favourite artists" href="#" />
+              </>
+            )}
+            {profile.show_playlists && (
+              <QuickLink icon={FaList} label="Playlists" href="#" />
+            )}
+            <QuickLink icon={FaLayerGroup} label="Album collections" href="#" />
+          </>
+        ) : null
+      }
+    >
       {/* Playlists Section */}
       {profile.show_playlists && (
-        <MySection className="mt-12">
-          <div className="w-full max-w-4xl">
-            <PublicPlaylistsSection userId={profile.id} />
-          </div>
-        </MySection>
+        <section className="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-neutral-100 p-6 sm:p-8">
+          <h2 className="text-xl font-bold text-neutral-900 mb-6 tracking-tight flex items-center gap-2">
+            <span className="w-1.5 h-6 bg-neutral-900 rounded-full" />
+            Public Playlists
+          </h2>
+          <PublicPlaylistsSection userId={profile.id} />
+        </section>
       )}
 
       {/* Rated Albums Section */}
-      <MySection className="mt-16 pb-20">
-        <div className="w-full max-w-4xl">
-          <div className="flex items-center gap-6 border-b border-[#dadada] mb-8">
+      <section className="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-neutral-100 p-6 sm:p-8">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <h2 className="text-xl font-bold text-neutral-900 tracking-tight flex items-center gap-2">
+            <span className="w-1.5 h-6 bg-neutral-900 rounded-full" />
+            Rated Music
+          </h2>
+
+          <div className="flex bg-neutral-100 p-1 rounded-xl self-start sm:self-auto overflow-x-auto">
             {[
               { id: "all", label: "All", count: albums.length },
               { id: "full", label: "Fully rated", count: fullAlbumsCount },
@@ -344,71 +302,72 @@ export default function UserProfileClient({ profile }: UserProfileClientProps) {
                 onClick={() =>
                   setActiveTab(tab.id as "all" | "full" | "partial")
                 }
-                className={`pb-3 text-lg font-light tracking-tight transition-colors relative ${
+                className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-all duration-200 whitespace-nowrap ${
                   activeTab === tab.id
-                    ? "text-neutral-900"
-                    : "text-neutral-500 hover:text-neutral-700"
+                    ? "bg-white text-neutral-900 shadow-sm"
+                    : "text-neutral-500 hover:text-neutral-700 hover:bg-neutral-200/50"
                 }`}
               >
                 {tab.label}
-                <span className="ml-2 text-xs font-mono">{tab.count}</span>
-                {activeTab === tab.id && (
-                  <div className="absolute bottom-0 left-0 w-full h-0.5 bg-[#1f1f1f]" />
-                )}
+                <span className={`text-xs px-1.5 py-0.5 rounded-md ${
+                  activeTab === tab.id ? "bg-neutral-100 text-neutral-600" : "bg-neutral-200 text-neutral-500"
+                }`}>
+                  {tab.count}
+                </span>
               </button>
             ))}
           </div>
-
-          {/* Sort Filter */}
-          <div className="flex items-center justify-between mb-6">
-            <p className="text-neutral-500 text-sm font-mono">
-              {filteredAlbums.length} album
-              {filteredAlbums.length !== 1 ? "s" : ""}
-            </p>
-            <select
-              value={sortFilter}
-              onChange={(e) => setSortFilter(e.target.value)}
-              className="bg-white border border-[#d5d5d5] text-neutral-900 text-sm px-3 py-2 focus:outline-none focus:border-[#bcbcbc] rounded-sm"
-            >
-              <option value="newest">Latest Added</option>
-              <option value="oldest">Oldest Added</option>
-              <option value="rating">Highest Rated</option>
-              <option value="artist">Artist (A-Z)</option>
-              <option value="title">Album (A-Z)</option>
-            </select>
-          </div>
-
-          {loading ? (
-            <div className="py-20 flex items-center justify-center">
-              <div className="w-8 h-8 border-2 border-neutral-500 border-t-transparent rounded-full animate-spin" />
-            </div>
-          ) : filteredAlbums.length === 0 ? (
-            <div className="py-16 text-center border border-[#e1e1e1] bg-white rounded-md">
-              <FaStar size={24} className="text-neutral-700 mx-auto mb-3" />
-              <p className="text-neutral-600 font-mono text-sm">
-                No albums match this filter
-              </p>
-              <p className="text-neutral-700 text-xs mt-1">
-                {activeTab === "full"
-                  ? "This user hasn't fully rated any albums yet"
-                  : activeTab === "partial"
-                    ? "This user has no partially rated albums"
-                    : "This user hasn't added any albums yet"}
-              </p>
-            </div>
-          ) : (
-            <>
-              <AlbumGrid
-                albums={sortedAlbums}
-                onSelectAlbum={() => {}}
-                layout="grid"
-                gridCols={4}
-                priorityCount={4}
-              />
-            </>
-          )}
         </div>
-      </MySection>
-    </main>
+
+        {/* Sort Filter */}
+        <div className="flex items-center justify-between mb-8 pb-4 border-b border-neutral-100">
+          <p className="text-neutral-500 text-sm font-medium">
+            Showing {filteredAlbums.length} album
+            {filteredAlbums.length !== 1 ? "s" : ""}
+          </p>
+          <select
+            value={sortFilter}
+            onChange={(e) => setSortFilter(e.target.value)}
+            className="bg-neutral-50 border border-neutral-200 text-neutral-700 text-sm px-4 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-neutral-900/10 focus:border-neutral-300 font-medium cursor-pointer"
+          >
+            <option value="newest">Latest Added</option>
+            <option value="oldest">Oldest Added</option>
+            <option value="rating">Highest Rated</option>
+            <option value="artist">Artist (A-Z)</option>
+            <option value="title">Album (A-Z)</option>
+          </select>
+        </div>
+
+        {loading ? (
+          <div className="py-20 flex items-center justify-center">
+            <div className="w-8 h-8 border-2 border-neutral-500 border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : filteredAlbums.length === 0 ? (
+          <div className="py-16 text-center border-2 border-dashed border-neutral-200 rounded-2xl bg-neutral-50">
+            <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
+              <FaStar size={24} className="text-neutral-400" />
+            </div>
+            <p className="text-neutral-900 font-bold text-lg mb-1">
+              No albums match this filter
+            </p>
+            <p className="text-neutral-500 text-sm">
+              {activeTab === "full"
+                ? "This user hasn't fully rated any albums yet"
+                : activeTab === "partial"
+                  ? "This user has no partially rated albums"
+                  : "This user hasn't added any albums yet"}
+            </p>
+          </div>
+        ) : (
+          <AlbumGrid
+            albums={sortedAlbums}
+            onSelectAlbum={() => {}}
+            layout="grid"
+            gridCols={3}
+            priorityCount={3}
+          />
+        )}
+      </section>
+    </ProfileLayout>
   );
 }

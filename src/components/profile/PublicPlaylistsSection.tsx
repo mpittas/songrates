@@ -90,15 +90,6 @@ export default function PublicPlaylistsSection({
 
   return (
     <div className={className}>
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-1 h-5 bg-[#1f1f1f]" />
-        <h2 className="text-lg font-light tracking-tight text-neutral-900">
-          Playlists
-        </h2>
-        <span className="text-xs text-neutral-600 font-mono">
-          {playlists.length}
-        </span>
-      </div>
 
       {loading ? (
         <div className="py-8 flex items-center justify-center">
@@ -140,11 +131,7 @@ export default function PublicPlaylistsSection({
                       {playlist.type === "albums" ? "Albums" : "Songs"}
                     </span>
                   </div>
-                  {playlist.description && (
-                    <p className="text-xs text-neutral-500 truncate mt-0.5">
-                      {playlist.description}
-                    </p>
-                  )}
+
                   <p className="text-xs text-neutral-600 font-mono mt-1">
                     {new Date(playlist.created_at).toLocaleDateString()}
                   </p>
@@ -174,11 +161,7 @@ export default function PublicPlaylistsSection({
                   <h2 className="text-lg font-light tracking-tight text-neutral-900">
                     {selectedPlaylist.name}
                   </h2>
-                  {selectedPlaylist.description && (
-                    <p className="text-xs text-neutral-500">
-                      {selectedPlaylist.description}
-                    </p>
-                  )}
+
                 </div>
               </div>
               <button

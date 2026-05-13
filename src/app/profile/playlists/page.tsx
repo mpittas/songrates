@@ -39,7 +39,7 @@ export default function ProfilePlaylistsPage() {
         const { data, error } = await supabase
           .from("playlists")
           .select(
-            "id, user_id, name, description, type, created_at, updated_at, playlist_tracks(count), playlist_albums(count)",
+            "id, user_id, name, type, created_at, updated_at, playlist_tracks(count), playlist_albums(count)",
           )
           .eq("user_id", user.id)
           .order("created_at", { ascending: false });
@@ -64,7 +64,6 @@ export default function ProfilePlaylistsPage() {
             id: p.id,
             user_id: p.user_id,
             name: p.name,
-            description: p.description ?? null,
             type: p.type,
             created_at: p.created_at,
             updated_at: p.updated_at,

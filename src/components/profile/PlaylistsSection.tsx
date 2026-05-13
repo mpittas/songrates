@@ -73,11 +73,7 @@ export default function PlaylistsSection({
                       {playlist.type === "albums" ? "Albums" : "Songs"}
                     </span>
                   </div>
-                  {playlist.description && (
-                    <p className="text-xs text-neutral-500 truncate mt-0.5">
-                      {playlist.description}
-                    </p>
-                  )}
+
                   <p className="text-xs text-neutral-600 font-mono mt-1">
                     {new Date(playlist.created_at).toLocaleDateString()}
                   </p>
