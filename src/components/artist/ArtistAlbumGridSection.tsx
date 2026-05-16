@@ -8,9 +8,13 @@ import type { Album } from "@/types/music";
 export default function ArtistAlbumGridSection({
   albums,
   initialCount = 12,
+  ratingMode = "full",
+  showOptionsMenu = false,
 }: {
   albums: Album[];
   initialCount?: number;
+  ratingMode?: "any" | "full";
+  showOptionsMenu?: boolean;
 }) {
   const [showAll, setShowAll] = useState(false);
   const visible = showAll ? albums : albums.slice(0, initialCount);
@@ -18,13 +22,13 @@ export default function ArtistAlbumGridSection({
 
   return (
     <div>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+      <div className="grid grid-cols-2 gap-[22px] sm:grid-cols-3">
         {visible.map((album) => (
           <AlbumCard
             key={album.id}
             album={album}
-            ratingMode="full"
-            showOptionsMenu={false}
+            ratingMode={ratingMode}
+            showOptionsMenu={showOptionsMenu}
           />
         ))}
       </div>

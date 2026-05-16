@@ -1,6 +1,6 @@
 "use client";
 
-import { createSlug } from "@/lib/utils";
+import { cn, createSlug } from "@/lib/utils";
 import OptimizedImage from "@/components/ui/OptimizedImage";
 import { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
@@ -15,6 +15,7 @@ export interface AlbumCardProps {
   album: Album;
   isPriority?: boolean;
   layout?: "grid" | "list";
+  size?: "default" | "compact";
   showRating?: boolean;
   ratingMode?: "any" | "full";
   showOptionsMenu?: boolean;
@@ -182,10 +183,12 @@ export default function AlbumCard({
   album,
   isPriority = false,
   layout = "grid",
+  size = "default",
   showRating = true,
   ratingMode = "any",
   showOptionsMenu = true,
 }: AlbumCardProps) {
+  const isCompact = size === "compact";
   const imageUrl = album.artworkUrl || "/vinyl-placeholder.svg";
   const [imageError, setImageError] = useState(false);
   const prefetchAlbum = usePrefetchAlbum();
@@ -248,9 +251,14 @@ export default function AlbumCard({
       <Link
         href={`/album/${slug}`}
         onMouseEnter={handleMouseEnter}
-        className="block relative mb-3"
+        className={cn("block relative", isCompact ? "mb-2" : "mb-3")}
       >
-        <div className="aspect-square bg-[#efefef] overflow-hidden relative border border-[#e1e1e1] group-hover:border-[#c9c9c9] transition-colors rounded-md">
+        <div
+          className={cn(
+            "aspect-square bg-[#efefef] overflow-hidden relative border border-[#e1e1e1] group-hover:border-[#c9c9c9] transition-colors",
+            isCompact ? "rounded-sm" : "rounded-md",
+          )}
+        >
           {!imageError ? (
             <OptimizedImage
               src={imageUrl}
@@ -262,7 +270,12 @@ export default function AlbumCard({
               fallbackText="·"
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center p-10 opacity-20 group-hover:opacity-30 transition-opacity">
+            <div
+              className={cn(
+                "w-full h-full flex items-center justify-center opacity-20 group-hover:opacity-30 transition-opacity",
+                isCompact ? "p-6" : "p-10",
+              )}
+            >
               <img
                 src="/vinyl-placeholder.svg"
                 alt=""
@@ -272,7 +285,12 @@ export default function AlbumCard({
           )}
 
           {showOptionsMenu && (
-            <div className="absolute top-2 right-2 flex gap-2 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+            <div
+              className={cn(
+                "absolute flex gap-2 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-200",
+                isCompact ? "top-1 right-1" : "top-2 right-2",
+              )}
+            >
               <AlbumOptionsMenu albumId={album.id} />
             </div>
           )}
@@ -287,10 +305,20 @@ export default function AlbumCard({
           onMouseEnter={handleMouseEnter}
           className="flex-1 min-w-0 block"
         >
-          <h3 className="text-neutral-900 text-sm font-medium truncate group-hover:text-black transition-colors leading-tight mb-0.5">
+          <h3
+            className={cn(
+              "text-neutral-900 font-medium truncate group-hover:text-black transition-colors leading-tight",
+              isCompact ? "text-xs mb-0" : "text-sm mb-0.5",
+            )}
+          >
             {album.title}
           </h3>
-          <div className="flex flex-col gap-0 text-xs text-neutral-500">
+          <div
+            className={cn(
+              "flex flex-col gap-0 text-neutral-500",
+              isCompact ? "text-[11px]" : "text-xs",
+            )}
+          >
             <p className="truncate group-hover:text-neutral-700 transition-colors">
               {album.artistName ? `${album.artistName} • ` : ""}
               {album.releaseDate?.split("-")[0] || "—"}

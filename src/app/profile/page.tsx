@@ -18,10 +18,11 @@ import {
   FaChevronRight,
 } from "react-icons/fa";
 import { BsThreeDotsVertical } from "react-icons/bs";
-import AlbumGrid from "@/components/album/AlbumGrid";
+import ArtistAlbumGridSection from "@/components/artist/ArtistAlbumGridSection";
 import { Album } from "@/types/music";
 import type { Playlist } from "@/types/playlist";
 import ProfileLayout, { QuickLink } from "@/components/profile/ProfileLayout";
+import ProfileSectionHeader from "@/components/profile/ProfileSectionHeader";
 
 type PlaylistWithCount = Playlist & { itemCount: number };
 
@@ -192,13 +193,13 @@ export default function ProfilePage() {
         <>
           <Link
             href="/settings"
-            className="flex-1 flex justify-center items-center gap-2 px-4 py-2.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 text-sm font-semibold rounded-xl transition-all duration-200"
+            className="w-full flex justify-center items-center gap-2 px-4 py-2.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 text-sm font-semibold rounded-xl transition-all duration-200"
           >
             <FaCog size={14} /> Settings
           </Link>
           <button
             onClick={() => signOut()}
-            className="flex-1 flex justify-center items-center gap-2 px-4 py-2.5 bg-red-50 hover:bg-red-100 text-red-600 text-sm font-semibold rounded-xl transition-all duration-200"
+            className="w-full flex justify-center items-center gap-2 px-4 py-2.5 bg-red-50 hover:bg-red-100 text-red-600 text-sm font-semibold rounded-xl transition-all duration-200"
           >
             <FaSignOutAlt size={14} /> Log out
           </button>
@@ -234,44 +235,23 @@ export default function ProfilePage() {
       }
     >
       {activeContentTab === "rated" ? (
-      <section className="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-neutral-100 p-6 sm:p-8">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-          <h2 className="text-xl font-bold text-neutral-900 tracking-tight flex items-center gap-2">
-            <span className="w-1.5 h-6 bg-neutral-900 rounded-full" />
-            Latest Rated Music
-          </h2>
-
-          <div className="flex bg-neutral-100 p-1 rounded-xl self-start sm:self-auto overflow-x-auto">
-            {[
-              { id: "all", label: "All", count: allUserAlbums.length },
-              { id: "full", label: "Fully rated", count: fullAlbumsCount },
-              {
-                id: "partial",
-                label: "Partially rated",
-                count: partialAlbumsCount,
-              },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() =>
-                  setActiveTab(tab.id as "all" | "full" | "partial")
-                }
-                className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-all duration-200 whitespace-nowrap ${
-                  activeTab === tab.id
-                    ? "bg-white text-neutral-900 shadow-sm"
-                    : "text-neutral-500 hover:text-neutral-700 hover:bg-neutral-200/50"
-                }`}
-              >
-                {tab.label}
-                <span className={`text-xs px-1.5 py-0.5 rounded-md ${
-                  activeTab === tab.id ? "bg-neutral-100 text-neutral-600" : "bg-neutral-200 text-neutral-500"
-                }`}>
-                  {tab.count}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
+      <section>
+        <ProfileSectionHeader
+          title="Latest Rated Music"
+          filters={[
+            { id: "all", label: "All", count: allUserAlbums.length },
+            { id: "full", label: "Fully rated", count: fullAlbumsCount },
+            {
+              id: "partial",
+              label: "Partially rated",
+              count: partialAlbumsCount,
+            },
+          ]}
+          activeFilterId={activeTab}
+          onFilterChange={(id) =>
+            setActiveTab(id as "all" | "full" | "partial")
+          }
+        />
 
         {filteredAlbums.length === 0 ? (
           <div className="py-16 text-center border-2 border-dashed border-neutral-200 rounded-2xl bg-neutral-50">
@@ -290,26 +270,11 @@ export default function ProfilePage() {
             </p>
           </div>
         ) : (
-          <>
-            <AlbumGrid
-              albums={filteredAlbums.slice(0, 12)}
-              onSelectAlbum={() => {}}
-              layout="grid"
-              gridCols={3}
-              priorityCount={3}
-            />
-            {filteredAlbums.length > 12 && (
-              <div className="mt-8 flex justify-center">
-                <Link
-                  href={`/user/${username}`}
-                  className="flex items-center gap-2 px-6 py-3 text-sm font-bold text-neutral-700 bg-neutral-100 hover:bg-neutral-200 rounded-xl transition-all duration-200"
-                >
-                  Show all {filteredAlbums.length} albums
-                  <FaChevronRight size={12} />
-                </Link>
-              </div>
-            )}
-          </>
+          <ArtistAlbumGridSection
+            albums={filteredAlbums}
+            initialCount={12}
+            ratingMode="any"
+          />
         )}
       </section>
       ) : null}
@@ -318,15 +283,15 @@ export default function ProfilePage() {
       <section
         className="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-neutral-100 p-6 sm:p-8"
       >
-        <div className="flex items-center justify-between gap-4 mb-6">
-          <h2 className="text-xl font-bold text-neutral-900 tracking-tight flex items-center gap-2">
-            <span className="w-1.5 h-6 bg-neutral-900 rounded-full" />
-            Playlists
-          </h2>
-          <span className="text-xs text-neutral-600 font-mono">
-            {playlists.length}
-          </span>
-        </div>
+        <ProfileSectionHeader
+          title="Playlists"
+          headerClassName="mb-6"
+          trailing={
+            <span className="text-xs text-neutral-600 font-mono">
+              {playlists.length}
+            </span>
+          }
+        />
 
         {loadingPlaylists ? (
           <div className="py-10 flex items-center justify-center">

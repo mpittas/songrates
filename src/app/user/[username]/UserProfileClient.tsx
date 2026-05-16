@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import AlbumGrid from "@/components/album/AlbumGrid";
+import ArtistAlbumGridSection from "@/components/artist/ArtistAlbumGridSection";
 import {
   FaCalendarAlt,
   FaStar,
@@ -15,6 +15,7 @@ import { createClient } from "@/utils/supabase/client";
 import { FavoriteItem } from "@/components/profile/FavoriteStatsBar";
 import PublicPlaylistsSection from "@/components/profile/PublicPlaylistsSection";
 import ProfileLayout, { QuickLink } from "@/components/profile/ProfileLayout";
+import ProfileSectionHeader from "@/components/profile/ProfileSectionHeader";
 
 interface UserProfile {
   id: string;
@@ -271,72 +272,48 @@ export default function UserProfileClient({ profile }: UserProfileClientProps) {
       {/* Playlists Section */}
       {profile.show_playlists && (
         <section className="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-neutral-100 p-6 sm:p-8">
-          <h2 className="text-xl font-bold text-neutral-900 mb-6 tracking-tight flex items-center gap-2">
-            <span className="w-1.5 h-6 bg-neutral-900 rounded-full" />
-            Public Playlists
-          </h2>
+          <ProfileSectionHeader title="Public Playlists" headerClassName="mb-6" />
           <PublicPlaylistsSection userId={profile.id} />
         </section>
       )}
 
       {/* Rated Albums Section */}
       <section className="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-neutral-100 p-6 sm:p-8">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-          <h2 className="text-xl font-bold text-neutral-900 tracking-tight flex items-center gap-2">
-            <span className="w-1.5 h-6 bg-neutral-900 rounded-full" />
-            Rated Music
-          </h2>
-
-          <div className="flex bg-neutral-100 p-1 rounded-xl self-start sm:self-auto overflow-x-auto">
-            {[
-              { id: "all", label: "All", count: albums.length },
-              { id: "full", label: "Fully rated", count: fullAlbumsCount },
-              {
-                id: "partial",
-                label: "Partially rated",
-                count: partialAlbumsCount,
-              },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() =>
-                  setActiveTab(tab.id as "all" | "full" | "partial")
-                }
-                className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-all duration-200 whitespace-nowrap ${
-                  activeTab === tab.id
-                    ? "bg-white text-neutral-900 shadow-sm"
-                    : "text-neutral-500 hover:text-neutral-700 hover:bg-neutral-200/50"
-                }`}
+        <ProfileSectionHeader
+          title="Rated Music"
+          filters={[
+            { id: "all", label: "All", count: albums.length },
+            { id: "full", label: "Fully rated", count: fullAlbumsCount },
+            {
+              id: "partial",
+              label: "Partially rated",
+              count: partialAlbumsCount,
+            },
+          ]}
+          activeFilterId={activeTab}
+          onFilterChange={(id) =>
+            setActiveTab(id as "all" | "full" | "partial")
+          }
+          footer={
+            <div className="flex items-center justify-between mb-8 pb-4 border-b border-neutral-100">
+              <p className="text-neutral-500 text-sm font-medium">
+                Showing {filteredAlbums.length} album
+                {filteredAlbums.length !== 1 ? "s" : ""}
+              </p>
+              <select
+                value={sortFilter}
+                onChange={(e) => setSortFilter(e.target.value)}
+                className="bg-neutral-50 border border-neutral-200 text-neutral-700 text-sm px-4 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-neutral-900/10 focus:border-neutral-300 font-medium cursor-pointer"
               >
-                {tab.label}
-                <span className={`text-xs px-1.5 py-0.5 rounded-md ${
-                  activeTab === tab.id ? "bg-neutral-100 text-neutral-600" : "bg-neutral-200 text-neutral-500"
-                }`}>
-                  {tab.count}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Sort Filter */}
-        <div className="flex items-center justify-between mb-8 pb-4 border-b border-neutral-100">
-          <p className="text-neutral-500 text-sm font-medium">
-            Showing {filteredAlbums.length} album
-            {filteredAlbums.length !== 1 ? "s" : ""}
-          </p>
-          <select
-            value={sortFilter}
-            onChange={(e) => setSortFilter(e.target.value)}
-            className="bg-neutral-50 border border-neutral-200 text-neutral-700 text-sm px-4 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-neutral-900/10 focus:border-neutral-300 font-medium cursor-pointer"
-          >
-            <option value="newest">Latest Added</option>
-            <option value="oldest">Oldest Added</option>
-            <option value="rating">Highest Rated</option>
-            <option value="artist">Artist (A-Z)</option>
-            <option value="title">Album (A-Z)</option>
-          </select>
-        </div>
+                <option value="newest">Latest Added</option>
+                <option value="oldest">Oldest Added</option>
+                <option value="rating">Highest Rated</option>
+                <option value="artist">Artist (A-Z)</option>
+                <option value="title">Album (A-Z)</option>
+              </select>
+            </div>
+          }
+        />
 
         {loading ? (
           <div className="py-20 flex items-center justify-center">
@@ -359,12 +336,10 @@ export default function UserProfileClient({ profile }: UserProfileClientProps) {
             </p>
           </div>
         ) : (
-          <AlbumGrid
+          <ArtistAlbumGridSection
             albums={sortedAlbums}
-            onSelectAlbum={() => {}}
-            layout="grid"
-            gridCols={3}
-            priorityCount={3}
+            initialCount={12}
+            ratingMode="any"
           />
         )}
       </section>
