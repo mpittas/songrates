@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { IoSearch } from "react-icons/io5";
 
 export interface ProfileFilterTab {
   id: string;
@@ -16,6 +17,9 @@ interface ProfileSectionHeaderProps {
   trailing?: ReactNode;
   footer?: ReactNode;
   headerClassName?: string;
+  searchValue?: string;
+  onSearchChange?: (value: string) => void;
+  searchPlaceholder?: string;
 }
 
 function ProfileFilterTabs({
@@ -69,12 +73,17 @@ export default function ProfileSectionHeader({
   trailing,
   footer,
   headerClassName,
+  searchValue,
+  onSearchChange,
+  searchPlaceholder = "Search...",
 }: ProfileSectionHeaderProps) {
   const hasFilters =
     filters != null &&
     filters.length > 0 &&
     activeFilterId != null &&
     onFilterChange != null;
+
+  const hasSearch = searchValue != null && onSearchChange != null;
 
   return (
     <div>
@@ -100,7 +109,26 @@ export default function ProfileSectionHeader({
           />
         )}
 
-        {trailing}
+        {(hasSearch || trailing) && (
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            {hasSearch && (
+              <div className="relative w-full sm:w-[220px]">
+                <IoSearch
+                  size={14}
+                  className="absolute left-2.5 top-1/2 -translate-y-1/2 text-neutral-500"
+                />
+                <input
+                  type="text"
+                  value={searchValue}
+                  onChange={(e) => onSearchChange(e.target.value)}
+                  placeholder={searchPlaceholder}
+                  className="w-full h-8 rounded-md border border-neutral-300 bg-white pl-8 pr-2 text-xs font-mono text-neutral-900 placeholder:text-neutral-500"
+                />
+              </div>
+            )}
+            {trailing}
+          </div>
+        )}
       </div>
 
       {footer}

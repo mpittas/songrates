@@ -11,6 +11,7 @@ import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/utils/supabase/client";
 import { AlbumContext, RatedAlbumData, PublicAlbumRating } from "@/types/music";
 import { generateUUID } from "@/lib/utils";
+import { fetchAllRows } from "@/lib/supabase/fetchAllRows";
 
 interface RatingsContextType {
   ratings: Record<string, number>;
@@ -145,19 +146,26 @@ export function RatingsProvider({ children }: { children: React.ReactNode }) {
 
     const fetchPersonalData = async () => {
       try {
-        // Fetch ratings
-        const { data: dbRatings, error: rError } = await supabase
-          .from("ratings")
-          .select("track_id, album_id, rating")
-          .eq("user_id", effectiveUserId);
+        type DbRating = { track_id: string; album_id: string; rating: number };
+
+        const { rows: dbRatings, error: rError } =
+          await fetchAllRows<DbRating>((from, to) =>
+            supabase
+              .from("ratings")
+              .select("track_id, album_id, rating")
+              .eq("user_id", effectiveUserId)
+              .range(from, to),
+          );
 
         if (rError) throw rError;
 
-        // Fetch albums
-        const { data: dbAlbums, error: aError } = await supabase
-          .from("user_albums")
-          .select("*")
-          .eq("user_id", effectiveUserId);
+        const { rows: dbAlbums, error: aError } = await fetchAllRows((from, to) =>
+          supabase
+            .from("user_albums")
+            .select("*")
+            .eq("user_id", effectiveUserId)
+            .range(from, to),
+        );
 
         if (aError) throw aError;
 

@@ -40,6 +40,7 @@ export default function LikedAlbumsSection({
 }: LikedAlbumsSectionProps) {
   const [albums, setAlbums] = useState<LikedAlbumDTO[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     if (isPrivate) {
@@ -75,23 +76,36 @@ export default function LikedAlbumsSection({
     };
   }, [userId, isPrivate]);
 
+  const filteredAlbums = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return albums;
+    return albums.filter((a) => {
+      const title = a.title?.toLowerCase() || "";
+      const artist = a.artistName?.toLowerCase() || "";
+      return title.includes(q) || artist.includes(q);
+    });
+  }, [albums, searchQuery]);
+
   const gridAlbums: Album[] = useMemo(
     () =>
-      albums.map((a) => ({
+      filteredAlbums.map((a) => ({
         id: a.albumId,
         title: a.title,
         artistName: a.artistName,
         artworkUrl: a.thumbnailUrl || undefined,
         releaseDate: a.releaseDate || undefined,
       })),
-    [albums],
+    [filteredAlbums],
   );
 
   return (
     <section>
       <ProfileSectionHeader
         title="Liked Albums"
-        count={!isPrivate && !loading ? albums.length : undefined}
+        count={!isPrivate && !loading ? filteredAlbums.length : undefined}
+        searchValue={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchPlaceholder="Search albums..."
       />
 
       {isPrivate ? (
@@ -104,11 +118,15 @@ export default function LikedAlbumsSection({
         <div className="py-10 flex items-center justify-center">
           <div className="w-6 h-6 border-2 border-neutral-500 border-t-transparent rounded-full animate-spin" />
         </div>
-      ) : albums.length === 0 ? (
+      ) : filteredAlbums.length === 0 ? (
         <EmptyState
           icon={FaHeart}
-          title="No liked albums yet"
-          description="Like albums from any album page to see them here"
+          title={searchQuery ? "No albums found" : "No liked albums yet"}
+          description={
+            searchQuery
+              ? "Try a different search term"
+              : "Like albums from any album page to see them here"
+          }
         />
       ) : (
         <ArtistAlbumGridSection

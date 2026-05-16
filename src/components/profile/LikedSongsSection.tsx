@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { FaMusic, FaHeart } from "react-icons/fa";
 import type { IconType } from "react-icons";
 import ProfileSectionHeader from "@/components/profile/ProfileSectionHeader";
@@ -40,6 +40,7 @@ export default function LikedSongsSection({
 }: LikedSongsSectionProps) {
   const [songs, setSongs] = useState<LikedSongDTO[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     if (isPrivate) {
@@ -75,11 +76,25 @@ export default function LikedSongsSection({
     };
   }, [userId, isPrivate]);
 
+  const filteredSongs = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return songs;
+    return songs.filter((song) => {
+      const title = song.title?.toLowerCase() || "";
+      const artist = song.artistName?.toLowerCase() || "";
+      const album = song.albumName?.toLowerCase() || "";
+      return title.includes(q) || artist.includes(q) || album.includes(q);
+    });
+  }, [songs, searchQuery]);
+
   return (
     <section>
       <ProfileSectionHeader
         title="Liked Songs"
-        count={!isPrivate && !loading ? songs.length : undefined}
+        count={!isPrivate && !loading ? filteredSongs.length : undefined}
+        searchValue={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchPlaceholder="Search songs..."
       />
 
       {isPrivate ? (
@@ -92,15 +107,19 @@ export default function LikedSongsSection({
         <div className="py-10 flex items-center justify-center">
           <div className="w-6 h-6 border-2 border-neutral-500 border-t-transparent rounded-full animate-spin" />
         </div>
-      ) : songs.length === 0 ? (
+      ) : filteredSongs.length === 0 ? (
         <EmptyState
           icon={FaHeart}
-          title="No liked songs yet"
-          description="Like tracks from any album page to see them here"
+          title={searchQuery ? "No songs found" : "No liked songs yet"}
+          description={
+            searchQuery
+              ? "Try a different search term"
+              : "Like tracks from any album page to see them here"
+          }
         />
       ) : (
         <div className="flex flex-col gap-1.5">
-          {songs.map((song, i) => {
+          {filteredSongs.map((song, i) => {
             const albumTitle = song.albumName || "Unknown Album";
             const duration = song.durationMs
               ? formatTime(song.durationMs, "milliseconds")

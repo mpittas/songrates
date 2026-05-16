@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { createClient } from "@/utils/supabase/server";
 import { fetchAppleSongEnrichmentsByIds } from "@/lib/appleMusic/api";
+import { fetchAllRows } from "@/lib/supabase/fetchAllRows";
 
 export type LikedSongArtist = { id: string; name: string };
 
@@ -62,20 +63,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Unauthenticated" }, { status: 401 });
   }
 
-  const { data, error } = await supabase
-    .from("user_favorites")
-    .select(
-      "id, item_id, item_name, artist_name, artist_id, artists, thumbnail_url, album_id, album_name, duration_ms, created_at",
-    )
-    .eq("user_id", targetUserId)
-    .eq("item_type", "track")
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    console.error("Liked songs fetch failed:", error);
-    return NextResponse.json({ error: "Fetch failed" }, { status: 500 });
-  }
-
   type Row = {
     id: string;
     item_id: string;
@@ -89,11 +76,29 @@ export async function GET(request: NextRequest) {
     duration_ms: number | null;
   };
 
-  const rows: Row[] = data || [];
+  const { rows: fetchedRows, error } = await fetchAllRows<Row>((from, to) =>
+    supabase
+      .from("user_favorites")
+      .select(
+        "id, item_id, item_name, artist_name, artist_id, artists, thumbnail_url, album_id, album_name, duration_ms, created_at",
+      )
+      .eq("user_id", targetUserId)
+      .eq("item_type", "track")
+      .order("created_at", { ascending: false })
+      .range(from, to),
+  );
+
+  if (error) {
+    console.error("Liked songs fetch failed:", error);
+    return NextResponse.json({ error: "Fetch failed" }, { status: 500 });
+  }
+
+  const rows: Row[] = fetchedRows;
 
   const missingMetaIds = rows
     .filter(
       (r) =>
+        !r.item_name ||
         !r.album_id ||
         !r.album_name ||
         !r.duration_ms ||
@@ -113,6 +118,7 @@ export async function GET(request: NextRequest) {
       for (const row of rows) {
         const enriched = enrichmentMap.get(row.item_id);
         if (!enriched) continue;
+        if (!row.item_name && enriched.name) row.item_name = enriched.name;
         if (!row.album_id && enriched.albumId) row.album_id = enriched.albumId;
         if (!row.album_name && enriched.albumName)
           row.album_name = enriched.albumName;
@@ -134,6 +140,7 @@ export async function GET(request: NextRequest) {
               supabase
                 .from("user_favorites")
                 .update({
+                  item_name: r.item_name,
                   album_id: r.album_id,
                   album_name: r.album_name,
                   duration_ms: r.duration_ms,

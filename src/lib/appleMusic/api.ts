@@ -163,6 +163,7 @@ function artistsFromCatalogSongResource(song: {
 const APPLE_SONG_ENRICH_CHUNK_SIZE = 60;
 
 export type AppleSongEnrichment = {
+  name?: string;
   artists: { id: string; name: string }[];
   albumId?: string;
   albumName?: string;
@@ -187,6 +188,7 @@ export async function fetchAppleSongEnrichmentsByIds(
       data?: Array<{
         id: string;
         attributes?: {
+          name?: string;
           albumName?: string;
           durationInMillis?: number;
         };
@@ -207,6 +209,7 @@ export async function fetchAppleSongEnrichmentsByIds(
     for (const song of songsData.data) {
       const songAlbum = song.relationships?.albums?.data?.[0];
       enrichmentMap.set(song.id, {
+        name: song.attributes?.name,
         artists: artistsFromCatalogSongResource(song),
         albumId: songAlbum?.id,
         albumName: song.attributes?.albumName,
@@ -267,6 +270,53 @@ export async function fetchAppleAlbumEnrichmentsByIds(
           ? artworkUrl(attrs.artwork.url, 300)
           : undefined,
         releaseDate: attrs?.releaseDate,
+      });
+    }
+  }
+
+  return enrichmentMap;
+}
+
+export type AppleArtistEnrichment = {
+  name: string;
+  artworkUrl?: string;
+  genres?: string[];
+};
+
+/**
+ * Batch-fetch catalog artists (for liked-artist rows).
+ */
+export async function fetchAppleArtistEnrichmentsByIds(
+  artistIds: string[],
+  storefront: string = STOREFRONT,
+): Promise<Map<string, AppleArtistEnrichment>> {
+  const enrichmentMap = new Map<string, AppleArtistEnrichment>();
+  const uniqueIds = [...new Set(artistIds.filter(Boolean))];
+
+  for (let i = 0; i < uniqueIds.length; i += APPLE_SONG_ENRICH_CHUNK_SIZE) {
+    const chunk = uniqueIds.slice(i, i + APPLE_SONG_ENRICH_CHUNK_SIZE);
+    const ids = chunk.join(",");
+    const data = await appleMusicFetch<{
+      data?: Array<{
+        id: string;
+        attributes?: {
+          name?: string;
+          genreNames?: string[];
+          artwork?: { url?: string };
+        };
+      }>;
+    }>(`/catalog/${storefront}/artists?ids=${ids}`);
+
+    if (!data?.data) continue;
+
+    for (const artist of data.data) {
+      const attrs = artist.attributes;
+      enrichmentMap.set(artist.id, {
+        name: attrs?.name || "",
+        artworkUrl: attrs?.artwork?.url
+          ? artworkUrl(attrs.artwork.url, 300)
+          : undefined,
+        genres: attrs?.genreNames,
       });
     }
   }
