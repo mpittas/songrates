@@ -1,18 +1,21 @@
 import OptimizedImage from "@/components/ui/OptimizedImage";
 import Link from "next/link";
 import { FaUser, FaChevronRight } from "react-icons/fa";
+import type { IconType } from "react-icons";
 
 interface QuickLinkProps {
-  icon: any;
+  icon: IconType;
   label: string;
   href: string;
   active?: boolean;
+  onClick?: React.MouseEventHandler<HTMLAnchorElement>;
 }
 
-export function QuickLink({ icon: Icon, label, href, active }: QuickLinkProps) {
+export function QuickLink({ icon: Icon, label, href, active, onClick }: QuickLinkProps) {
   return (
     <Link
       href={href}
+      onClick={onClick}
       className={`group flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 font-semibold text-sm ${
         active
           ? "bg-neutral-900 text-white shadow-md"

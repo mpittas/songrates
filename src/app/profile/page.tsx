@@ -17,19 +17,31 @@ import {
   FaLayerGroup,
   FaChevronRight,
 } from "react-icons/fa";
+import { BsThreeDotsVertical } from "react-icons/bs";
 import AlbumGrid from "@/components/album/AlbumGrid";
 import { Album } from "@/types/music";
-import { FavoriteItem } from "@/components/profile/FavoriteStatsBar";
+import type { Playlist } from "@/types/playlist";
 import ProfileLayout, { QuickLink } from "@/components/profile/ProfileLayout";
+
+type PlaylistWithCount = Playlist & { itemCount: number };
+
+type PlaylistWithCountRow = Playlist & {
+  playlist_tracks?: { count: number }[];
+  playlist_albums?: { count: number }[];
+};
+
+type ProfileContentTab = "rated" | "playlists";
 
 export default function ProfilePage() {
   const { user, signOut, loading } = useAuth();
   const { albumRatings, ratings } = useRatingsContext();
   const router = useRouter();
-  const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
-  const [loadingFavorites, setLoadingFavorites] = useState(true);
   const [profileUsername, setProfileUsername] = useState<string | null>(null);
+  const [activeContentTab, setActiveContentTab] =
+    useState<ProfileContentTab>("rated");
   const [activeTab, setActiveTab] = useState<"all" | "full" | "partial">("all");
+  const [playlists, setPlaylists] = useState<PlaylistWithCount[]>([]);
+  const [loadingPlaylists, setLoadingPlaylists] = useState(true);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -37,7 +49,6 @@ export default function ProfilePage() {
     }
   }, [user, loading, router]);
 
-  // Fetch profile username and favorites
   useEffect(() => {
     if (!user) return;
 
@@ -55,23 +66,48 @@ export default function ProfilePage() {
       }
     };
 
-    const fetchFavorites = async () => {
+    const fetchPlaylists = async () => {
       const { data, error } = await supabase
-        .from("user_favorites")
-        .select("*")
+        .from("playlists")
+        .select(
+          "id, user_id, name, type, created_at, updated_at, playlist_tracks(count), playlist_albums(count)",
+        )
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
-      if (error) {
-        console.error("Error fetching favorites:", error);
-      } else {
-        setFavorites(data || []);
+      if (error || !data) {
+        setPlaylists([]);
+        setLoadingPlaylists(false);
+        return;
       }
-      setLoadingFavorites(false);
+
+      const mapped = (data as PlaylistWithCountRow[]).map((p) => {
+        const tracksCount =
+          Array.isArray(p.playlist_tracks) && p.playlist_tracks[0]?.count != null
+            ? Number(p.playlist_tracks[0].count)
+            : 0;
+        const albumsCount =
+          Array.isArray(p.playlist_albums) && p.playlist_albums[0]?.count != null
+            ? Number(p.playlist_albums[0].count)
+            : 0;
+
+        return {
+          id: p.id,
+          user_id: p.user_id,
+          name: p.name,
+          type: p.type,
+          created_at: p.created_at,
+          updated_at: p.updated_at,
+          itemCount: p.type === "albums" ? albumsCount : tracksCount,
+        } satisfies PlaylistWithCount;
+      });
+
+      setPlaylists(mapped);
+      setLoadingPlaylists(false);
     };
 
     fetchProfile();
-    fetchFavorites();
+    fetchPlaylists();
   }, [user]);
 
   const allUserAlbums = useMemo(
@@ -124,22 +160,6 @@ export default function ProfilePage() {
       });
   }, [albumRatings, ratings, activeTab]);
 
-  // Build album ratings lookup for track linking in favorites modal
-  const albumRatingsLookup = useMemo(() => {
-    const lookup: Record<
-      string,
-      { id: string; title: string; ratedTrackIds: string[] }
-    > = {};
-    Object.values(albumRatings).forEach((album) => {
-      lookup[album.id] = {
-        id: album.id,
-        title: album.title,
-        ratedTrackIds: album.ratedTrackIds,
-      };
-    });
-    return lookup;
-  }, [albumRatings]);
-
   if (loading) {
     return (
       <main className="min-h-screen flex items-center justify-center bg-[#fafafa]">
@@ -186,15 +206,34 @@ export default function ProfilePage() {
       }
       quickLinks={
         <>
-          <QuickLink icon={FaStar} label="Rated music" href="#" active />
+          <QuickLink
+            icon={FaStar}
+            label="Rated music"
+            href="#"
+            active={activeContentTab === "rated"}
+            onClick={(e) => {
+              e.preventDefault();
+              setActiveContentTab("rated");
+            }}
+          />
           <QuickLink icon={FaMusic} label="Liked songs" href="#" />
           <QuickLink icon={FaCompactDisc} label="Liked albums" href="#" />
           <QuickLink icon={FaMicrophoneAlt} label="Favourite artists" href="#" />
-          <QuickLink icon={FaList} label="Playlists" href="/profile/playlists" />
+          <QuickLink
+            icon={FaList}
+            label="Playlists"
+            href="#"
+            active={activeContentTab === "playlists"}
+            onClick={(e) => {
+              e.preventDefault();
+              setActiveContentTab("playlists");
+            }}
+          />
           <QuickLink icon={FaLayerGroup} label="Album collections" href="#" />
         </>
       }
     >
+      {activeContentTab === "rated" ? (
       <section className="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-neutral-100 p-6 sm:p-8">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <h2 className="text-xl font-bold text-neutral-900 tracking-tight flex items-center gap-2">
@@ -273,6 +312,67 @@ export default function ProfilePage() {
           </>
         )}
       </section>
+      ) : null}
+
+      {activeContentTab === "playlists" ? (
+      <section
+        className="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-neutral-100 p-6 sm:p-8"
+      >
+        <div className="flex items-center justify-between gap-4 mb-6">
+          <h2 className="text-xl font-bold text-neutral-900 tracking-tight flex items-center gap-2">
+            <span className="w-1.5 h-6 bg-neutral-900 rounded-full" />
+            Playlists
+          </h2>
+          <span className="text-xs text-neutral-600 font-mono">
+            {playlists.length}
+          </span>
+        </div>
+
+        {loadingPlaylists ? (
+          <div className="py-10 flex items-center justify-center">
+            <div className="w-6 h-6 border-2 border-neutral-500 border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : playlists.length === 0 ? (
+          <div className="py-16 text-center border-2 border-dashed border-neutral-200 rounded-2xl bg-neutral-50">
+            <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
+              <FaList size={24} className="text-neutral-400" />
+            </div>
+            <p className="text-neutral-900 font-bold text-lg mb-1">
+              No playlists yet
+            </p>
+            <p className="text-neutral-500 text-sm">
+              Add songs or albums to a playlist from any album page
+            </p>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {playlists.map((playlist) => (
+              <Link
+                key={playlist.id}
+                href={`/playlist/${playlist.id}`}
+                className="group flex items-center justify-between gap-4 rounded-xl bg-white border border-neutral-200 hover:border-neutral-300 px-4 py-3 transition-colors"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="h-12 w-12 rounded-lg bg-neutral-100 border border-neutral-200 shrink-0" />
+                  <div className="min-w-0">
+                    <div className="text-sm font-semibold text-neutral-900 truncate">
+                      {playlist.name}
+                    </div>
+                    <div className="text-xs text-neutral-500 font-mono">
+                      {playlist.itemCount} items
+                    </div>
+                  </div>
+                </div>
+
+                <div className="h-9 w-9 flex items-center justify-center rounded-lg bg-neutral-100 text-neutral-500 group-hover:text-neutral-900 shrink-0">
+                  <BsThreeDotsVertical size={16} />
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+      </section>
+      ) : null}
     </ProfileLayout>
   );
 }
