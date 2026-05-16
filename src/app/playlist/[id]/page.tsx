@@ -3,36 +3,27 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import {
-  FaListUl,
-  FaMusic,
-  FaCompactDisc,
-  FaTrash,
-  FaTimes,
-  FaPlay,
-} from "react-icons/fa";
+import { FaListUl, FaMusic, FaCompactDisc, FaPlay } from "react-icons/fa";
 import { LuArrowLeft, LuPencil, LuTrash2 } from "react-icons/lu";
 import { usePlaylist } from "@/context/PlaylistContext";
 import { useAuth } from "@/context/AuthContext";
 import { Playlist, PlaylistTrack, PlaylistAlbum } from "@/types/playlist";
-import { createSlug } from "@/lib/utils";
+import { Album } from "@/types/music";
 import { createClient } from "@/utils/supabase/client";
+import ArtistAlbumGridSection from "@/components/artist/ArtistAlbumGridSection";
 import Button from "@/components/ui/Button";
-import OptimizedImage from "@/components/ui/OptimizedImage";
-import TrackItem from "@/components/album/TrackItem";
 import MySection from "@/components/ui/MySection";
 import { cn } from "@/lib/utils";
 import { PAGE_CONTENT_TOP } from "@/lib/pageLayout";
 import { usePlayerCore } from "@/context/PlayerContext";
 import SongRow from "@/main-components/SongRow";
-import MainModal, { MainModalHeader } from "@/components/ui/MainModal";
+import EditPlaylistModal from "@/components/playlist/EditPlaylistModal";
 
 export default function PlaylistPage() {
   const params = useParams();
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
-  const { deletePlaylist, removeTrackFromPlaylist, removeAlbumFromPlaylist } =
-    usePlaylist();
+  const { deletePlaylist } = usePlaylist();
   const { playTrack } = usePlayerCore();
 
   const playlistId = params.id as string;
@@ -43,8 +34,6 @@ export default function PlaylistPage() {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [removingTrack, setRemovingTrack] = useState<string | null>(null);
-  const [removingAlbum, setRemovingAlbum] = useState<string | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [savingEdits, setSavingEdits] = useState(false);
   const [editName, setEditName] = useState("");
@@ -141,21 +130,17 @@ export default function PlaylistPage() {
     }
   };
 
-  const handleRemoveTrack = async (trackId: string) => {
-    if (!playlist) return;
-    setRemovingTrack(trackId);
-    await removeTrackFromPlaylist(playlist.id, trackId);
-    setTracks((prev) => prev.filter((t) => t.track_id !== trackId));
-    setRemovingTrack(null);
-  };
-
-  const handleRemoveAlbum = async (albumId: string) => {
-    if (!playlist) return;
-    setRemovingAlbum(albumId);
-    await removeAlbumFromPlaylist(playlist.id, albumId);
-    setAlbums((prev) => prev.filter((a) => a.album_id !== albumId));
-    setRemovingAlbum(null);
-  };
+  const playlistAlbums: Album[] = useMemo(
+    () =>
+      albums.map((a) => ({
+        id: a.album_id,
+        title: a.album_name || "Unknown Album",
+        artistName: a.artist_name || undefined,
+        artworkUrl: a.thumbnail_url || undefined,
+        releaseDate: a.release_date || undefined,
+      })),
+    [albums],
+  );
 
   const queue = useMemo(() => {
     if (!playlist || playlist.type !== "songs") return [];
@@ -252,24 +237,28 @@ export default function PlaylistPage() {
                 </div>
               </div>
 
-              <button
-                type="button"
-                onClick={() => {
-                  if (queue.length > 0) playTrack(queue[0], queue);
-                }}
-                disabled={queue.length === 0}
-                className={cn(
-                  "shrink-0 group flex items-center gap-2 rounded-full bg-white px-4 py-3 font-mono font-semibold text-neutral-900 transition-transform",
-                  queue.length > 0 ? "hover:scale-105 active:scale-95" : "opacity-60 cursor-not-allowed",
-                )}
-              >
-                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#e76418] text-white transition-transform group-hover:scale-105">
-                  <FaPlay className="ml-0.5" size={12} />
-                </div>
-                <span className="text-sm sm:text-base font-bold tracking-tight">
-                  Play songs
-                </span>
-              </button>
+              {playlist.type === "songs" ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (queue.length > 0) playTrack(queue[0], queue);
+                  }}
+                  disabled={queue.length === 0}
+                  className={cn(
+                    "shrink-0 group flex items-center gap-2 rounded-full bg-white px-4 py-3 font-mono font-semibold text-neutral-900 transition-transform",
+                    queue.length > 0
+                      ? "hover:scale-105 active:scale-95"
+                      : "opacity-60 cursor-not-allowed",
+                  )}
+                >
+                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#e76418] text-white transition-transform group-hover:scale-105">
+                    <FaPlay className="ml-0.5" size={12} />
+                  </div>
+                  <span className="text-sm sm:text-base font-bold tracking-tight">
+                    Play songs
+                  </span>
+                </button>
+              ) : null}
             </div>
         </div>
       </div>
@@ -327,80 +316,12 @@ export default function PlaylistPage() {
                 </p>
               </div>
             ) : (
-              <div className="space-y-1">
-                {albums.map((album, index) => {
-                  const albumSlug = album.album_name
-                    ? createSlug(album.album_name, album.album_id)
-                    : null;
-                  const href = albumSlug ? `/album/${albumSlug}` : undefined;
-
-                  const albumContent = (
-                    <>
-                      <span className="text-xs text-neutral-600 font-mono w-6 text-center shrink-0">
-                        {index + 1}
-                      </span>
-                      <div className="relative w-12 h-12 shrink-0 bg-[#efefef] overflow-hidden rounded-sm">
-                        {album.thumbnail_url ? (
-                          <OptimizedImage
-                            src={album.thumbnail_url}
-                            alt={album.album_name || "Unknown"}
-                            fill
-                            className="object-cover"
-                            fallbackSrc="/vinyl-placeholder.svg"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-[#efefef]">
-                            <FaCompactDisc
-                              size={16}
-                              className="text-neutral-600"
-                            />
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-neutral-900 truncate group-hover:text-black transition-colors">
-                          {album.album_name || "Unknown Album"}
-                        </p>
-                        <p className="text-xs text-neutral-500 truncate">
-                          {album.artist_name || "Unknown Artist"}
-                          {album.total_tracks &&
-                            ` · ${album.total_tracks} tracks`}
-                        </p>
-                      </div>
-                      <Button
-                        size="xxs"
-                        variant="ghost"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          handleRemoveAlbum(album.album_id);
-                        }}
-                        disabled={removingAlbum === album.album_id}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity text-neutral-500 hover:text-red-400"
-                      >
-                        <FaTimes size={10} />
-                      </Button>
-                    </>
-                  );
-
-                  return href ? (
-                    <Link
-                      key={album.id}
-                      href={href}
-                      className="group flex items-center gap-3 p-3 bg-white border border-[#e1e1e1] hover:border-[#cbcbcb] hover:bg-[#f8f8f8] rounded-md transition-all duration-200"
-                    >
-                      {albumContent}
-                    </Link>
-                  ) : (
-                    <div
-                      key={album.id}
-                      className="group flex items-center gap-3 p-3 bg-white border border-[#e1e1e1] hover:border-[#d0d0d0] rounded-md"
-                    >
-                      {albumContent}
-                    </div>
-                  );
-                })}
-              </div>
+              <ArtistAlbumGridSection
+                albums={playlistAlbums}
+                initialCount={playlistAlbums.length}
+                ratingMode="any"
+                columns={4}
+              />
             )
           ) : /* Song Playlist Content */
           tracks.length === 0 ? (
@@ -442,38 +363,13 @@ export default function PlaylistPage() {
       </MySection>
 
       {showEditModal && playlist && (
-        <MainModal onClose={() => setShowEditModal(false)} maxWidthClassName="max-w-md">
-          <MainModalHeader title="Edit playlist" onClose={() => setShowEditModal(false)} />
-          <div className="p-6">
-            <div className="space-y-4">
-              <div>
-                <div className="text-xs uppercase tracking-widest font-mono text-neutral-400 mb-2">
-                  Name
-                </div>
-                <input
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  className="w-full rounded-2xl border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-900 outline-none"
-                  placeholder="Playlist name"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2">
-                <Button variant="border" size="sm" onClick={() => setShowEditModal(false)}>
-                  Cancel
-                </Button>
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={handleSaveEdits}
-                  disabled={savingEdits || !editName.trim()}
-                >
-                  {savingEdits ? "Saving..." : "Save"}
-                </Button>
-              </div>
-            </div>
-          </div>
-        </MainModal>
+        <EditPlaylistModal
+          name={editName}
+          saving={savingEdits}
+          onNameChange={setEditName}
+          onClose={() => setShowEditModal(false)}
+          onSave={handleSaveEdits}
+        />
       )}
     </main>
   );

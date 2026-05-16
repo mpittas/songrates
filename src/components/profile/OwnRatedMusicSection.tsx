@@ -13,7 +13,7 @@ export default function OwnRatedMusicSection() {
   const [searchQuery, setSearchQuery] = useState("");
 
   const allUserAlbums = useMemo(
-    () => Object.values(albumRatings),
+    () => Object.values(albumRatings).filter((a) => a.ratedTrackIds.length > 0),
     [albumRatings],
   );
 
@@ -27,6 +27,7 @@ export default function OwnRatedMusicSection() {
 
   const filteredAlbums: Album[] = useMemo(() => {
     return Object.values(albumRatings)
+      .filter((a) => a.ratedTrackIds.length > 0)
       .filter((a) => {
         if (activeTab === "all") return true;
         if (activeTab === "full") {
@@ -108,6 +109,7 @@ export default function OwnRatedMusicSection() {
           albums={filteredAlbums}
           initialCount={12}
           ratingMode="any"
+          showRemoveAllRatings
         />
       )}
     </section>

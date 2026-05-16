@@ -18,6 +18,7 @@ export interface AlbumCardProps {
   showRating?: boolean;
   ratingMode?: "any" | "full";
   showOptionsMenu?: boolean;
+  showRemoveAllRatings?: boolean;
   onFavoriteChange?: (isFavorite: boolean) => void;
 }
 
@@ -93,6 +94,7 @@ export default function AlbumCard({
   showRating = true,
   ratingMode = "any",
   showOptionsMenu = true,
+  showRemoveAllRatings = false,
   onFavoriteChange,
 }: AlbumCardProps) {
   const isCompact = size === "compact";
@@ -204,6 +206,7 @@ export default function AlbumCard({
             <AlbumCardDropdown
               album={album}
               compact={isCompact}
+              showRemoveAllRatings={showRemoveAllRatings}
               onFavoriteChange={onFavoriteChange}
               onOpenChange={setOptionsOpen}
             />

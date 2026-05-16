@@ -16,7 +16,8 @@ const STOREFRONT = process.env.APPLE_MUSIC_STOREFRONT || "us";
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 /**
- * Replace {w}x{h} in Apple Music artwork URL with actual dimensions
+ * Resolve Apple Music artwork URL to requested dimensions.
+ * Handles template URLs ({w}x{h}) and already-resolved CDN paths (e.g. 100x100bb).
  */
 export function artworkUrl(
   urlTemplate: string | undefined,
@@ -24,9 +25,18 @@ export function artworkUrl(
   height?: number,
 ): string {
   if (!urlTemplate) return "";
-  return urlTemplate
-    .replace("{w}", String(width))
-    .replace("{h}", String(height ?? width));
+  const h = height ?? width;
+
+  if (urlTemplate.includes("{w}") || urlTemplate.includes("{h}")) {
+    return urlTemplate
+      .replace("{w}", String(width))
+      .replace("{h}", String(h));
+  }
+
+  return urlTemplate.replace(
+    /\/(\d+)x(\d+)(bb|sr|cc)(-\d+)?(?=\.[a-z]|$)/i,
+    `/${width}x${h}$3$4`,
+  );
 }
 
 async function appleMusicFetch<T>(

@@ -1,16 +1,21 @@
 "use client";
 
 import { BsThreeDotsVertical } from "react-icons/bs";
+import { LuStarOff } from "react-icons/lu";
 import ContextDropdown, {
+  ContextDropdownDivider,
+  ContextDropdownMenuItem,
   useCloseContextDropdown,
 } from "@/components/ui/ContextDropdown";
 import FavoriteButton from "@/components/ui/FavoriteButton";
+import { useRatingsContext } from "@/context/RatingsContext";
 import type { Album } from "@/types/music";
 import { cn } from "@/lib/utils";
 
 interface AlbumCardDropdownProps {
   album: Album;
   compact?: boolean;
+  showRemoveAllRatings?: boolean;
   onFavoriteChange?: (isFavorite: boolean) => void;
   onOpenChange?: (open: boolean) => void;
 }
@@ -39,9 +44,34 @@ function AlbumFavoriteMenuItem({
   );
 }
 
+function RemoveAllRatingsMenuItem({ album }: { album: Album }) {
+  const close = useCloseContextDropdown();
+  const { removeAlbumRating } = useRatingsContext();
+
+  return (
+    <ContextDropdownMenuItem
+      icon={<LuStarOff size={14} />}
+      label="Remove all ratings"
+      onClick={() => {
+        if (
+          !confirm(
+            `Remove all your ratings for "${album.title}"? This cannot be undone.`,
+          )
+        ) {
+          return;
+        }
+        void removeAlbumRating(album.id);
+        close?.();
+      }}
+      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+    />
+  );
+}
+
 export default function AlbumCardDropdown({
   album,
   compact = false,
+  showRemoveAllRatings = false,
   onFavoriteChange,
   onOpenChange,
 }: AlbumCardDropdownProps) {
@@ -69,6 +99,12 @@ export default function AlbumCardDropdown({
       )}
     >
       <AlbumFavoriteMenuItem album={album} onFavoriteChange={onFavoriteChange} />
+      {showRemoveAllRatings ? (
+        <>
+          <ContextDropdownDivider />
+          <RemoveAllRatingsMenuItem album={album} />
+        </>
+      ) : null}
     </ContextDropdown>
   );
 }

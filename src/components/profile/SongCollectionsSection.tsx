@@ -4,8 +4,10 @@ import { useEffect, useMemo, useState } from "react";
 import { FaMusic, FaListUl } from "react-icons/fa";
 import type { IconType } from "react-icons";
 import { createClient } from "@/utils/supabase/client";
+import EditPlaylistModal from "@/components/playlist/EditPlaylistModal";
 import ProfileSectionHeader from "@/components/profile/ProfileSectionHeader";
 import StackedCard from "@/components/ui/StackedCard";
+import { usePlaylistCollectionActions } from "@/hooks/usePlaylistCollectionActions";
 import type { Playlist } from "@/types/playlist";
 import type { CollectionCardData } from "@/components/profile/AlbumCollectionsSection";
 
@@ -53,6 +55,18 @@ export default function SongCollectionsSection({
   const [collections, setCollections] = useState<CollectionCardData[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+
+  const {
+    isOwner,
+    handleDeletePlaylist,
+    openEditPlaylist,
+    editingPlaylistId,
+    editName,
+    setEditName,
+    savingEdits,
+    closeEditPlaylist,
+    handleSavePlaylistEdits,
+  } = usePlaylistCollectionActions(userId, setCollections);
 
   useEffect(() => {
     if (isPrivate) {
@@ -194,10 +208,30 @@ export default function SongCollectionsSection({
               itemLabel="songs"
               href={`/playlist/${collection.id}`}
               coverUrls={collection.coverUrls}
+              onEdit={
+                isOwner
+                  ? () => openEditPlaylist(collection.id, collection.name)
+                  : undefined
+              }
+              onDelete={
+                isOwner
+                  ? () => handleDeletePlaylist(collection.id, collection.name)
+                  : undefined
+              }
             />
           ))}
         </div>
       )}
+
+      {editingPlaylistId ? (
+        <EditPlaylistModal
+          name={editName}
+          saving={savingEdits}
+          onNameChange={setEditName}
+          onClose={closeEditPlaylist}
+          onSave={handleSavePlaylistEdits}
+        />
+      ) : null}
     </section>
   );
 }

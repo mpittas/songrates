@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Button from "@/components/ui/Button";
 import AlbumCard from "@/components/album/AlbumCard";
+import { cn } from "@/lib/utils";
 import type { Album } from "@/types/music";
 
 export default function ArtistAlbumGridSection({
@@ -10,12 +11,16 @@ export default function ArtistAlbumGridSection({
   initialCount = 12,
   ratingMode = "full",
   showOptionsMenu = true,
+  columns = 3,
+  showRemoveAllRatings = false,
   onAlbumFavoriteChange,
 }: {
   albums: Album[];
   initialCount?: number;
   ratingMode?: "any" | "full";
   showOptionsMenu?: boolean;
+  columns?: 3 | 4;
+  showRemoveAllRatings?: boolean;
   onAlbumFavoriteChange?: (albumId: string, isFavorite: boolean) => void;
 }) {
   const [showAll, setShowAll] = useState(false);
@@ -24,13 +29,19 @@ export default function ArtistAlbumGridSection({
 
   return (
     <div>
-      <div className="grid grid-cols-2 gap-[22px] sm:grid-cols-3">
+      <div
+        className={cn(
+          "grid grid-cols-2 gap-[22px]",
+          columns === 4 ? "sm:grid-cols-4" : "sm:grid-cols-3",
+        )}
+      >
         {visible.map((album) => (
           <AlbumCard
             key={album.id}
             album={album}
             ratingMode={ratingMode}
             showOptionsMenu={showOptionsMenu}
+            showRemoveAllRatings={showRemoveAllRatings}
             onFavoriteChange={(liked) =>
               onAlbumFavoriteChange?.(album.id, liked)
             }
