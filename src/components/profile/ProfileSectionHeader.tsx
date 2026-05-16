@@ -35,7 +35,7 @@ function ProfileFilterTabs({
             key={tab.id}
             type="button"
             onClick={() => onFilterChange(tab.id)}
-            className={`flex items-center gap-2 px-2 py-1 text-xs font-semibold uppercase tracking-wide rounded-md transition-colors whitespace-nowrap cursor-pointer ${
+            className={`flex items-center gap-2 p-1.5 text-xs font-semibold uppercase tracking-wide rounded-md transition-colors whitespace-nowrap cursor-pointer ${
               isActive
                 ? "bg-neutral-900 text-white"
                 : "bg-stone-300 text-neutral-900 hover:bg-neutral-300"

@@ -65,7 +65,7 @@ export default function ProfileLayout({
   children,
 }: ProfileLayoutProps) {
   return (
-    <main className="min-h-screen bg-[#fafafa] pb-24">
+    <main className="min-h-screen bg-stone-100 pb-24">
       {/* Cover Art Banner */}
       <div className="relative w-full h-40 sm:h-44 md:h-48 overflow-hidden bg-neutral-900">
         <img
@@ -77,13 +77,13 @@ export default function ProfileLayout({
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 -mt-16 relative z-10">
-        <div className="flex flex-col lg:flex-row gap-16 ">
+        <div className="flex flex-col lg:flex-row gap-14 ">
           {/* LEFT SIDEBAR */}
           <aside className="w-full lg:w-60 shrink-0">
-            <div className="bg-white rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-neutral-100 p-3 flex flex-col gap-5 sticky top-8">
+            <div className="bg-white rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-neutral-100 p-4 flex flex-col gap-5 sticky top-12">
               {/* Avatar & User Info */}
-              <div className="flex flex-col items-center text-center -mt-10">
-                <div className="relative w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-lg bg-neutral-100 mb-3 shrink-0">
+              <div className="flex flex-col items-center text-center -mt-12">
+                <div className="relative w-22 h-22 rounded-full overflow-hidden bg-neutral-100 mb-3 shrink-0">
                   {user.avatarUrl ? (
                     <OptimizedImage
                       src={user.avatarUrl}
@@ -102,7 +102,7 @@ export default function ProfileLayout({
                 <h1 className="text-xl font-bold text-neutral-900 tracking-tight">
                   @{user.username}
                 </h1>
-                <div className="text-sm text-neutral-500 mt-1 font-medium flex items-center justify-center gap-1">
+                <div className="text-sm text-neutral-500 mt-1 font-medium text-center w-full">
                   {user.subtitle}
                 </div>
               </div>

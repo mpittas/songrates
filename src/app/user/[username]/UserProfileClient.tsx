@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import ArtistAlbumGridSection from "@/components/artist/ArtistAlbumGridSection";
 import {
-  FaCalendarAlt,
   FaStar,
   FaMusic,
   FaCompactDisc,
@@ -11,9 +11,10 @@ import {
   FaList,
   FaLayerGroup,
 } from "react-icons/fa";
+import { BsThreeDotsVertical } from "react-icons/bs";
 import { createClient } from "@/utils/supabase/client";
-import { FavoriteItem } from "@/components/profile/FavoriteStatsBar";
-import PublicPlaylistsSection from "@/components/profile/PublicPlaylistsSection";
+import { Album } from "@/types/music";
+import type { Playlist } from "@/types/playlist";
 import ProfileLayout, { QuickLink } from "@/components/profile/ProfileLayout";
 import ProfileSectionHeader from "@/components/profile/ProfileSectionHeader";
 
@@ -39,23 +40,32 @@ interface RatedAlbum {
   ratedAt: string;
 }
 
+type PlaylistWithCount = Playlist & { itemCount: number };
+
+type PlaylistWithCountRow = Playlist & {
+  playlist_tracks?: { count: number }[];
+  playlist_albums?: { count: number }[];
+};
+
+type ProfileContentTab = "rated" | "playlists";
+
 interface UserProfileClientProps {
   profile: UserProfile;
 }
 
 export default function UserProfileClient({ profile }: UserProfileClientProps) {
   const [albums, setAlbums] = useState<RatedAlbum[]>([]);
-  const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [loadingFavorites, setLoadingFavorites] = useState(true);
-  const [sortFilter, setSortFilter] = useState<string>("newest");
+  const [activeContentTab, setActiveContentTab] =
+    useState<ProfileContentTab>("rated");
   const [activeTab, setActiveTab] = useState<"all" | "full" | "partial">("all");
+  const [playlists, setPlaylists] = useState<PlaylistWithCount[]>([]);
+  const [loadingPlaylists, setLoadingPlaylists] = useState(true);
 
   useEffect(() => {
     const fetchUserAlbums = async () => {
       const supabase = createClient();
 
-      // Fetch user's albums from user_albums table
       const { data: userAlbums, error: albumsError } = await supabase
         .from("user_albums")
         .select("*")
@@ -73,7 +83,6 @@ export default function UserProfileClient({ profile }: UserProfileClientProps) {
         return;
       }
 
-      // Fetch ratings for all tracks in these albums
       const albumIds = (userAlbums as { album_id: string }[]).map(
         (a) => a.album_id,
       );
@@ -87,7 +96,6 @@ export default function UserProfileClient({ profile }: UserProfileClientProps) {
         console.error("Error fetching ratings:", ratingsError);
       }
 
-      // Group track IDs by album
       const albumTracksMap: Record<string, string[]> = {};
       const trackRatings: Record<string, number> = {};
 
@@ -101,7 +109,6 @@ export default function UserProfileClient({ profile }: UserProfileClientProps) {
         albumTracksMap[r.album_id].push(r.track_id);
       });
 
-      // Calculate album ratings and build album list
       const ratedAlbums: RatedAlbum[] = (
         userAlbums as {
           album_id: string;
@@ -138,81 +145,59 @@ export default function UserProfileClient({ profile }: UserProfileClientProps) {
       setLoading(false);
     };
 
-    const fetchFavorites = async () => {
-      const supabase = createClient();
+    fetchUserAlbums();
+  }, [profile.id]);
 
+  useEffect(() => {
+    if (!profile.show_playlists) {
+      setPlaylists([]);
+      setLoadingPlaylists(false);
+      return;
+    }
+
+    const fetchPlaylists = async () => {
+      const supabase = createClient();
       const { data, error } = await supabase
-        .from("user_favorites")
-        .select("*")
+        .from("playlists")
+        .select(
+          "id, user_id, name, type, created_at, updated_at, playlist_tracks(count), playlist_albums(count)",
+        )
         .eq("user_id", profile.id)
         .order("created_at", { ascending: false });
 
-      if (error) {
-        console.error("Error fetching favorites:", error);
-        setLoadingFavorites(false);
+      if (error || !data) {
+        setPlaylists([]);
+        setLoadingPlaylists(false);
         return;
       }
 
-      setFavorites(data || []);
-      setLoadingFavorites(false);
+      const mapped = (data as PlaylistWithCountRow[]).map((p) => {
+        const tracksCount =
+          Array.isArray(p.playlist_tracks) && p.playlist_tracks[0]?.count != null
+            ? Number(p.playlist_tracks[0].count)
+            : 0;
+        const albumsCount =
+          Array.isArray(p.playlist_albums) && p.playlist_albums[0]?.count != null
+            ? Number(p.playlist_albums[0].count)
+            : 0;
+
+        return {
+          id: p.id,
+          user_id: p.user_id,
+          name: p.name,
+          type: p.type,
+          created_at: p.created_at,
+          updated_at: p.updated_at,
+          itemCount: p.type === "albums" ? albumsCount : tracksCount,
+        } satisfies PlaylistWithCount;
+      });
+
+      setPlaylists(mapped);
+      setLoadingPlaylists(false);
     };
 
-    fetchUserAlbums();
-    if (profile.show_favorites) {
-      fetchFavorites();
-    } else {
-      setLoadingFavorites(false);
-    }
-  }, [profile.id, profile.show_favorites]);
-
-  const filteredAlbums = useMemo(() => {
-    return albums.filter((album) => {
-      if (activeTab === "all") return true;
-      if (activeTab === "full") {
-        return (
-          album.ratedTrackIds.length >= album.totalTracks &&
-          album.totalTracks > 0
-        );
-      }
-      return (
-        album.ratedTrackIds.length > 0 &&
-        album.ratedTrackIds.length < album.totalTracks
-      );
-    });
-  }, [albums, activeTab]);
-
-  const sortedAlbums = useMemo(() => {
-    return [...filteredAlbums].sort((a, b) => {
-      if (sortFilter === "newest") {
-        return (b.ratedAt || "").localeCompare(a.ratedAt || "");
-      }
-      if (sortFilter === "oldest") {
-        return (a.ratedAt || "").localeCompare(b.ratedAt || "");
-      }
-      if (sortFilter === "artist") {
-        const artistCompare = (a.artistName || "").localeCompare(
-          b.artistName || "",
-        );
-        if (artistCompare !== 0) return artistCompare;
-        return a.title.localeCompare(b.title);
-      }
-      if (sortFilter === "title") {
-        return a.title.localeCompare(b.title);
-      }
-      if (sortFilter === "rating") {
-        const ratingA = a.rating || 0;
-        const ratingB = b.rating || 0;
-        return ratingB - ratingA;
-      }
-      return 0;
-    });
-  }, [filteredAlbums, sortFilter]);
-
-  const memberSince = new Date(profile.created_at).toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+    fetchPlaylists();
+  }, [profile.id, profile.show_playlists]);
 
   const fullAlbumsCount = albums.filter(
     (a) => a.ratedTrackIds.length >= a.totalTracks && a.totalTracks > 0,
@@ -222,127 +207,192 @@ export default function UserProfileClient({ profile }: UserProfileClientProps) {
     (a) => a.ratedTrackIds.length > 0 && a.ratedTrackIds.length < a.totalTracks,
   ).length;
 
-  // Build album ratings lookup for track linking in favorites modal
-  const albumRatingsLookup = useMemo(() => {
-    const lookup: Record<
-      string,
-      { id: string; title: string; ratedTrackIds: string[] }
-    > = {};
-    albums.forEach((album) => {
-      lookup[album.id] = {
+  const filteredAlbums: Album[] = useMemo(() => {
+    return albums
+      .filter((album) => {
+        if (activeTab === "all") return true;
+        if (activeTab === "full") {
+          return (
+            album.ratedTrackIds.length >= album.totalTracks &&
+            album.totalTracks > 0
+          );
+        }
+        return (
+          album.ratedTrackIds.length > 0 &&
+          album.ratedTrackIds.length < album.totalTracks
+        );
+      })
+      .sort((a, b) => (b.ratedAt || "").localeCompare(a.ratedAt || ""))
+      .map((album) => ({
         id: album.id,
         title: album.title,
-        ratedTrackIds: album.ratedTrackIds,
-      };
-    });
-    return lookup;
-  }, [albums]);
+        artistName: album.artistName,
+        artworkUrl: album.artworkUrl,
+        releaseDate: album.releaseDate,
+        rating: album.rating,
+      }));
+  }, [albums, activeTab]);
+
+  const memberSince = new Date(profile.created_at).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
 
   return (
     <ProfileLayout
       user={{
         username: profile.username,
         avatarUrl: profile.avatar_url,
-        subtitle: (
-          <>
-            <FaCalendarAlt size={12} className="text-neutral-400" />
-            <span>Member since {memberSince}</span>
-          </>
-        )
+        subtitle: `Member since ${memberSince}`,
       }}
       quickLinks={
-        profile.show_favorites || profile.show_playlists ? (
-          <>
-            <QuickLink icon={FaStar} label="Rated music" href="#" active />
-            {profile.show_favorites && (
-              <>
-                <QuickLink icon={FaMusic} label="Liked songs" href="#" />
-                <QuickLink icon={FaCompactDisc} label="Liked albums" href="#" />
-                <QuickLink icon={FaMicrophoneAlt} label="Favourite artists" href="#" />
-              </>
-            )}
-            {profile.show_playlists && (
-              <QuickLink icon={FaList} label="Playlists" href="#" />
-            )}
-            <QuickLink icon={FaLayerGroup} label="Album collections" href="#" />
-          </>
-        ) : null
+        <>
+          <QuickLink
+            icon={FaStar}
+            label="Rated music"
+            href="#"
+            active={activeContentTab === "rated"}
+            onClick={(e) => {
+              e.preventDefault();
+              setActiveContentTab("rated");
+            }}
+          />
+          <QuickLink icon={FaMusic} label="Liked songs" href="#" />
+          <QuickLink icon={FaCompactDisc} label="Liked albums" href="#" />
+          <QuickLink icon={FaMicrophoneAlt} label="Favourite artists" href="#" />
+          <QuickLink
+            icon={FaList}
+            label="Playlists"
+            href="#"
+            active={activeContentTab === "playlists"}
+            onClick={(e) => {
+              e.preventDefault();
+              setActiveContentTab("playlists");
+            }}
+          />
+          <QuickLink icon={FaLayerGroup} label="Album collections" href="#" />
+        </>
       }
     >
-      {/* Playlists Section */}
-      {profile.show_playlists && (
-        <section className="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-neutral-100 p-6 sm:p-8">
-          <ProfileSectionHeader title="Public Playlists" headerClassName="mb-6" />
-          <PublicPlaylistsSection userId={profile.id} />
-        </section>
-      )}
-
-      {/* Rated Albums Section */}
-      <section className="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-neutral-100 p-6 sm:p-8">
-        <ProfileSectionHeader
-          title="Rated Music"
-          filters={[
-            { id: "all", label: "All", count: albums.length },
-            { id: "full", label: "Fully rated", count: fullAlbumsCount },
-            {
-              id: "partial",
-              label: "Partially rated",
-              count: partialAlbumsCount,
-            },
-          ]}
-          activeFilterId={activeTab}
-          onFilterChange={(id) =>
-            setActiveTab(id as "all" | "full" | "partial")
-          }
-          footer={
-            <div className="flex items-center justify-between mb-8 pb-4 border-b border-neutral-100">
-              <p className="text-neutral-500 text-sm font-medium">
-                Showing {filteredAlbums.length} album
-                {filteredAlbums.length !== 1 ? "s" : ""}
-              </p>
-              <select
-                value={sortFilter}
-                onChange={(e) => setSortFilter(e.target.value)}
-                className="bg-neutral-50 border border-neutral-200 text-neutral-700 text-sm px-4 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-neutral-900/10 focus:border-neutral-300 font-medium cursor-pointer"
-              >
-                <option value="newest">Latest Added</option>
-                <option value="oldest">Oldest Added</option>
-                <option value="rating">Highest Rated</option>
-                <option value="artist">Artist (A-Z)</option>
-                <option value="title">Album (A-Z)</option>
-              </select>
-            </div>
-          }
-        />
-
-        {loading ? (
-          <div className="py-20 flex items-center justify-center">
-            <div className="w-8 h-8 border-2 border-neutral-500 border-t-transparent rounded-full animate-spin" />
-          </div>
-        ) : filteredAlbums.length === 0 ? (
-          <div className="py-16 text-center border-2 border-dashed border-neutral-200 rounded-2xl bg-neutral-50">
-            <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
-              <FaStar size={24} className="text-neutral-400" />
-            </div>
-            <p className="text-neutral-900 font-bold text-lg mb-1">
-              No albums match this filter
-            </p>
-            <p className="text-neutral-500 text-sm">
-              {activeTab === "full"
-                ? "This user hasn't fully rated any albums yet"
-                : activeTab === "partial"
-                  ? "This user has no partially rated albums"
-                  : "This user hasn't added any albums yet"}
-            </p>
-          </div>
-        ) : (
-          <ArtistAlbumGridSection
-            albums={sortedAlbums}
-            initialCount={12}
-            ratingMode="any"
+      {activeContentTab === "rated" ? (
+        <section>
+          <ProfileSectionHeader
+            title="Latest Rated Music"
+            filters={[
+              { id: "all", label: "All", count: albums.length },
+              { id: "full", label: "Fully rated", count: fullAlbumsCount },
+              {
+                id: "partial",
+                label: "Partially rated",
+                count: partialAlbumsCount,
+              },
+            ]}
+            activeFilterId={activeTab}
+            onFilterChange={(id) =>
+              setActiveTab(id as "all" | "full" | "partial")
+            }
           />
-        )}
-      </section>
+
+          {loading ? (
+            <div className="py-10 flex items-center justify-center">
+              <div className="w-6 h-6 border-2 border-neutral-500 border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : filteredAlbums.length === 0 ? (
+            <div className="py-16 text-center border-2 border-dashed border-neutral-200 rounded-2xl bg-neutral-50">
+              <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
+                <FaStar size={24} className="text-neutral-400" />
+              </div>
+              <p className="text-neutral-900 font-bold text-lg mb-1">
+                No albums found
+              </p>
+              <p className="text-neutral-500 text-sm">
+                {activeTab === "full"
+                  ? "This user hasn't fully rated any albums yet"
+                  : activeTab === "partial"
+                    ? "This user has no partially rated albums"
+                    : "This user hasn't added any albums yet"}
+              </p>
+            </div>
+          ) : (
+            <ArtistAlbumGridSection
+              albums={filteredAlbums}
+              initialCount={12}
+              ratingMode="any"
+            />
+          )}
+        </section>
+      ) : null}
+
+      {activeContentTab === "playlists" ? (
+        <section className="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-neutral-100 p-6 sm:p-8">
+          <ProfileSectionHeader
+            title="Playlists"
+            headerClassName="mb-6"
+            trailing={
+              <span className="text-xs text-neutral-600 font-mono">
+                {playlists.length}
+              </span>
+            }
+          />
+
+          {!profile.show_playlists ? (
+            <div className="py-16 text-center border-2 border-dashed border-neutral-200 rounded-2xl bg-neutral-50">
+              <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
+                <FaList size={24} className="text-neutral-400" />
+              </div>
+              <p className="text-neutral-900 font-bold text-lg mb-1">
+                Playlists are private
+              </p>
+              <p className="text-neutral-500 text-sm">
+                This user has chosen to hide their playlists
+              </p>
+            </div>
+          ) : loadingPlaylists ? (
+            <div className="py-10 flex items-center justify-center">
+              <div className="w-6 h-6 border-2 border-neutral-500 border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : playlists.length === 0 ? (
+            <div className="py-16 text-center border-2 border-dashed border-neutral-200 rounded-2xl bg-neutral-50">
+              <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
+                <FaList size={24} className="text-neutral-400" />
+              </div>
+              <p className="text-neutral-900 font-bold text-lg mb-1">
+                No playlists yet
+              </p>
+              <p className="text-neutral-500 text-sm">
+                This user hasn&apos;t created any playlists
+              </p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {playlists.map((playlist) => (
+                <Link
+                  key={playlist.id}
+                  href={`/playlist/${playlist.id}`}
+                  className="group flex items-center justify-between gap-4 rounded-xl bg-white border border-neutral-200 hover:border-neutral-300 px-4 py-3 transition-colors"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="h-12 w-12 rounded-lg bg-neutral-100 border border-neutral-200 shrink-0" />
+                    <div className="min-w-0">
+                      <div className="text-sm font-semibold text-neutral-900 truncate">
+                        {playlist.name}
+                      </div>
+                      <div className="text-xs text-neutral-500 font-mono">
+                        {playlist.itemCount} items
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="h-9 w-9 flex items-center justify-center rounded-lg bg-neutral-100 text-neutral-500 group-hover:text-neutral-900 shrink-0">
+                    <BsThreeDotsVertical size={16} />
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </section>
+      ) : null}
     </ProfileLayout>
   );
 }
