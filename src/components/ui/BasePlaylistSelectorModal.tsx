@@ -3,23 +3,15 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
-  FaTimes,
-  FaPlus,
-  FaCheck,
   FaMusic,
-  FaExclamationCircle,
-  FaSearch,
 } from "react-icons/fa";
 import {
   HiPlus,
-  HiCheck,
-  HiOutlinePlusCircle,
-  HiMagnifyingGlass,
 } from "react-icons/hi2";
-import Link from "next/link";
 import { Playlist } from "@/types/playlist";
 import Button from "./Button";
 import MainModal, { MainModalHeader } from "./MainModal";
+import PlaylistRow from "./PlaylistRow";
 
 interface BasePlaylistSelectorModalProps {
   title: string;
@@ -78,12 +70,6 @@ export default function BasePlaylistSelectorModal({
     document.addEventListener("click", handleClickOutside);
     return () => document.removeEventListener("click", handleClickOutside);
   }, [confirmRemovePlaylistId]);
-
-  const truncateToChars = (text: string, maxChars: number) => {
-    const s = (text || "").trim();
-    if (s.length <= maxChars) return s;
-    return `${s.slice(0, Math.max(0, maxChars - 1))}…`;
-  };
 
   // Initialize selected IDs based on what's already in playlists
   useState(() => {
@@ -288,138 +274,23 @@ export default function BasePlaylistSelectorModal({
                         Boolean(onRemoveFromPlaylist) && isAlreadyInPlaylist;
 
                       return (
-                        <div
+                        <PlaylistRow
                           key={playlist.id}
-                          role="button"
-                          tabIndex={0}
-                          onClick={() => {
-                            if (isAlreadyInPlaylist) return;
-                            toggleSelection(playlist.id);
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key !== "Enter" && e.key !== " ") return;
-                            e.preventDefault();
-                            if (isAlreadyInPlaylist) return;
-                            toggleSelection(playlist.id);
-                          }}
-                          className={`relative w-full flex items-center gap-4 p-2 rounded-2xl transition-all duration-200
-                            ${
-                              isAlreadyInPlaylist
-                                ? "bg-neutral-100"
-                                : isSelected
-                                  ? "bg-green-500/20"
-                                  : "bg-neutral-200"
-                            }
-                          `}
-                        >
-                          <div
-                            className={`w-14 h-14 flex items-center justify-center rounded-xl transition-colors shrink-0
-                            ${
-                              isAlreadyInPlaylist
-                                ? "bg-neutral-200"
-                                : isSelected
-                                  ? "bg-green-500/30"
-                                  : "bg-white"
-                            }
-                          `}
-                          >
-                            <div
-                              className={
-                                isAlreadyInPlaylist
-                                  ? "[&_svg]:text-neutral-600 transition-colors"
-                                  : isSelected
-                                    ? "[&_svg]:text-green-800 transition-colors"
-                                    : "[&_svg]:text-neutral-800 transition-colors"
-                              }
-                            >
-                              {defaultIcon || <FaMusic size={18} />}
-                            </div>
-                          </div>
-
-                          <div className="flex-1 text-left min-w-0">
-                            <Link
-                              href={`/playlist/${playlist.id}`}
-                              target="_blank"
-                              rel="noreferrer"
-                              onClick={(e) => e.stopPropagation()}
-                              className={` text-md font-medium truncate transition-colors hover:underline ${
-                                isSelected ? "text-green-950" : "text-neutral-950"
-                              }`}
-                              aria-label={`Open playlist ${playlist.name} in new tab`}
-                            >
-                              {truncateToChars(playlist.name, 26)}
-                            </Link>
-                            {isAlreadyInPlaylist ? (
-                              <div className="absolute top-1/2 -translate-y-1/2 right-10 -mt-0.5">
-                                <span className="inline-flex items-center rounded-full bg-neutral-300 px-1.5 text-[11px] font-semibold tracking-wide text-neutral-800">
-                                  Added
-                                </span>
-                              </div>
-                            ) : null}
-                          </div>
-
-                          {/* Selection Checkbox/Radio */}
-                          <div
-                            className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all
-                            ${
-                              isAlreadyInPlaylist
-                                ? "bg-neutral-900 border-neutral-900 text-white"
-                                : isSelected
-                                  ? "bg-green-500 border-green-500 text-white scale-110 shadow-sm"
-                                  : "border-neutral-400"
-                            }
-                          `}
-                            role={showRemove ? "button" : undefined}
-                            tabIndex={showRemove ? 0 : undefined}
-                            onClick={(e) => {
-                              if (!showRemove) return;
-                              e.preventDefault();
-                              e.stopPropagation();
-                              setConfirmRemovePlaylistId(playlist.id);
-                            }}
-                          >
-                            {(isAlreadyInPlaylist || isSelected) && (
-                              <FaCheck size={10} />
-                            )}
-                          </div>
-
-                          {showRemove && confirmRemovePlaylistId === playlist.id ? (
-                            <div
-                              className="absolute right-12 top-1/2 z-50 -translate-y-1/2"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <div className="relative w-[220px] rounded-xl bg-neutral-800 p-3 text-white shadow-xl text-center">
-                                <div className="absolute left-full top-1/2 -translate-y-1/2 border-8 border-transparent border-l-neutral-800" />
-                                <div className="text-sm pb-2">
-                                  {removeConfirmTitle}
-                                </div>
-                                <div className="mt-2 flex items-center justify-end gap-2">
-                                  <button
-                                    type="button"
-                                    className="shrink-0 rounded-lg bg-neutral-900 px-2.5 py-1.5 text-xs font-semibold text-neutral-200 hover:bg-neutral-950"
-                                    onClick={() =>
-                                      setConfirmRemovePlaylistId(null)
-                                    }
-                                  >
-                                    Cancel
-                                  </button>
-                                  <button
-                                    type="button"
-                                    disabled={removingPlaylistId === playlist.id}
-                                    className="flex-1 rounded-lg bg-white px-2.5 py-1.5 text-xs font-semibold text-neutral-950 hover:bg-neutral-200 disabled:opacity-60"
-                                    onClick={() =>
-                                      handleConfirmRemove(playlist.id)
-                                    }
-                                  >
-                                    {removingPlaylistId === playlist.id
-                                      ? "Removing…"
-                                      : "Yes, remove"}
-                                  </button>
-                                </div>
-                              </div>
-                            </div>
-                          ) : null}
-                        </div>
+                          playlist={playlist}
+                          isSelected={isSelected}
+                          isAlreadyInPlaylist={isAlreadyInPlaylist}
+                          showRemove={showRemove}
+                          isConfirmingRemove={
+                            confirmRemovePlaylistId === playlist.id
+                          }
+                          isRemoving={removingPlaylistId === playlist.id}
+                          removeConfirmTitle={removeConfirmTitle}
+                          defaultIcon={defaultIcon}
+                          onToggleSelection={toggleSelection}
+                          onStartRemove={setConfirmRemovePlaylistId}
+                          onCancelRemove={() => setConfirmRemovePlaylistId(null)}
+                          onConfirmRemove={handleConfirmRemove}
+                        />
                       );
                     })}
                   </div>
