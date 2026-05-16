@@ -32,14 +32,6 @@ jest.mock("@/components/layout/MobileMenu", () => {
   };
 });
 
-jest.mock("next/image", () => ({
-  __esModule: true,
-  default: function MockImage({ alt, src, ...props }: any) {
-    // eslint-disable-next-line @next/next/no-img-element
-    return <img alt={alt} src={src} {...props} />;
-  },
-}));
-
 describe("Header", () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -54,22 +46,14 @@ describe("Header", () => {
     expect(header).toBeInTheDocument();
   });
 
-  it("should render site logo image", () => {
+  it("should render typography logo", () => {
     (usePathname as jest.Mock).mockReturnValue("/");
 
     render(<Header />);
 
-    const logo = screen.getByRole("img", { name: /songrates/i });
-    expect(logo).toHaveAttribute("src", "/songrates-lettering-logo.svg");
-  });
-
-  it("should render Rated navigation link", () => {
-    (usePathname as jest.Mock).mockReturnValue("/");
-
-    render(<Header />);
-
-    const rated = screen.getByRole("link", { name: /^Rated$/i });
-    expect(rated).toHaveAttribute("href", "/rated");
+    expect(screen.getByRole("link", { name: /songrates home/i })).toHaveTextContent(
+      "songrates",
+    );
   });
 
   it("should not show search bar on homepage", () => {
@@ -127,7 +111,7 @@ describe("Header", () => {
 
     render(<Header />);
 
-    const logoLink = screen.getByRole("img", { name: /songrates/i }).closest("a");
+    const logoLink = screen.getByRole("link", { name: /songrates home/i });
     expect(logoLink).toHaveAttribute("href", "/");
   });
 

@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import SongratesLogo from "@/components/layout/SongratesLogo";
 import MySection from "@/components/ui/MySection";
 import HeaderSearchBar from "@/components/search/HeaderSearchBar";
 import { FaBars } from "react-icons/fa";
@@ -12,8 +12,6 @@ import MobileMenu from "@/components/layout/MobileMenu";
 import Button from "@/components/ui/Button";
 import UserMenu from "@/components/layout/UserMenu";
 import { useAuth } from "@/context/AuthContext";
-import { cn } from "@/lib/utils";
-
 interface HeaderProps {
   showSearch?: boolean;
 }
@@ -26,25 +24,18 @@ export default function Header({ showSearch }: HeaderProps) {
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
 
   const shouldShowSearch = showSearch ?? pathname !== "/";
-  const isRatedActive = pathname === "/rated" || pathname.startsWith("/rated/");
 
   return (
     <>
-      <header className="relative z-50 w-full bg-[#f7f5f2]/92 backdrop-blur-md py-2">
+      <header className="relative z-50 w-full border-b border-neutral-200 bg-white py-2">
         <MySection className="py-0">
           <div className="flex h-[3.25rem] items-center justify-between gap-3 transition-all duration-300 md:gap-4">
             <Link
               href="/"
-              className="relative flex flex-shrink-0 items-center outline-offset-4 transition-opacity hover:opacity-85"
+              aria-label="Songrates home"
+              className="relative flex flex-shrink-0 items-center outline-offset-4 transition-opacity hover:opacity-80"
             >
-              <Image
-                src="/songrates-lettering-logo.svg"
-                alt="Songrates"
-                width={121}
-                height={33}
-                className="h-[26px] w-auto md:h-[34px] relative top-1 opacity-80"
-                priority
-              />
+              <SongratesLogo />
             </Link>
 
             {shouldShowSearch && (
@@ -82,20 +73,8 @@ export default function Header({ showSearch }: HeaderProps) {
             )}
 
             <nav className="hidden flex-shrink-0 items-center gap-1 md:flex">
-              <Link
-                href="/rated"
-                className={cn(
-                  "rounded-md px-3 py-1.5 text-[13px] font-medium tracking-wide transition-colors",
-                  isRatedActive
-                    ? "bg-neutral-900/5 text-neutral-900"
-                    : "text-neutral-600 hover:bg-neutral-200/50 hover:text-neutral-900",
-                )}
-              >
-                Rated
-              </Link>
-
               {!loading && (
-                <div className="ml-3 flex items-center gap-3 border-l border-[var(--border)] pl-5">
+                <div className="flex items-center gap-3">
                   {user ? (
                     <UserMenu user={user} onSignOut={signOut} />
                   ) : (
