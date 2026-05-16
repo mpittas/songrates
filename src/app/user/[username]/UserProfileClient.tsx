@@ -18,6 +18,7 @@ import type { Playlist } from "@/types/playlist";
 import ProfileLayout, { QuickLink } from "@/components/profile/ProfileLayout";
 import ProfileSectionHeader from "@/components/profile/ProfileSectionHeader";
 import LikedSongsSection from "@/components/profile/LikedSongsSection";
+import LikedAlbumsSection from "@/components/profile/LikedAlbumsSection";
 
 interface UserProfile {
   id: string;
@@ -48,7 +49,11 @@ type PlaylistWithCountRow = Playlist & {
   playlist_albums?: { count: number }[];
 };
 
-type ProfileContentTab = "rated" | "liked-songs" | "playlists";
+type ProfileContentTab =
+  | "rated"
+  | "liked-songs"
+  | "liked-albums"
+  | "playlists";
 
 interface UserProfileClientProps {
   profile: UserProfile;
@@ -269,7 +274,16 @@ export default function UserProfileClient({ profile }: UserProfileClientProps) {
               setActiveContentTab("liked-songs");
             }}
           />
-          <QuickLink icon={FaCompactDisc} label="Liked albums" href="#" />
+          <QuickLink
+            icon={FaCompactDisc}
+            label="Liked albums"
+            href="#"
+            active={activeContentTab === "liked-albums"}
+            onClick={(e) => {
+              e.preventDefault();
+              setActiveContentTab("liked-albums");
+            }}
+          />
           <QuickLink icon={FaMicrophoneAlt} label="Favourite artists" href="#" />
           <QuickLink
             icon={FaList}
@@ -336,6 +350,13 @@ export default function UserProfileClient({ profile }: UserProfileClientProps) {
 
       {activeContentTab === "liked-songs" ? (
         <LikedSongsSection
+          userId={profile.id}
+          isPrivate={!profile.show_favorites}
+        />
+      ) : null}
+
+      {activeContentTab === "liked-albums" ? (
+        <LikedAlbumsSection
           userId={profile.id}
           isPrivate={!profile.show_favorites}
         />

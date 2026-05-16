@@ -218,6 +218,62 @@ export async function fetchAppleSongEnrichmentsByIds(
   return enrichmentMap;
 }
 
+export type AppleAlbumEnrichment = {
+  name: string;
+  artistName: string;
+  artistId?: string;
+  artworkUrl?: string;
+  releaseDate?: string;
+};
+
+/**
+ * Batch-fetch catalog albums with artist relationships (for liked-album rows).
+ */
+export async function fetchAppleAlbumEnrichmentsByIds(
+  albumIds: string[],
+  storefront: string = STOREFRONT,
+): Promise<Map<string, AppleAlbumEnrichment>> {
+  const enrichmentMap = new Map<string, AppleAlbumEnrichment>();
+  const uniqueIds = [...new Set(albumIds.filter(Boolean))];
+
+  for (let i = 0; i < uniqueIds.length; i += APPLE_SONG_ENRICH_CHUNK_SIZE) {
+    const chunk = uniqueIds.slice(i, i + APPLE_SONG_ENRICH_CHUNK_SIZE);
+    const ids = chunk.join(",");
+    const data = await appleMusicFetch<{
+      data?: Array<{
+        id: string;
+        attributes?: {
+          name?: string;
+          artistName?: string;
+          releaseDate?: string;
+          artwork?: { url?: string };
+        };
+        relationships?: {
+          artists?: { data?: Array<{ id: string }> };
+        };
+      }>;
+    }>(`/catalog/${storefront}/albums?ids=${ids}&include=artists`);
+
+    if (!data?.data) continue;
+
+    for (const album of data.data) {
+      const attrs = album.attributes;
+      const artistRel = album.relationships?.artists?.data?.[0];
+      enrichmentMap.set(album.id, {
+        name: attrs?.name || "",
+        artistName: attrs?.artistName || "",
+        artistId: artistRel?.id,
+        artworkUrl: attrs?.artwork?.url
+          ? artworkUrl(attrs.artwork.url, 300)
+          : undefined,
+        releaseDate: attrs?.releaseDate,
+      });
+    }
+  }
+
+  return enrichmentMap;
+}
+
 function parseArtist(item: any): AppleArtistResult {
   const a = item.attributes || {};
   return {
