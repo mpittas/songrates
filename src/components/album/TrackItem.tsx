@@ -251,6 +251,14 @@ export default function TrackItem({
                     itemType="track"
                     itemName={track.title}
                     artistName={artistName}
+                    thumbnailUrl={albumImageUrl}
+                    albumId={albumId}
+                    albumName={albumContext.title}
+                    durationMs={
+                      track.length ? Number(track.length) : undefined
+                    }
+                    artistId={track.artists?.[0]?.id || artistId}
+                    artists={track.artists}
                     variant="menu-item"
                   />
 

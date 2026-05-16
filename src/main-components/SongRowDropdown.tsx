@@ -5,6 +5,7 @@ import { FaPlus } from "react-icons/fa6";
 import { BsThreeDotsVertical } from "react-icons/bs";
 import { HiOutlineMicrophone } from "react-icons/hi2";
 import { FiShare2 } from "react-icons/fi";
+import FavoriteButton from "@/components/ui/FavoriteButton";
 
 interface SongRowDropdownProps {
   isLyricsOpen: boolean;
@@ -13,6 +14,16 @@ interface SongRowDropdownProps {
   onShare?: () => void;
   /** Warm lyrics cache when user hovers "Show Lyrics" before clicking */
   onPrefetchLyrics?: () => void;
+  trackId?: string;
+  trackName?: string;
+  artistName?: string;
+  thumbnailUrl?: string | null;
+  albumId?: string;
+  albumName?: string;
+  durationMs?: number;
+  artistId?: string;
+  artists?: { id: string; name: string }[];
+  onFavoriteChange?: (isFavorite: boolean) => void;
 }
 
 export default function SongRowDropdown({
@@ -21,6 +32,16 @@ export default function SongRowDropdown({
   onAddToPlaylist,
   onShare,
   onPrefetchLyrics,
+  trackId,
+  trackName,
+  artistName,
+  thumbnailUrl,
+  albumId,
+  albumName,
+  durationMs,
+  artistId,
+  artists,
+  onFavoriteChange,
 }: SongRowDropdownProps) {
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -76,6 +97,25 @@ export default function SongRowDropdown({
 
       {showDropdown && (
         <div className="absolute right-0 top-full mt-1 bg-white border border-neutral-200 rounded-lg shadow-xl py-1 z-50 w-48">
+          {trackId && trackName && (
+            <FavoriteButton
+              itemId={trackId}
+              itemType="track"
+              itemName={trackName}
+              artistName={artistName}
+              thumbnailUrl={thumbnailUrl ?? undefined}
+              albumId={albumId}
+              albumName={albumName}
+              durationMs={durationMs}
+              artistId={artistId}
+              artists={artists}
+              variant="menu-item"
+              menuTheme="light"
+              onMenuClick={() => setShowDropdown(false)}
+              onFavoriteChange={onFavoriteChange}
+            />
+          )}
+
           <MenuItem
             icon={<FaPlus size={12} />}
             label="Add to Playlist"

@@ -165,6 +165,8 @@ const APPLE_SONG_ENRICH_CHUNK_SIZE = 60;
 export type AppleSongEnrichment = {
   artists: { id: string; name: string }[];
   albumId?: string;
+  albumName?: string;
+  durationMs?: number;
 };
 
 /**
@@ -184,6 +186,10 @@ export async function fetchAppleSongEnrichmentsByIds(
     const songsData = await appleMusicFetch<{
       data?: Array<{
         id: string;
+        attributes?: {
+          albumName?: string;
+          durationInMillis?: number;
+        };
         relationships?: {
           artists?: {
             data?: Array<{ id: string; attributes?: { name?: string } }>;
@@ -203,6 +209,8 @@ export async function fetchAppleSongEnrichmentsByIds(
       enrichmentMap.set(song.id, {
         artists: artistsFromCatalogSongResource(song),
         albumId: songAlbum?.id,
+        albumName: song.attributes?.albumName,
+        durationMs: song.attributes?.durationInMillis,
       });
     }
   }
@@ -834,7 +842,10 @@ export async function getTrendingSongs(
   const item = data?.data?.[0];
   if (!item) return [];
 
-  const trackItems = (item.relationships?.tracks?.data || []).slice(0, safeLimit);
+  const trackItems = (item.relationships?.tracks?.data || []).slice(
+    0,
+    safeLimit,
+  );
 
   const tracks: AppleSongResult[] = trackItems.map((t: any) => {
     const ta = t.attributes || {};

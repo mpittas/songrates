@@ -19,6 +19,11 @@ export interface FavoriteItem {
   item_name: string | null;
   artist_name: string | null;
   thumbnail_url: string | null;
+  album_id?: string | null;
+  album_name?: string | null;
+  duration_ms?: number | null;
+  artist_id?: string | null;
+  artists?: { id: string; name: string }[] | null;
   created_at: string;
 }
 

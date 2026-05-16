@@ -8,6 +8,8 @@ export interface ProfileFilterTab {
 
 interface ProfileSectionHeaderProps {
   title: string;
+  /** Shown inline to the right of the title */
+  count?: number;
   filters?: ProfileFilterTab[];
   activeFilterId?: string;
   onFilterChange?: (id: string) => void;
@@ -60,6 +62,7 @@ function ProfileFilterTabs({
 
 export default function ProfileSectionHeader({
   title,
+  count,
   filters,
   activeFilterId,
   onFilterChange,
@@ -80,7 +83,14 @@ export default function ProfileSectionHeader({
           headerClassName ?? (footer ? "mb-6" : "mb-8")
         }`}
       >
-        <h2 className="text-2xl font-semibold text-neutral-900">{title}</h2>
+        <div className="flex items-center gap-2.5 min-w-0">
+          <h2 className="text-2xl font-semibold text-neutral-900">{title}</h2>
+          {count != null && (
+            <span className="inline-flex items-center justify-center min-w-[1.25rem] px-2 py-1 rounded-md text-[11px] font-bold bg-white text-neutral-900 border border-neutral-200 shrink-0">
+              {count}
+            </span>
+          )}
+        </div>
 
         {hasFilters && (
           <ProfileFilterTabs

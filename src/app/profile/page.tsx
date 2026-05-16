@@ -23,6 +23,7 @@ import { Album } from "@/types/music";
 import type { Playlist } from "@/types/playlist";
 import ProfileLayout, { QuickLink } from "@/components/profile/ProfileLayout";
 import ProfileSectionHeader from "@/components/profile/ProfileSectionHeader";
+import LikedSongsSection from "@/components/profile/LikedSongsSection";
 
 type PlaylistWithCount = Playlist & { itemCount: number };
 
@@ -31,7 +32,7 @@ type PlaylistWithCountRow = Playlist & {
   playlist_albums?: { count: number }[];
 };
 
-type ProfileContentTab = "rated" | "playlists";
+type ProfileContentTab = "rated" | "liked-songs" | "playlists";
 
 export default function ProfilePage() {
   const { user, signOut, loading } = useAuth();
@@ -217,7 +218,16 @@ export default function ProfilePage() {
               setActiveContentTab("rated");
             }}
           />
-          <QuickLink icon={FaMusic} label="Liked songs" href="#" />
+          <QuickLink
+            icon={FaMusic}
+            label="Liked songs"
+            href="#"
+            active={activeContentTab === "liked-songs"}
+            onClick={(e) => {
+              e.preventDefault();
+              setActiveContentTab("liked-songs");
+            }}
+          />
           <QuickLink icon={FaCompactDisc} label="Liked albums" href="#" />
           <QuickLink icon={FaMicrophoneAlt} label="Favourite artists" href="#" />
           <QuickLink
@@ -277,6 +287,10 @@ export default function ProfilePage() {
           />
         )}
       </section>
+      ) : null}
+
+      {activeContentTab === "liked-songs" && user ? (
+        <LikedSongsSection userId={user.id} />
       ) : null}
 
       {activeContentTab === "playlists" ? (

@@ -56,6 +56,9 @@ interface SongRowProps {
   onRate?: (rating: number) => void;
   onAddToPlaylist?: () => void;
   onShare?: () => void;
+  /** Show album name in the subline before duration (default: true) */
+  showAlbumInSubline?: boolean;
+  onFavoriteChange?: (isFavorite: boolean) => void;
 }
 
 export default function SongRow({
@@ -74,6 +77,8 @@ export default function SongRow({
   onRate,
   onAddToPlaylist,
   onShare,
+  showAlbumInSubline = true,
+  onFavoriteChange,
 }: SongRowProps) {
   const [hovered, setHovered] = useState(false);
   const [showPlaylistModal, setShowPlaylistModal] = useState(false);
@@ -118,15 +123,36 @@ export default function SongRow({
   const [shareCopied, setShareCopied] = useState(false);
 
   const formatDuration = (val: string) => {
-    if (!val) return "--:--";
+    if (!val || val === "—") return "--:--";
     const num = Number(val);
-    if (!isNaN(num) && num > 1000) {
-      const minutes = Math.floor(num / 60000);
-      const seconds = Math.floor((num % 60000) / 1000);
+    if (!isNaN(num) && num > 0) {
+      const ms = num > 1000 ? num : num * 1000;
+      const minutes = Math.floor(ms / 60000);
+      const seconds = Math.floor((ms % 60000) / 1000);
       return `${minutes}:${seconds.toString().padStart(2, "0")}`;
     }
     return val;
   };
+
+  const displayAlbum =
+    album || track?.albumTitle || albumContext?.title || "Unknown Album";
+  const durationMsForFavorite = (() => {
+    if (track?.length && Number(track.length) > 0) return Number(track.length);
+    if (!duration) return undefined;
+    const colonMatch = duration.match(/^(\d+):(\d{1,2})$/);
+    if (colonMatch) {
+      const mins = Number(colonMatch[1]);
+      const secs = Number(colonMatch[2]);
+      if (!Number.isNaN(mins) && !Number.isNaN(secs)) {
+        return (mins * 60 + secs) * 1000;
+      }
+    }
+    const numeric = Number(duration);
+    if (!Number.isNaN(numeric) && numeric > 0) {
+      return numeric > 1000 ? numeric : numeric * 1000;
+    }
+    return undefined;
+  })();
 
   return (
     <div
@@ -183,7 +209,7 @@ export default function SongRow({
 
           {/* Song Info */}
           <div className="flex flex-col min-w-0">
-            <div className="flex items-center gap-x-2">
+            <div className="flex items-center gap-x-2 mb-0.25">
               {effectiveAlbumId ? (
                 <Link
                   href={`/album/${effectiveAlbumId}`}
@@ -197,7 +223,8 @@ export default function SongRow({
                 </span>
               )}
             </div>
-            <div className="flex min-w-0 w-full flex-wrap items-center gap-x-0.5 text-sm text-neutral-500">
+
+            <div className="flex min-w-0 w-full flex-wrap items-center gap-x-1 text-xs text-neutral-500">
               <span className="flex gap-x-1 min-w-0 max-w-full flex-wrap items-center">
                 {(track?.artists?.length
                   ? track.artists
@@ -227,8 +254,25 @@ export default function SongRow({
                   </span>
                 ))}
               </span>
-              <span className="text-neutral-300">-</span>
-              <div className="text-neutral-500 text-[14px]">
+              {showAlbumInSubline ? (
+                <>
+                  <span className="text-neutral-300">•</span>
+                  {effectiveAlbumId ? (
+                    <Link
+                      href={`/album/${effectiveAlbumId}`}
+                      className="shrink-0 truncate max-w-[12rem] hover:text-neutral-700 hover:underline"
+                    >
+                      {truncateText(displayAlbum, 50)}
+                    </Link>
+                  ) : (
+                    <span className="shrink-0 truncate max-w-[12rem]">
+                      {truncateText(displayAlbum, 50)}
+                    </span>
+                  )}
+                </>
+              ) : null}
+              <span className="text-neutral-300">•</span>
+              <div className="text-neutral-500 shrink-0">
                 {formatDuration(duration)}
               </div>
             </div>
@@ -260,6 +304,16 @@ export default function SongRow({
               setShowShareModal(true);
               onShare?.();
             }}
+            trackId={trackId}
+            trackName={title}
+            artistName={artist}
+            thumbnailUrl={artworkUrl}
+            albumId={effectiveAlbumId}
+            albumName={displayAlbum}
+            durationMs={durationMsForFavorite}
+            artistId={effectiveArtistId}
+            artists={track?.artists}
+            onFavoriteChange={onFavoriteChange}
           />
         </div>
       </div>

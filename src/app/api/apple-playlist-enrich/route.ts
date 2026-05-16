@@ -32,6 +32,8 @@ export async function POST(request: NextRequest) {
       artists: { id: string; name: string }[];
       artistId?: string;
       albumId?: string;
+      albumName?: string;
+      durationMs?: number;
     }
   > = {};
 
@@ -40,6 +42,8 @@ export async function POST(request: NextRequest) {
       artists: v.artists,
       artistId: v.artists[0]?.id,
       albumId: v.albumId,
+      albumName: v.albumName,
+      durationMs: v.durationMs,
     };
   }
 

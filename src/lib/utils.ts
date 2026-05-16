@@ -19,7 +19,7 @@ export function formatTime(
   time?: number | null,
   unit: "seconds" | "milliseconds" = "seconds",
 ): string {
-  if (time === undefined || time === null || time < 0) return "-:--";
+  if (time === undefined || time === null || time < 0) return "--:--";
 
   const totalSeconds =
     unit === "milliseconds" ? Math.floor(time / 1000) : Math.floor(time);
