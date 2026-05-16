@@ -102,14 +102,16 @@ export default function Header({ showSearch }: HeaderProps) {
               {!loading && user && (
                 <UserMenu user={user} onSignOut={signOut} isMobile={true} />
               )}
-              <button
-                type="button"
-                className="rounded-md p-2 text-neutral-600 transition-colors hover:bg-neutral-200/60 hover:text-neutral-900"
-                onClick={() => setIsMobileMenuOpen(true)}
-                aria-label="Open menu"
-              >
-                <FaBars size={20} />
-              </button>
+              {!loading && !user && (
+                <button
+                  type="button"
+                  className="rounded-md p-2 text-neutral-600 transition-colors hover:bg-neutral-200/60 hover:text-neutral-900"
+                  onClick={() => setIsMobileMenuOpen(true)}
+                  aria-label="Open menu"
+                >
+                  <FaBars size={20} />
+                </button>
+              )}
             </div>
           </div>
         </MySection>

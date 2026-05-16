@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import Drawer from "@/components/ui/Drawer";
-import { FaUserCircle, FaSignOutAlt, FaStar } from "react-icons/fa";
+import { FaUserCircle, FaSignOutAlt } from "react-icons/fa";
 import { User } from "@supabase/supabase-js";
 
 interface UserMenuProps {
@@ -87,14 +87,6 @@ export default function UserMenu({
             <FaUserCircle size={14} />
             Profile
           </Link>
-          <Link
-            href="/rated"
-            className="flex items-center gap-3 px-4 py-2.5 text-sm text-neutral-700 hover:text-neutral-950 hover:bg-neutral-100 transition-colors"
-            onClick={() => setIsOpen(false)}
-          >
-            <FaStar size={14} />
-            Rated
-          </Link>
           <button
             onClick={() => {
               setIsOpen(false);
@@ -148,14 +140,6 @@ export default function UserMenu({
               >
                 <FaUserCircle size={16} />
                 Profile
-              </Link>
-              <Link
-                href="/rated"
-                className="flex items-center gap-3 text-base text-neutral-300 hover:text-white transition-colors uppercase tracking-widest"
-                onClick={() => setIsOpen(false)}
-              >
-                <FaStar size={16} />
-                Rated
               </Link>
               <button
                 onClick={() => {
