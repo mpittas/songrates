@@ -115,6 +115,11 @@ export default function LikedAlbumsSection({
           albums={gridAlbums}
           initialCount={12}
           ratingMode="any"
+          onAlbumFavoriteChange={(albumId, liked) => {
+            if (!liked) {
+              setAlbums((prev) => prev.filter((a) => a.albumId !== albumId));
+            }
+          }}
         />
       )}
     </section>

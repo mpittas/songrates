@@ -212,9 +212,13 @@ export default function FavoriteButton({
         ? isFavorite
           ? "Liked"
           : "Like song"
-        : isFavorite
-          ? "Favorited"
-          : "Favorite";
+        : itemType === "album"
+          ? isFavorite
+            ? "Liked"
+            : "Like album"
+          : isFavorite
+            ? "Favorited"
+            : "Favorite";
 
     return (
       <button

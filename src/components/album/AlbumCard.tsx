@@ -2,13 +2,12 @@
 
 import { cn, createSlug } from "@/lib/utils";
 import OptimizedImage from "@/components/ui/OptimizedImage";
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useCallback } from "react";
 import Link from "next/link";
-import { FaEllipsisV } from "react-icons/fa";
 import { useRatingsContext } from "@/context/RatingsContext";
 import AlbumRatingBadge from "@/components/rating/AlbumRatingBadge";
+import AlbumCardDropdown from "@/components/album/AlbumCardDropdown";
 import { Album } from "@/types/music";
-import Button from "@/components/ui/Button";
 import { usePrefetchAlbum } from "@/hooks/useAlbumInfo";
 
 export interface AlbumCardProps {
@@ -19,98 +18,7 @@ export interface AlbumCardProps {
   showRating?: boolean;
   ratingMode?: "any" | "full";
   showOptionsMenu?: boolean;
-}
-
-function AlbumOptionsMenu({ albumId }: { albumId: string }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
-  const { removeAlbumRating, albumRatings } = useRatingsContext();
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  const albumData = albumRatings[albumId];
-  const hasAnyRating = albumData && albumData.ratedTrackIds.length > 0;
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-        setShowConfirm(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  return (
-    <div className="relative inline-block" ref={menuRef}>
-      <Button
-        variant="ghost"
-        className="w-8 h-8 p-0 bg-white/90 hover:bg-white text-neutral-700 border border-[#d7d7d7] backdrop-blur-sm"
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          setIsOpen(!isOpen);
-          setShowConfirm(false);
-        }}
-        title="Options"
-      >
-        <FaEllipsisV size={12} />
-      </Button>
-
-      {isOpen && (
-        <div className="absolute top-full right-0 mt-1 w-40 bg-white border border-[#d7d7d7] shadow-xl z-30 flex flex-col py-1 animate-in fade-in zoom-in-95 duration-100 origin-top-right rounded-md overflow-hidden">
-          {hasAnyRating ? (
-            !showConfirm ? (
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setShowConfirm(true);
-                }}
-                className="text-left px-3 py-2 text-xs font-mono text-neutral-700 hover:bg-[#f5f5f5] hover:text-neutral-900 transition-colors flex items-center gap-2 w-full"
-              >
-                Remove Rating
-              </button>
-            ) : (
-              <div className="px-3 py-2 bg-red-500/5">
-                <p className="text-[10px] text-red-400 mb-2 font-mono uppercase tracking-wider">
-                  Are you sure?
-                </p>
-                <div className="flex gap-2">
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      removeAlbumRating(albumId);
-                      setIsOpen(false);
-                    }}
-                    className="flex-1 bg-red-500/20 hover:bg-red-500/30 text-red-300 text-[10px] py-1 rounded-sm border border-red-500/20 font-mono transition-colors"
-                  >
-                    Yes
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setShowConfirm(false);
-                    }}
-                    className="flex-1 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 text-[10px] py-1 rounded-sm border border-neutral-300 font-mono transition-colors"
-                  >
-                    No
-                  </button>
-                </div>
-              </div>
-            )
-          ) : (
-            <div className="px-3 py-2 text-xs text-neutral-600 italic font-mono text-center">
-              no_options
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
+  onFavoriteChange?: (isFavorite: boolean) => void;
 }
 
 function RatingBadge({
@@ -147,12 +55,10 @@ function RatingBadge({
     }
     isFull = totalTracks > 0 && ratedCount >= totalTracks;
   } else if (album.rating) {
-    // MB Rating fallback if no local rating
     personalScore = album.rating;
     isFull = true;
   }
 
-  // If we have either personal or public rating, show badge
   const shouldShowPersonalScore =
     personalScore !== null && (mode === "any" || isFull);
   const shouldShowPublicScore = mode === "any" && publicData;
@@ -187,10 +93,12 @@ export default function AlbumCard({
   showRating = true,
   ratingMode = "any",
   showOptionsMenu = true,
+  onFavoriteChange,
 }: AlbumCardProps) {
   const isCompact = size === "compact";
   const imageUrl = album.artworkUrl || "/vinyl-placeholder.svg";
   const [imageError, setImageError] = useState(false);
+  const [optionsOpen, setOptionsOpen] = useState(false);
   const prefetchAlbum = usePrefetchAlbum();
   const prefetchedRef = useRef(false);
 
@@ -248,14 +156,12 @@ export default function AlbumCard({
 
   return (
     <div className="group block">
-      <Link
-        href={`/album/${slug}`}
-        onMouseEnter={handleMouseEnter}
-        className={cn("block relative", isCompact ? "mb-2" : "mb-3")}
-      >
-        <div
+      <div className={cn("relative", isCompact ? "mb-2" : "mb-3")}>
+        <Link
+          href={`/album/${slug}`}
+          onMouseEnter={handleMouseEnter}
           className={cn(
-            "aspect-square bg-[#efefef] overflow-hidden relative border border-[#e1e1e1] group-hover:border-[#c9c9c9] transition-colors",
+            "block aspect-square bg-[#efefef] overflow-hidden relative border border-[#e1e1e1] group-hover:border-[#c9c9c9] transition-colors",
             isCompact ? "rounded-sm" : "rounded-md",
           )}
         >
@@ -284,20 +190,26 @@ export default function AlbumCard({
             </div>
           )}
 
-          {showOptionsMenu && (
-            <div
-              className={cn(
-                "absolute flex gap-2 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-200",
-                isCompact ? "top-1 right-1" : "top-2 right-2",
-              )}
-            >
-              <AlbumOptionsMenu albumId={album.id} />
-            </div>
-          )}
-
           {showRating && <RatingBadge album={album} mode={ratingMode} />}
-        </div>
-      </Link>
+        </Link>
+
+        {showOptionsMenu && (
+          <div
+            className={cn(
+              "absolute z-30 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity duration-200",
+              optionsOpen && "opacity-100",
+              isCompact ? "top-1 right-1" : "top-2 right-2",
+            )}
+          >
+            <AlbumCardDropdown
+              album={album}
+              compact={isCompact}
+              onFavoriteChange={onFavoriteChange}
+              onOpenChange={setOptionsOpen}
+            />
+          </div>
+        )}
+      </div>
 
       <div className="flex justify-between items-start gap-2">
         <Link

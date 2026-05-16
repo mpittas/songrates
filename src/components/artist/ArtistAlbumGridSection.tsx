@@ -9,12 +9,14 @@ export default function ArtistAlbumGridSection({
   albums,
   initialCount = 12,
   ratingMode = "full",
-  showOptionsMenu = false,
+  showOptionsMenu = true,
+  onAlbumFavoriteChange,
 }: {
   albums: Album[];
   initialCount?: number;
   ratingMode?: "any" | "full";
   showOptionsMenu?: boolean;
+  onAlbumFavoriteChange?: (albumId: string, isFavorite: boolean) => void;
 }) {
   const [showAll, setShowAll] = useState(false);
   const visible = showAll ? albums : albums.slice(0, initialCount);
@@ -29,6 +31,9 @@ export default function ArtistAlbumGridSection({
             album={album}
             ratingMode={ratingMode}
             showOptionsMenu={showOptionsMenu}
+            onFavoriteChange={(liked) =>
+              onAlbumFavoriteChange?.(album.id, liked)
+            }
           />
         ))}
       </div>
