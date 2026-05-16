@@ -1,15 +1,21 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import SearchInput from "@/components/search/SearchInput";
+import { useEffect, useMemo } from "react";
 
 import ArtistInfo from "./ArtistInfo";
 import Discography from "./Discography";
+import ArtistPageHeader from "./ArtistPageHeader";
 import { addToHistory } from "@/lib/history";
 import MySection from "@/components/ui/MySection";
-import Button from "@/components/ui/Button";
-import { FaArrowLeft } from "react-icons/fa";
-import { Album, ArtistInfo as ArtistInfoType, TopSong } from "@/types/music";
+import { usePlayerCore } from "@/context/PlayerContext";
+import { topSongsToTrackQueue } from "@/lib/topSongsQueue";
+import {
+  Album,
+  ArtistInfo as ArtistInfoType,
+  TopSong,
+} from "@/types/music";
+import { cn } from "@/lib/utils";
+import { PAGE_CONTENT_TOP } from "@/lib/pageLayout";
 
 interface ArtistPageContentProps {
   artistId: string;
@@ -32,45 +38,33 @@ export default function ArtistPageContent({
   epsAndSingles,
   appearsOn,
 }: ArtistPageContentProps) {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [isSearchFocused, setIsSearchFocused] = useState(false);
-
   useEffect(() => {
     if (artistId && artistName) addToHistory(artistId, artistName);
   }, [artistId, artistName]);
 
+  const { playTrack } = usePlayerCore();
+
+  const topSongsQueue = useMemo(
+    () => topSongsToTrackQueue(topSongs),
+    [topSongs],
+  );
+
   return (
-    <main className="min-h-screen bg-[#050507] text-neutral-100">
-      <MySection className="pt-8 pb-24">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4 pb-6 md:pb-12">
-          <Button
-            href="/"
-            iconLeft={<FaArrowLeft size={10} />}
-            variant="border"
-            size="sm"
-            className="self-start md:self-center"
-          >
-            Back
-          </Button>
+    <main className="min-h-screen text-neutral-900">
+      <MySection className={cn(PAGE_CONTENT_TOP, "pb-28 md:pb-32")}>
+        <div className="absolute left-0 top-0 z-0 h-[500px] w-full bg-linear-to-b from-[#f0e5df] to-[#f0e5df]/0" />
 
-          <div className="w-full md:w-48">
-            <SearchInput
-              value={searchQuery}
-              onChange={setSearchQuery}
-              onClear={() => setSearchQuery("")}
-              placeholder="search discography..."
-              onFocus={() => setIsSearchFocused(true)}
-              onBlur={() => setIsSearchFocused(false)}
-              isFocused={isSearchFocused}
-              size="compact"
-            />
-          </div>
-        </div>
+        <ArtistPageHeader
+          artistId={artistId}
+          artistName={artistName}
+          artistInfo={artistInfo}
+          topSongsQueue={topSongsQueue}
+          onPlayTopSongs={() => playTrack(topSongsQueue[0], topSongsQueue)}
+        />
 
-        <div className="grid grid-cols-1 gap-6 items-start lg:grid-cols-[150px_1fr] lg:gap-12">
+        <div className="relative z-10 grid grid-cols-1 items-start gap-8 lg:grid-cols-[220px_1fr] lg:gap-20">
           <div className="lg:sticky lg:top-20">
             <ArtistInfo
-              artistId={artistId}
               artistName={artistName}
               data={artistInfo}
               className="w-full"
@@ -79,14 +73,11 @@ export default function ArtistPageContent({
 
           <div className="min-w-0">
             <Discography
-              artistId={artistId}
-              artistName={artistName}
               topSongs={topSongs}
               essentialAlbums={essentialAlbums}
               albums={albums}
               epsAndSingles={epsAndSingles}
               appearsOn={appearsOn}
-              searchQuery={searchQuery}
             />
           </div>
         </div>

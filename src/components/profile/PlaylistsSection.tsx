@@ -21,8 +21,8 @@ export default function PlaylistsSection({
   return (
     <div className={className}>
       <div className="flex items-center gap-3 mb-6">
-        <div className="w-1 h-5 bg-[#00f0ff]" />
-        <h2 className="text-lg font-light tracking-tight text-white">
+        <div className="w-1 h-5 bg-[#1f1f1f]" />
+        <h2 className="text-lg font-light tracking-tight text-neutral-900">
           Playlists
         </h2>
         <span className="text-xs text-neutral-600 font-mono">
@@ -32,10 +32,10 @@ export default function PlaylistsSection({
 
       {loading ? (
         <div className="py-8 flex items-center justify-center">
-          <div className="w-6 h-6 border-2 border-[#00f0ff] border-t-transparent rounded-full animate-spin" />
+          <div className="w-6 h-6 border-2 border-neutral-500 border-t-transparent rounded-full animate-spin" />
         </div>
       ) : playlists.length === 0 ? (
-        <div className="py-12 text-center border border-white/[0.04] bg-neutral-900/20">
+        <div className="py-12 text-center border border-[#e1e1e1] bg-white rounded-md">
           <FaListUl size={24} className="text-neutral-700 mx-auto mb-3" />
           <p className="text-neutral-600 font-mono text-sm">No playlists yet</p>
           <p className="text-neutral-700 text-xs mt-1">
@@ -48,36 +48,32 @@ export default function PlaylistsSection({
             <Link
               key={playlist.id}
               href={`/playlist/${playlist.id}`}
-              className="group p-4 bg-neutral-900/30 border border-white/[0.04] hover:border-[#00f0ff]/20 hover:bg-neutral-900/50 transition-all duration-200 text-left"
+              className="group p-4 bg-white border border-[#e1e1e1] hover:border-[#cbcbcb] hover:bg-[#f8f8f8] transition-all duration-200 text-left rounded-md"
             >
               <div className="flex items-start gap-3">
-                <div className="w-12 h-12 flex items-center justify-center bg-neutral-800 shrink-0 group-hover:bg-neutral-700 transition-colors">
+                <div className="w-12 h-12 flex items-center justify-center bg-[#efefef] shrink-0 group-hover:bg-[#e4e4e4] transition-colors rounded-sm">
                   {playlist.type === "albums" ? (
                     <FaCompactDisc
                       size={20}
-                      className="text-neutral-500 group-hover:text-[#00f0ff]"
+                      className="text-neutral-500 group-hover:text-neutral-900"
                     />
                   ) : (
                     <FaListUl
                       size={20}
-                      className="text-neutral-500 group-hover:text-[#00f0ff]"
+                      className="text-neutral-500 group-hover:text-neutral-900"
                     />
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <h3 className="text-sm text-white truncate group-hover:text-[#00f0ff] transition-colors">
+                    <h3 className="text-sm text-neutral-900 truncate group-hover:text-black transition-colors">
                       {playlist.name}
                     </h3>
-                    <span className="text-[9px] uppercase tracking-wider text-neutral-600 font-mono bg-neutral-800 px-1.5 py-0.5 rounded shrink-0">
+                    <span className="text-[9px] uppercase tracking-wider text-neutral-600 font-mono bg-neutral-200 px-1.5 py-0.5 rounded shrink-0">
                       {playlist.type === "albums" ? "Albums" : "Songs"}
                     </span>
                   </div>
-                  {playlist.description && (
-                    <p className="text-xs text-neutral-500 truncate mt-0.5">
-                      {playlist.description}
-                    </p>
-                  )}
+
                   <p className="text-xs text-neutral-600 font-mono mt-1">
                     {new Date(playlist.created_at).toLocaleDateString()}
                   </p>

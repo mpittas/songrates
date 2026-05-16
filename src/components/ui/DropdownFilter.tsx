@@ -3,26 +3,26 @@
 import { useState, useRef, useEffect } from "react";
 import { FaChevronDown } from "react-icons/fa";
 
-interface Option {
+interface Option<T extends string | number> {
   label: string;
-  value: string | number;
+  value: T;
 }
 
-interface DropdownFilterProps {
+interface DropdownFilterProps<T extends string | number> {
   label?: string;
-  options: Option[];
-  value: string | number;
-  onChange: (value: any) => void;
+  options: Option<T>[];
+  value: T;
+  onChange: (value: T) => void;
   className?: string;
 }
 
-export default function DropdownFilter({
+export default function DropdownFilter<T extends string | number>({
   label,
   options,
   value,
   onChange,
   className = "",
-}: DropdownFilterProps) {
+}: DropdownFilterProps<T>) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -54,7 +54,7 @@ export default function DropdownFilter({
       )}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 bg-[#0a0a0d] border border-[#1a1a1f] hover:border-[#00f0ff]/50 text-neutral-400 text-xs font-mono px-3 py-1.5 transition-colors w-full justify-between"
+        className="flex items-center gap-2 bg-white border border-[#d7d7d7] hover:border-[#c7c7c7] text-neutral-700 text-xs font-mono px-3 py-1.5 transition-colors w-full justify-between rounded"
       >
         <span className="truncate">{selectedOption.label}</span>
         <FaChevronDown
@@ -66,7 +66,7 @@ export default function DropdownFilter({
       </button>
 
       {isOpen && (
-        <div className="absolute top-full right-0 mt-1 w-full bg-[#0a0a0d] border border-[#1a1a1f] z-50 max-h-60 overflow-y-auto min-w-[120px]">
+        <div className="absolute top-full right-0 mt-1 w-full bg-white border border-[#d7d7d7] z-50 max-h-60 overflow-y-auto min-w-[120px] rounded-md shadow-lg">
           {options.map((option) => (
             <button
               key={option.value}
@@ -74,8 +74,8 @@ export default function DropdownFilter({
                 onChange(option.value);
                 setIsOpen(false);
               }}
-              className={`w-full text-left px-3 py-2 text-xs font-mono transition-colors hover:bg-white/5 ${
-                value === option.value ? "text-[#00f0ff]" : "text-neutral-300"
+              className={`w-full text-left px-3 py-2 text-xs font-mono transition-colors hover:bg-[#f5f5f5] ${
+                value === option.value ? "text-neutral-900" : "text-neutral-600"
               }`}
             >
               {option.label}

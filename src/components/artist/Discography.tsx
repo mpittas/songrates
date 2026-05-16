@@ -1,198 +1,29 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
-import { FaChevronDown, FaChevronUp } from "react-icons/fa";
-import AlbumGrid from "@/components/album/AlbumGrid";
-import OptimizedImage from "@/components/ui/OptimizedImage";
+import { useMemo } from "react";
+import { IoDiscOutline } from "react-icons/io5";
+import { LuStar, LuListMusic, LuDiscAlbum, LuUsersRound } from "react-icons/lu";
+import ArtistAccordion from "./ArtistAccordion";
+import TopSongsList from "./TopSongsList";
+import ArtistAlbumGridSection from "./ArtistAlbumGridSection";
 import { useRatingsContext as useRatings } from "@/context/RatingsContext";
-import { createSlug, formatTime } from "@/lib/utils";
-
-import { Album, TopSong } from "@/types/music";
+import {
+  filterAndAnnotateAlbums,
+  filterTopSongsByQuery,
+} from "@/lib/discographyFilters";
+import type { Album, TopSong } from "@/types/music";
 
 interface DiscographyProps {
-  artistId: string;
-  artistName: string;
   topSongs: TopSong[];
   essentialAlbums: Album[];
   albums: Album[];
   epsAndSingles: Album[];
   appearsOn: Album[];
+  /** Optional filter (e.g. future search UI). */
   searchQuery?: string;
 }
 
-// ─── Collapsible accordion section ──────────────────────────────────────────
-
-function Section({
-  title,
-  count,
-  children,
-  defaultOpen = true,
-}: {
-  title: string;
-  count: number;
-  children: React.ReactNode;
-  defaultOpen?: boolean;
-}) {
-  const [isOpen, setIsOpen] = useState(defaultOpen);
-
-  if (count === 0) return null;
-
-  return (
-    <div className="border border-white/5 bg-neutral-900/20">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-white/5 transition-colors group"
-      >
-        <span className="text-xs text-neutral-500 group-hover:text-neutral-300 transition-colors font-mono flex items-center gap-1 uppercase tracking-wider">
-          {title}
-          <span className="text-neutral-600 ml-1">({count})</span>
-        </span>
-        <span className="text-neutral-600">
-          {isOpen ? <FaChevronUp size={10} /> : <FaChevronDown size={10} />}
-        </span>
-      </button>
-      {isOpen && (
-        <div className="bg-black/20 border-t border-white/5 p-4">
-          {children}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─── Top Songs list ─────────────────────────────────────────────────────────
-
-function TopSongsList({ songs }: { songs: TopSong[] }) {
-  const [showAll, setShowAll] = useState(false);
-  const visible = showAll ? songs : songs.slice(0, 10);
-
-  return (
-    <div>
-      <div className="divide-y divide-white/5">
-        {visible.map((song, i) => {
-          const albumSlug = song.albumId
-            ? createSlug(song.albumName || song.name, song.albumId)
-            : null;
-
-          const trackLink = albumSlug
-            ? `/album/${albumSlug}?track=${song.id}`
-            : null;
-
-          return (
-            <div
-              key={song.id}
-              className="flex items-center gap-3 py-2 px-1 group hover:bg-white/5 transition-colors"
-            >
-              {/* Number */}
-              <span className="w-6 text-right text-[11px] font-mono text-neutral-600 shrink-0">
-                {i + 1}
-              </span>
-
-              {/* Artwork */}
-              {song.artworkUrl && (
-                <div className="relative w-10 h-10 shrink-0 bg-neutral-800">
-                  <OptimizedImage
-                    src={song.artworkUrl}
-                    alt={song.name}
-                    fill
-                    className="object-cover"
-                    fallbackSrc="/vinyl-placeholder.svg"
-                  />
-                </div>
-              )}
-
-              {/* Title + Album link */}
-              <div className="flex-1 min-w-0">
-                {trackLink ? (
-                  <Link
-                    href={trackLink}
-                    className="text-sm text-neutral-200 truncate group-hover:text-[#00f0ff] transition-colors block"
-                  >
-                    {song.name}
-                  </Link>
-                ) : (
-                  <p className="text-sm text-neutral-200 truncate group-hover:text-white transition-colors">
-                    {song.name}
-                  </p>
-                )}
-                {albumSlug && (
-                  <Link
-                    href={`/album/${albumSlug}`}
-                    className="text-[11px] text-neutral-600 hover:text-[#00f0ff] transition-colors truncate block"
-                  >
-                    {song.albumName}
-                  </Link>
-                )}
-              </div>
-
-              {/* Duration */}
-              {song.durationMs && (
-                <span className="text-[11px] font-mono text-neutral-600 shrink-0">
-                  {formatTime(song.durationMs, "milliseconds")}
-                </span>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      {songs.length > 10 && (
-        <div className="mt-3 pt-3 border-t border-white/5 flex justify-center">
-          <button
-            onClick={() => setShowAll(!showAll)}
-            className="text-[10px] text-neutral-600 hover:text-cyan-400 transition-colors font-mono uppercase tracking-widest"
-          >
-            {showAll ? "show_less" : `show_all_${songs.length}_songs`}
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─── Album grid with show more ──────────────────────────────────────────────
-
-function AlbumGridSection({
-  albums,
-  initialCount = 12,
-  gridCols = 3,
-}: {
-  albums: Album[];
-  initialCount?: number;
-  gridCols?: number;
-}) {
-  const [showAll, setShowAll] = useState(false);
-  const visible = showAll ? albums : albums.slice(0, initialCount);
-  const hasMore = albums.length > initialCount;
-
-  return (
-    <div>
-      <AlbumGrid
-        albums={visible}
-        onSelectAlbum={() => {}}
-        layout="grid"
-        gridCols={gridCols}
-      />
-      {hasMore && (
-        <div className="mt-4 pt-4 border-t border-white/5 flex justify-center">
-          <button
-            onClick={() => setShowAll(!showAll)}
-            className="text-[10px] text-neutral-600 hover:text-cyan-400 transition-colors font-mono uppercase tracking-widest"
-          >
-            {showAll ? "show_less" : `show_all_${albums.length}_releases`}
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─── Main Discography component ─────────────────────────────────────────────
-
 export default function Discography({
-  artistId,
-  artistName,
   topSongs,
   essentialAlbums,
   albums,
@@ -202,113 +33,89 @@ export default function Discography({
 }: DiscographyProps) {
   const { getAlbumRating } = useRatings();
 
-  // Deduplicate albums within a list by ID
-  const dedup = (list: Album[]): Album[] => {
-    const seen = new Set<string>();
-    return list.filter((a) => {
-      if (seen.has(a.id)) return false;
-      seen.add(a.id);
-      return true;
-    });
-  };
+  const filteredTopSongs = useMemo(
+    () => filterTopSongsByQuery(topSongs, searchQuery),
+    [topSongs, searchQuery],
+  );
 
-  // Apply search filter + attach ratings
-  const filterAlbums = (list: Album[]): Album[] => {
-    let result = dedup(list);
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      result = result.filter((a) => a.title.toLowerCase().includes(q));
-    }
-    return result.map((a) => ({ ...a, rating: getAlbumRating(a.id) }));
-  };
+  const filteredEssential = useMemo(
+    () => filterAndAnnotateAlbums(essentialAlbums, searchQuery, getAlbumRating),
+    [essentialAlbums, searchQuery, getAlbumRating],
+  );
 
-  const filterSongs = (list: TopSong[]): TopSong[] => {
-    if (!searchQuery) return list;
-    const q = searchQuery.toLowerCase();
-    return list.filter(
-      (s) =>
-        s.name.toLowerCase().includes(q) ||
-        (s.albumName && s.albumName.toLowerCase().includes(q)),
-    );
-  };
+  const filteredAlbums = useMemo(
+    () => filterAndAnnotateAlbums(albums, searchQuery, getAlbumRating),
+    [albums, searchQuery, getAlbumRating],
+  );
 
-  const filteredTopSongs = filterSongs(topSongs);
-  const filteredEssential = filterAlbums(essentialAlbums);
-  const filteredAlbums = filterAlbums(albums);
-  const filteredEpsAndSingles = filterAlbums(epsAndSingles);
-  const filteredAppearsOn = filterAlbums(appearsOn);
+  const filteredEpsAndSingles = useMemo(
+    () => filterAndAnnotateAlbums(epsAndSingles, searchQuery, getAlbumRating),
+    [epsAndSingles, searchQuery, getAlbumRating],
+  );
+
+  const filteredAppearsOn = useMemo(
+    () => filterAndAnnotateAlbums(appearsOn, searchQuery, getAlbumRating),
+    [appearsOn, searchQuery, getAlbumRating],
+  );
 
   return (
     <div className="space-y-4">
-      {/* ── Top Songs ── */}
       {filteredTopSongs.length > 0 && (
-        <Section
+        <ArtistAccordion
           title="Top Songs"
           count={filteredTopSongs.length}
+          icon={<LuListMusic aria-hidden />}
           defaultOpen={true}
         >
           <TopSongsList songs={filteredTopSongs} />
-        </Section>
+        </ArtistAccordion>
       )}
 
-      {/* ── Essential Albums ── */}
       {filteredEssential.length > 0 && (
-        <Section
+        <ArtistAccordion
           title="Essential Albums"
           count={filteredEssential.length}
+          icon={<LuStar aria-hidden />}
           defaultOpen={true}
         >
-          <AlbumGridSection
-            albums={filteredEssential}
-            initialCount={6}
-            gridCols={3}
-          />
-        </Section>
+          <ArtistAlbumGridSection albums={filteredEssential} initialCount={3} />
+        </ArtistAccordion>
       )}
 
-      {/* ── Albums ── */}
       {filteredAlbums.length > 0 && (
-        <Section
+        <ArtistAccordion
           title="Albums"
           count={filteredAlbums.length}
+          icon={<IoDiscOutline aria-hidden />}
           defaultOpen={true}
         >
-          <AlbumGridSection
-            albums={filteredAlbums}
-            initialCount={12}
-            gridCols={3}
-          />
-        </Section>
+          <ArtistAlbumGridSection albums={filteredAlbums} initialCount={12} />
+        </ArtistAccordion>
       )}
 
-      {/* ── EPs & Singles ── */}
       {filteredEpsAndSingles.length > 0 && (
-        <Section
+        <ArtistAccordion
           title="EPs & Singles"
           count={filteredEpsAndSingles.length}
+          icon={<LuDiscAlbum aria-hidden />}
           defaultOpen={false}
         >
-          <AlbumGridSection
+          <ArtistAlbumGridSection
             albums={filteredEpsAndSingles}
-            initialCount={12}
-            gridCols={3}
+            initialCount={3}
           />
-        </Section>
+        </ArtistAccordion>
       )}
 
-      {/* ── Appears On ── */}
       {filteredAppearsOn.length > 0 && (
-        <Section
+        <ArtistAccordion
           title="Appears On"
           count={filteredAppearsOn.length}
+          icon={<LuUsersRound aria-hidden />}
           defaultOpen={false}
         >
-          <AlbumGridSection
-            albums={filteredAppearsOn}
-            initialCount={12}
-            gridCols={3}
-          />
-        </Section>
+          <ArtistAlbumGridSection albums={filteredAppearsOn} initialCount={3} />
+        </ArtistAccordion>
       )}
     </div>
   );

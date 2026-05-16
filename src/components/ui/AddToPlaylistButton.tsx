@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { FaPlus, FaCheck, FaListUl } from "react-icons/fa";
-import { usePlaylist } from "@/context/PlaylistContext";
+import { FaPlus, FaListUl } from "react-icons/fa";
 import { useAuth } from "@/context/AuthContext";
 import PlaylistSelectorModal from "./PlaylistSelectorModal";
 
@@ -62,10 +61,11 @@ export default function AddToPlaylistButton({
           className={`
             flex items-center gap-2 px-3 py-2
             text-xs font-mono uppercase tracking-wider
-            text-neutral-400 hover:text-white
-            border border-white/[0.06] hover:border-[#00f0ff]/30
-            bg-neutral-900/30 hover:bg-neutral-900/50
+            text-neutral-600 hover:text-neutral-900
+            border border-[#d7d7d7] hover:border-[#c7c7c7]
+            bg-white hover:bg-[#f8f8f8]
             transition-all duration-200
+            rounded-md
             ${className}
           `}
         >
@@ -98,8 +98,8 @@ export default function AddToPlaylistButton({
           flex items-center justify-center
           rounded-full
           transition-all duration-200
-          text-neutral-500 hover:text-[#00f0ff]
-          hover:bg-neutral-800
+          text-neutral-500 hover:text-neutral-900
+          hover:bg-neutral-200
           cursor-pointer
           ${className}
         `}

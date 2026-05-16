@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { FaHeart, FaRegHeart } from "react-icons/fa";
 import { createClient } from "@/utils/supabase/client";
+import Button from "./Button";
 
 interface FavoriteButtonProps {
   itemId: string;
@@ -10,9 +11,20 @@ interface FavoriteButtonProps {
   itemName?: string;
   artistName?: string;
   thumbnailUrl?: string;
+  albumId?: string;
+  albumName?: string;
+  durationMs?: number;
+  artistId?: string;
+  artists?: { id: string; name: string }[];
   size?: "sm" | "md" | "lg";
+  /** Passed to underlying `Button` when `variant="secondary"` */
+  buttonSize?: "xxs" | "xs" | "sm" | "md" | "lg";
   className?: string;
-  variant?: "icon" | "text" | "menu-item";
+  variant?: "icon" | "text" | "menu-item" | "secondary";
+  /** Menu dropdown surface; `light` for SongRow, `dark` for album track menus */
+  menuTheme?: "light" | "dark";
+  onMenuClick?: () => void;
+  onFavoriteChange?: (isFavorite: boolean) => void;
 }
 
 export default function FavoriteButton({
@@ -21,9 +33,18 @@ export default function FavoriteButton({
   itemName,
   artistName,
   thumbnailUrl,
+  albumId,
+  albumName,
+  durationMs,
+  artistId,
+  artists,
   size = "md",
+  buttonSize = "sm",
   className = "",
   variant = "icon",
+  menuTheme = "dark",
+  onMenuClick,
+  onFavoriteChange,
 }: FavoriteButtonProps) {
   const [isFavorite, setIsFavorite] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -32,7 +53,7 @@ export default function FavoriteButton({
   const sizeClasses = {
     sm: "w-6 h-6",
     md: "w-8 h-8",
-    lg: "w-10 h-10",
+    lg: "w-11 h-11",
   };
 
   const iconSizes = {
@@ -77,7 +98,9 @@ export default function FavoriteButton({
       }
 
       if (isFavorite) {
-        // Remove from favorites
+        setIsFavorite(false);
+        onFavoriteChange?.(false);
+
         const { error } = await supabase
           .from("user_favorites")
           .delete()
@@ -85,8 +108,11 @@ export default function FavoriteButton({
           .eq("item_id", itemId)
           .eq("item_type", itemType);
 
-        if (error) throw error;
-        setIsFavorite(false);
+        if (error) {
+          setIsFavorite(true);
+          onFavoriteChange?.(true);
+          throw error;
+        }
       } else {
         // Add to favorites
         const { error } = await supabase.from("user_favorites").upsert({
@@ -96,10 +122,21 @@ export default function FavoriteButton({
           item_name: itemName,
           artist_name: artistName,
           thumbnail_url: thumbnailUrl,
+          album_id: itemType === "track" ? albumId : null,
+          album_name: itemType === "track" ? albumName : null,
+          duration_ms: itemType === "track" ? durationMs : null,
+          artist_id: itemType === "track" ? artistId : null,
+          artists:
+            itemType === "track" && artists && artists.length > 0
+              ? artists
+              : itemType === "track" && artistId && artistName
+                ? [{ id: artistId, name: artistName }]
+                : null,
         });
 
         if (error) throw error;
         setIsFavorite(true);
+        onFavoriteChange?.(true);
       }
     } catch (err) {
       console.error("Error toggling favorite:", err);
@@ -137,18 +174,69 @@ export default function FavoriteButton({
     );
   }
 
+  if (variant === "secondary") {
+    const likeLabel =
+      itemType === "artist"
+        ? "LIKE ARTIST"
+        : itemType === "track"
+          ? "LIKE TRACK"
+          : "LIKE ALBUM";
+    return (
+      <Button
+        variant="secondary"
+        size={buttonSize}
+        onClick={toggleFavorite}
+        disabled={loading}
+        className={className}
+        iconLeft={
+          isFavorite ? (
+            <FaHeart size={14} className="fill-current text-black mr-2" />
+          ) : (
+            <FaRegHeart size={14} className="fill-current text-black mr-2" />
+          )
+        }
+      >
+        {isFavorite ? "FAVORITED" : likeLabel}
+      </Button>
+    );
+  }
+
   if (variant === "menu-item") {
+    const menuItemThemeClasses =
+      menuTheme === "light"
+        ? "text-sm font-mono text-neutral-600 hover:text-neutral-900 hover:bg-[#f5f5f5]"
+        : "text-xs font-mono text-neutral-400 hover:text-white hover:bg-white/5";
+
+    const likeLabel =
+      itemType === "track"
+        ? isFavorite
+          ? "Liked"
+          : "Like song"
+        : itemType === "album"
+          ? isFavorite
+            ? "Liked"
+            : "Like album"
+          : itemType === "artist"
+            ? isFavorite
+              ? "Remove from favourites"
+              : "Like artist"
+            : isFavorite
+              ? "Favorited"
+              : "Favorite";
+
     return (
       <button
+        type="button"
         onClick={(e) => {
           e.stopPropagation();
-          toggleFavorite();
+          void toggleFavorite();
+          onMenuClick?.();
         }}
         disabled={loading}
         className={`
-          w-full text-left flex items-center gap-3 px-3 py-2 
-          text-xs font-mono text-neutral-400 hover:text-white hover:bg-white/5 
+          w-full text-left flex items-center gap-3 px-3 py-2
           transition-colors
+          ${menuItemThemeClasses}
           ${loading ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
           ${className}
         `}
@@ -160,7 +248,7 @@ export default function FavoriteButton({
             <FaRegHeart size={12} />
           )}
         </div>
-        <span>{isFavorite ? "Favorited" : "Favorite"}</span>
+        <span>{likeLabel}</span>
       </button>
     );
   }

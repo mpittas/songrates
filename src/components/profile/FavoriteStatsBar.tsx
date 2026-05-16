@@ -19,6 +19,11 @@ export interface FavoriteItem {
   item_name: string | null;
   artist_name: string | null;
   thumbnail_url: string | null;
+  album_id?: string | null;
+  album_name?: string | null;
+  duration_ms?: number | null;
+  artist_id?: string | null;
+  artists?: { id: string; name: string }[] | null;
   created_at: string;
 }
 
@@ -66,9 +71,9 @@ export default function FavoriteStatsBar({
 
   const statDisplay = (count: number) =>
     loading ? (
-      <div className="h-7 w-8 mx-auto bg-neutral-800 animate-pulse rounded" />
+      <div className="h-7 w-8 mx-auto bg-neutral-200 animate-pulse rounded" />
     ) : (
-      <div className="text-2xl font-light text-white">{count}</div>
+      <div className="text-2xl font-light text-neutral-900">{count}</div>
     );
 
   const renderFavoriteCard = (item: FavoriteItem) => {
@@ -95,9 +100,9 @@ export default function FavoriteStatsBar({
         key={item.id}
         href={href}
         onClick={() => setModalType(null)}
-        className="group flex items-center gap-4 p-3 bg-neutral-900/30 border border-white/[0.04] hover:border-[#00f0ff]/20 hover:bg-neutral-900/50 transition-all duration-200 rounded-sm"
+        className="group flex items-center gap-4 p-3 bg-white border border-[#e1e1e1] hover:border-[#cbcbcb] hover:bg-[#f8f8f8] transition-all duration-200 rounded-sm"
       >
-        <div className="relative w-12 h-12 shrink-0 bg-neutral-800 overflow-hidden rounded-sm">
+        <div className="relative w-12 h-12 shrink-0 bg-[#efefef] overflow-hidden rounded-sm">
           {item.thumbnail_url ? (
             <OptimizedImage
               src={item.thumbnail_url}
@@ -107,7 +112,7 @@ export default function FavoriteStatsBar({
               fallbackSrc="/vinyl-placeholder.svg"
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center bg-neutral-800/80">
+            <div className="w-full h-full flex items-center justify-center bg-[#efefef]">
               {isTrack && <FaMusic size={16} className="text-neutral-600" />}
               {isAlbum && (
                 <FaCompactDisc size={16} className="text-neutral-600" />
@@ -120,7 +125,7 @@ export default function FavoriteStatsBar({
         </div>
 
         <div className="flex-1 min-w-0">
-          <h4 className="text-sm text-white truncate group-hover:text-[#00f0ff] transition-colors">
+          <h4 className="text-sm text-neutral-900 truncate group-hover:text-black transition-colors">
             {item.item_name || "Unknown"}
           </h4>
           {item.artist_name && (
@@ -140,8 +145,8 @@ export default function FavoriteStatsBar({
 
   const baseButtonClasses =
     variant === "compact"
-      ? "bg-neutral-900/30 border border-white/[0.04] p-3 text-center hover:border-[#00f0ff]/20 hover:bg-neutral-900/50 transition-all duration-200 cursor-pointer rounded-sm"
-      : "bg-neutral-900/30 border border-white/[0.04] p-4 text-center hover:border-[#00f0ff]/20 hover:bg-neutral-900/50 transition-all duration-200 cursor-pointer";
+      ? "bg-white border border-[#e1e1e1] p-3 text-center hover:border-[#cbcbcb] hover:bg-[#f8f8f8] transition-all duration-200 cursor-pointer rounded-sm"
+      : "bg-white border border-[#e1e1e1] p-4 text-center hover:border-[#cbcbcb] hover:bg-[#f8f8f8] transition-all duration-200 cursor-pointer rounded-sm";
 
   const labelClasses =
     variant === "compact"
@@ -194,14 +199,14 @@ export default function FavoriteStatsBar({
         >
           <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
           <div
-            className="relative w-full max-w-lg max-h-[80vh] bg-[#0a0a0d] border border-white/[0.06] shadow-2xl flex flex-col rounded-lg"
+            className="relative w-full max-w-lg max-h-[80vh] bg-white border border-[#e1e1e1] shadow-2xl flex flex-col rounded-lg"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.06] shrink-0">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[#ececec] shrink-0">
               <div className="flex items-center gap-3">
                 <div className="w-1 h-5 bg-red-500 rounded-full" />
-                <h2 className="text-lg font-light tracking-tight text-white">
+                <h2 className="text-lg font-light tracking-tight text-neutral-900">
                   {modalTitle}
                 </h2>
                 <span className="text-xs text-neutral-600 font-mono">
@@ -210,7 +215,7 @@ export default function FavoriteStatsBar({
               </div>
               <button
                 onClick={() => setModalType(null)}
-                className="text-neutral-500 hover:text-white transition-colors p-1 hover:bg-neutral-800 rounded"
+                className="text-neutral-500 hover:text-neutral-900 transition-colors p-1 hover:bg-neutral-200 rounded"
               >
                 <FaTimes size={16} />
               </button>
@@ -220,7 +225,7 @@ export default function FavoriteStatsBar({
             <div className="overflow-y-auto flex-1 p-4">
               {loading ? (
                 <div className="py-16 flex items-center justify-center">
-                  <div className="w-6 h-6 border-2 border-[#00f0ff] border-t-transparent rounded-full animate-spin" />
+                  <div className="w-6 h-6 border-2 border-neutral-500 border-t-transparent rounded-full animate-spin" />
                 </div>
               ) : modalItems.length === 0 ? (
                 <div className="py-16 text-center">

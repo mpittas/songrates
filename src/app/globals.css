@@ -1,13 +1,13 @@
 @import "tailwindcss";
 
 :root {
-  --background: #050507;
-  --foreground: #e5e5e5;
-  --accent: #00f0ff;
-  --accent-dim: #00f0ff33;
-  --border: #1a1a1f;
-  --border-hover: #2a2a35;
-  --muted: #52525b;
+  --background: #ebe8e5;
+  --foreground: #161616;
+  --accent: #1f1f1f;
+  --accent-dim: #1f1f1f33;
+  --border: #dedede;
+  --border-hover: #cfcfcf;
+  --muted: #6d6d6d;
 }
 
 @theme inline {
@@ -30,13 +30,14 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-inter), system-ui, sans-serif;
+  min-height: 100vh;
 }
 
 /* Restore caret for actual input elements */
 input,
 textarea,
 [contenteditable="true"] {
-  caret-color: var(--accent) !important;
+  caret-color: #111111 !important;
 }
 
 /* Minimalist scrollbar */
@@ -51,7 +52,7 @@ textarea,
 
 ::-webkit-scrollbar-thumb {
   background: var(--border);
-  border-radius: 0;
+  border-radius: 999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
@@ -70,23 +71,25 @@ textarea,
   outline-offset: 2px;
 }
 
-/* Smooth transitions globally */
-* {
-  transition-property: background-color, border-color, color, opacity;
-  transition-duration: 150ms;
-  transition-timing-function: ease-out;
-}
+/* Smooth transitions globally; in @layer base so Tailwind utilities can override (e.g. duration-300 on hover). */
+@layer base {
+  * {
+    transition-property: background-color, border-color, color, opacity;
+    transition-duration: 150ms;
+    transition-timing-function: ease-out;
+  }
 
-/* Disable transitions for non-interactive elements */
-p,
-span,
-div,
-section,
-main,
-article,
-header,
-footer {
-  transition: none;
+  /* Disable transitions for non-interactive elements */
+  p,
+  span,
+  div,
+  section,
+  main,
+  article,
+  header,
+  footer {
+    transition: none;
+  }
 }
 
 /* Track highlight animation — used when navigating from search to a specific song */

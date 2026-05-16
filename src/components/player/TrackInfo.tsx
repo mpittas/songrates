@@ -12,7 +12,7 @@ export default function TrackInfo({ currentTrack }: TrackInfoProps) {
       {/* Album Art */}
       <Link
         href={currentTrack.albumId ? `/album/${currentTrack.albumId}` : "#"}
-        className="w-10 h-10 relative shrink-0 border border-[#1a1a1f] hover:border-[#00f0ff] transition-colors overflow-hidden group/image"
+        className="w-10 h-10 relative shrink-0 border border-[#d7d7d7] hover:border-[#bfbfbf] transition-colors overflow-hidden group/image rounded-sm"
       >
         <OptimizedImage
           src={currentTrack.albumImageUrl || "/vinyl-placeholder.svg"}
@@ -29,7 +29,7 @@ export default function TrackInfo({ currentTrack }: TrackInfoProps) {
       <div className="min-w-0 flex flex-col justify-center">
         <Link
           href={currentTrack.albumId ? `/album/${currentTrack.albumId}` : "#"}
-          className="text-sm text-neutral-200 truncate hover:text-[#00f0ff] transition-colors block"
+          className="text-sm text-neutral-900 truncate hover:text-black transition-colors block"
         >
           {currentTrack.title}
         </Link>
@@ -37,7 +37,7 @@ export default function TrackInfo({ currentTrack }: TrackInfoProps) {
           href={
             currentTrack.artistId ? `/artist/${currentTrack.artistId}` : "#"
           }
-          className="text-xs text-neutral-500 truncate hover:text-[#00f0ff] transition-colors"
+          className="text-xs text-neutral-500 truncate hover:text-neutral-900 transition-colors"
         >
           {currentTrack.artistName}
         </Link>

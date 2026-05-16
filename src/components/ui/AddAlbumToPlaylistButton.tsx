@@ -4,6 +4,7 @@ import { useState } from "react";
 import { FaPlus, FaListUl } from "react-icons/fa";
 import { useAuth } from "@/context/AuthContext";
 import AlbumPlaylistSelectorModal from "./AlbumPlaylistSelectorModal";
+import Button from "./Button";
 
 interface AddAlbumToPlaylistButtonProps {
   albumId: string;
@@ -14,7 +15,7 @@ interface AddAlbumToPlaylistButtonProps {
   totalTracks?: number;
   size?: "sm" | "md" | "lg";
   className?: string;
-  variant?: "icon" | "button" | "text";
+  variant?: "icon" | "button" | "text" | "secondary";
 }
 
 export default function AddAlbumToPlaylistButton({
@@ -56,8 +57,8 @@ export default function AddAlbumToPlaylistButton({
           onClick={handleClick}
           className={`
             flex items-center gap-2
-            ${isText ? "" : "px-3 py-2 text-xs font-mono uppercase tracking-wider border border-white/[0.06] hover:border-[#00f0ff]/30 bg-neutral-900/30 hover:bg-neutral-900/50"}
-            ${isText ? "text-neutral-500 hover:text-[#00f0ff] transition-colors group" : "text-neutral-400 hover:text-white transition-all duration-200"}
+            ${isText ? "" : "px-3 py-2 text-xs font-mono uppercase tracking-wider border border-[#d7d7d7] hover:border-[#c7c7c7] bg-white hover:bg-[#f8f8f8] rounded-md"}
+            ${isText ? "text-neutral-500 hover:text-neutral-900 transition-colors group" : "text-neutral-600 hover:text-neutral-900 transition-all duration-200"}
             ${className}
           `}
         >
@@ -87,6 +88,33 @@ export default function AddAlbumToPlaylistButton({
     );
   }
 
+  if (variant === "secondary") {
+    return (
+      <>
+        <Button
+          variant="secondary"
+          onClick={handleClick}
+          className={className}
+          iconLeft={<FaPlus size={14} className="text-black mr-2" />}
+        >
+          SAVE ALBUM
+        </Button>
+
+        {isModalOpen && (
+          <AlbumPlaylistSelectorModal
+            albumId={albumId}
+            albumName={albumName}
+            artistName={artistName}
+            thumbnailUrl={thumbnailUrl}
+            releaseDate={releaseDate}
+            totalTracks={totalTracks}
+            onClose={() => setIsModalOpen(false)}
+          />
+        )}
+      </>
+    );
+  }
+
   return (
     <>
       <button
@@ -96,8 +124,8 @@ export default function AddAlbumToPlaylistButton({
           flex items-center justify-center
           rounded-full
           transition-all duration-200
-          text-neutral-500 hover:text-[#00f0ff]
-          hover:bg-neutral-800
+          text-neutral-500 hover:text-neutral-900
+          hover:bg-neutral-200
           cursor-pointer
           ${className}
         `}

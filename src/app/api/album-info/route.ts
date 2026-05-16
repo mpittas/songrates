@@ -6,25 +6,7 @@ import {
   artworkUrl,
 } from "@/lib/appleMusic/api";
 import type { AlbumInfo } from "@/types/music";
-
-/**
- * Resolve an album ID from a slug like "album-name-1440833849"
- * Apple Music IDs are numeric, so we extract the last segment
- */
-function resolveAlbumId(slug: string): string {
-  // If it's already a pure numeric ID, return as-is
-  if (/^\d+$/.test(slug)) return slug;
-
-  // Extract the last segment after the last hyphen (the Apple Music ID)
-  const parts = slug.split("-");
-  const lastPart = parts[parts.length - 1];
-
-  // If the last part is numeric, it's the Apple Music ID
-  if (/^\d+$/.test(lastPart)) return lastPart;
-
-  // Fallback: return as-is
-  return slug;
-}
+import { resolveAlbumId } from "@/lib/resolveAlbumId";
 
 export async function GET(request: NextRequest) {
   const idParam = request.nextUrl.searchParams.get("id");
@@ -51,7 +33,7 @@ export async function GET(request: NextRequest) {
         id: album.id,
         title: album.name,
         artist: {
-          name: album.artistName,
+          name: album.primaryArtistName || album.artistName,
           id: album.artistId || "",
         },
         type: albumType,

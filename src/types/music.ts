@@ -56,7 +56,6 @@ export interface AlbumInfo {
 
 export interface ArtistInfo {
   image: string | null;
-  description: string | null;
   url: string | null;
   genres: string[];
 }
@@ -84,6 +83,8 @@ export interface TopSong {
   name: string;
   artistName: string;
   artistId?: string;
+  /** Full credits when available (collaborations / features). */
+  artists?: { id: string; name: string }[];
   albumName?: string;
   albumId?: string;
   artworkUrl?: string;

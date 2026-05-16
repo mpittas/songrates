@@ -1,9 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { FaMusic } from "react-icons/fa";
 import { usePlaylist } from "@/context/PlaylistContext";
 import BasePlaylistSelectorModal from "./BasePlaylistSelectorModal";
+import ToastContent from "./ToastContent";
 import { createSlug } from "@/lib/utils";
 
 interface PlaylistSelectorModalProps {
@@ -27,12 +30,14 @@ export default function PlaylistSelectorModal({
   durationMs,
   onClose,
 }: PlaylistSelectorModalProps) {
+  const router = useRouter();
   const {
     playlists,
     loading,
     fetchPlaylists,
     createPlaylist,
     addTrackToPlaylist,
+    removeTrackFromPlaylist,
     getPlaylistTracks,
   } = usePlaylist();
 
@@ -43,15 +48,12 @@ export default function PlaylistSelectorModal({
     Record<string, boolean>
   >({});
 
-  // Only show songs-type playlists
   const songPlaylists = playlists.filter((p) => p.type === "songs");
 
-  // Load playlists and check which ones contain this track
   useEffect(() => {
     fetchPlaylists();
   }, [fetchPlaylists]);
 
-  // Check track membership in each song playlist
   useEffect(() => {
     const checkTracks = async () => {
       const counts: Record<string, number> = {};
@@ -72,31 +74,75 @@ export default function PlaylistSelectorModal({
     }
   }, [playlists, trackId, getPlaylistTracks]);
 
-  const handleCreatePlaylist = async (name: string, description: string) => {
+  const openPlaylistToast = (playlistId: string, playlistName: string) => {
+    const titleLine = trackName?.trim() || "Song";
+    const description = artistName?.trim()
+      ? `${titleLine} · ${artistName.trim()}`
+      : titleLine;
+
+    toast.custom((id) => {
+      return (
+        <ToastContent
+          title={`Added to ${playlistName}`}
+          description={description}
+          actionLabel="Open playlist"
+          onAction={() => {
+            toast.dismiss(id);
+            router.push(`/playlist/${playlistId}`);
+          }}
+        />
+      );
+    });
+  };
+
+  const handleCreatePlaylist = async (name: string) => {
     const playlist = await createPlaylist({
       name,
-      description: description || undefined,
     });
 
-    if (playlist) {
-      // Auto-add the track to the new playlist
-      await addTrackToPlaylist({
-        playlistId: playlist.id,
-        trackId,
-        trackName,
-        artistName,
-        albumName,
-        albumId,
-        thumbnailUrl,
-        durationMs,
+    if (!playlist) {
+      toast.error("Couldn't create playlist", {
+        description: "Please check your connection and try again.",
       });
-      // Update local state so the new playlist shows as containing the track
+      return;
+    }
+
+    const added = await addTrackToPlaylist({
+      playlistId: playlist.id,
+      trackId,
+      trackName,
+      artistName,
+      albumName,
+      albumId,
+      thumbnailUrl,
+      durationMs,
+    });
+
+    if (added) {
       setTrackInPlaylist((prev) => ({ ...prev, [playlist.id]: true }));
       setPlaylistTrackCounts((prev) => ({ ...prev, [playlist.id]: 1 }));
+      openPlaylistToast(playlist.id, playlist.name);
+    } else {
+      toast.custom((id) => {
+        return (
+          <ToastContent
+            title="Playlist created, but the song wasn't added"
+            description="Open the playlist and try again, or add the track from the album page."
+            actionLabel="Open playlist"
+            onAction={() => {
+              toast.dismiss(id);
+              router.push(`/playlist/${playlist.id}`);
+            }}
+          />
+        );
+      });
     }
   };
 
   const handleAddToPlaylist = async (playlistId: string) => {
+    const playlist = songPlaylists.find((p) => p.id === playlistId);
+    const playlistName = playlist?.name ?? "playlist";
+
     const success = await addTrackToPlaylist({
       playlistId,
       trackId,
@@ -109,14 +155,57 @@ export default function PlaylistSelectorModal({
     });
 
     if (success) {
+      openPlaylistToast(playlistId, playlistName);
       setTrackInPlaylist((prev) => ({ ...prev, [playlistId]: true }));
       setPlaylistTrackCounts((prev) => ({
         ...prev,
         [playlistId]: (prev[playlistId] || 0) + 1,
       }));
+    } else {
+      toast.error(`Couldn't add to ${playlistName}`, {
+        description:
+          "This song may already be in that playlist, or something went wrong.",
+      });
     }
 
     return success;
+  };
+
+  const handleRemoveFromPlaylist = async (playlistId: string) => {
+    const playlist = songPlaylists.find((p) => p.id === playlistId);
+    const playlistName = playlist?.name ?? "playlist";
+    try {
+      await removeTrackFromPlaylist(playlistId, trackId);
+      setTrackInPlaylist((prev) => ({ ...prev, [playlistId]: false }));
+      setPlaylistTrackCounts((prev) => ({
+        ...prev,
+        [playlistId]: Math.max(0, (prev[playlistId] || 0) - 1),
+      }));
+      toast.custom((id) => {
+        return (
+          <ToastContent
+            title={`Removed from ${playlistName}`}
+            description={
+              trackName?.trim()
+                ? `${trackName.trim()}${artistName?.trim() ? ` · ${artistName.trim()}` : ""}`
+                : undefined
+            }
+            actionLabel="Open playlist"
+            onAction={() => {
+              toast.dismiss(id);
+              router.push(`/playlist/${playlistId}`);
+            }}
+          />
+        );
+      });
+      return true;
+    } catch (e) {
+      console.error("Error removing track from playlist:", e);
+      toast.error(`Couldn't remove from ${playlistName}`, {
+        description: "Please try again.",
+      });
+      return false;
+    }
   };
 
   return (
@@ -127,6 +216,8 @@ export default function PlaylistSelectorModal({
       playlists={songPlaylists}
       onCreatePlaylist={handleCreatePlaylist}
       onAddToPlaylist={handleAddToPlaylist}
+      onRemoveFromPlaylist={handleRemoveFromPlaylist}
+      removeConfirmTitle="Remove this song from this playlist?"
       isItemInPlaylist={(id) => trackInPlaylist[id] || false}
       getPlaylistSubtitle={(p) => `${playlistTrackCounts[p.id] || 0} tracks`}
       defaultIcon={<FaMusic size={14} className="text-neutral-500" />}

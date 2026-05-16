@@ -1,5 +1,5 @@
-- [x] Make the rated music display in profile page as two tabs "rated" and "unrated"
-- [] Update styles for playlist page and use component we have
-- [] Make the songs autoplay by default when user starts a song
-- [] Redo the responsive design for music player page (make as image example attached)
-- [] Add couple sections in homepage for exploring music. Think yourself of good ways to present it
+# Tasks
+
+- [x] Update button component
+- [x] Add global rules about always using the same Button component
+- [ ] Create new TitleRow component and update everywhere in homepage

@@ -16,7 +16,8 @@ const STOREFRONT = process.env.APPLE_MUSIC_STOREFRONT || "us";
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 /**
- * Replace {w}x{h} in Apple Music artwork URL with actual dimensions
+ * Resolve Apple Music artwork URL to requested dimensions.
+ * Handles template URLs ({w}x{h}) and already-resolved CDN paths (e.g. 100x100bb).
  */
 export function artworkUrl(
   urlTemplate: string | undefined,
@@ -24,9 +25,18 @@ export function artworkUrl(
   height?: number,
 ): string {
   if (!urlTemplate) return "";
-  return urlTemplate
-    .replace("{w}", String(width))
-    .replace("{h}", String(height ?? width));
+  const h = height ?? width;
+
+  if (urlTemplate.includes("{w}") || urlTemplate.includes("{h}")) {
+    return urlTemplate
+      .replace("{w}", String(width))
+      .replace("{h}", String(h));
+  }
+
+  return urlTemplate.replace(
+    /\/(\d+)x(\d+)(bb|sr|cc)(-\d+)?(?=\.[a-z]|$)/i,
+    `/${width}x${h}$3$4`,
+  );
 }
 
 async function appleMusicFetch<T>(
@@ -124,6 +134,7 @@ export interface AppleSongResult {
   name: string;
   artistName: string;
   artistId?: string;
+  artists?: { id: string; name: string }[];
   albumName?: string;
   albumId?: string;
   artworkUrl?: string;
@@ -133,6 +144,194 @@ export interface AppleSongResult {
   discNumber?: number;
   genreNames?: string[];
   url?: string;
+  hasLyrics?: boolean;
+}
+
+/** Primary + featured credits from a catalog `songs` resource (deduped by id). */
+function artistsFromCatalogSongResource(song: {
+  relationships?: {
+    artists?: { data?: Array<{ id: string; attributes?: { name?: string } }> };
+    "featured-artists"?: {
+      data?: Array<{ id: string; attributes?: { name?: string } }>;
+    };
+  };
+}): { id: string; name: string }[] {
+  const refs = [
+    ...(song.relationships?.artists?.data || []),
+    ...(song.relationships?.["featured-artists"]?.data || []),
+  ];
+  const unique = Array.from(new Map(refs.map((r) => [r.id, r])).values());
+  return unique
+    .map((ar) => ({
+      id: ar.id,
+      name: (ar.attributes?.name || "").trim(),
+    }))
+    .filter((x) => x.id && x.name);
+}
+
+/** Apple `ids=` URLs get long; chunk to stay under practical limits. */
+const APPLE_SONG_ENRICH_CHUNK_SIZE = 60;
+
+export type AppleSongEnrichment = {
+  name?: string;
+  artists: { id: string; name: string }[];
+  albumId?: string;
+  albumName?: string;
+  durationMs?: number;
+};
+
+/**
+ * Batch-fetch catalog songs with artist + album relationships (for playlist rows).
+ * Used after the playlist response so the first HTML paint is not blocked.
+ */
+export async function fetchAppleSongEnrichmentsByIds(
+  songIds: string[],
+  storefront: string = STOREFRONT,
+): Promise<Map<string, AppleSongEnrichment>> {
+  const enrichmentMap = new Map<string, AppleSongEnrichment>();
+  const uniqueIds = [...new Set(songIds.filter(Boolean))];
+
+  for (let i = 0; i < uniqueIds.length; i += APPLE_SONG_ENRICH_CHUNK_SIZE) {
+    const chunk = uniqueIds.slice(i, i + APPLE_SONG_ENRICH_CHUNK_SIZE);
+    const ids = chunk.join(",");
+    const songsData = await appleMusicFetch<{
+      data?: Array<{
+        id: string;
+        attributes?: {
+          name?: string;
+          albumName?: string;
+          durationInMillis?: number;
+        };
+        relationships?: {
+          artists?: {
+            data?: Array<{ id: string; attributes?: { name?: string } }>;
+          };
+          "featured-artists"?: {
+            data?: Array<{ id: string; attributes?: { name?: string } }>;
+          };
+          albums?: { data?: Array<{ id: string }> };
+        };
+      }>;
+    }>(`/catalog/${storefront}/songs?ids=${ids}&include=artists,albums`);
+
+    if (!songsData?.data) continue;
+
+    for (const song of songsData.data) {
+      const songAlbum = song.relationships?.albums?.data?.[0];
+      enrichmentMap.set(song.id, {
+        name: song.attributes?.name,
+        artists: artistsFromCatalogSongResource(song),
+        albumId: songAlbum?.id,
+        albumName: song.attributes?.albumName,
+        durationMs: song.attributes?.durationInMillis,
+      });
+    }
+  }
+
+  return enrichmentMap;
+}
+
+export type AppleAlbumEnrichment = {
+  name: string;
+  artistName: string;
+  artistId?: string;
+  artworkUrl?: string;
+  releaseDate?: string;
+};
+
+/**
+ * Batch-fetch catalog albums with artist relationships (for liked-album rows).
+ */
+export async function fetchAppleAlbumEnrichmentsByIds(
+  albumIds: string[],
+  storefront: string = STOREFRONT,
+): Promise<Map<string, AppleAlbumEnrichment>> {
+  const enrichmentMap = new Map<string, AppleAlbumEnrichment>();
+  const uniqueIds = [...new Set(albumIds.filter(Boolean))];
+
+  for (let i = 0; i < uniqueIds.length; i += APPLE_SONG_ENRICH_CHUNK_SIZE) {
+    const chunk = uniqueIds.slice(i, i + APPLE_SONG_ENRICH_CHUNK_SIZE);
+    const ids = chunk.join(",");
+    const data = await appleMusicFetch<{
+      data?: Array<{
+        id: string;
+        attributes?: {
+          name?: string;
+          artistName?: string;
+          releaseDate?: string;
+          artwork?: { url?: string };
+        };
+        relationships?: {
+          artists?: { data?: Array<{ id: string }> };
+        };
+      }>;
+    }>(`/catalog/${storefront}/albums?ids=${ids}&include=artists`);
+
+    if (!data?.data) continue;
+
+    for (const album of data.data) {
+      const attrs = album.attributes;
+      const artistRel = album.relationships?.artists?.data?.[0];
+      enrichmentMap.set(album.id, {
+        name: attrs?.name || "",
+        artistName: attrs?.artistName || "",
+        artistId: artistRel?.id,
+        artworkUrl: attrs?.artwork?.url
+          ? artworkUrl(attrs.artwork.url, 300)
+          : undefined,
+        releaseDate: attrs?.releaseDate,
+      });
+    }
+  }
+
+  return enrichmentMap;
+}
+
+export type AppleArtistEnrichment = {
+  name: string;
+  artworkUrl?: string;
+  genres?: string[];
+};
+
+/**
+ * Batch-fetch catalog artists (for liked-artist rows).
+ */
+export async function fetchAppleArtistEnrichmentsByIds(
+  artistIds: string[],
+  storefront: string = STOREFRONT,
+): Promise<Map<string, AppleArtistEnrichment>> {
+  const enrichmentMap = new Map<string, AppleArtistEnrichment>();
+  const uniqueIds = [...new Set(artistIds.filter(Boolean))];
+
+  for (let i = 0; i < uniqueIds.length; i += APPLE_SONG_ENRICH_CHUNK_SIZE) {
+    const chunk = uniqueIds.slice(i, i + APPLE_SONG_ENRICH_CHUNK_SIZE);
+    const ids = chunk.join(",");
+    const data = await appleMusicFetch<{
+      data?: Array<{
+        id: string;
+        attributes?: {
+          name?: string;
+          genreNames?: string[];
+          artwork?: { url?: string };
+        };
+      }>;
+    }>(`/catalog/${storefront}/artists?ids=${ids}`);
+
+    if (!data?.data) continue;
+
+    for (const artist of data.data) {
+      const attrs = artist.attributes;
+      enrichmentMap.set(artist.id, {
+        name: attrs?.name || "",
+        artworkUrl: attrs?.artwork?.url
+          ? artworkUrl(attrs.artwork.url, 300)
+          : undefined,
+        genres: attrs?.genreNames,
+      });
+    }
+  }
+
+  return enrichmentMap;
 }
 
 function parseArtist(item: any): AppleArtistResult {
@@ -236,7 +435,6 @@ export interface AppleArtistDetail {
   genres: string[];
   artworkUrl?: string;
   url?: string;
-  editorialNotes?: string;
 }
 
 /**
@@ -259,7 +457,7 @@ export interface ArtistDiscography {
 export async function getArtistWithViews(
   artistId: string,
 ): Promise<ArtistDiscography | null> {
-  const cacheKey = `am-artist-full:${artistId}`;
+  const cacheKey = `am-artist-full-v3:${artistId}`;
   const cached = artistCache.get(cacheKey);
   if (cached) return cached as ArtistDiscography;
 
@@ -279,8 +477,6 @@ export async function getArtistWithViews(
     genres: a.genreNames || [],
     artworkUrl: a.artwork?.url,
     url: a.url,
-    editorialNotes:
-      a.editorialNotes?.standard || a.editorialNotes?.short || undefined,
   };
 
   // Parse top songs from the view
@@ -302,6 +498,34 @@ export async function getArtistWithViews(
       url: sa.url,
     };
   });
+
+  if (topSongs.length > 0) {
+    const ids = topSongs.map((t) => t.id).join(",");
+    const songsData = await appleMusicFetch<any>(
+      `/catalog/${STOREFRONT}/songs?ids=${ids}&include=artists,albums`,
+    );
+    if (songsData?.data) {
+      const artistMap = new Map<string, { id: string; name: string }[]>();
+      for (const song of songsData.data) {
+        artistMap.set(song.id, artistsFromCatalogSongResource(song));
+      }
+      for (const ts of topSongs) {
+        const list = artistMap.get(ts.id);
+        if (list && list.length > 0) {
+          ts.artists = list;
+          ts.artistId = list[0].id;
+        } else if (artist.id && ts.artistName) {
+          ts.artists = [{ id: artist.id, name: ts.artistName }];
+        }
+      }
+    } else {
+      for (const ts of topSongs) {
+        if (artist.id && ts.artistName) {
+          ts.artists = [{ id: artist.id, name: ts.artistName }];
+        }
+      }
+    }
+  }
 
   const result: ArtistDiscography = {
     artist,
@@ -459,6 +683,7 @@ export interface AppleTopSong {
   name: string;
   artistName: string;
   artistId?: string;
+  artists?: { id: string; name: string }[];
   albumName?: string;
   albumId?: string;
   artworkUrl?: string;
@@ -474,6 +699,11 @@ export interface AppleAlbumDetail {
   id: string;
   name: string;
   artistName: string;
+  /**
+   * Primary album artist resolved from relationships.artists[0].
+   * Apple's attributes.artistName can be a display string like "A & B".
+   */
+  primaryArtistName?: string;
   artistId?: string;
   artworkUrl?: string;
   releaseDate?: string;
@@ -545,6 +775,10 @@ export async function getAlbumDetail(
   }
 
   const albumArtistName = a.artistName || "";
+  const primaryArtistName =
+    (artistRel?.id
+      ? includedMap[`artists:${artistRel.id}`]?.attributes?.name
+      : undefined) || undefined;
 
   const tracks: AppleTrack[] = trackItems.map((t: any) => {
     const ta = t.attributes || {};
@@ -600,14 +834,7 @@ export async function getAlbumDetail(
     if (songsData?.data) {
       const artistMap = new Map<string, { id: string; name: string }[]>();
       for (const song of songsData.data) {
-        const songArtists = song.relationships?.artists?.data || [];
-        artistMap.set(
-          song.id,
-          songArtists.map((ar: any) => ({
-            id: ar.id,
-            name: ar.attributes?.name || "",
-          })),
-        );
+        artistMap.set(song.id, artistsFromCatalogSongResource(song));
       }
 
       for (const track of tracksNeedingArtists) {
@@ -632,6 +859,7 @@ export async function getAlbumDetail(
     id: item.id,
     name: a.name || "",
     artistName: a.artistName || "",
+    primaryArtistName,
     artistId: artistRel?.id,
     artworkUrl: a.artwork?.url,
     releaseDate: a.releaseDate,
@@ -706,6 +934,74 @@ export const TOP_100_PLAYLIST_IDS = [
   "pl.2fc68f6d68004ae993dadfe99de83877", // Top 100: Nigeria
   "pl.d116fa6286734b74acff3d38a740fe0d", // Top 100: Colombia
 ];
+
+/**
+ * Get trending songs (top tracks from Global Top 100 playlist)
+ */
+export async function getTrendingSongs(
+  limit: number = 10,
+): Promise<AppleSongResult[]> {
+  // IMPORTANT: The full playlist detail call enriches *all* tracks (up to 100)
+  // with a second /songs?ids=... batch call. The homepage only needs a handful,
+  // so we fetch + enrich only the first N tracks to keep TTFB low.
+  const playlistId = TOP_100_PLAYLIST_IDS[0]; // Global Top 100
+  const safeLimit = Math.max(1, Math.min(limit, 25));
+
+  const cacheKey = `am-trending-songs-${STOREFRONT}-${playlistId}-${safeLimit}`;
+  const cached = playlistCache.get(cacheKey);
+  if (cached) return cached as AppleSongResult[];
+
+  const data = await appleMusicFetch<any>(
+    `/catalog/${STOREFRONT}/playlists/${playlistId}?include=tracks`,
+  );
+
+  const item = data?.data?.[0];
+  if (!item) return [];
+
+  const trackItems = (item.relationships?.tracks?.data || []).slice(
+    0,
+    safeLimit,
+  );
+
+  const tracks: AppleSongResult[] = trackItems.map((t: any) => {
+    const ta = t.attributes || {};
+    return {
+      id: t.id,
+      name: ta.name || "",
+      artistName: ta.artistName || "",
+      trackNumber: ta.trackNumber || 0,
+      discNumber: ta.discNumber || 1,
+      durationMs: ta.durationInMillis || 0,
+      artworkUrl: ta.artwork?.url,
+      url: ta.url,
+      hasLyrics: ta.hasLyrics,
+      genreNames: ta.genreNames || [],
+      albumName: ta.albumName,
+      albumId: extractAlbumIdFromUrl(ta.url),
+    } as any;
+  });
+
+  // Enrich only these N tracks for clickable artist/album links.
+  if (tracks.length > 0) {
+    const enrichmentMap = await fetchAppleSongEnrichmentsByIds(
+      tracks.map((t) => t.id),
+    );
+    for (const track of tracks) {
+      const enriched = enrichmentMap.get(track.id);
+      if (!enriched) continue;
+      if (enriched.artists.length > 0) {
+        track.artists = enriched.artists;
+        track.artistId = enriched.artists[0].id;
+      }
+      if (enriched.albumId) {
+        track.albumId = enriched.albumId;
+      }
+    }
+  }
+
+  playlistCache.set(cacheKey, tracks, 3600 * 2);
+  return tracks;
+}
 
 /**
  * Get Daily Top 100 playlists from Apple Music
@@ -783,6 +1079,10 @@ export async function getPlaylistDetail(
       albumId: extractAlbumIdFromUrl(ta.url),
     } as any;
   });
+
+  // Artist/album IDs for links are filled in on the client via
+  // /api/apple-playlist-enrich so this page is not blocked on a second
+  // full-playlist catalog songs request.
 
   const result: ApplePlaylistDetail = {
     ...basePlaylist,

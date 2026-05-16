@@ -105,7 +105,6 @@ export function PlaylistProvider({ children }: { children: React.ReactNode }) {
           .insert({
             user_id: user.id,
             name: input.name,
-            description: input.description || null,
             type: input.type || "songs",
           })
           .select()

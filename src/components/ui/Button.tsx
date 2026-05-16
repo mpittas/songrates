@@ -2,7 +2,7 @@ import React from "react";
 import Link from "next/link";
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: "primary" | "secondary" | "ghost" | "border" | "muted";
+  variant?: "primary" | "secondary" | "ghost" | "border" | "white" | "whiteMuted";
   size?: "xxs" | "xs" | "sm" | "md" | "lg";
   iconLeft?: React.ReactNode;
   iconRight?: React.ReactNode;
@@ -14,7 +14,7 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 export default function Button({
   children,
   variant = "border",
-  size = "sm",
+  size = "md",
   iconLeft,
   iconRight,
   href,
@@ -23,26 +23,30 @@ export default function Button({
   ...props
 }: ButtonProps) {
   const baseStyles =
-    "inline-flex items-center justify-center font-mono font-medium transition-all duration-200 active:scale-95";
+    "inline-flex items-center justify-center font-mono font-semibold transition-all duration-200 active:scale-95 rounded-full";
 
   const variants = {
     primary:
-      "bg-[#00f0ff] text-[#050507] border border-[#00f0ff] hover:bg-[#00d8e6] hover:border-[#00d8e6]",
+      "bg-[#1f1f1f] text-white border border-[#1f1f1f] hover:bg-black hover:border-black",
     secondary:
-      "bg-white text-black border border-white hover:bg-neutral-200 hover:border-neutral-200",
-    ghost: "bg-transparent text-neutral-400 hover:text-white hover:bg-white/5",
-    muted:
-      "bg-neutral-900 text-neutral-300 hover:bg-neutral-700/60 hover:text-white",
+      "bg-neutral-950/15 hover:bg-neutral-950/25 text-black border-transparent text-xs",
+    
+    ghost:
+      "bg-transparent text-neutral-500 hover:text-neutral-900 hover:bg-neutral-200",
+    white:
+      "bg-[#fff] text-neutral-900 hover:bg-[#e8e8e8]",
+    whiteMuted:
+      "bg-[#fff]/20 text-neutral-50 hover:bg-white/30",
     border:
-      "bg-transparent border border-white/10 text-neutral-300 hover:bg-white hover:text-black hover:border-white",
+      "bg-white border border-[#d5d5d5] text-neutral-800 hover:bg-[#f8f8f8] hover:text-black hover:border-[#c6c6c6]",
   };
 
   const sizes = {
-    xxs: "px-1.5 py-0.5 text-[9px] gap-1",
-    xs: "px-2 py-1 text-[10px]",
-    sm: "px-4 py-2 text-xs",
-    md: "px-6 py-3 text-sm",
-    lg: "px-8 py-4 text-base",
+    xxs: "px-1 py-0.5 text-[10px]",
+    xs: "px-2 py-1 text-xs",
+    sm: "px-3 py-1.5 text-sm",
+    md: "px-6 py-2 text-base",
+    lg: "px-6 py-3 text-lg",
   };
 
   const combinedClasses = `${baseStyles} ${variants[variant]} ${sizes[size]} ${className}`;

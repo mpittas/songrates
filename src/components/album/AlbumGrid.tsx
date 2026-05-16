@@ -11,6 +11,7 @@ export default function AlbumGrid({
   layout = "grid",
   className,
   gridCols = 4,
+  size = "default",
 }: {
   albums: Album[];
   onSelectAlbum: (id: string) => void;
@@ -19,10 +20,12 @@ export default function AlbumGrid({
   layout?: "grid" | "list";
   className?: string;
   gridCols?: number;
+  size?: "default" | "compact";
 }) {
   if (albums.length === 0) return null;
 
   const colsClass = gridCols === 3 ? "md:grid-cols-3" : "md:grid-cols-4";
+  const gapClass = size === "compact" ? "gap-3 sm:gap-4" : "gap-6";
 
   return (
     <div className={className}>
@@ -33,13 +36,14 @@ export default function AlbumGrid({
       )}
 
       {layout === "grid" ? (
-        <div className={`grid grid-cols-2 gap-6 sm:grid-cols-3 ${colsClass}`}>
+        <div className={`grid grid-cols-2 ${gapClass} sm:grid-cols-3 ${colsClass}`}>
           {albums.map((album, index) => (
             <AlbumCard
               key={album.id}
               album={album}
               isPriority={index < priorityCount}
               layout="grid"
+              size={size}
             />
           ))}
         </div>

@@ -4,9 +4,10 @@ import { useQuery } from "@tanstack/react-query";
 import { formatTime } from "@/lib/utils";
 import { useEffect, useRef } from "react";
 import { FaPlay, FaPause } from "react-icons/fa";
-import { usePlayer } from "@/context/PlayerContext";
+import { usePlayerCore } from "@/context/PlayerContext";
 import { useRatingsContext as useRatings } from "@/context/RatingsContext";
 import { RATING_COLORS } from "@/components/rating/constants";
+import { AlbumInfo } from "@/types/music";
 
 interface AlbumTracklistPopoverProps {
   albumId: string;
@@ -19,7 +20,7 @@ export default function AlbumTracklistPopover({
   currentTrackId,
   isVisible,
 }: AlbumTracklistPopoverProps) {
-  const { playTrack, isPlaying } = usePlayer();
+  const { playTrack, isPlaying } = usePlayerCore();
   const { ratings } = useRatings();
   const listRef = useRef<HTMLDivElement>(null);
 
@@ -28,7 +29,7 @@ export default function AlbumTracklistPopover({
     queryFn: async () => {
       const res = await fetch(`/api/album-info?id=${albumId}`);
       if (!res.ok) throw new Error("Failed to fetch album");
-      return res.json();
+      return (await res.json()) as AlbumInfo;
     },
     enabled: isVisible || !!albumId, // Fetch if visible OR if we have an ID (prefetch could be nice too)
   });
@@ -49,10 +50,10 @@ export default function AlbumTracklistPopover({
 
   return (
     <div className="absolute bottom-full left-1/2 -translate-x-1/2 translate-y-1 pb-1 z-50 group/popover">
-      <div className="w-80 max-h-96 bg-[#050507] backdrop-blur-md border border-[#1a1a1f] shadow-2xl overflow-hidden flex flex-col animate-in fade-in slide-in-from-bottom-2 duration-300 origin-bottom">
+      <div className="w-80 max-h-96 bg-white backdrop-blur-md border border-[#dcdcdc] shadow-2xl overflow-hidden flex flex-col animate-in fade-in slide-in-from-bottom-2 duration-300 origin-bottom rounded-md">
         {/* Header */}
-        <div className="p-3 border-b border-[#1a1a1f] bg-[#0a0a0d]">
-          <h3 className="text-neutral-200 text-xs font-mono font-bold truncate">
+        <div className="p-3 border-b border-[#e6e6e6] bg-[#f7f7f7]">
+          <h3 className="text-neutral-900 text-xs font-mono font-bold truncate">
             {isLoading ? "Loading..." : album?.title || "Unknown Album"}
           </h3>
           <p className="text-neutral-500 text-[10px] truncate">
@@ -63,16 +64,19 @@ export default function AlbumTracklistPopover({
         {/* Tracklist */}
         <div
           ref={listRef}
-          className="overflow-y-auto flex-1 p-0 scrollbar-thin scrollbar-thumb-neutral-800 scrollbar-track-transparent overscroll-contain"
+          className="overflow-y-auto flex-1 p-0 scrollbar-thin scrollbar-thumb-neutral-300 scrollbar-track-transparent overscroll-contain"
         >
           {isLoading ? (
             <div className="p-4 space-y-2">
               {[...Array(5)].map((_, i) => (
-                <div key={i} className="h-8 bg-white/5 animate-pulse rounded" />
+                <div
+                  key={i}
+                  className="h-8 bg-[#efefef] animate-pulse rounded"
+                />
               ))}
             </div>
           ) : (
-            album?.tracks?.map((track: any) => {
+            album?.tracks?.map((track) => {
               const isCurrent = track.id === currentTrackId;
 
               return (
@@ -81,8 +85,8 @@ export default function AlbumTracklistPopover({
                   data-track-id={track.id}
                   className={`group flex items-center gap-2 px-3 py-2 text-xs transition-colors cursor-pointer ${
                     isCurrent
-                      ? "bg-[#00f0ff]/10 text-[#00f0ff]"
-                      : "text-neutral-400 hover:bg-white/5 hover:text-white"
+                      ? "bg-[#f2f2f2] text-neutral-900"
+                      : "text-neutral-600 hover:bg-[#f7f7f7] hover:text-neutral-900"
                   }`}
                   onClick={() => {
                     playTrack({
@@ -112,7 +116,7 @@ export default function AlbumTracklistPopover({
                         {track.number}
                       </span>
                     )}
-                    <span className="hidden group-hover:block text-neutral-300">
+                    <span className="hidden group-hover:block text-neutral-700">
                       {!isCurrent && <FaPlay size={8} />}
                     </span>
                   </div>
@@ -124,7 +128,7 @@ export default function AlbumTracklistPopover({
 
                   {/* Duration */}
                   {track.length && (
-                    <span className="text-[10px] font-mono opacity-60 text-neutral-400">
+                    <span className="text-[10px] font-mono opacity-60 text-neutral-600">
                       {formatTime(track.length, "milliseconds")}
                     </span>
                   )}

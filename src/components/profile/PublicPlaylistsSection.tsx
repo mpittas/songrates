@@ -90,22 +90,13 @@ export default function PublicPlaylistsSection({
 
   return (
     <div className={className}>
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-1 h-5 bg-[#00f0ff]" />
-        <h2 className="text-lg font-light tracking-tight text-white">
-          Playlists
-        </h2>
-        <span className="text-xs text-neutral-600 font-mono">
-          {playlists.length}
-        </span>
-      </div>
 
       {loading ? (
         <div className="py-8 flex items-center justify-center">
-          <div className="w-6 h-6 border-2 border-[#00f0ff] border-t-transparent rounded-full animate-spin" />
+          <div className="w-6 h-6 border-2 border-neutral-500 border-t-transparent rounded-full animate-spin" />
         </div>
       ) : playlists.length === 0 ? (
-        <div className="py-12 text-center border border-white/[0.04] bg-neutral-900/20">
+        <div className="py-12 text-center border border-[#e1e1e1] bg-white rounded-md">
           <FaListUl size={24} className="text-neutral-700 mx-auto mb-3" />
           <p className="text-neutral-600 font-mono text-sm">No playlists yet</p>
         </div>
@@ -115,36 +106,32 @@ export default function PublicPlaylistsSection({
             <button
               key={playlist.id}
               onClick={() => handleViewPlaylist(playlist)}
-              className="group p-4 bg-neutral-900/30 border border-white/[0.04] hover:border-[#00f0ff]/20 hover:bg-neutral-900/50 transition-all duration-200 text-left "
+              className="group p-4 bg-white border border-[#e1e1e1] hover:border-[#cbcbcb] hover:bg-[#f8f8f8] transition-all duration-200 text-left rounded-md"
             >
               <div className="flex items-start gap-3">
-                <div className="w-12 h-12 flex items-center justify-center bg-neutral-800 shrink-0 group-hover:bg-neutral-700 transition-colors">
+                <div className="w-12 h-12 flex items-center justify-center bg-[#efefef] shrink-0 group-hover:bg-[#e4e4e4] transition-colors rounded-sm">
                   {playlist.type === "albums" ? (
                     <FaCompactDisc
                       size={20}
-                      className="text-neutral-500 group-hover:text-[#00f0ff]"
+                      className="text-neutral-500 group-hover:text-neutral-900"
                     />
                   ) : (
                     <FaListUl
                       size={20}
-                      className="text-neutral-500 group-hover:text-[#00f0ff]"
+                      className="text-neutral-500 group-hover:text-neutral-900"
                     />
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <h3 className="text-sm text-white truncate group-hover:text-[#00f0ff] transition-colors">
+                    <h3 className="text-sm text-neutral-900 truncate group-hover:text-black transition-colors">
                       {playlist.name}
                     </h3>
-                    <span className="text-[9px] uppercase tracking-wider text-neutral-600 font-mono bg-neutral-800 px-1.5 py-0.5 rounded shrink-0">
+                    <span className="text-[9px] uppercase tracking-wider text-neutral-600 font-mono bg-neutral-200 px-1.5 py-0.5 rounded shrink-0">
                       {playlist.type === "albums" ? "Albums" : "Songs"}
                     </span>
                   </div>
-                  {playlist.description && (
-                    <p className="text-xs text-neutral-500 truncate mt-0.5">
-                      {playlist.description}
-                    </p>
-                  )}
+
                   <p className="text-xs text-neutral-600 font-mono mt-1">
                     {new Date(playlist.created_at).toLocaleDateString()}
                   </p>
@@ -163,27 +150,23 @@ export default function PublicPlaylistsSection({
         >
           <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
           <div
-            className="relative w-full max-w-lg max-h-[80vh] bg-[#0a0a0d] border border-white/[0.06] shadow-2xl flex flex-col rounded-lg"
+            className="relative w-full max-w-lg max-h-[80vh] bg-white border border-[#e1e1e1] shadow-2xl flex flex-col rounded-lg"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.06] shrink-0">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[#ececec] shrink-0">
               <div className="flex items-center gap-3">
-                <div className="w-1 h-5 bg-[#00f0ff] rounded-full" />
+                <div className="w-1 h-5 bg-[#1f1f1f] rounded-full" />
                 <div>
-                  <h2 className="text-lg font-light tracking-tight text-white">
+                  <h2 className="text-lg font-light tracking-tight text-neutral-900">
                     {selectedPlaylist.name}
                   </h2>
-                  {selectedPlaylist.description && (
-                    <p className="text-xs text-neutral-500">
-                      {selectedPlaylist.description}
-                    </p>
-                  )}
+
                 </div>
               </div>
               <button
                 onClick={() => setSelectedPlaylist(null)}
-                className="text-neutral-500 hover:text-white transition-colors p-1 hover:bg-neutral-800 rounded"
+                className="text-neutral-500 hover:text-neutral-900 transition-colors p-1 hover:bg-neutral-200 rounded"
               >
                 <FaTimes size={16} />
               </button>
@@ -193,7 +176,7 @@ export default function PublicPlaylistsSection({
             <div className="overflow-y-auto flex-1 p-4">
               {loadingItems ? (
                 <div className="py-12 flex items-center justify-center">
-                  <div className="w-6 h-6 border-2 border-[#00f0ff] border-t-transparent rounded-full animate-spin" />
+                  <div className="w-6 h-6 border-2 border-neutral-500 border-t-transparent rounded-full animate-spin" />
                 </div>
               ) : selectedPlaylist.type === "albums" ? (
                 /* Album Playlist Content */
@@ -222,7 +205,7 @@ export default function PublicPlaylistsSection({
                           <span className="text-xs text-neutral-600 font-mono w-5 text-center">
                             {index + 1}
                           </span>
-                          <div className="relative w-10 h-10 shrink-0 bg-neutral-800 overflow-hidden rounded-sm">
+                          <div className="relative w-10 h-10 shrink-0 bg-[#efefef] overflow-hidden rounded-sm">
                             {album.thumbnail_url ? (
                               <OptimizedImage
                                 src={album.thumbnail_url}
@@ -241,7 +224,7 @@ export default function PublicPlaylistsSection({
                             )}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm text-white truncate group-hover:text-[#00f0ff] transition-colors">
+                            <p className="text-sm text-neutral-900 truncate group-hover:text-black transition-colors">
                               {album.album_name || "Unknown Album"}
                             </p>
                             <p className="text-xs text-neutral-500 truncate">
@@ -258,14 +241,14 @@ export default function PublicPlaylistsSection({
                           key={album.id}
                           href={href}
                           onClick={() => setSelectedPlaylist(null)}
-                          className="group flex items-center gap-3 p-2 bg-neutral-900/30 border border-white/[0.04] hover:border-[#00f0ff]/20 hover:bg-neutral-900/50 rounded-sm transition-all duration-200"
+                          className="group flex items-center gap-3 p-2 bg-white border border-[#e1e1e1] hover:border-[#cfcfcf] hover:bg-[#f8f8f8] rounded-sm transition-all duration-200"
                         >
                           {albumContent}
                         </Link>
                       ) : (
                         <div
                           key={album.id}
-                          className="group flex items-center gap-3 p-2 bg-neutral-900/30 border border-white/[0.04] hover:border-white/[0.08] rounded-sm"
+                          className="group flex items-center gap-3 p-2 bg-white border border-[#e1e1e1] hover:border-[#cfcfcf] rounded-sm"
                         >
                           {albumContent}
                         </div>
@@ -300,7 +283,7 @@ export default function PublicPlaylistsSection({
                         <span className="text-xs text-neutral-600 font-mono w-5 text-center">
                           {index + 1}
                         </span>
-                        <div className="relative w-10 h-10 shrink-0 bg-neutral-800 overflow-hidden rounded-sm">
+                        <div className="relative w-10 h-10 shrink-0 bg-[#efefef] overflow-hidden rounded-sm">
                           {track.thumbnail_url ? (
                             <OptimizedImage
                               src={track.thumbnail_url}
@@ -316,7 +299,7 @@ export default function PublicPlaylistsSection({
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm text-white truncate group-hover:text-[#00f0ff] transition-colors">
+                          <p className="text-sm text-neutral-900 truncate group-hover:text-black transition-colors">
                             {track.track_name || "Unknown Track"}
                           </p>
                           <p className="text-xs text-neutral-500 truncate">
@@ -335,14 +318,14 @@ export default function PublicPlaylistsSection({
                         key={track.id}
                         href={href}
                         onClick={() => setSelectedPlaylist(null)}
-                        className="group flex items-center gap-3 p-2 bg-neutral-900/30 border border-white/[0.04] hover:border-[#00f0ff]/20 hover:bg-neutral-900/50 rounded-sm transition-all duration-200"
+                        className="group flex items-center gap-3 p-2 bg-white border border-[#e1e1e1] hover:border-[#cfcfcf] hover:bg-[#f8f8f8] rounded-sm transition-all duration-200"
                       >
                         {trackContent}
                       </Link>
                     ) : (
                       <div
                         key={track.id}
-                        className="group flex items-center gap-3 p-2 bg-neutral-900/30 border border-white/[0.04] hover:border-white/[0.08] rounded-sm"
+                        className="group flex items-center gap-3 p-2 bg-white border border-[#e1e1e1] hover:border-[#cfcfcf] rounded-sm"
                       >
                         {trackContent}
                       </div>
@@ -353,7 +336,7 @@ export default function PublicPlaylistsSection({
             </div>
 
             {/* Modal Footer */}
-            <div className="px-6 py-3 border-t border-white/[0.06] shrink-0">
+            <div className="px-6 py-3 border-t border-[#ececec] shrink-0">
               <p className="text-xs text-neutral-600 font-mono">
                 {selectedPlaylist.type === "albums"
                   ? `${playlistAlbums.length} albums`

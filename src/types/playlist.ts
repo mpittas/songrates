@@ -4,7 +4,6 @@ export interface Playlist {
   id: string;
   user_id: string;
   name: string;
-  description: string | null;
   type: PlaylistType;
   created_at: string;
   updated_at: string;
@@ -44,7 +43,6 @@ export interface PlaylistAlbum {
 
 export interface CreatePlaylistInput {
   name: string;
-  description?: string;
   type?: PlaylistType;
 }
 

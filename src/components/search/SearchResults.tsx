@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { IoMusicalNotes, IoDisc, IoPerson } from "react-icons/io5";
 
@@ -14,9 +14,7 @@ import type {
   AlbumSearchResult,
   SongSearchResult,
 } from "@/types/search";
-import { ArtistVisit } from "@/types/artist";
-import { getArtistHistory } from "@/lib/history";
-import { formatTimeAgo, createSlug, formatTime } from "@/lib/utils";
+import { createSlug, formatTime } from "@/lib/utils";
 import { usePrefetchAlbum } from "@/hooks/useAlbumInfo";
 
 // ─── Category Filter Tabs ──────────────────────────────────────────────────────
@@ -36,7 +34,7 @@ function CategoryTabs({
   onChange: (cat: SearchCategory) => void;
 }) {
   return (
-    <div className="flex gap-1 px-3 pt-2 pb-1 border-b border-[#1a1a1f]">
+    <div className="flex gap-1 px-3 pt-2 pb-1 border-b border-[#e6e6e6]">
       {CATEGORIES.map((cat) => (
         <button
           key={cat.key}
@@ -45,8 +43,8 @@ function CategoryTabs({
           onClick={() => onChange(cat.key)}
           className={`px-3 py-1 text-[11px] font-mono tracking-wider uppercase transition-all rounded-sm ${
             active === cat.key
-              ? "bg-[#00f0ff]/10 text-[#00f0ff] border border-[#00f0ff]/30"
-              : "text-neutral-500 hover:text-neutral-300 border border-transparent"
+              ? "bg-[#efefef] text-neutral-900 border border-[#d8d8d8]"
+              : "text-neutral-500 hover:text-neutral-900 border border-transparent"
           }`}
         >
           {cat.label}
@@ -75,7 +73,7 @@ function ArtworkImage({
     return (
       fallbackIcon || (
         <IoDisc
-          className="text-neutral-600 group-hover:text-[#00f0ff]/60"
+          className="text-neutral-600 group-hover:text-neutral-900"
           size={18}
         />
       )
@@ -102,23 +100,23 @@ function ArtistRow({ result }: { result: ArtistSearchResult }) {
   return (
     <Link
       href={`/artist/${createSlug(result.title, result.id)}`}
-      className="flex items-center gap-3 p-3 hover:bg-[#0f0f12] transition-colors group"
+      className="flex items-center gap-3 p-3 hover:bg-[#f7f7f7] transition-colors group"
     >
-      <div className="w-10 h-10 rounded-full overflow-hidden bg-[#0f0f12] border border-[#1a1a1f] group-hover:border-[#00f0ff]/30 flex items-center justify-center flex-shrink-0">
+      <div className="w-10 h-10 rounded-full overflow-hidden bg-[#efefef] border border-[#dcdcdc] group-hover:border-[#c8c8c8] flex items-center justify-center flex-shrink-0">
         <ArtworkImage
           url={result.artworkUrl}
           alt={result.title}
           rounded
           fallbackIcon={
             <IoPerson
-              className="text-neutral-600 group-hover:text-[#00f0ff]/60"
+              className="text-neutral-600 group-hover:text-neutral-900"
               size={18}
             />
           }
         />
       </div>
       <div className="flex-1 min-w-0">
-        <h3 className="text-sm text-neutral-300 group-hover:text-[#00f0ff] transition-colors truncate">
+        <h3 className="text-sm text-neutral-900 group-hover:text-black transition-colors truncate">
           {result.title}
         </h3>
         <p className="text-[11px] text-neutral-600 truncate mt-0.5">
@@ -142,13 +140,13 @@ function AlbumRow({ result }: { result: AlbumSearchResult }) {
     <Link
       href={`/album/${slug}`}
       onMouseEnter={() => prefetchAlbum(slug)}
-      className="flex items-center gap-3 p-3 hover:bg-[#0f0f12] transition-colors group"
+      className="flex items-center gap-3 p-3 hover:bg-[#f7f7f7] transition-colors group"
     >
-      <div className="w-10 h-10 overflow-hidden bg-[#0f0f12] border border-[#1a1a1f] group-hover:border-[#00f0ff]/30 flex items-center justify-center flex-shrink-0">
+      <div className="w-10 h-10 overflow-hidden bg-[#efefef] border border-[#dcdcdc] group-hover:border-[#c8c8c8] flex items-center justify-center flex-shrink-0 rounded-sm">
         <ArtworkImage url={result.artworkUrl} alt={result.title} />
       </div>
       <div className="flex-1 min-w-0">
-        <h3 className="text-sm text-neutral-300 group-hover:text-[#00f0ff] transition-colors truncate">
+        <h3 className="text-sm text-neutral-900 group-hover:text-black transition-colors truncate">
           {result.title}
         </h3>
         <p className="text-[11px] text-neutral-600 truncate mt-0.5">
@@ -174,20 +172,20 @@ function SongRow({ result }: { result: SongSearchResult }) {
 
   const content = (
     <>
-      <div className="w-10 h-10 overflow-hidden bg-[#0f0f12] border border-[#1a1a1f] group-hover:border-[#00f0ff]/30 flex items-center justify-center flex-shrink-0">
+      <div className="w-10 h-10 overflow-hidden bg-[#efefef] border border-[#dcdcdc] group-hover:border-[#c8c8c8] flex items-center justify-center flex-shrink-0 rounded-sm">
         <ArtworkImage
           url={result.artworkUrl}
           alt={result.title}
           fallbackIcon={
             <IoMusicalNotes
-              className="text-neutral-600 group-hover:text-[#00f0ff]/60"
+              className="text-neutral-600 group-hover:text-neutral-900"
               size={18}
             />
           }
         />
       </div>
       <div className="flex-1 min-w-0">
-        <h3 className="text-sm text-neutral-300 group-hover:text-[#00f0ff] transition-colors truncate">
+        <h3 className="text-sm text-neutral-900 group-hover:text-black transition-colors truncate">
           {result.title}
         </h3>
         <p className="text-[11px] text-neutral-600 truncate mt-0.5">
@@ -210,7 +208,7 @@ function SongRow({ result }: { result: SongSearchResult }) {
       <Link
         href={href}
         onMouseEnter={() => albumSlug && prefetchAlbum(albumSlug)}
-        className="flex items-center gap-3 p-3 hover:bg-[#0f0f12] transition-colors group"
+        className="flex items-center gap-3 p-3 hover:bg-[#f7f7f7] transition-colors group"
       >
         {content}
       </Link>
@@ -218,7 +216,7 @@ function SongRow({ result }: { result: SongSearchResult }) {
   }
 
   return (
-    <div className="flex items-center gap-3 p-3 hover:bg-[#0f0f12] transition-colors group cursor-default">
+    <div className="flex items-center gap-3 p-3 hover:bg-[#f7f7f7] transition-colors group cursor-default">
       {content}
     </div>
   );
@@ -229,7 +227,7 @@ function SongRow({ result }: { result: SongSearchResult }) {
 function SectionHeader({ label, count }: { label: string; count: number }) {
   if (count === 0) return null;
   return (
-    <div className="px-4 py-1.5 border-b border-[#1a1a1f]">
+    <div className="px-4 py-1.5 border-b border-[#e6e6e6]">
       <h2 className="font-mono text-[10px] text-neutral-500 tracking-wider uppercase">
         {label}
         <span className="ml-1.5 text-neutral-600">({count})</span>
@@ -257,14 +255,9 @@ function ResultRow({ result }: { result: SearchResult }) {
 
 export default function SearchResults({
   query,
-  onClose,
-  isFocused,
   mobileMode = false,
 }: SearchResultsProps & { mobileMode?: boolean }) {
   const [category, setCategory] = useState<SearchCategory>("all");
-
-  // History state
-  const [history, setHistory] = useState<ArtistVisit[]>([]);
 
   // ─── TanStack Query: main search ───────────────────────────────────
   const {
@@ -276,18 +269,6 @@ export default function SearchResults({
   const results = searchData?.results ?? [];
   const grouped = searchData?.grouped ?? null;
 
-  // ─── History when focused and empty ────────────────────────────────
-  const loadHistory = useCallback(() => {
-    const data = getArtistHistory();
-    setHistory(data);
-  }, []);
-
-  useEffect(() => {
-    if (isFocused && !query) {
-      loadHistory();
-    }
-  }, [isFocused, query, loadHistory]);
-
   // ─── determine loading state ───────────────────────────────────────
   const showLoading = isFetching && results.length === 0;
 
@@ -298,8 +279,8 @@ export default function SearchResults({
     <div
       className={
         mobileMode
-          ? "absolute top-full left-0 right-0 mt-0 bg-[#0a0a0d] border-x border-b border-[#1a1a1f] z-[9999] max-h-[60vh] overflow-y-auto shadow-2xl"
-          : "absolute top-full left-0 right-0 mt-0 bg-[#0a0a0d] border-x border-b border-[#1a1a1f] z-[9999] max-h-[60vh] overflow-y-auto shadow-2xl"
+          ? "absolute top-full left-0 right-0 mt-0 bg-white border border-[#dcdcdc] z-[9999] max-h-[60vh] overflow-y-auto shadow-2xl rounded-xl text-left"
+          : "absolute top-full left-0 right-0 mt-0 bg-white border border-[#dcdcdc] z-[9999] max-h-[60vh] overflow-y-auto shadow-2xl rounded-xl text-left"
       }
     >
       {/* Category Filter Tabs */}
@@ -307,15 +288,15 @@ export default function SearchResults({
 
       {/* Loading skeletons */}
       {query && showLoading && (
-        <div className="divide-y divide-[#1a1a1f]/50">
+        <div className="divide-y divide-[#ececec]">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="flex items-center gap-3 p-3 animate-pulse">
-              <div className="w-10 h-10 rounded bg-[#1a1a1f] flex-shrink-0" />
+              <div className="w-10 h-10 rounded bg-[#efefef] flex-shrink-0" />
               <div className="flex-1 min-w-0 space-y-2">
-                <div className="h-3.5 bg-[#1a1a1f] rounded w-2/5" />
-                <div className="h-2.5 bg-[#1a1a1f]/60 rounded w-3/5" />
+                <div className="h-3.5 bg-[#e5e5e5] rounded w-2/5" />
+                <div className="h-2.5 bg-[#ececec] rounded w-3/5" />
               </div>
-              <div className="h-3 bg-[#1a1a1f] rounded w-10 flex-shrink-0" />
+              <div className="h-3 bg-[#e5e5e5] rounded w-10 flex-shrink-0" />
             </div>
           ))}
         </div>
@@ -323,9 +304,9 @@ export default function SearchResults({
 
       {/* Fetching indicator */}
       {query && isFetching && !showLoading && results.length > 0 && (
-        <div className="h-0.5 bg-[#00f0ff]/10 overflow-hidden">
+        <div className="h-0.5 bg-[#e9e9e9] overflow-hidden">
           <div
-            className="h-full bg-[#00f0ff]/60 w-1/3"
+            className="h-full bg-[#6f6f6f] w-1/3"
             style={{ animation: "searchSlide 1s ease-in-out infinite" }}
           />
         </div>
@@ -333,7 +314,7 @@ export default function SearchResults({
 
       {/* Results */}
       {query && !showLoading && results.length > 0 && (
-        <div className="divide-y divide-[#1a1a1f]/50">
+        <div className="divide-y divide-[#ececec]">
           {category === "all" && grouped ? (
             <>
               {grouped.artists.length > 0 && (
