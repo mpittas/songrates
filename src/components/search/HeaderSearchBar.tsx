@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useSearchInput } from "@/hooks/useSearchInput";
 import SearchInput from "@/components/search/SearchInput";
@@ -8,7 +8,6 @@ import SearchResults from "@/components/search/SearchResults";
 
 export default function HeaderSearchBar() {
   const router = useRouter();
-  const [showResults, setShowResults] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const {
@@ -20,19 +19,12 @@ export default function HeaderSearchBar() {
     clearQuery,
   } = useSearchInput();
 
-  // Show results when input is focused (SearchResults handles empty query logic)
-  useEffect(() => {
-    setShowResults(isFocused);
-  }, [debouncedQuery, isFocused]);
-
-  // Click outside handler
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (
         containerRef.current &&
         !containerRef.current.contains(e.target as Node)
       ) {
-        setShowResults(false);
         setIsFocused(false);
       }
     };
@@ -44,46 +36,31 @@ export default function HeaderSearchBar() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (!query.trim()) return;
-
-    // Navigate to homepage with search query
     router.push(`/?q=${encodeURIComponent(query)}`);
-    setShowResults(false);
     setIsFocused(false);
   };
 
-  const handleClear = () => {
-    clearQuery();
-    // Keep focus and results open when clearing
-    setShowResults(true);
-    setIsFocused(true);
-  };
-
   return (
-    <div ref={containerRef} className="w-full max-w-md relative">
-      <form
-        onSubmit={handleSearch}
-        className="w-full"
-        aria-label="Search music"
-      >
+    <div ref={containerRef} className="relative w-full max-w-md">
+      <form onSubmit={handleSearch} className="w-full" aria-label="Search music">
         <SearchInput
           value={query}
           onChange={setQuery}
-          onClear={handleClear}
+          onClear={() => {
+            clearQuery();
+            setIsFocused(true);
+          }}
           onFocus={() => setIsFocused(true)}
           isFocused={isFocused}
           placeholder="Search artists, albums, songs..."
           size="small"
-          variant="light"
         />
       </form>
 
-      {/* Search Results */}
-      {showResults && (
-        <SearchResults
-          query={debouncedQuery}
-          isFocused={isFocused}
-          onClose={() => setIsFocused(false)}
-        />
+      {isFocused && (
+        <div className="absolute top-full left-0 right-0 z-[9999] mt-2">
+          <SearchResults query={debouncedQuery} />
+        </div>
       )}
     </div>
   );

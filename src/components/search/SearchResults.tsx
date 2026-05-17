@@ -255,8 +255,8 @@ function ResultRow({ result }: { result: SearchResult }) {
 
 export default function SearchResults({
   query,
-  mobileMode = false,
-}: SearchResultsProps & { mobileMode?: boolean }) {
+  variant = "light",
+}: SearchResultsProps) {
   const [category, setCategory] = useState<SearchCategory>("all");
 
   // ─── TanStack Query: main search ───────────────────────────────────
@@ -275,14 +275,13 @@ export default function SearchResults({
   // Hiding recent artists for now, so only show if query exists
   if (!query) return null;
 
+  const isGlass = variant === "glass";
+  const panelClass = isGlass
+    ? "w-full bg-white/80 backdrop-blur-xl border border-white/30 z-[9999] max-h-[60vh] overflow-y-auto shadow-2xl rounded-xl text-left"
+    : "w-full bg-white border border-[#dcdcdc] z-[9999] max-h-[60vh] overflow-y-auto shadow-2xl rounded-xl text-left";
+
   return (
-    <div
-      className={
-        mobileMode
-          ? "absolute top-full left-0 right-0 mt-0 bg-white border border-[#dcdcdc] z-[9999] max-h-[60vh] overflow-y-auto shadow-2xl rounded-xl text-left"
-          : "absolute top-full left-0 right-0 mt-0 bg-white border border-[#dcdcdc] z-[9999] max-h-[60vh] overflow-y-auto shadow-2xl rounded-xl text-left"
-      }
-    >
+    <div className={panelClass}>
       {/* Category Filter Tabs */}
       {query && <CategoryTabs active={category} onChange={setCategory} />}
 

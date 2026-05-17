@@ -4,8 +4,13 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useSearchInput } from "@/hooks/useSearchInput";
 import SearchInput from "@/components/search/SearchInput";
 import SearchResults from "@/components/search/SearchResults";
+import type { SearchInputVariant } from "@/types/search";
 
-export default function SearchBar() {
+interface SearchBarProps {
+  variant?: SearchInputVariant;
+}
+
+export default function SearchBar({ variant = "light" }: SearchBarProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -59,18 +64,13 @@ export default function SearchBar() {
               isFocused={isFocused}
               placeholder="Search artists, albums, songs..."
               size="large"
-              variant="light"
+              variant={variant}
             />
           </div>
         </div>
 
-        <div className="absolute top-full left-0 right-0 mt-2">
-          <SearchResults
-            query={debouncedQuery}
-            isFocused={isFocused}
-            onClose={() => setIsFocused(false)}
-            mobileMode={false}
-          />
+        <div className="absolute top-full left-0 right-0 z-[200] mt-2">
+          <SearchResults query={debouncedQuery} variant={variant} />
         </div>
       </form>
     </>

@@ -61,12 +61,12 @@ export default function UserMenu({
           <Image
             src={avatarUrl}
             alt="User Avatar"
-            width={32}
-            height={32}
+            width={38}
+            height={38}
             className="rounded-full"
           />
         ) : (
-          <FaUserCircle className="text-neutral-400" size={32} />
+          <FaUserCircle className="text-neutral-400" size={38} />
         )}
       </button>
 

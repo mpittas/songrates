@@ -64,12 +64,11 @@ export interface SearchApiResponse {
 // ─── Component Props ───────────────────────────────────────────────────────────
 
 export type SearchInputSize = "small" | "large" | "compact";
-export type SearchInputVariant = "light" | "dark";
+export type SearchInputVariant = "light" | "dark" | "glass";
 
 export interface SearchResultsProps {
   query: string;
-  isFocused: boolean;
-  onClose?: () => void;
+  variant?: SearchInputVariant;
 }
 
 export interface SearchInputProps {
