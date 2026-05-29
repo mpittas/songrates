@@ -114,5 +114,8 @@ export async function GET(request: NextRequest) {
     };
   });
 
-  return NextResponse.json({ albums });
+  return NextResponse.json(
+    { albums },
+    { headers: { "Cache-Control": "private, no-store" } },
+  );
 }

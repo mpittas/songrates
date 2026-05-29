@@ -104,5 +104,8 @@ export async function GET(request: NextRequest) {
     };
   });
 
-  return NextResponse.json({ artists });
+  return NextResponse.json(
+    { artists },
+    { headers: { "Cache-Control": "private, no-store" } },
+  );
 }

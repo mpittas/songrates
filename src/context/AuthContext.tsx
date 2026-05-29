@@ -18,7 +18,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const supabase = createClient();
+  // Stabilize supabase client instance to prevent effect re-runs
+  const [supabase] = useState(() => createClient());
   const router = useRouter();
 
   useEffect(() => {

@@ -5,6 +5,9 @@ import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { FaArrowLeft, FaListUl } from "react-icons/fa";
 
+/** ISR: regenerate playlist pages at most once per hour */
+export const revalidate = 3600;
+
 interface PageProps {
   params: Promise<{ id: string }>;
 }

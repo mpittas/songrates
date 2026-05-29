@@ -13,8 +13,6 @@ import type {
 } from "@/types/search";
 import { CACHE_HEADERS } from "@/lib/api-utils";
 
-export const dynamic = "force-dynamic";
-
 const VALID_CATEGORIES = new Set(["all", "artist", "album", "song"]);
 
 /**

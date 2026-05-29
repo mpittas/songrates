@@ -202,11 +202,8 @@ export async function GET(request: NextRequest) {
     };
   });
 
-  return NextResponse.json({
-    songs,
-    total,
-    page,
-    pageSize,
-    hasMore,
-  });
+  return NextResponse.json(
+    { songs, total, page, pageSize, hasMore },
+    { headers: { "Cache-Control": "private, no-store" } },
+  );
 }

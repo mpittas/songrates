@@ -4,6 +4,9 @@ import LatestRatedAlbums from "@/components/home/LatestRatedAlbums";
 import DailyTop100Playlists from "@/components/home/DailyTop100Playlists";
 import TrendingSongs from "@/components/home/TrendingSongs";
 
+/** ISR: regenerate home page at most once every 30 minutes */
+export const revalidate = 1800;
+
 function TrendingSongsFallback() {
   return (
     <section className="py-12 sm:py-14">

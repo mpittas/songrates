@@ -18,9 +18,10 @@ export const CACHE_HEADERS = {
 export function successResponse<T>(
   data: T,
   cacheType: keyof typeof CACHE_HEADERS = "artist",
+  extraHeaders?: Record<string, string>,
 ): NextResponse {
   return NextResponse.json(data, {
-    headers: CACHE_HEADERS[cacheType],
+    headers: { ...CACHE_HEADERS[cacheType], ...extraHeaders },
   });
 }
 

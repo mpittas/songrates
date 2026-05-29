@@ -1,6 +1,11 @@
 import { NextRequest } from "next/server";
 import { youtubeCache } from "@/lib/cache";
-import { successResponse } from "@/lib/api-utils";
+import { successResponse, CACHE_HEADERS } from "@/lib/api-utils";
+
+const YOUTUBE_CACHE_HEADERS = {
+  "Cache-Control":
+    "public, s-maxage=86400, stale-while-revalidate=604800",
+};
 
 const YOUTUBE_SEARCH_URL = "https://www.youtube.com/results";
 
@@ -22,6 +27,7 @@ export async function GET(request: NextRequest) {
         cached: true,
       },
       "search",
+      YOUTUBE_CACHE_HEADERS,
     );
   }
 
@@ -46,7 +52,7 @@ export async function GET(request: NextRequest) {
       const videoId = videoIdMatch[1];
       youtubeCache.set(cacheKey, videoId);
 
-      return successResponse({ videoId, success: true }, "search");
+      return successResponse({ videoId, success: true }, "search", YOUTUBE_CACHE_HEADERS);
     }
 
     return successResponse({ videoId: null, success: false }, "search");

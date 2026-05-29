@@ -9,6 +9,9 @@ import { resolveArtistId } from "@/lib/resolveArtistId";
 import { PAGE_CONTENT_TOP } from "@/lib/pageLayout";
 import { cn } from "@/lib/utils";
 
+/** ISR: regenerate artist pages at most once per hour */
+export const revalidate = 3600;
+
 interface PageProps {
   params: Promise<{ id: string }>;
 }
