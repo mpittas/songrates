@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { FaMusic } from "react-icons/fa";
@@ -34,11 +34,10 @@ export default function PlaylistSelectorModal({
   const {
     playlists,
     loading,
-    fetchPlaylists,
     createPlaylist,
     addTrackToPlaylist,
     removeTrackFromPlaylist,
-    getPlaylistTracks,
+    getSongPlaylistSummaries,
   } = usePlaylist();
 
   const [playlistTrackCounts, setPlaylistTrackCounts] = useState<
@@ -48,31 +47,54 @@ export default function PlaylistSelectorModal({
     Record<string, boolean>
   >({});
 
-  const songPlaylists = playlists.filter((p) => p.type === "songs");
+  const songPlaylists = useMemo(
+    () => playlists.filter((p) => p.type === "songs"),
+    [playlists],
+  );
 
   useEffect(() => {
-    fetchPlaylists();
-  }, [fetchPlaylists]);
+    let cancelled = false;
 
-  useEffect(() => {
     const checkTracks = async () => {
-      const counts: Record<string, number> = {};
-      const memberships: Record<string, boolean> = {};
-
-      for (const playlist of songPlaylists) {
-        const tracks = await getPlaylistTracks(playlist.id);
-        counts[playlist.id] = tracks.length;
-        memberships[playlist.id] = tracks.some((t) => t.track_id === trackId);
+      if (songPlaylists.length === 0) {
+        await Promise.resolve();
+        if (!cancelled) {
+          setPlaylistTrackCounts({});
+          setTrackInPlaylist({});
+        }
+        return;
       }
 
-      setPlaylistTrackCounts(counts);
-      setTrackInPlaylist(memberships);
+      const summaries = await getSongPlaylistSummaries(
+        trackId,
+        songPlaylists.map((playlist) => playlist.id),
+      );
+
+      if (cancelled) return;
+
+      setPlaylistTrackCounts(
+        Object.fromEntries(
+          Object.entries(summaries).map(([id, summary]) => [
+            id,
+            summary.count,
+          ]),
+        ),
+      );
+      setTrackInPlaylist(
+        Object.fromEntries(
+          Object.entries(summaries).map(([id, summary]) => [
+            id,
+            summary.containsItem,
+          ]),
+        ),
+      );
     };
 
-    if (songPlaylists.length > 0) {
-      checkTracks();
-    }
-  }, [playlists, trackId, getPlaylistTracks]);
+    checkTracks();
+    return () => {
+      cancelled = true;
+    };
+  }, [songPlaylists, trackId, getSongPlaylistSummaries]);
 
   const openPlaylistToast = (playlistId: string, playlistName: string) => {
     const titleLine = trackName?.trim() || "Song";

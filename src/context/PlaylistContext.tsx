@@ -18,6 +18,7 @@ import {
   AddTrackToPlaylistInput,
   AddAlbumToPlaylistInput,
 } from "@/types/playlist";
+import { fetchAllRows } from "@/lib/supabase/fetchAllRows";
 
 interface PlaylistContextType {
   playlists: Playlist[];
@@ -34,6 +35,10 @@ interface PlaylistContextType {
     playlistId: string,
     forceRefresh?: boolean,
   ) => Promise<PlaylistTrack[]>;
+  getSongPlaylistSummaries: (
+    trackId: string,
+    playlistIds: string[],
+  ) => Promise<Record<string, PlaylistItemSummary>>;
   isTrackInPlaylist: (playlistId: string, trackId: string) => boolean;
   addAlbumToPlaylist: (input: AddAlbumToPlaylistInput) => Promise<boolean>;
   removeAlbumFromPlaylist: (
@@ -44,7 +49,16 @@ interface PlaylistContextType {
     playlistId: string,
     forceRefresh?: boolean,
   ) => Promise<PlaylistAlbum[]>;
+  getAlbumPlaylistSummaries: (
+    albumId: string,
+    playlistIds: string[],
+  ) => Promise<Record<string, PlaylistItemSummary>>;
   isAlbumInPlaylist: (playlistId: string, albumId: string) => boolean;
+}
+
+interface PlaylistItemSummary {
+  count: number;
+  containsItem: boolean;
 }
 
 const PlaylistContext = createContext<PlaylistContextType | undefined>(
@@ -328,6 +342,47 @@ export function PlaylistProvider({ children }: { children: React.ReactNode }) {
     [playlistTracksCache],
   );
 
+  const getSongPlaylistSummaries = useCallback(
+    async (
+      trackId: string,
+      playlistIds: string[],
+    ): Promise<Record<string, PlaylistItemSummary>> => {
+      const summaries = Object.fromEntries(
+        playlistIds.map((id) => [id, { count: 0, containsItem: false }]),
+      ) as Record<string, PlaylistItemSummary>;
+
+      if (!user || playlistIds.length === 0) return summaries;
+
+      const { rows, error } = await fetchAllRows<{
+        playlist_id: string;
+        track_id: string;
+      }>((from, to) =>
+        supabase
+          .from("playlist_tracks")
+          .select("playlist_id, track_id")
+          .in("playlist_id", playlistIds)
+          .range(from, to),
+      );
+
+      if (error) {
+        console.error("Error fetching playlist track summaries:", error);
+        return summaries;
+      }
+
+      for (const row of rows) {
+        const summary = summaries[row.playlist_id];
+        if (!summary) continue;
+        summary.count += 1;
+        if (row.track_id === trackId) {
+          summary.containsItem = true;
+        }
+      }
+
+      return summaries;
+    },
+    [user, supabase],
+  );
+
   // Add an album to a playlist
   const addAlbumToPlaylist = useCallback(
     async (input: AddAlbumToPlaylistInput): Promise<boolean> => {
@@ -485,6 +540,47 @@ export function PlaylistProvider({ children }: { children: React.ReactNode }) {
     [playlistAlbumsCache],
   );
 
+  const getAlbumPlaylistSummaries = useCallback(
+    async (
+      albumId: string,
+      playlistIds: string[],
+    ): Promise<Record<string, PlaylistItemSummary>> => {
+      const summaries = Object.fromEntries(
+        playlistIds.map((id) => [id, { count: 0, containsItem: false }]),
+      ) as Record<string, PlaylistItemSummary>;
+
+      if (!user || playlistIds.length === 0) return summaries;
+
+      const { rows, error } = await fetchAllRows<{
+        playlist_id: string;
+        album_id: string;
+      }>((from, to) =>
+        supabase
+          .from("playlist_albums")
+          .select("playlist_id, album_id")
+          .in("playlist_id", playlistIds)
+          .range(from, to),
+      );
+
+      if (error) {
+        console.error("Error fetching playlist album summaries:", error);
+        return summaries;
+      }
+
+      for (const row of rows) {
+        const summary = summaries[row.playlist_id];
+        if (!summary) continue;
+        summary.count += 1;
+        if (row.album_id === albumId) {
+          summary.containsItem = true;
+        }
+      }
+
+      return summaries;
+    },
+    [user, supabase],
+  );
+
   return (
     <PlaylistContext.Provider
       value={{
@@ -496,10 +592,12 @@ export function PlaylistProvider({ children }: { children: React.ReactNode }) {
         addTrackToPlaylist,
         removeTrackFromPlaylist,
         getPlaylistTracks,
+        getSongPlaylistSummaries,
         isTrackInPlaylist,
         addAlbumToPlaylist,
         removeAlbumFromPlaylist,
         getPlaylistAlbums,
+        getAlbumPlaylistSummaries,
         isAlbumInPlaylist,
       }}
     >

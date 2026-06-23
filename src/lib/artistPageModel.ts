@@ -20,8 +20,8 @@ function mapAppleAlbum(a: AppleArtistAlbum, typeOverride?: string): Album {
 /** Maps Apple API discography fetches into props for `ArtistPageContent`. */
 export function mapArtistDiscographyToPageData(
   discography: ArtistDiscography,
-  allFullAlbums: AppleArtistAlbum[],
-  allSingles: AppleArtistAlbum[],
+  allFullAlbums: AppleArtistAlbum[] = discography.fullAlbums,
+  allSingles: AppleArtistAlbum[] = discography.singles,
 ): {
   artistName: string;
   artistInfo: ArtistInfo;

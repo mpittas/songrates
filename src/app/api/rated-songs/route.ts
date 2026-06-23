@@ -40,6 +40,24 @@ function parseStoredArtists(value: unknown): RatedSongArtist[] {
     .map((a) => ({ id: a.id, name: a.name }));
 }
 
+function hasCompleteStoredMetadata(row: {
+  item_name: string | null;
+  artist_id: string | null;
+  artists: unknown;
+  album_id: string | null;
+  album_name: string | null;
+  duration_ms: number | null;
+}) {
+  return Boolean(
+    row.item_name &&
+      row.artist_id &&
+      parseStoredArtists(row.artists).length > 0 &&
+      row.album_id &&
+      row.album_name &&
+      row.duration_ms,
+  );
+}
+
 export async function GET(request: NextRequest) {
   const supabase = await createClient();
   const url = new URL(request.url);
@@ -151,13 +169,63 @@ export async function GET(request: NextRequest) {
     albumMap.set(album.album_id, album);
   }
 
-  const trackIds = rows.map((r) => r.item_id);
   let enrichmentMap = new Map<string, AppleSongEnrichment>();
+  const missingMetaIds = Array.from(
+    new Set(
+      rows
+        .filter((row) => !hasCompleteStoredMetadata(row))
+        .map((row) => row.item_id),
+    ),
+  );
+  const isOwner = user?.id === targetUserId;
 
-  try {
-    enrichmentMap = await fetchAppleSongEnrichmentsByIds(trackIds);
-  } catch (e) {
-    console.error("Apple enrichment for rated songs failed:", e);
+  if (missingMetaIds.length > 0) {
+    try {
+      enrichmentMap = await fetchAppleSongEnrichmentsByIds(missingMetaIds);
+
+      for (const row of rows) {
+        const enriched = enrichmentMap.get(row.item_id);
+        if (!enriched) continue;
+
+        if (!row.item_name && enriched.name) row.item_name = enriched.name;
+        if (!row.album_id && enriched.albumId) row.album_id = enriched.albumId;
+        if (!row.album_name && enriched.albumName)
+          row.album_name = enriched.albumName;
+        if (!row.duration_ms && enriched.durationMs)
+          row.duration_ms = enriched.durationMs;
+        if (enriched.artists.length > 0) {
+          if (!row.artist_id) row.artist_id = enriched.artists[0]?.id ?? null;
+          if (!row.artist_name) row.artist_name = enriched.artists[0]?.name ?? null;
+          if (parseStoredArtists(row.artists).length === 0) {
+            row.artists = enriched.artists;
+          }
+        }
+      }
+
+      if (isOwner) {
+        const updates = rows.filter((row) => enrichmentMap.has(row.item_id));
+        await Promise.all(
+          updates.map((row) =>
+            supabase
+              .from("user_favorites")
+              .update({
+                item_name: row.item_name,
+                artist_name: row.artist_name,
+                artist_id: row.artist_id,
+                artists: parseStoredArtists(row.artists).length
+                  ? row.artists
+                  : null,
+                album_id: row.album_id,
+                album_name: row.album_name,
+                duration_ms: row.duration_ms,
+              })
+              .eq("id", row.id),
+          ),
+        );
+      }
+    } catch (e) {
+      console.error("Apple enrichment for rated songs failed:", e);
+    }
   }
 
   const ratingTrackIds = rows.map((r) => r.item_id);
@@ -184,7 +252,10 @@ export async function GET(request: NextRequest) {
           ? [{ id: row.artist_id, name: row.artist_name }]
           : [];
     const fallbackArtistName =
-      row.artist_name || artists[0]?.name || album?.artist_name || "Unknown Artist";
+      row.artist_name ||
+      artists[0]?.name ||
+      album?.artist_name ||
+      "Unknown Artist";
 
     return {
       id: row.id,

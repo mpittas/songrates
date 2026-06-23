@@ -1,21 +1,57 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+const AUTH_REFRESH_TIMEOUT_MS = 4000;
+
+function hasSupabaseAuthCookie(request: NextRequest) {
+  return request.cookies
+    .getAll()
+    .some(
+      (cookie) =>
+        cookie.name.startsWith("sb-") && cookie.name.includes("auth-token"),
+    );
+}
+
+function isSupabaseAuthCookie(name: string) {
+  return name.startsWith("sb-") && name.includes("auth-token");
+}
+
+async function fetchWithTimeout(
+  input: Parameters<typeof fetch>[0],
+  init?: Parameters<typeof fetch>[1],
+) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), AUTH_REFRESH_TIMEOUT_MS);
+
+  try {
+    return await fetch(input, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
   });
 
+  if (!hasSupabaseAuthCookie(request)) {
+    return supabaseResponse;
+  }
+
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      global: {
+        fetch: fetchWithTimeout,
+      },
       cookies: {
         getAll() {
           return request.cookies.getAll();
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
+          cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value),
           );
           supabaseResponse = NextResponse.next({
@@ -33,9 +69,25 @@ export async function updateSession(request: NextRequest) {
   // supabase.auth.getUser(). A simple mistake can make it very hard to debug
   // issues with users being logged out.
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: authData, error: authError } = await supabase.auth
+    .getUser()
+    .catch((error) => {
+      return { data: { user: null }, error };
+    });
+  const user = authData.user;
+
+  if (authError) {
+    if (
+      !(authError instanceof Error && authError.name === "AuthSessionMissingError")
+    ) {
+      console.error("Supabase middleware auth refresh failed:", authError);
+    }
+    request.cookies.getAll().forEach((cookie) => {
+      if (isSupabaseAuthCookie(cookie.name)) {
+        supabaseResponse.cookies.delete(cookie.name);
+      }
+    });
+  }
 
   if (
     !user &&

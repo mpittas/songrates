@@ -1,8 +1,4 @@
-import {
-  getArtistWithViews,
-  getArtistFullAlbums,
-  getArtistSingles,
-} from "@/lib/appleMusic/api";
+import { getArtistWithViews } from "@/lib/appleMusic/api";
 import ArtistPageContent from "@/components/artist/ArtistPageContent";
 import { mapArtistDiscographyToPageData } from "@/lib/artistPageModel";
 import { resolveArtistId } from "@/lib/resolveArtistId";
@@ -20,11 +16,7 @@ export default async function ArtistPage({ params }: PageProps) {
   const { id: slug } = await params;
   const id = resolveArtistId(slug);
 
-  const [discography, allFullAlbums, allSingles] = await Promise.all([
-    getArtistWithViews(id),
-    getArtistFullAlbums(id),
-    getArtistSingles(id),
-  ]);
+  const discography = await getArtistWithViews(id);
 
   if (!discography) {
     return (
@@ -39,11 +31,7 @@ export default async function ArtistPage({ params }: PageProps) {
     );
   }
 
-  const pageData = mapArtistDiscographyToPageData(
-    discography,
-    allFullAlbums,
-    allSingles,
-  );
+  const pageData = mapArtistDiscographyToPageData(discography);
 
   return (
     <ArtistPageContent

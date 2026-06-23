@@ -6,6 +6,8 @@ import React, {
   useEffect,
   useState,
   useCallback,
+  useMemo,
+  useRef,
 } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/utils/supabase/client";
@@ -17,6 +19,7 @@ interface RatingsContextType {
   ratings: Record<string, number>;
   albumRatings: Record<string, RatedAlbumData>;
   publicAlbumRatings: Record<string, PublicAlbumRating>;
+  ensurePublicAlbumRatings: (albumIds: string[]) => Promise<void>;
   setRating: (
     trackId: string,
     rating: number,
@@ -39,7 +42,23 @@ interface RealtimePayload<T> {
   schema: string;
   table: string;
   commit_timestamp: string;
-  errors: null | any[];
+  errors: null | unknown[];
+}
+
+interface DBRating {
+  track_id: string;
+  album_id: string;
+  rating: number;
+}
+
+interface DBUserAlbum {
+  album_id: string;
+  title: string;
+  artist_name: string;
+  release_date?: string;
+  total_tracks: number;
+  created_at?: string;
+  thumbnail_url: string | null;
 }
 
 const RatingsContext = createContext<RatingsContextType | undefined>(undefined);
@@ -56,36 +75,11 @@ export function RatingsProvider({ children }: { children: React.ReactNode }) {
   const [publicAlbumRatings, setPublicAlbumRatings] = useState<
     Record<string, PublicAlbumRating>
   >({});
-  const [isLoaded, setIsLoaded] = useState(false);
+  const requestedPublicAlbumIdsRef = useRef<Set<string>>(new Set());
 
   // Fetch from Supabase
   useEffect(() => {
-    // 1. Fetch Public Ratings (Always, or at least independent of user)
-    const fetchPublicRatings = async () => {
-      const { data: dbPublicRatings, error: pError } = await supabase
-        .from("public_album_ratings")
-        .select("*");
-
-      if (pError) {
-        console.error("Error fetching public ratings:", pError);
-      } else {
-        const newPublicRatings: Record<string, PublicAlbumRating> = {};
-        if (dbPublicRatings) {
-          dbPublicRatings.forEach((r: any) => {
-            newPublicRatings[r.album_id] = {
-              albumId: r.album_id,
-              averageRating: Number(r.average_rating),
-              ratingCount: Number(r.rating_count),
-            };
-          });
-        }
-        setPublicAlbumRatings(newPublicRatings);
-      }
-    };
-
-    fetchPublicRatings();
-
-    // 2. Subscribe to Realtime Changes for Public Ratings
+    // Subscribe to public rating changes, but load initial rows on demand.
     const channel = supabase
       .channel("public_ratings_changes")
       .on(
@@ -123,22 +117,26 @@ export function RatingsProvider({ children }: { children: React.ReactNode }) {
       )
       .subscribe();
 
-    // 3. Fetch Personal Ratings (User or Guest)
-    const activeUserId = user?.id || localStorage.getItem("songrates_guest_id");
+    const storedGuestId = localStorage.getItem("songrates_guest_id");
 
-    // Generate guest ID if needed
-    if (!user && !activeUserId) {
+    if (!user && !storedGuestId) {
       const newGuestId = generateUUID();
       localStorage.setItem("songrates_guest_id", newGuestId);
+      Promise.resolve().then(() => {
+        setRatings({});
+        setAlbumRatings({});
+      });
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
 
-    // Stabilize the ID we use for this effect run
-    const effectiveUserId =
-      user?.id || localStorage.getItem("songrates_guest_id");
+    const effectiveUserId = user?.id || storedGuestId;
     if (!effectiveUserId) {
-      setRatings({});
-      setAlbumRatings({});
-      setIsLoaded(true);
+      Promise.resolve().then(() => {
+        setRatings({});
+        setAlbumRatings({});
+      });
       return () => {
         supabase.removeChannel(channel);
       };
@@ -146,65 +144,58 @@ export function RatingsProvider({ children }: { children: React.ReactNode }) {
 
     const fetchPersonalData = async () => {
       try {
-        type DbRating = { track_id: string; album_id: string; rating: number };
-
-        const { rows: dbRatings, error: rError } =
-          await fetchAllRows<DbRating>((from, to) =>
+        const [ratingsResult, albumsResult] = await Promise.all([
+          fetchAllRows<DBRating>((from, to) =>
             supabase
               .from("ratings")
               .select("track_id, album_id, rating")
               .eq("user_id", effectiveUserId)
               .range(from, to),
-          );
+          ),
+          fetchAllRows<DBUserAlbum>((from, to) =>
+            supabase
+              .from("user_albums")
+              .select(
+                "album_id, title, artist_name, release_date, total_tracks, created_at, thumbnail_url",
+              )
+              .eq("user_id", effectiveUserId)
+              .range(from, to),
+          ),
+        ]);
 
-        if (rError) throw rError;
-
-        const { rows: dbAlbums, error: aError } = await fetchAllRows((from, to) =>
-          supabase
-            .from("user_albums")
-            .select("*")
-            .eq("user_id", effectiveUserId)
-            .range(from, to),
-        );
-
-        if (aError) throw aError;
+        if (ratingsResult.error) throw ratingsResult.error;
+        if (albumsResult.error) throw albumsResult.error;
 
         const newRatings: Record<string, number> = {};
         // Group track IDs by album for easier construction
         const albumTracksMap: Record<string, string[]> = {};
 
-        if (dbRatings) {
-          dbRatings.forEach((r: any) => {
-            newRatings[r.track_id] = Number(r.rating);
+        ratingsResult.rows.forEach((r) => {
+          newRatings[r.track_id] = Number(r.rating);
 
-            if (!albumTracksMap[r.album_id]) {
-              albumTracksMap[r.album_id] = [];
-            }
-            albumTracksMap[r.album_id].push(r.track_id);
-          });
-        }
+          if (!albumTracksMap[r.album_id]) {
+            albumTracksMap[r.album_id] = [];
+          }
+          albumTracksMap[r.album_id].push(r.track_id);
+        });
         setRatings(newRatings);
 
         const newAlbumRatings: Record<string, RatedAlbumData> = {};
-        if (dbAlbums) {
-          dbAlbums.forEach((a: any) => {
-            newAlbumRatings[a.album_id] = {
-              id: a.album_id,
-              title: a.title,
-              artistName: a.artist_name,
-              releaseDate: a.release_date,
-              totalTracks: a.total_tracks,
-              ratedTrackIds: albumTracksMap[a.album_id] || [],
-              ratedAt: a.created_at,
-              artworkUrl: a.thumbnail_url || undefined,
-            };
-          });
-        }
+        albumsResult.rows.forEach((a) => {
+          newAlbumRatings[a.album_id] = {
+            id: a.album_id,
+            title: a.title,
+            artistName: a.artist_name,
+            releaseDate: a.release_date,
+            totalTracks: a.total_tracks,
+            ratedTrackIds: albumTracksMap[a.album_id] || [],
+            ratedAt: a.created_at,
+            artworkUrl: a.thumbnail_url || undefined,
+          };
+        });
         setAlbumRatings(newAlbumRatings);
       } catch (e) {
         console.error("Failed to load ratings from Supabase", e);
-      } finally {
-        setIsLoaded(true);
       }
     };
 
@@ -216,6 +207,41 @@ export function RatingsProvider({ children }: { children: React.ReactNode }) {
 
     // Only fetch when user changes, supabase is now stable
   }, [user, supabase]);
+
+  const ensurePublicAlbumRatings = useCallback(
+    async (albumIds: string[]) => {
+      const missingIds = Array.from(
+        new Set(albumIds.filter((id) => !requestedPublicAlbumIdsRef.current.has(id))),
+      );
+      if (missingIds.length === 0) return;
+
+      const { data, error } = await supabase
+        .from("public_album_ratings")
+        .select("album_id, average_rating, rating_count")
+        .in("album_id", missingIds);
+
+      if (error) {
+        console.error("Error fetching public ratings:", error);
+        return;
+      }
+
+      missingIds.forEach((id) => requestedPublicAlbumIdsRef.current.add(id));
+
+      const newPublicRatings: Record<string, PublicAlbumRating> = {};
+      for (const row of (data || []) as DBPublicAlbumRating[]) {
+        newPublicRatings[row.album_id] = {
+          albumId: row.album_id,
+          averageRating: Number(row.average_rating),
+          ratingCount: Number(row.rating_count),
+        };
+      }
+
+      if (Object.keys(newPublicRatings).length > 0) {
+        setPublicAlbumRatings((prev) => ({ ...prev, ...newPublicRatings }));
+      }
+    },
+    [supabase],
+  );
 
   const setRating = useCallback(
     async (trackId: string, rating: number, albumContext?: AlbumContext) => {
@@ -413,16 +439,30 @@ export function RatingsProvider({ children }: { children: React.ReactNode }) {
     [user, supabase, albumRatings],
   );
 
+  const value = useMemo(
+    () => ({
+      ratings,
+      setRating,
+      albumRatings,
+      publicAlbumRatings,
+      ensurePublicAlbumRatings,
+      getAlbumRating,
+      removeAlbumRating,
+    }),
+    [
+      ratings,
+      setRating,
+      albumRatings,
+      publicAlbumRatings,
+      ensurePublicAlbumRatings,
+      getAlbumRating,
+      removeAlbumRating,
+    ],
+  );
+
   return (
     <RatingsContext.Provider
-      value={{
-        ratings,
-        setRating,
-        albumRatings,
-        publicAlbumRatings,
-        getAlbumRating,
-        removeAlbumRating,
-      }}
+      value={value}
     >
       {children}
     </RatingsContext.Provider>

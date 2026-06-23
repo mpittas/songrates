@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { FaCompactDisc } from "react-icons/fa";
@@ -32,10 +32,9 @@ export default function AlbumPlaylistSelectorModal({
   const {
     playlists,
     loading,
-    fetchPlaylists,
     createPlaylist,
     addAlbumToPlaylist,
-    getPlaylistAlbums,
+    getAlbumPlaylistSummaries,
   } = usePlaylist();
 
   const [playlistAlbumCounts, setPlaylistAlbumCounts] = useState<
@@ -45,31 +44,54 @@ export default function AlbumPlaylistSelectorModal({
     Record<string, boolean>
   >({});
 
-  const albumPlaylists = playlists.filter((p) => p.type === "albums");
+  const albumPlaylists = useMemo(
+    () => playlists.filter((p) => p.type === "albums"),
+    [playlists],
+  );
 
   useEffect(() => {
-    fetchPlaylists();
-  }, [fetchPlaylists]);
+    let cancelled = false;
 
-  useEffect(() => {
     const checkAlbums = async () => {
-      const counts: Record<string, number> = {};
-      const memberships: Record<string, boolean> = {};
-
-      for (const playlist of albumPlaylists) {
-        const albums = await getPlaylistAlbums(playlist.id);
-        counts[playlist.id] = albums.length;
-        memberships[playlist.id] = albums.some((a) => a.album_id === albumId);
+      if (albumPlaylists.length === 0) {
+        await Promise.resolve();
+        if (!cancelled) {
+          setPlaylistAlbumCounts({});
+          setAlbumInPlaylist({});
+        }
+        return;
       }
 
-      setPlaylistAlbumCounts(counts);
-      setAlbumInPlaylist(memberships);
+      const summaries = await getAlbumPlaylistSummaries(
+        albumId,
+        albumPlaylists.map((playlist) => playlist.id),
+      );
+
+      if (cancelled) return;
+
+      setPlaylistAlbumCounts(
+        Object.fromEntries(
+          Object.entries(summaries).map(([id, summary]) => [
+            id,
+            summary.count,
+          ]),
+        ),
+      );
+      setAlbumInPlaylist(
+        Object.fromEntries(
+          Object.entries(summaries).map(([id, summary]) => [
+            id,
+            summary.containsItem,
+          ]),
+        ),
+      );
     };
 
-    if (albumPlaylists.length > 0) {
-      checkAlbums();
-    }
-  }, [playlists, albumId, getPlaylistAlbums]);
+    checkAlbums();
+    return () => {
+      cancelled = true;
+    };
+  }, [albumPlaylists, albumId, getAlbumPlaylistSummaries]);
 
   const openPlaylistToast = (playlistId: string, playlistName: string) => {
     const titleLine = albumName?.trim() || "Album";

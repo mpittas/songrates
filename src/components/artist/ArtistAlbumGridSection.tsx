@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Button from "@/components/ui/Button";
 import AlbumCard from "@/components/album/AlbumCard";
+import { useRatingsContext } from "@/context/RatingsContext";
 import { cn } from "@/lib/utils";
 import type { Album } from "@/types/music";
 
@@ -24,8 +25,20 @@ export default function ArtistAlbumGridSection({
   onAlbumFavoriteChange?: (albumId: string, isFavorite: boolean) => void;
 }) {
   const [showAll, setShowAll] = useState(false);
-  const visible = showAll ? albums : albums.slice(0, initialCount);
+  const visible = useMemo(
+    () => (showAll ? albums : albums.slice(0, initialCount)),
+    [albums, initialCount, showAll],
+  );
   const hasMore = albums.length > initialCount;
+  const { ensurePublicAlbumRatings } = useRatingsContext();
+  const visibleAlbumIds = useMemo(
+    () => visible.map((album) => album.id),
+    [visible],
+  );
+
+  useEffect(() => {
+    void ensurePublicAlbumRatings(visibleAlbumIds);
+  }, [ensurePublicAlbumRatings, visibleAlbumIds]);
 
   return (
     <div>

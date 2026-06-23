@@ -54,6 +54,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
   const playerRef = useRef<YouTubePlayer | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const youtubeSearchCacheRef = useRef<Map<string, string | null>>(new Map());
 
   const currentIndex = queue.findIndex((t) => t.id === currentTrack?.id);
   const hasNext =
@@ -141,11 +142,21 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
           const artistNames = track.artists.map((a) => a.name).join(" ");
           searchQuery = `${artistNames} ${track.title} audio`;
         }
+
+        const cachedVideoId = youtubeSearchCacheRef.current.get(searchQuery);
+        if (cachedVideoId !== undefined) {
+          setVideoId(cachedVideoId);
+          setIsPlaying(Boolean(cachedVideoId));
+          setIsLoading(false);
+          return;
+        }
+
         const res = await fetch(
           `/api/youtube-search?q=${encodeURIComponent(searchQuery)}`,
           { signal: abortControllerRef.current.signal },
         );
         const data = await res.json();
+        youtubeSearchCacheRef.current.set(searchQuery, data.videoId || null);
 
         if (data.videoId) {
           setVideoId(data.videoId);

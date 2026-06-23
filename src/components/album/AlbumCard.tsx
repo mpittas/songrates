@@ -68,7 +68,9 @@ function RatingBadge({
     return (
       <AlbumRatingBadge
         score={
-          shouldShowPersonalScore && personalScore !== null ? personalScore : "—"
+          shouldShowPersonalScore && personalScore !== null
+            ? personalScore
+            : "—"
         }
         ratedCount={ratedCount}
         totalTracks={totalTracks}

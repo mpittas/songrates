@@ -8,6 +8,7 @@ import { usePlayerCore } from "@/context/PlayerContext";
 import { useRatingsContext as useRatings } from "@/context/RatingsContext";
 import { RATING_COLORS } from "@/components/rating/constants";
 import { AlbumInfo } from "@/types/music";
+import { albumKeys } from "@/hooks/useAlbumInfo";
 
 interface AlbumTracklistPopoverProps {
   albumId: string;
@@ -25,13 +26,20 @@ export default function AlbumTracklistPopover({
   const listRef = useRef<HTMLDivElement>(null);
 
   const { data: album, isLoading } = useQuery({
-    queryKey: ["album", albumId],
-    queryFn: async () => {
-      const res = await fetch(`/api/album-info?id=${albumId}`);
+    queryKey: albumKeys.detail(albumId),
+    queryFn: async ({ signal }) => {
+      const res = await fetch(
+        `/api/album-info?id=${encodeURIComponent(albumId)}`,
+        { signal },
+      );
       if (!res.ok) throw new Error("Failed to fetch album");
       return (await res.json()) as AlbumInfo;
     },
-    enabled: isVisible || !!albumId, // Fetch if visible OR if we have an ID (prefetch could be nice too)
+    enabled: isVisible && !!albumId,
+    staleTime: 10 * 60 * 1000,
+    gcTime: 60 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    retry: 1,
   });
 
   // Auto-scroll to active track

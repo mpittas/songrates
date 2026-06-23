@@ -1,11 +1,12 @@
 "use client";
 
+import { useEffect, useMemo } from "react";
 import { Album } from "@/types/music";
 import AlbumCard from "@/components/album/AlbumCard";
+import { useRatingsContext } from "@/context/RatingsContext";
 
 export default function AlbumGrid({
   albums,
-  onSelectAlbum,
   title,
   priorityCount = 0,
   layout = "grid",
@@ -22,6 +23,13 @@ export default function AlbumGrid({
   gridCols?: number;
   size?: "default" | "compact";
 }) {
+  const { ensurePublicAlbumRatings } = useRatingsContext();
+  const albumIds = useMemo(() => albums.map((album) => album.id), [albums]);
+
+  useEffect(() => {
+    void ensurePublicAlbumRatings(albumIds);
+  }, [albumIds, ensurePublicAlbumRatings]);
+
   if (albums.length === 0) return null;
 
   const colsClass = gridCols === 3 ? "md:grid-cols-3" : "md:grid-cols-4";

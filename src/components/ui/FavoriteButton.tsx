@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { FaHeart, FaRegHeart } from "react-icons/fa";
-import { createClient } from "@/utils/supabase/client";
+import { useFavorites } from "@/context/FavoritesContext";
 import Button from "./Button";
 
 interface FavoriteButtonProps {
@@ -46,9 +46,10 @@ export default function FavoriteButton({
   onMenuClick,
   onFavoriteChange,
 }: FavoriteButtonProps) {
-  const [isFavorite, setIsFavorite] = useState(false);
   const [loading, setLoading] = useState(false);
-  const supabase = createClient();
+  const { isFavorite: getIsFavorite, toggleFavorite: toggleCachedFavorite } =
+    useFavorites();
+  const isFavorite = getIsFavorite(itemId, itemType);
 
   const sizeClasses = {
     sm: "w-6 h-6",
@@ -62,82 +63,22 @@ export default function FavoriteButton({
     lg: 20,
   };
 
-  // Check if item is favorited
-  useEffect(() => {
-    const checkFavorite = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data, error } = await supabase
-        .from("user_favorites")
-        .select("id")
-        .eq("user_id", user.id)
-        .eq("item_id", itemId)
-        .eq("item_type", itemType)
-        .maybeSingle();
-
-      if (!error && data) {
-        setIsFavorite(true);
-      }
-    };
-
-    checkFavorite();
-  }, [itemId, itemType, supabase]);
-
   const toggleFavorite = async () => {
     setLoading(true);
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) {
-        // Redirect to login or show login modal
-        return;
-      }
-
-      if (isFavorite) {
-        setIsFavorite(false);
-        onFavoriteChange?.(false);
-
-        const { error } = await supabase
-          .from("user_favorites")
-          .delete()
-          .eq("user_id", user.id)
-          .eq("item_id", itemId)
-          .eq("item_type", itemType);
-
-        if (error) {
-          setIsFavorite(true);
-          onFavoriteChange?.(true);
-          throw error;
-        }
-      } else {
-        // Add to favorites
-        const { error } = await supabase.from("user_favorites").upsert({
-          user_id: user.id,
-          item_id: itemId,
-          item_type: itemType,
-          item_name: itemName,
-          artist_name: artistName,
-          thumbnail_url: thumbnailUrl,
-          album_id: itemType === "track" ? albumId : null,
-          album_name: itemType === "track" ? albumName : null,
-          duration_ms: itemType === "track" ? durationMs : null,
-          artist_id: itemType === "track" ? artistId : null,
-          artists:
-            itemType === "track" && artists && artists.length > 0
-              ? artists
-              : itemType === "track" && artistId && artistName
-                ? [{ id: artistId, name: artistName }]
-                : null,
-        });
-
-        if (error) throw error;
-        setIsFavorite(true);
-        onFavoriteChange?.(true);
-      }
+      const nextFavorite = await toggleCachedFavorite({
+        itemId,
+        itemType,
+        itemName,
+        artistName,
+        thumbnailUrl,
+        albumId,
+        albumName,
+        durationMs,
+        artistId,
+        artists,
+      });
+      if (nextFavorite !== null) onFavoriteChange?.(nextFavorite);
     } catch (err) {
       console.error("Error toggling favorite:", err);
     } finally {

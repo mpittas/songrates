@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect } from "react";
 import Link from "next/link";
 import { FaListUl, FaCompactDisc } from "react-icons/fa";
 import { usePlaylist } from "@/context/PlaylistContext";
@@ -12,11 +11,7 @@ interface PlaylistsSectionProps {
 export default function PlaylistsSection({
   className = "",
 }: PlaylistsSectionProps) {
-  const { playlists, loading, fetchPlaylists } = usePlaylist();
-
-  useEffect(() => {
-    fetchPlaylists();
-  }, [fetchPlaylists]);
+  const { playlists, loading } = usePlaylist();
 
   return (
     <div className={className}>

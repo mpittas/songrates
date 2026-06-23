@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRatingsContext as useRatings } from "@/context/RatingsContext";
 import { createSlug } from "@/lib/utils";
@@ -41,7 +41,11 @@ export default function AlbumPageContent({
   fallbackUserName,
 }: AlbumPageContentProps) {
   const { data: album = null, isLoading: loading } = useAlbumInfo(slug);
-  const { ratings: myRatings, publicAlbumRatings } = useRatings();
+  const {
+    ratings: myRatings,
+    publicAlbumRatings,
+    ensurePublicAlbumRatings,
+  } = useRatings();
   const { viewingUserRatings, viewingUserName } = useAlbumViewingUserRatings(
     albumId,
     viewingUserId,
@@ -52,6 +56,11 @@ export default function AlbumPageContent({
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const { playTrack } = usePlayerCore();
   const [isPlaylistModalOpen, setIsPlaylistModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (!album?.id) return;
+    void ensurePublicAlbumRatings([album.id]);
+  }, [album?.id, ensurePublicAlbumRatings]);
 
   const queue = useMemo(() => {
     if (!album) return [];
@@ -99,16 +108,11 @@ export default function AlbumPageContent({
   const imageUrl = album.artworkUrl || "/vinyl-placeholder.svg";
   const activeRatings = viewingUserRatings || myRatings;
   const tracks = album.tracks || [];
-  const {
-    totalTracks,
-    ratedTracksCount,
-    isFullyRated,
-    averageScore,
-  } = computeTrackRatingStats(tracks, activeRatings);
+  const { totalTracks, ratedTracksCount, isFullyRated, averageScore } =
+    computeTrackRatingStats(tracks, activeRatings);
 
   const publicData = publicAlbumRatings[album.id] ?? null;
-  const primaryArtist =
-    album.tracks?.[0]?.artists?.[0] ?? album.artist ?? null;
+  const primaryArtist = album.tracks?.[0]?.artists?.[0] ?? album.artist ?? null;
   const subtitleArtists = getAlbumSubtitleArtists(album);
   const playLabel = getAlbumPlayLabel(album.type);
 
@@ -259,16 +263,12 @@ export default function AlbumPageContent({
           <SongRow
             index={Number(track.number) || i + 1}
             title={track.title}
-            artist={
-              track.artists?.[0]?.name || album.artist?.name || "Unknown"
-            }
+            artist={track.artists?.[0]?.name || album.artist?.name || "Unknown"}
             album={album.title}
             duration={String(track.length || "")}
             artworkUrl={imageUrl}
             rating={
-              viewingUserRatings
-                ? viewingUserRatings[track.id] || 0
-                : undefined
+              viewingUserRatings ? viewingUserRatings[track.id] || 0 : undefined
             }
             track={track}
             artistId={track.artists?.[0]?.id || album.artist?.id || ""}
