@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { IoMusicalNotes, IoDisc, IoPerson } from "react-icons/io5";
+import { IoMusicalNotes, IoDisc, IoPerson, IoClose } from "react-icons/io5";
 
 import { useSearchQuery } from "@/hooks/useSearchQuery";
 
@@ -96,10 +96,17 @@ function ArtworkImage({
 
 // ─── Individual Result Row Components ──────────────────────────────────────────
 
-function ArtistRow({ result }: { result: ArtistSearchResult }) {
+function ArtistRow({
+  result,
+  onSelect,
+}: {
+  result: ArtistSearchResult;
+  onSelect?: () => void;
+}) {
   return (
     <Link
       href={`/artist/${createSlug(result.title, result.id)}`}
+      onClick={onSelect}
       className="flex items-center gap-3 p-3 hover:bg-[#f7f7f7] transition-colors group"
     >
       <div className="w-10 h-10 rounded-full overflow-hidden bg-[#efefef] border border-[#dcdcdc] group-hover:border-[#c8c8c8] flex items-center justify-center flex-shrink-0">
@@ -132,7 +139,13 @@ function ArtistRow({ result }: { result: ArtistSearchResult }) {
   );
 }
 
-function AlbumRow({ result }: { result: AlbumSearchResult }) {
+function AlbumRow({
+  result,
+  onSelect,
+}: {
+  result: AlbumSearchResult;
+  onSelect?: () => void;
+}) {
   const prefetchAlbum = usePrefetchAlbum();
   const slug = createSlug(result.title, result.id);
 
@@ -140,6 +153,7 @@ function AlbumRow({ result }: { result: AlbumSearchResult }) {
     <Link
       href={`/album/${slug}`}
       onMouseEnter={() => prefetchAlbum(slug)}
+      onClick={onSelect}
       className="flex items-center gap-3 p-3 hover:bg-[#f7f7f7] transition-colors group"
     >
       <div className="w-10 h-10 overflow-hidden bg-[#efefef] border border-[#dcdcdc] group-hover:border-[#c8c8c8] flex items-center justify-center flex-shrink-0 rounded-sm">
@@ -161,7 +175,13 @@ function AlbumRow({ result }: { result: AlbumSearchResult }) {
   );
 }
 
-function SongRow({ result }: { result: SongSearchResult }) {
+function SongRow({
+  result,
+  onSelect,
+}: {
+  result: SongSearchResult;
+  onSelect?: () => void;
+}) {
   const prefetchAlbum = usePrefetchAlbum();
   const albumSlug = result.albumId
     ? createSlug(result.albumName || result.title, result.albumId)
@@ -208,6 +228,7 @@ function SongRow({ result }: { result: SongSearchResult }) {
       <Link
         href={href}
         onMouseEnter={() => albumSlug && prefetchAlbum(albumSlug)}
+        onClick={onSelect}
         className="flex items-center gap-3 p-3 hover:bg-[#f7f7f7] transition-colors group"
       >
         {content}
@@ -238,14 +259,21 @@ function SectionHeader({ label, count }: { label: string; count: number }) {
 
 // ─── Result Renderer ───────────────────────────────────────────────────────────
 
-function ResultRow({ result }: { result: SearchResult }) {
+function ResultRow({
+  result,
+  onSelect,
+}: {
+  result: SearchResult;
+  onSelect?: (result: SearchResult) => void;
+}) {
+  const handleSelect = onSelect ? () => onSelect(result) : undefined;
   switch (result.type) {
     case "artist":
-      return <ArtistRow result={result} />;
+      return <ArtistRow result={result} onSelect={handleSelect} />;
     case "album":
-      return <AlbumRow result={result} />;
+      return <AlbumRow result={result} onSelect={handleSelect} />;
     case "song":
-      return <SongRow result={result} />;
+      return <SongRow result={result} onSelect={handleSelect} />;
     default:
       return null;
   }
@@ -256,6 +284,11 @@ function ResultRow({ result }: { result: SearchResult }) {
 export default function SearchResults({
   query,
   variant = "light",
+  isFocused = false,
+  history = [],
+  onRemoveClick,
+  onClearHistory,
+  onRecordClick,
 }: SearchResultsProps) {
   const [category, setCategory] = useState<SearchCategory>("all");
 
@@ -272,13 +305,55 @@ export default function SearchResults({
   // ─── determine loading state ───────────────────────────────────────
   const showLoading = isFetching && results.length === 0;
 
-  // Hiding recent artists for now, so only show if query exists
-  if (!query) return null;
-
   const isGlass = variant === "glass";
   const panelClass = isGlass
     ? "w-full bg-white/80 backdrop-blur-xl border border-white/30 z-[9999] max-h-[60vh] overflow-y-auto shadow-2xl rounded-xl text-left"
     : "w-full bg-white border border-[#dcdcdc] z-[9999] max-h-[60vh] overflow-y-auto shadow-2xl rounded-xl text-left";
+
+  // ─── No query: show recently clicked results (logged-in users only) ──
+  if (!query) {
+    if (!isFocused || history.length === 0) return null;
+
+    return (
+      <div className={panelClass}>
+        <div className="flex items-center justify-between px-4 py-2 border-b border-[#e6e6e6]">
+          <h2 className="font-mono text-[10px] text-neutral-500 tracking-wider uppercase">
+            Recent
+          </h2>
+          {onClearHistory && (
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={onClearHistory}
+              className="font-mono text-[10px] text-neutral-500 hover:text-neutral-900 tracking-wider uppercase transition-colors"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+        <div className="divide-y divide-[#ececec]">
+          {history.map((item) => (
+            <div key={item.recordId} className="relative group/recent">
+              <ResultRow result={item.result} onSelect={onRecordClick} />
+              {onRemoveClick && (
+                <button
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => onRemoveClick(item.result.id)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-full bg-white/90 text-neutral-400 hover:text-neutral-900 opacity-0 group-hover/recent:opacity-100 transition-opacity"
+                  aria-label={`Remove ${item.result.title} from recent`}
+                >
+                  <IoClose size={16} />
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  const handleResultSelect = onRecordClick;
 
   return (
     <div className={panelClass}>
@@ -323,7 +398,7 @@ export default function SearchResults({
                     count={grouped.artists.length}
                   />
                   {grouped.artists.slice(0, 3).map((r) => (
-                    <ResultRow key={r.id} result={r} />
+                    <ResultRow key={r.id} result={r} onSelect={handleResultSelect} />
                   ))}
                 </>
               )}
@@ -331,7 +406,7 @@ export default function SearchResults({
                 <>
                   <SectionHeader label="Albums" count={grouped.albums.length} />
                   {grouped.albums.slice(0, 3).map((r) => (
-                    <ResultRow key={r.id} result={r} />
+                    <ResultRow key={r.id} result={r} onSelect={handleResultSelect} />
                   ))}
                 </>
               )}
@@ -339,7 +414,7 @@ export default function SearchResults({
                 <>
                   <SectionHeader label="Songs" count={grouped.songs.length} />
                   {grouped.songs.slice(0, 8).map((r) => (
-                    <ResultRow key={r.id} result={r} />
+                    <ResultRow key={r.id} result={r} onSelect={handleResultSelect} />
                   ))}
                 </>
               )}
@@ -361,7 +436,7 @@ export default function SearchResults({
                     <>
                       <SectionHeader label="Albums" count={mainAlbums.length} />
                       {mainAlbums.map((r) => (
-                        <ResultRow key={r.id} result={r} />
+                        <ResultRow key={r.id} result={r} onSelect={handleResultSelect} />
                       ))}
                     </>
                   )}
@@ -369,7 +444,7 @@ export default function SearchResults({
                     <>
                       <SectionHeader label="EPs" count={eps.length} />
                       {eps.map((r) => (
-                        <ResultRow key={r.id} result={r} />
+                        <ResultRow key={r.id} result={r} onSelect={handleResultSelect} />
                       ))}
                     </>
                   )}
@@ -377,7 +452,7 @@ export default function SearchResults({
                     <>
                       <SectionHeader label="Singles" count={singles.length} />
                       {singles.map((r) => (
-                        <ResultRow key={r.id} result={r} />
+                        <ResultRow key={r.id} result={r} onSelect={handleResultSelect} />
                       ))}
                     </>
                   )}
@@ -388,7 +463,7 @@ export default function SearchResults({
                         count={compilations.length}
                       />
                       {compilations.map((r) => (
-                        <ResultRow key={r.id} result={r} />
+                        <ResultRow key={r.id} result={r} onSelect={handleResultSelect} />
                       ))}
                     </>
                   )}
@@ -396,7 +471,7 @@ export default function SearchResults({
               );
             })()
           ) : (
-            results.map((r) => <ResultRow key={r.id} result={r} />)
+            results.map((r) => <ResultRow key={r.id} result={r} onSelect={handleResultSelect} />)
           )}
         </div>
       )}

@@ -2,6 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSearchInput } from "@/hooks/useSearchInput";
+import { useSearchHistory } from "@/hooks/useSearchHistory";
 import SearchInput from "@/components/search/SearchInput";
 import SearchResults from "@/components/search/SearchResults";
 import type { SearchInputVariant } from "@/types/search";
@@ -13,6 +14,9 @@ interface SearchBarProps {
 export default function SearchBar({ variant = "light" }: SearchBarProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  const { history, recordClick, removeClick, clearHistory } =
+    useSearchHistory();
 
   const {
     query,
@@ -70,7 +74,15 @@ export default function SearchBar({ variant = "light" }: SearchBarProps) {
         </div>
 
         <div className="absolute top-full left-0 right-0 z-[200] mt-2">
-          <SearchResults query={debouncedQuery} variant={variant} />
+          <SearchResults
+            query={debouncedQuery}
+            variant={variant}
+            isFocused={isFocused}
+            history={history}
+            onRemoveClick={removeClick}
+            onClearHistory={clearHistory}
+            onRecordClick={recordClick}
+          />
         </div>
       </form>
     </>

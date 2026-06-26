@@ -43,6 +43,14 @@ export type SearchResult =
   | AlbumSearchResult
   | SongSearchResult;
 
+/** A search result a logged-in user previously clicked on */
+export interface RecentSearchClick {
+  /** DB row id, used for removal */
+  recordId: string;
+  result: SearchResult;
+  clickedAt: string;
+}
+
 /** Grouped results returned when searching "all" */
 export interface GroupedSearchResults {
   artists: ArtistSearchResult[];
@@ -69,6 +77,16 @@ export type SearchInputVariant = "light" | "dark" | "glass";
 export interface SearchResultsProps {
   query: string;
   variant?: SearchInputVariant;
+  /** Whether the parent search input is currently focused */
+  isFocused?: boolean;
+  /** Recently clicked results to show when the query is empty (logged-in users) */
+  history?: RecentSearchClick[];
+  /** Remove a single recent result (by its result id) */
+  onRemoveClick?: (resultId: string) => void;
+  /** Clear all recent results */
+  onClearHistory?: () => void;
+  /** Persist a result when it is clicked */
+  onRecordClick?: (result: SearchResult) => void;
 }
 
 export interface SearchInputProps {
