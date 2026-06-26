@@ -8,6 +8,10 @@ import { MeshGradientConfig } from "@/components/mesh/types";
 import { FcGoogle } from "react-icons/fc";
 import { FaCheck, FaEye, FaEyeSlash } from "react-icons/fa";
 import Button from "@/components/ui/Button";
+import {
+  buildAuthCallbackUrl,
+  getSafeNextPath,
+} from "@/lib/auth/redirect";
 
 const greenMeshConfig: MeshGradientConfig = {
   speed: 0.2, // Slower for a calmer vibe
@@ -19,11 +23,16 @@ const greenMeshConfig: MeshGradientConfig = {
   color2: "#022c22", // Emerald 900 (Darker base)
 };
 
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : "Something went wrong";
+}
+
 function LoginContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const view = searchParams.get("view");
   const isLogin = view === "login";
+  const returnPath = getSafeNextPath(searchParams.get("next"));
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
@@ -69,12 +78,12 @@ function LoginContent() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: buildAuthCallbackUrl(window.location.origin, returnPath),
         },
       });
       if (error) throw error;
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(getErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -93,14 +102,17 @@ function LoginContent() {
           password,
         });
         if (error) throw error;
-        router.push("/");
+        router.push(returnPath);
         router.refresh();
       } else {
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/auth/callback`,
+            emailRedirectTo: buildAuthCallbackUrl(
+              window.location.origin,
+              returnPath,
+            ),
             data: {
               username: username,
             },
@@ -109,17 +121,18 @@ function LoginContent() {
         if (error) throw error;
 
         if (data.session) {
-          router.push("/");
+          router.push(returnPath);
           router.refresh();
         } else {
           setSuccess("Check your email for the confirmation link!");
         }
       }
-    } catch (err: any) {
-      if (err.message && err.message.includes("rate limit")) {
+    } catch (err: unknown) {
+      const message = getErrorMessage(err);
+      if (message.includes("rate limit")) {
         setError("Rate limit exceeded. Please wait a moment.");
       } else {
-        setError(err.message);
+        setError(message);
       }
     } finally {
       setLoading(false);

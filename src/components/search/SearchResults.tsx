@@ -99,15 +99,17 @@ function ArtworkImage({
 function ArtistRow({
   result,
   onSelect,
+  reserveRightSpace = false,
 }: {
   result: ArtistSearchResult;
   onSelect?: () => void;
+  reserveRightSpace?: boolean;
 }) {
   return (
     <Link
       href={`/artist/${createSlug(result.title, result.id)}`}
       onClick={onSelect}
-      className="flex items-center gap-3 p-3 hover:bg-[#f7f7f7] transition-colors group"
+      className={`flex items-center gap-3 p-3 hover:bg-[#f7f7f7] transition-colors group${reserveRightSpace ? " pr-9" : ""}`}
     >
       <div className="w-10 h-10 rounded-full overflow-hidden bg-[#efefef] border border-[#dcdcdc] group-hover:border-[#c8c8c8] flex items-center justify-center flex-shrink-0">
         <ArtworkImage
@@ -142,9 +144,11 @@ function ArtistRow({
 function AlbumRow({
   result,
   onSelect,
+  reserveRightSpace = false,
 }: {
   result: AlbumSearchResult;
   onSelect?: () => void;
+  reserveRightSpace?: boolean;
 }) {
   const prefetchAlbum = usePrefetchAlbum();
   const slug = createSlug(result.title, result.id);
@@ -154,7 +158,7 @@ function AlbumRow({
       href={`/album/${slug}`}
       onMouseEnter={() => prefetchAlbum(slug)}
       onClick={onSelect}
-      className="flex items-center gap-3 p-3 hover:bg-[#f7f7f7] transition-colors group"
+      className={`flex items-center gap-3 p-3 hover:bg-[#f7f7f7] transition-colors group${reserveRightSpace ? " pr-9" : ""}`}
     >
       <div className="w-10 h-10 overflow-hidden bg-[#efefef] border border-[#dcdcdc] group-hover:border-[#c8c8c8] flex items-center justify-center flex-shrink-0 rounded-sm">
         <ArtworkImage url={result.artworkUrl} alt={result.title} />
@@ -178,15 +182,18 @@ function AlbumRow({
 function SongRow({
   result,
   onSelect,
+  reserveRightSpace = false,
 }: {
   result: SongSearchResult;
   onSelect?: () => void;
+  reserveRightSpace?: boolean;
 }) {
   const prefetchAlbum = usePrefetchAlbum();
   const albumSlug = result.albumId
     ? createSlug(result.albumName || result.title, result.albumId)
     : null;
   const href = albumSlug ? `/album/${albumSlug}?track=${result.id}` : undefined;
+  const rowClass = `flex items-center gap-3 p-3 hover:bg-[#f7f7f7] transition-colors group${reserveRightSpace ? " pr-9" : ""}`;
 
   const displayYear = result.releaseDate?.slice(0, 4) || "";
 
@@ -229,7 +236,7 @@ function SongRow({
         href={href}
         onMouseEnter={() => albumSlug && prefetchAlbum(albumSlug)}
         onClick={onSelect}
-        className="flex items-center gap-3 p-3 hover:bg-[#f7f7f7] transition-colors group"
+        className={rowClass}
       >
         {content}
       </Link>
@@ -237,7 +244,7 @@ function SongRow({
   }
 
   return (
-    <div className="flex items-center gap-3 p-3 hover:bg-[#f7f7f7] transition-colors group cursor-default">
+    <div className={`${rowClass} cursor-default`}>
       {content}
     </div>
   );
@@ -262,18 +269,38 @@ function SectionHeader({ label, count }: { label: string; count: number }) {
 function ResultRow({
   result,
   onSelect,
+  reserveRightSpace = false,
 }: {
   result: SearchResult;
   onSelect?: (result: SearchResult) => void;
+  reserveRightSpace?: boolean;
 }) {
   const handleSelect = onSelect ? () => onSelect(result) : undefined;
   switch (result.type) {
     case "artist":
-      return <ArtistRow result={result} onSelect={handleSelect} />;
+      return (
+        <ArtistRow
+          result={result}
+          onSelect={handleSelect}
+          reserveRightSpace={reserveRightSpace}
+        />
+      );
     case "album":
-      return <AlbumRow result={result} onSelect={handleSelect} />;
+      return (
+        <AlbumRow
+          result={result}
+          onSelect={handleSelect}
+          reserveRightSpace={reserveRightSpace}
+        />
+      );
     case "song":
-      return <SongRow result={result} onSelect={handleSelect} />;
+      return (
+        <SongRow
+          result={result}
+          onSelect={handleSelect}
+          reserveRightSpace={reserveRightSpace}
+        />
+      );
     default:
       return null;
   }
@@ -334,7 +361,11 @@ export default function SearchResults({
         <div className="divide-y divide-[#ececec]">
           {history.map((item) => (
             <div key={item.recordId} className="relative group/recent">
-              <ResultRow result={item.result} onSelect={onRecordClick} />
+              <ResultRow
+                result={item.result}
+                onSelect={onRecordClick}
+                reserveRightSpace={Boolean(onRemoveClick)}
+              />
               {onRemoveClick && (
                 <button
                   type="button"
