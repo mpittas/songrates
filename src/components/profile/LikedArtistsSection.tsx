@@ -78,19 +78,14 @@ export default function LikedArtistsSection({
       setTotal(json.total);
       setHasMore(json.hasMore);
       setPage(pageNum);
-      setArtists((prev) =>
-        append ? [...prev, ...json.artists] : json.artists || [],
-      );
+      const nextArtists = json.artists || [];
+      setArtists((prev) => (append ? [...prev, ...nextArtists] : nextArtists));
     },
     [userId, debouncedSearchQuery],
   );
 
   useEffect(() => {
     if (isPrivate) {
-      setArtists([]);
-      setTotal(0);
-      setHasMore(false);
-      setLoading(false);
       return;
     }
 

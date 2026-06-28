@@ -1,10 +1,10 @@
 import { NextRequest } from "next/server";
 import { youtubeCache } from "@/lib/cache";
-import { successResponse, CACHE_HEADERS } from "@/lib/api-utils";
+import { successResponse } from "@/lib/api-utils";
 
 const YOUTUBE_CACHE_HEADERS = {
   "Cache-Control":
-    "public, s-maxage=86400, stale-while-revalidate=604800",
+    "public, s-maxage=604800, stale-while-revalidate=1209600",
 };
 
 const YOUTUBE_SEARCH_URL = "https://www.youtube.com/results";

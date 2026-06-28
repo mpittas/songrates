@@ -78,14 +78,14 @@ export const artistCache = new LRUCache<any>(1000, 86400);
 // Album/release cache - 24 hour TTL, up to 2000 entries
 export const albumCache = new LRUCache<any>(2000, 86400);
 
-// Search results cache - 1 hour TTL, up to 500 entries
-export const searchCache = new LRUCache<any>(500, 3600);
+// Search results cache - 6 hour TTL, up to 500 entries
+export const searchCache = new LRUCache<any>(500, 21600);
 
-// YouTube video ID cache - 1 hour TTL, up to 500 entries (for faster track switching)
-export const youtubeCache = new LRUCache<string>(500, 3600);
+// YouTube video ID cache - 7 day TTL, up to 500 entries (for faster track switching)
+export const youtubeCache = new LRUCache<string>(500, 604800);
 
-// Playlist cache - 1 hour TTL, up to 100 entries
-export const playlistCache = new LRUCache<any>(100, 3600);
+// Playlist cache - 6 hour TTL, up to 100 entries
+export const playlistCache = new LRUCache<any>(100, 21600);
 
 // Playlist enrichment cache - 6 hour TTL, up to 200 entries.
 // Keyed by a sorted, joined string of song IDs so repeated playlist views

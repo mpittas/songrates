@@ -76,19 +76,14 @@ export default function LikedAlbumsSection({
       setTotal(json.total);
       setHasMore(json.hasMore);
       setPage(pageNum);
-      setAlbums((prev) =>
-        append ? [...prev, ...json.albums] : json.albums || [],
-      );
+      const nextAlbums = json.albums || [];
+      setAlbums((prev) => (append ? [...prev, ...nextAlbums] : nextAlbums));
     },
     [userId, debouncedSearchQuery],
   );
 
   useEffect(() => {
     if (isPrivate) {
-      setAlbums([]);
-      setTotal(0);
-      setHasMore(false);
-      setLoading(false);
       return;
     }
 

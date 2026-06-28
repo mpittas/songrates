@@ -47,10 +47,6 @@ export default function ApplePlaylistDetailClient({
   const { playTrack } = usePlayerCore();
 
   useEffect(() => {
-    setTracks(playlist.tracks);
-  }, [playlist.id, playlist.tracks]);
-
-  useEffect(() => {
     const idsToEnrich = playlist.tracks
       .filter(
         (t) =>

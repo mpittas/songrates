@@ -16,10 +16,15 @@ export function useSearchInput(options: UseSearchInputOptions = {}) {
 
   // Use ref to store callback to prevent infinite loops
   const onQueryChangeRef = useRef(onQueryChange);
+  const queryRef = useRef(query);
 
   useEffect(() => {
     onQueryChangeRef.current = onQueryChange;
   }, [onQueryChange]);
+
+  useEffect(() => {
+    queryRef.current = query;
+  }, [query]);
 
   // Debounced search callback
   // - trailing: true (default) → fires after debounce period with final value
@@ -42,7 +47,7 @@ export function useSearchInput(options: UseSearchInputOptions = {}) {
   // Notify parent of changes if callback provided (using ref to avoid infinite loop)
   useEffect(() => {
     if (onQueryChangeRef.current) {
-      onQueryChangeRef.current(query, debouncedQuery);
+      onQueryChangeRef.current(queryRef.current, debouncedQuery);
     }
   }, [debouncedQuery]); // Only depend on debouncedQuery, not query
 

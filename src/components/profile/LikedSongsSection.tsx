@@ -76,17 +76,14 @@ export default function LikedSongsSection({
       setTotal(json.total);
       setHasMore(json.hasMore);
       setPage(pageNum);
-      setSongs((prev) => (append ? [...prev, ...json.songs] : json.songs || []));
+      const nextSongs = json.songs || [];
+      setSongs((prev) => (append ? [...prev, ...nextSongs] : nextSongs));
     },
     [userId, debouncedSearchQuery],
   );
 
   useEffect(() => {
     if (isPrivate) {
-      setSongs([]);
-      setTotal(0);
-      setHasMore(false);
-      setLoading(false);
       return;
     }
 

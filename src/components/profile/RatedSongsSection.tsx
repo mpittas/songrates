@@ -88,10 +88,6 @@ export default function RatedSongsSection({
 
   useEffect(() => {
     if (isPrivate) {
-      setSongs([]);
-      setTotal(0);
-      setHasMore(false);
-      setLoading(false);
       return;
     }
 

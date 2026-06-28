@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { searchAppleMusic } from "@/lib/appleMusic/api";
 import { artworkUrl, classifyAlbumType } from "@/lib/appleMusic/api";
-import { createSlug } from "@/lib/utils";
 import type {
   SearchCategory,
   SearchApiResponse,

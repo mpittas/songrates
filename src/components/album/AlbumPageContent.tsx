@@ -24,6 +24,7 @@ import {
 } from "@/lib/albumPageStats";
 import AlbumReadOnlyBanner from "./AlbumReadOnlyBanner";
 import AlbumOtherVersions from "./AlbumOtherVersions";
+import type { AlbumInfo } from "@/types/music";
 
 export interface AlbumPageContentProps {
   slug: string | undefined;
@@ -31,6 +32,7 @@ export interface AlbumPageContentProps {
   viewingUserId: string | null;
   highlightTrackId: string | null;
   fallbackUserName: string | null;
+  initialAlbum?: AlbumInfo | null;
 }
 
 export default function AlbumPageContent({
@@ -39,8 +41,12 @@ export default function AlbumPageContent({
   viewingUserId,
   highlightTrackId,
   fallbackUserName,
+  initialAlbum,
 }: AlbumPageContentProps) {
-  const { data: album = null, isLoading: loading } = useAlbumInfo(slug);
+  const { data: album = null, isLoading: loading } = useAlbumInfo(
+    slug,
+    initialAlbum,
+  );
   const {
     ratings: myRatings,
     publicAlbumRatings,

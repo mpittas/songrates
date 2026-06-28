@@ -28,17 +28,21 @@ async function fetchAlbumInfo(slug: string): Promise<AlbumInfo> {
  * - staleTime: 10 min (won't refetch if data is fresh)
  * - gcTime: 1 hour (keeps data in memory for instant revisits)
  */
-export function useAlbumInfo(slug: string | undefined) {
+export function useAlbumInfo(
+  slug: string | undefined,
+  initialData?: AlbumInfo | null,
+) {
   return useQuery<AlbumInfo>({
     queryKey: albumKeys.detail(slug || ""),
     queryFn: () => fetchAlbumInfo(slug!),
-    enabled: !!slug,
+    enabled: !!slug && initialData === undefined,
+    initialData: initialData ?? undefined,
 
-    staleTime: 10 * 60 * 1000, // 10 min — don't refetch if fresh
-    gcTime: 60 * 60 * 1000, // 1 hour — keep in memory for revisits
+    staleTime: 6 * 60 * 60 * 1000,
+    gcTime: 12 * 60 * 60 * 1000,
 
     refetchOnWindowFocus: false,
-    retry: 1,
+    retry: initialData === null ? false : 1,
   });
 }
 
@@ -55,7 +59,7 @@ export function usePrefetchAlbum() {
     queryClient.prefetchQuery({
       queryKey: albumKeys.detail(slug),
       queryFn: () => fetchAlbumInfo(slug),
-      staleTime: 10 * 60 * 1000,
+      staleTime: 6 * 60 * 60 * 1000,
     });
   };
 }
@@ -69,6 +73,6 @@ export function prefetchAlbum(slug: string) {
   return queryClient.prefetchQuery({
     queryKey: albumKeys.detail(slug),
     queryFn: () => fetchAlbumInfo(slug),
-    staleTime: 10 * 60 * 1000,
+    staleTime: 6 * 60 * 60 * 1000,
   });
 }
