@@ -95,3 +95,42 @@ export const playlistEnrichCache = new LRUCache<Record<string, unknown>>(
   200,
   21600,
 );
+
+// ─── Single-flight (in-flight request deduplication) ─────────────────────────
+//
+// When multiple callers request the same key concurrently and the LRU/Next
+// caches miss, only the first call actually performs the upstream work; the
+// others await the same promise. This collapses cache-stampedes (thundering
+// herds) into one origin load per key. The in-flight entry is removed on
+// settlement so a later cold miss runs normally.
+
+const inflight = new Map<string, Promise<unknown>>();
+
+export async function singleFlight<T>(
+  key: string,
+  fn: () => Promise<T>,
+): Promise<T> {
+  const existing = inflight.get(key);
+  if (existing) return existing as Promise<T>;
+
+  const promise = fn().finally(() => {
+    inflight.delete(key);
+  });
+  inflight.set(key, promise);
+  return promise;
+}
+
+// ─── Cache tag naming ────────────────────────────────────────────────────────
+//
+// Centralised tag names so call sites and invalidations share a single source
+// of truth. Used both by Next.js Data Cache (fetch `next.tags`) and by
+// `revalidateAppleTag()` for on-demand invalidation.
+
+export const appleTags = {
+  artist: (id: string) => `apple-artist-${id}`,
+  album: (id: string) => `apple-album-${id}`,
+  playlist: (id: string) => `apple-playlist-${id}`,
+  search: (q: string) => `apple-search-${q}`,
+  trending: "apple-trending",
+  dailyTop100: "apple-daily-top-100",
+} as const;

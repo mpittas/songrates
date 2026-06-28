@@ -2,11 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { fetchAppleSongEnrichmentsByIds } from "@/lib/appleMusic/api";
 import { playlistEnrichCache } from "@/lib/cache";
+import { CACHE_HEADERS } from "@/lib/api-utils";
 
 const MAX_IDS = 400;
-const CACHE_CONTROL = {
-  "Cache-Control": "public, s-maxage=21600, stale-while-revalidate=43200",
-};
 
 type PlaylistEnrichments = Record<
   string,
@@ -31,13 +29,19 @@ function normalizeIds(ids: unknown[]): string[] {
 
 async function buildEnrichmentResponse(songIds: string[]) {
   if (songIds.length === 0) {
-    return NextResponse.json({ enrichments: {} }, { headers: CACHE_CONTROL });
+    return NextResponse.json(
+      { enrichments: {} },
+      { headers: CACHE_HEADERS.playlist },
+    );
   }
 
   const cacheKey = buildCacheKey(songIds);
   const cached = playlistEnrichCache.get(cacheKey);
   if (cached) {
-    return NextResponse.json({ enrichments: cached }, { headers: CACHE_CONTROL });
+    return NextResponse.json(
+      { enrichments: cached },
+      { headers: CACHE_HEADERS.playlist },
+    );
   }
 
   const map = await fetchAppleSongEnrichmentsByIds(songIds);
@@ -55,7 +59,10 @@ async function buildEnrichmentResponse(songIds: string[]) {
 
   playlistEnrichCache.set(cacheKey, enrichments);
 
-  return NextResponse.json({ enrichments }, { headers: CACHE_CONTROL });
+  return NextResponse.json(
+    { enrichments },
+    { headers: CACHE_HEADERS.playlist },
+  );
 }
 
 export async function GET(request: NextRequest) {
