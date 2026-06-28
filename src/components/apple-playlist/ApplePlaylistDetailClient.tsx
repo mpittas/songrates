@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
 
 import AlbumDetailPageLayout from "@/components/album/AlbumDetailPageLayout";
 import Button from "@/components/ui/Button";
+import { useShareLinkParams } from "@/hooks/useShareLinkParams";
 import {
   artworkUrl,
   type ApplePlaylistDetail,
@@ -38,8 +38,9 @@ function albumContextFromTrack(
 export default function ApplePlaylistDetailClient({
   playlist,
 }: ApplePlaylistDetailClientProps) {
-  const searchParams = useSearchParams();
-  const highlightTrackId = searchParams.get("track");
+  // Read the highlight-track query param on the client only (after hydration)
+  // so it never participates in the server render or the CDN cache key.
+  const { track: highlightTrackId } = useShareLinkParams();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);

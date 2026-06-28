@@ -6,8 +6,18 @@ import Link from "next/link";
 import { FaArrowLeft, FaListUl } from "react-icons/fa";
 
 /** ISR: regenerate playlist pages at most once every 6 hours.
- *  Apple editorial/chart playlists are slow-moving and expensive to rebuild. */
+ *  Apple editorial/chart playlists are slow-moving and expensive to rebuild.
+ *
+ *  Returning [] from generateStaticParams registers this dynamic route as an
+ *  ISR route on Vercel (no paths prebuilt at build time, but on-demand
+ *  generation is cached and revalidated). Without this, `revalidate` is a
+ *  no-op and every request is treated as fully dynamic (0% cache hit). */
 export const revalidate = 21600;
+export const dynamicParams = true;
+
+export async function generateStaticParams() {
+  return [];
+}
 
 interface PageProps {
   params: Promise<{ id: string }>;

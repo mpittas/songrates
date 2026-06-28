@@ -15,6 +15,7 @@ import { usePlayerCore } from "@/context/PlayerContext";
 import SongRow from "@/main-components/SongRow";
 import { useAlbumInfo } from "@/hooks/useAlbumInfo";
 import { useAlbumViewingUserRatings } from "@/hooks/useAlbumViewingUserRatings";
+import { useShareLinkParams } from "@/hooks/useShareLinkParams";
 import { PAGE_CONTENT_TOP } from "@/lib/pageLayout";
 import { cn } from "@/lib/utils";
 import {
@@ -29,20 +30,20 @@ import type { AlbumInfo } from "@/types/music";
 export interface AlbumPageContentProps {
   slug: string | undefined;
   albumId: string | undefined;
-  viewingUserId: string | null;
-  highlightTrackId: string | null;
-  fallbackUserName: string | null;
   initialAlbum?: AlbumInfo | null;
 }
 
 export default function AlbumPageContent({
   slug,
   albumId,
-  viewingUserId,
-  highlightTrackId,
-  fallbackUserName,
   initialAlbum,
 }: AlbumPageContentProps) {
+  // Read share-link query params on the client only (after hydration), so
+  // they never participate in the server render or the CDN cache key. See
+  // useShareLinkParams for the rationale.
+  const { userId: viewingUserId, track: highlightTrackId, userName: fallbackUserName } =
+    useShareLinkParams();
+
   const { data: album = null, isLoading: loading } = useAlbumInfo(
     slug,
     initialAlbum,
