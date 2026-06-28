@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { FaMusic, FaStar } from "react-icons/fa";
 import type { IconType } from "react-icons";
+import { useDebounce } from "use-debounce";
 import ProfileSectionHeader from "@/components/profile/ProfileSectionHeader";
 import SongRow from "@/main-components/SongRow";
 import Button from "@/components/ui/Button";
@@ -62,11 +63,12 @@ export default function RatedSongsSection({
   const [loadingMore, setLoadingMore] = useState(false);
   const [sort, setSort] = useState<SortOption>("newest");
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery] = useDebounce(searchQuery, 350);
 
   const fetchPage = useCallback(
     async (pageNum: number, append: boolean) => {
       const res = await fetch(
-        `/api/rated-songs?userId=${encodeURIComponent(userId)}&page=${pageNum}&limit=${PAGE_SIZE}&sort=${sort}&q=${encodeURIComponent(searchQuery)}`,
+        `/api/rated-songs?userId=${encodeURIComponent(userId)}&page=${pageNum}&limit=${PAGE_SIZE}&sort=${sort}&q=${encodeURIComponent(debouncedSearchQuery)}`,
       );
       if (!res.ok) {
         throw new Error("Failed to load rated songs");
@@ -81,7 +83,7 @@ export default function RatedSongsSection({
       setPage(pageNum);
       setSongs((prev) => (append ? [...prev, ...json.songs] : json.songs));
     },
-    [userId, sort, searchQuery],
+    [userId, sort, debouncedSearchQuery],
   );
 
   useEffect(() => {
@@ -114,7 +116,7 @@ export default function RatedSongsSection({
     return () => {
       cancelled = true;
     };
-  }, [userId, isPrivate, fetchPage, sort, searchQuery]);
+  }, [userId, isPrivate, fetchPage]);
 
   const handleLoadMore = async () => {
     if (!hasMore || loadingMore) return;

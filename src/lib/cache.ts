@@ -86,3 +86,12 @@ export const youtubeCache = new LRUCache<string>(500, 3600);
 
 // Playlist cache - 1 hour TTL, up to 100 entries
 export const playlistCache = new LRUCache<any>(100, 3600);
+
+// Playlist enrichment cache - 6 hour TTL, up to 200 entries.
+// Keyed by a sorted, joined string of song IDs so repeated playlist views
+// (the same Top 100 / editorial playlist viewed by many users) reuse the
+// same enrichment map instead of re-fetching from Apple Music each time.
+export const playlistEnrichCache = new LRUCache<Record<string, unknown>>(
+  200,
+  21600,
+);

@@ -5,8 +5,9 @@ import { resolveArtistId } from "@/lib/resolveArtistId";
 import { PAGE_CONTENT_TOP } from "@/lib/pageLayout";
 import { cn } from "@/lib/utils";
 
-/** ISR: regenerate artist pages at most once per hour */
-export const revalidate = 3600;
+/** ISR: regenerate artist pages at most once every 6 hours.
+ *  Artist metadata/discography changes slowly and each rebuild fans out to Apple Music. */
+export const revalidate = 21600;
 
 interface PageProps {
   params: Promise<{ id: string }>;

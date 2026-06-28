@@ -337,6 +337,10 @@ export default function SearchResults({
     ? "w-full bg-white/80 backdrop-blur-xl border border-white/30 z-[9999] max-h-[60vh] overflow-y-auto shadow-2xl rounded-xl text-left"
     : "w-full bg-white border border-[#dcdcdc] z-[9999] max-h-[60vh] overflow-y-auto shadow-2xl rounded-xl text-left";
 
+  if (query.trim().length === 1) {
+    return null;
+  }
+
   // ─── No query: show recently clicked results (logged-in users only) ──
   if (!query) {
     if (!isFocused || history.length === 0) return null;

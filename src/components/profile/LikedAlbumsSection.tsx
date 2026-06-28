@@ -1,13 +1,17 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { FaCompactDisc, FaHeart } from "react-icons/fa";
 import type { IconType } from "react-icons";
+import { useDebounce } from "use-debounce";
 import ProfileSectionHeader from "@/components/profile/ProfileSectionHeader";
 import ArtistAlbumGridSection from "@/components/artist/ArtistAlbumGridSection";
+import Button from "@/components/ui/Button";
 import type { Album } from "@/types/music";
 
 import type { LikedAlbumDTO } from "@/app/api/liked-albums/route";
+
+const PAGE_SIZE = 24;
 
 interface LikedAlbumsSectionProps {
   userId: string;
@@ -39,12 +43,51 @@ export default function LikedAlbumsSection({
   isPrivate = false,
 }: LikedAlbumsSectionProps) {
   const [albums, setAlbums] = useState<LikedAlbumDTO[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery] = useDebounce(searchQuery, 350);
+
+  const fetchPage = useCallback(
+    async (pageNum: number, append: boolean) => {
+      const params = new URLSearchParams({
+        userId,
+        page: String(pageNum),
+        limit: String(PAGE_SIZE),
+      });
+      if (debouncedSearchQuery.trim()) {
+        params.set("q", debouncedSearchQuery.trim());
+      }
+
+      const res = await fetch(`/api/liked-albums?${params.toString()}`);
+      if (!res.ok) {
+        throw new Error("Failed to load liked albums");
+      }
+
+      const json = (await res.json()) as {
+        albums: LikedAlbumDTO[];
+        total: number;
+        hasMore: boolean;
+      };
+
+      setTotal(json.total);
+      setHasMore(json.hasMore);
+      setPage(pageNum);
+      setAlbums((prev) =>
+        append ? [...prev, ...json.albums] : json.albums || [],
+      );
+    },
+    [userId, debouncedSearchQuery],
+  );
 
   useEffect(() => {
     if (isPrivate) {
       setAlbums([]);
+      setTotal(0);
+      setHasMore(false);
       setLoading(false);
       return;
     }
@@ -53,18 +96,14 @@ export default function LikedAlbumsSection({
     const load = async () => {
       setLoading(true);
       try {
-        const res = await fetch(
-          `/api/liked-albums?userId=${encodeURIComponent(userId)}`,
-        );
-        if (!res.ok) {
-          if (!cancelled) setAlbums([]);
-          return;
-        }
-        const json = (await res.json()) as { albums: LikedAlbumDTO[] };
-        if (!cancelled) setAlbums(json.albums || []);
+        await fetchPage(1, false);
       } catch (e) {
         console.error("Failed to load liked albums:", e);
-        if (!cancelled) setAlbums([]);
+        if (!cancelled) {
+          setAlbums([]);
+          setTotal(0);
+          setHasMore(false);
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -74,7 +113,19 @@ export default function LikedAlbumsSection({
     return () => {
       cancelled = true;
     };
-  }, [userId, isPrivate]);
+  }, [userId, isPrivate, fetchPage]);
+
+  const handleLoadMore = async () => {
+    if (!hasMore || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      await fetchPage(page + 1, true);
+    } catch (e) {
+      console.error("Failed to load more liked albums:", e);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   const filteredAlbums = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -102,7 +153,7 @@ export default function LikedAlbumsSection({
     <section>
       <ProfileSectionHeader
         title="Liked Albums"
-        count={!isPrivate && !loading ? filteredAlbums.length : undefined}
+        count={!isPrivate && !loading ? total : undefined}
         searchValue={searchQuery}
         onSearchChange={setSearchQuery}
         searchPlaceholder="Search albums..."
@@ -129,16 +180,35 @@ export default function LikedAlbumsSection({
           }
         />
       ) : (
-        <ArtistAlbumGridSection
-          albums={gridAlbums}
-          initialCount={12}
-          ratingMode="any"
-          onAlbumFavoriteChange={(albumId, liked) => {
-            if (!liked) {
-              setAlbums((prev) => prev.filter((a) => a.albumId !== albumId));
-            }
-          }}
-        />
+        <>
+          <ArtistAlbumGridSection
+            albums={gridAlbums}
+            initialCount={PAGE_SIZE}
+            ratingMode="any"
+            onAlbumFavoriteChange={(albumId, liked) => {
+              if (!liked) {
+                setAlbums((prev) => prev.filter((a) => a.albumId !== albumId));
+                setTotal((value) => Math.max(0, value - 1));
+              }
+            }}
+          />
+
+          {hasMore && (
+            <div className="mt-4 flex justify-center pb-2">
+              <Button
+                variant="secondary"
+                size="xs"
+                onClick={handleLoadMore}
+                disabled={loadingMore}
+                className="min-w-[200px]"
+              >
+                {loadingMore
+                  ? "Loading..."
+                  : `Load more (${albums.length} of ${total})`}
+              </Button>
+            </div>
+          )}
+        </>
       )}
     </section>
   );

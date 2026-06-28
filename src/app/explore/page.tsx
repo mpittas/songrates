@@ -14,7 +14,11 @@ import {
 import { formatTime } from "@/lib/utils";
 import { Album } from "@/types/music";
 
-export const revalidate = 3600;
+/** ISR: regenerate explore page at most once every 6 hours.
+ *  Chart/playlist data is slow-moving, and getExploreData makes ~8 parallel
+ *  Apple Music API calls per regeneration, so a longer window keeps Vercel
+ *  compute + bandwidth costs down. */
+export const revalidate = 21600;
 
 export const metadata = {
   title: "Explore | songrates",

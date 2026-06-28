@@ -2,9 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { createClient } from "@/utils/supabase/server";
 import { fetchAppleSongEnrichmentsByIds } from "@/lib/appleMusic/api";
-import { fetchAllRows } from "@/lib/supabase/fetchAllRows";
 
 export type LikedSongArtist = { id: string; name: string };
+
+const DEFAULT_PAGE_SIZE = 24;
+const MAX_PAGE_SIZE = 50;
 
 export interface LikedSongDTO {
   id: string;
@@ -53,6 +55,16 @@ export async function GET(request: NextRequest) {
   const supabase = await createClient();
   const url = new URL(request.url);
   const requestedUserId = url.searchParams.get("userId");
+  const page = Math.max(1, Number(url.searchParams.get("page") || 1) || 1);
+  const pageSize = Math.min(
+    MAX_PAGE_SIZE,
+    Math.max(
+      1,
+      Number(url.searchParams.get("limit") || DEFAULT_PAGE_SIZE) ||
+        DEFAULT_PAGE_SIZE,
+    ),
+  );
+  const q = (url.searchParams.get("q") || "").trim();
 
   const {
     data: { user },
@@ -76,24 +88,37 @@ export async function GET(request: NextRequest) {
     duration_ms: number | null;
   };
 
-  const { rows: fetchedRows, error } = await fetchAllRows<Row>((from, to) =>
-    supabase
-      .from("user_favorites")
-      .select(
-        "id, item_id, item_name, artist_name, artist_id, artists, thumbnail_url, album_id, album_name, duration_ms, created_at",
-      )
-      .eq("user_id", targetUserId)
-      .eq("item_type", "track")
-      .order("created_at", { ascending: false })
-      .range(from, to),
-  );
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+
+  let query = supabase
+    .from("user_favorites")
+    .select(
+      "id, item_id, item_name, artist_name, artist_id, artists, thumbnail_url, album_id, album_name, duration_ms, created_at",
+      { count: "exact" },
+    )
+    .eq("user_id", targetUserId)
+    .eq("item_type", "track");
+
+  if (q) {
+    const escaped = q.replace(/,/g, "\\,");
+    query = query.or(
+      `item_name.ilike.%${escaped}%,artist_name.ilike.%${escaped}%,album_name.ilike.%${escaped}%`,
+    );
+  }
+
+  const { data, error, count } = await query
+    .order("created_at", { ascending: false })
+    .range(from, to);
 
   if (error) {
     console.error("Liked songs fetch failed:", error);
     return NextResponse.json({ error: "Fetch failed" }, { status: 500 });
   }
 
-  const rows: Row[] = fetchedRows;
+  const rows: Row[] = data || [];
+  const total = count ?? 0;
+  const hasMore = to + 1 < total;
 
   const missingMetaIds = rows
     .filter(
@@ -176,7 +201,7 @@ export async function GET(request: NextRequest) {
   });
 
   return NextResponse.json(
-    { songs },
+    { songs, total, page, pageSize, hasMore },
     { headers: { "Cache-Control": "private, no-store" } },
   );
 }

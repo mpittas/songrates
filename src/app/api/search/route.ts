@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
   const q = searchParams.get("q");
   const categoryParam = searchParams.get("category") || "all";
 
-  if (!q || q.trim().length < 1 || q.trim().length > 200) {
+  if (!q || q.trim().length < 2 || q.trim().length > 200) {
     return NextResponse.json(
       { error: "Invalid or missing search query." },
       { status: 400 },
@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
       song: ["songs"],
     };
 
-    const limit = category === "all" ? 10 : 25;
+    const limit = category === "all" ? 8 : 20;
     const appleResults = await searchAppleMusic(q, typeMap[category], limit);
 
     // Map Apple Music results to our search result types

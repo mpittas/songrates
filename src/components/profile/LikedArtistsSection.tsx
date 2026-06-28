@@ -1,13 +1,17 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { FaHeart, FaMicrophoneAlt } from "react-icons/fa";
 import type { IconType } from "react-icons";
+import { useDebounce } from "use-debounce";
 import ProfileSectionHeader from "@/components/profile/ProfileSectionHeader";
 import ArtistGridSection from "@/components/artist/ArtistGridSection";
+import Button from "@/components/ui/Button";
 import type { ArtistCardArtist } from "@/components/artist/ArtistCard";
 
 import type { LikedArtistDTO } from "@/app/api/liked-artists/route";
+
+const PAGE_SIZE = 24;
 
 interface LikedArtistsSectionProps {
   userId: string;
@@ -41,12 +45,51 @@ export default function LikedArtistsSection({
   hideHeader = false,
 }: LikedArtistsSectionProps) {
   const [artists, setArtists] = useState<LikedArtistDTO[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery] = useDebounce(searchQuery, 350);
+
+  const fetchPage = useCallback(
+    async (pageNum: number, append: boolean) => {
+      const params = new URLSearchParams({
+        userId,
+        page: String(pageNum),
+        limit: String(PAGE_SIZE),
+      });
+      if (debouncedSearchQuery.trim()) {
+        params.set("q", debouncedSearchQuery.trim());
+      }
+
+      const res = await fetch(`/api/liked-artists?${params.toString()}`);
+      if (!res.ok) {
+        throw new Error("Failed to load liked artists");
+      }
+
+      const json = (await res.json()) as {
+        artists: LikedArtistDTO[];
+        total: number;
+        hasMore: boolean;
+      };
+
+      setTotal(json.total);
+      setHasMore(json.hasMore);
+      setPage(pageNum);
+      setArtists((prev) =>
+        append ? [...prev, ...json.artists] : json.artists || [],
+      );
+    },
+    [userId, debouncedSearchQuery],
+  );
 
   useEffect(() => {
     if (isPrivate) {
       setArtists([]);
+      setTotal(0);
+      setHasMore(false);
       setLoading(false);
       return;
     }
@@ -55,18 +98,14 @@ export default function LikedArtistsSection({
     const load = async () => {
       setLoading(true);
       try {
-        const res = await fetch(
-          `/api/liked-artists?userId=${encodeURIComponent(userId)}`,
-        );
-        if (!res.ok) {
-          if (!cancelled) setArtists([]);
-          return;
-        }
-        const json = (await res.json()) as { artists: LikedArtistDTO[] };
-        if (!cancelled) setArtists(json.artists || []);
+        await fetchPage(1, false);
       } catch (e) {
         console.error("Failed to load liked artists:", e);
-        if (!cancelled) setArtists([]);
+        if (!cancelled) {
+          setArtists([]);
+          setTotal(0);
+          setHasMore(false);
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -76,7 +115,19 @@ export default function LikedArtistsSection({
     return () => {
       cancelled = true;
     };
-  }, [userId, isPrivate]);
+  }, [userId, isPrivate, fetchPage]);
+
+  const handleLoadMore = async () => {
+    if (!hasMore || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      await fetchPage(page + 1, true);
+    } catch (e) {
+      console.error("Failed to load more liked artists:", e);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   const filteredArtists = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -104,7 +155,7 @@ export default function LikedArtistsSection({
       {!hideHeader && (
         <ProfileSectionHeader
           title="Favourite Artists"
-          count={!isPrivate && !loading ? filteredArtists.length : undefined}
+          count={!isPrivate && !loading ? total : undefined}
           searchValue={searchQuery}
           onSearchChange={setSearchQuery}
           searchPlaceholder="Search artists..."
@@ -134,15 +185,36 @@ export default function LikedArtistsSection({
           }
         />
       ) : (
-        <ArtistGridSection
-          artists={gridArtists}
-          initialCount={12}
-          onArtistFavoriteChange={(artistId, liked) => {
-            if (!liked) {
-              setArtists((prev) => prev.filter((a) => a.artistId !== artistId));
-            }
-          }}
-        />
+        <>
+          <ArtistGridSection
+            artists={gridArtists}
+            initialCount={PAGE_SIZE}
+            onArtistFavoriteChange={(artistId, liked) => {
+              if (!liked) {
+                setArtists((prev) =>
+                  prev.filter((a) => a.artistId !== artistId),
+                );
+                setTotal((value) => Math.max(0, value - 1));
+              }
+            }}
+          />
+
+          {hasMore && (
+            <div className="mt-4 flex justify-center pb-2">
+              <Button
+                variant="secondary"
+                size="xs"
+                onClick={handleLoadMore}
+                disabled={loadingMore}
+                className="min-w-[200px]"
+              >
+                {loadingMore
+                  ? "Loading..."
+                  : `Load more (${artists.length} of ${total})`}
+              </Button>
+            </div>
+          )}
+        </>
       )}
     </section>
   );

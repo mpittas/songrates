@@ -9,7 +9,10 @@ import {
   type AppleBrowseData,
 } from "@/lib/appleMusic/api";
 
-export const revalidate = 3600;
+/** ISR: regenerate playlists page at most once every 6 hours.
+ *  getBrowseData fires 16 parallel Apple Music search calls per regeneration,
+ *  so a longer window keeps Vercel compute costs down. Browse content is slow-moving. */
+export const revalidate = 21600;
 
 export const metadata = {
   title: "Playlists | songrates",

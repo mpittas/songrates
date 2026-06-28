@@ -35,6 +35,60 @@ const PlayerProgressContext = createContext<PlayerProgressContextType | null>(
   null,
 );
 
+const YOUTUBE_CACHE_KEY = "songrates:youtube-search-cache:v1";
+const YOUTUBE_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+
+type StoredYoutubeCache = Record<
+  string,
+  {
+    videoId: string | null;
+    cachedAt: number;
+  }
+>;
+
+function readStoredYoutubeVideoId(query: string): string | null | undefined {
+  if (typeof window === "undefined") return undefined;
+
+  try {
+    const raw = window.localStorage.getItem(YOUTUBE_CACHE_KEY);
+    if (!raw) return undefined;
+
+    const cache = JSON.parse(raw) as StoredYoutubeCache;
+    const entry = cache[query];
+    if (!entry) return undefined;
+
+    if (Date.now() - entry.cachedAt > YOUTUBE_CACHE_TTL_MS) {
+      delete cache[query];
+      window.localStorage.setItem(YOUTUBE_CACHE_KEY, JSON.stringify(cache));
+      return undefined;
+    }
+
+    return entry.videoId;
+  } catch {
+    return undefined;
+  }
+}
+
+function writeStoredYoutubeVideoId(query: string, videoId: string | null) {
+  if (typeof window === "undefined") return;
+
+  try {
+    const raw = window.localStorage.getItem(YOUTUBE_CACHE_KEY);
+    const cache = raw ? (JSON.parse(raw) as StoredYoutubeCache) : {};
+    cache[query] = { videoId, cachedAt: Date.now() };
+
+    const entries = Object.entries(cache)
+      .sort(([, a], [, b]) => b.cachedAt - a.cachedAt)
+      .slice(0, 300);
+    window.localStorage.setItem(
+      YOUTUBE_CACHE_KEY,
+      JSON.stringify(Object.fromEntries(entries)),
+    );
+  } catch {
+    // Local storage is an opportunistic cost cache; ignore quota/privacy errors.
+  }
+}
+
 export function PlayerProvider({ children }: { children: ReactNode }) {
   const [currentTrack, setCurrentTrack] = useState<Track | null>(null);
   const [videoId, setVideoId] = useState<string | null>(null);
@@ -151,15 +205,26 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
           return;
         }
 
+        const storedVideoId = readStoredYoutubeVideoId(searchQuery);
+        if (storedVideoId !== undefined) {
+          youtubeSearchCacheRef.current.set(searchQuery, storedVideoId);
+          setVideoId(storedVideoId);
+          setIsPlaying(Boolean(storedVideoId));
+          setIsLoading(false);
+          return;
+        }
+
         const res = await fetch(
           `/api/youtube-search?q=${encodeURIComponent(searchQuery)}`,
           { signal: abortControllerRef.current.signal },
         );
         const data = await res.json();
-        youtubeSearchCacheRef.current.set(searchQuery, data.videoId || null);
+        const nextVideoId = data.videoId || null;
+        youtubeSearchCacheRef.current.set(searchQuery, nextVideoId);
+        writeStoredYoutubeVideoId(searchQuery, nextVideoId);
 
-        if (data.videoId) {
-          setVideoId(data.videoId);
+        if (nextVideoId) {
+          setVideoId(nextVideoId);
           setIsPlaying(true);
         }
       } catch (e: unknown) {

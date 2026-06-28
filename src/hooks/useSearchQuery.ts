@@ -126,8 +126,8 @@ export function useSearchQuery(query: string, category: SearchCategory) {
     // Query key includes both query and category for proper cache separation
     queryKey: ["search", query, category] as const,
 
-    // Only fetch when we have a non-empty query
-    enabled: query.trim().length > 0,
+    // Avoid broad one-character searches; they are expensive and rarely useful.
+    enabled: query.trim().length >= 2,
 
     queryFn: ({ signal }) => fetchSearchResults(query, category, signal),
 
@@ -141,11 +141,9 @@ export function useSearchQuery(query: string, category: SearchCategory) {
       return previousData;
     },
 
-    // Cache configuration tuned for search:
-    // - staleTime: 5 min — results are fresh for 5 min, no refetch needed
-    // - gcTime: 30 min — cached results stay in memory for 30 min
-    staleTime: 5 * 60 * 1000,
-    gcTime: 30 * 60 * 1000,
+    // Cache configuration tuned to reduce repeated Apple Music lookups.
+    staleTime: 30 * 60 * 1000,
+    gcTime: 2 * 60 * 60 * 1000,
 
     // Don't refetch on window focus for search (user expects stable results)
     refetchOnWindowFocus: false,

@@ -6,6 +6,9 @@ import {
   type AppleArtistEnrichment,
 } from "@/lib/appleMusic/api";
 
+const DEFAULT_PAGE_SIZE = 24;
+const MAX_PAGE_SIZE = 50;
+
 export interface LikedArtistDTO {
   id: string;
   artistId: string;
@@ -22,6 +25,16 @@ export async function GET(request: NextRequest) {
   const supabase = await createClient();
   const url = new URL(request.url);
   const requestedUserId = url.searchParams.get("userId");
+  const page = Math.max(1, Number(url.searchParams.get("page") || 1) || 1);
+  const pageSize = Math.min(
+    MAX_PAGE_SIZE,
+    Math.max(
+      1,
+      Number(url.searchParams.get("limit") || DEFAULT_PAGE_SIZE) ||
+        DEFAULT_PAGE_SIZE,
+    ),
+  );
+  const q = (url.searchParams.get("q") || "").trim();
 
   const {
     data: { user },
@@ -32,12 +45,25 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Unauthenticated" }, { status: 401 });
   }
 
-  const { data, error } = await supabase
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+
+  let query = supabase
     .from("user_favorites")
-    .select("id, item_id, item_name, thumbnail_url, created_at")
+    .select("id, item_id, item_name, thumbnail_url, created_at", {
+      count: "exact",
+    })
     .eq("user_id", targetUserId)
-    .eq("item_type", "artist")
-    .order("created_at", { ascending: false });
+    .eq("item_type", "artist");
+
+  if (q) {
+    const escaped = q.replace(/,/g, "\\,");
+    query = query.or(`item_name.ilike.%${escaped}%`);
+  }
+
+  const { data, error, count } = await query
+    .order("created_at", { ascending: false })
+    .range(from, to);
 
   if (error) {
     console.error("Liked artists fetch failed:", error);
@@ -52,17 +78,25 @@ export async function GET(request: NextRequest) {
   };
 
   const rows: Row[] = data || [];
+  const total = count ?? 0;
+  const hasMore = to + 1 < total;
   const isOwner = user?.id === targetUserId;
   const rowsNeedingPersist = new Set(
     rows.filter((r) => !r.item_name || !r.thumbnail_url).map((r) => r.id),
   );
 
-  const allArtistIds = Array.from(new Set(rows.map((r) => r.item_id)));
+  const missingArtistIds = Array.from(
+    new Set(
+      rows
+        .filter((r) => rowsNeedingPersist.has(r.id))
+        .map((r) => r.item_id),
+    ),
+  );
   let enrichmentMap = new Map<string, AppleArtistEnrichment>();
 
-  if (allArtistIds.length > 0) {
+  if (missingArtistIds.length > 0) {
     try {
-      enrichmentMap = await fetchAppleArtistEnrichmentsByIds(allArtistIds);
+      enrichmentMap = await fetchAppleArtistEnrichmentsByIds(missingArtistIds);
 
       for (const row of rows) {
         const enriched = enrichmentMap.get(row.item_id);
@@ -105,7 +139,7 @@ export async function GET(request: NextRequest) {
   });
 
   return NextResponse.json(
-    { artists },
+    { artists, total, page, pageSize, hasMore },
     { headers: { "Cache-Control": "private, no-store" } },
   );
 }

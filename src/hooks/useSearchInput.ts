@@ -8,7 +8,7 @@ interface UseSearchInputOptions {
 }
 
 export function useSearchInput(options: UseSearchInputOptions = {}) {
-  const { initialQuery = "", debounceMs = 250, onQueryChange } = options;
+  const { initialQuery = "", debounceMs = 400, onQueryChange } = options;
 
   const [query, setQuery] = useState(initialQuery);
   const [debouncedQuery, setDebouncedQuery] = useState(initialQuery);

@@ -12,6 +12,7 @@ import {
 } from "@/lib/cache";
 
 const STOREFRONT = process.env.APPLE_MUSIC_STOREFRONT || "us";
+const APPLE_MUSIC_REVALIDATE_SECONDS = 21600;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -55,7 +56,7 @@ async function appleMusicFetch<T>(
     try {
       const res = await fetch(url, {
         headers,
-        next: { revalidate: 3600 },
+        next: { revalidate: APPLE_MUSIC_REVALIDATE_SECONDS },
       });
 
       if (res.status === 429) {
@@ -1037,7 +1038,7 @@ async function getCatalogCharts({
     charts.albums.length > 0 ||
     charts.playlists.length > 0
   ) {
-    playlistCache.set(cacheKey, charts, 3600 * 2);
+    playlistCache.set(cacheKey, charts, 3600 * 6);
   }
 
   return charts;
@@ -1375,7 +1376,7 @@ export async function getTrendingSongs(
     }
   }
 
-  playlistCache.set(cacheKey, tracks, 3600 * 2);
+  playlistCache.set(cacheKey, tracks, 3600 * 6);
   return tracks;
 }
 
@@ -1466,7 +1467,7 @@ export async function getPlaylistDetail(
     trackCount: tracks.length,
   };
 
-  playlistCache.set(cacheKey, result, 3600 * 2);
+  playlistCache.set(cacheKey, result, 3600 * 6);
 
   return result;
 }

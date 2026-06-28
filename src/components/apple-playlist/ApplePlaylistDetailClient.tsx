@@ -63,12 +63,11 @@ export default function ApplePlaylistDetailClient({
 
     (async () => {
       try {
-        const res = await fetch("/api/apple-playlist-enrich", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ids: idsToEnrich }),
-          signal: ac.signal,
-        });
+        const ids = idsToEnrich.slice().sort().join(",");
+        const res = await fetch(
+          `/api/apple-playlist-enrich?ids=${encodeURIComponent(ids)}`,
+          { signal: ac.signal },
+        );
         if (!res.ok) return;
         const data = (await res.json()) as {
           enrichments?: Record<

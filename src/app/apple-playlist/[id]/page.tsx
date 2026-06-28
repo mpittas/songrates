@@ -5,8 +5,9 @@ import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { FaArrowLeft, FaListUl } from "react-icons/fa";
 
-/** ISR: regenerate playlist pages at most once per hour */
-export const revalidate = 3600;
+/** ISR: regenerate playlist pages at most once every 6 hours.
+ *  Apple editorial/chart playlists are slow-moving and expensive to rebuild. */
+export const revalidate = 21600;
 
 interface PageProps {
   params: Promise<{ id: string }>;
