@@ -5,7 +5,7 @@ import { FaPlay } from "react-icons/fa";
 import { LuListMusic } from "react-icons/lu";
 
 import MySection from "@/components/ui/MySection";
-import OptimizedImage from "@/components/ui/OptimizedImage";
+import Tilt3DImage from "@/components/ui/Tilt3DImage";
 import SearchInput from "@/components/search/SearchInput";
 import { PAGE_CONTENT_TOP } from "@/lib/pageLayout";
 import { cn } from "@/lib/utils";
@@ -82,12 +82,9 @@ export default function AlbumDetailPageLayout({
           <div className="relative mb-8 flex flex-col items-start gap-8 md:flex-row md:gap-12">
             <div className="group relative w-40 shrink-0 self-start sm:w-52 md:w-72">
               <div className="relative aspect-square">
-                <OptimizedImage
+                <Tilt3DImage
                   src={artworkSrc}
                   alt={artworkAlt}
-                  fill
-                  className="rounded-xl object-cover"
-                  priority
                   fallbackText={artworkAlt?.slice(0, 2).toUpperCase() || "??"}
                   fallbackSrc="/vinyl-placeholder.svg"
                 />
