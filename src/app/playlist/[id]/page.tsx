@@ -13,6 +13,7 @@ import { createClient } from "@/utils/supabase/client";
 import ArtistAlbumGridSection from "@/components/artist/ArtistAlbumGridSection";
 import Button from "@/components/ui/Button";
 import MySection from "@/components/ui/MySection";
+import PageHero from "@/components/ui/PageHero";
 import { cn } from "@/lib/utils";
 import { PAGE_CONTENT_TOP } from "@/lib/pageLayout";
 import { usePlayerCore } from "@/context/PlayerContext";
@@ -202,66 +203,54 @@ export default function PlaylistPage() {
 
   return (
     <main className="min-h-screen">
-      <div className="relative w-full overflow-hidden bg-linear-[to_right,#DF4627_0%,#660F11_33%,#3C0C0F_66%,#260E1C_100%]">
-      
-        <div className="relative z-10 mx-auto w-full max-w-[1180px] px-4 sm:px-6 py-10 bg-gradient-to-r">
-            <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center gap-5 min-w-0">
-                <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl bg-white/15 backdrop-blur-md flex items-center justify-center shrink-0">
-                  {playlist.type === "albums" ? (
-                    <FaCompactDisc size={30} className="text-white/90" />
-                  ) : (
-                    <FaListUl size={28} className="text-white/90" />
-                  )}
-                </div>
-
-                <div className="min-w-0">
-                  <div className="text-xs font-mono uppercase tracking-widest text-white/70">
-                    Playlist
-                  </div>
-                  <h1 className="mt-1 text-3xl sm:text-4xl font-medium tracking-tight text-white whitespace-normal break-words">
-                    {playlist.name}
-                  </h1>
-                  <div className="mt-2 text-sm font-mono text-white/75 flex flex-wrap items-center gap-x-2 gap-y-1">
-                    <span>
-                      {playlist.type === "albums"
-                        ? `${albums.length} albums`
-                        : `${tracks.length} tracks`}
-                    </span>
-                    <span className="text-white/45">/</span>
-                    <span>
-                      Created{" "}
-                      {new Date(playlist.created_at).toLocaleDateString()}
-                    </span>
-                  </div>
-                </div>
+      <PageHero
+        eyebrow="Playlist"
+        title={playlist.name}
+        icon={
+          playlist.type === "albums" ? (
+            <FaCompactDisc size={30} />
+          ) : (
+            <FaListUl size={28} />
+          )
+        }
+        subtitle={
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-white/70">
+            <span>
+              {playlist.type === "albums"
+                ? `${albums.length} albums`
+                : `${tracks.length} tracks`}
+            </span>
+            <span className="text-white/40">/</span>
+            <span>
+              Created {new Date(playlist.created_at).toLocaleDateString()}
+            </span>
+          </div>
+        }
+        actions={
+          playlist.type === "songs" ? (
+            <button
+              type="button"
+              onClick={() => {
+                if (queue.length > 0) playTrack(queue[0], queue);
+              }}
+              disabled={queue.length === 0}
+              className={cn(
+                "group flex items-center gap-2 rounded-full bg-white px-4 py-3 font-mono font-semibold text-neutral-900 transition-transform",
+                queue.length > 0
+                  ? "hover:scale-105 active:scale-95"
+                  : "cursor-not-allowed opacity-60",
+              )}
+            >
+              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#e76418] text-white transition-transform group-hover:scale-105">
+                <FaPlay className="ml-0.5" size={12} />
               </div>
-
-              {playlist.type === "songs" ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (queue.length > 0) playTrack(queue[0], queue);
-                  }}
-                  disabled={queue.length === 0}
-                  className={cn(
-                    "shrink-0 group flex items-center gap-2 rounded-full bg-white px-4 py-3 font-mono font-semibold text-neutral-900 transition-transform",
-                    queue.length > 0
-                      ? "hover:scale-105 active:scale-95"
-                      : "opacity-60 cursor-not-allowed",
-                  )}
-                >
-                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#e76418] text-white transition-transform group-hover:scale-105">
-                    <FaPlay className="ml-0.5" size={12} />
-                  </div>
-                  <span className="text-sm sm:text-base font-bold tracking-tight">
-                    Play songs
-                  </span>
-                </button>
-              ) : null}
-            </div>
-        </div>
-      </div>
+              <span className="text-sm font-bold tracking-tight sm:text-base">
+                Play songs
+              </span>
+            </button>
+          ) : null
+        }
+      />
 
       <MySection className={cn("pb-20")} container={false}>
         <div className="mx-auto w-full max-w-[1180px] px-4 sm:px-6">

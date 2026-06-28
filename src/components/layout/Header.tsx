@@ -13,8 +13,41 @@ import Button from "@/components/ui/Button";
 import UserMenu from "@/components/layout/UserMenu";
 import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
+
 interface HeaderProps {
   showSearch?: boolean;
+}
+
+const NAV_LINKS = [
+  { href: "/explore", label: "Explore" },
+  { href: "/moods", label: "Moods" },
+  { href: "/playlists", label: "Playlists" },
+] as const;
+
+function isNavLinkActive(pathname: string, href: string) {
+  if (href === "/playlists") {
+    return pathname === "/playlists" || pathname.startsWith("/playlist/");
+  }
+
+  return pathname === href;
+}
+
+function navLinkClassName(pathname: string, href: string) {
+  return cn(
+    "rounded-full px-3 py-1.5 text-sm font-medium transition-colors",
+    isNavLinkActive(pathname, href)
+      ? "bg-neutral-900 text-white"
+      : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900",
+  );
+}
+
+function mobileNavLinkClassName(pathname: string, href: string) {
+  return cn(
+    "rounded-full px-3 py-1.5 text-sm font-medium transition-colors",
+    isNavLinkActive(pathname, href)
+      ? "bg-neutral-900 text-white"
+      : "text-neutral-600 hover:bg-neutral-200/60 hover:text-neutral-900",
+  );
 }
 
 export default function Header({ showSearch }: HeaderProps) {
@@ -75,17 +108,15 @@ export default function Header({ showSearch }: HeaderProps) {
 
             <nav className="hidden flex-shrink-0 items-center gap-1 md:flex">
               <div className="flex items-center gap-3">
-                <Link
-                  href="/explore"
-                  className={cn(
-                    "rounded-full px-3 py-1.5 text-sm font-medium transition-colors",
-                    pathname === "/explore"
-                      ? "bg-neutral-900 text-white"
-                      : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900",
-                  )}
-                >
-                  Explore
-                </Link>
+                {NAV_LINKS.map(({ href, label }) => (
+                  <Link
+                    key={href}
+                    href={href}
+                    className={navLinkClassName(pathname, href)}
+                  >
+                    {label}
+                  </Link>
+                ))}
                 {!loading &&
                   (user ? (
                     <UserMenu user={user} onSignOut={signOut} />
@@ -110,17 +141,15 @@ export default function Header({ showSearch }: HeaderProps) {
             </nav>
 
             <div className="flex items-center gap-1 md:hidden">
-              <Link
-                href="/explore"
-                className={cn(
-                  "rounded-full px-3 py-1.5 text-sm font-medium transition-colors",
-                  pathname === "/explore"
-                    ? "bg-neutral-900 text-white"
-                    : "text-neutral-600 hover:bg-neutral-200/60 hover:text-neutral-900",
-                )}
-              >
-                Explore
-              </Link>
+              {NAV_LINKS.map(({ href, label }) => (
+                <Link
+                  key={href}
+                  href={href}
+                  className={mobileNavLinkClassName(pathname, href)}
+                >
+                  {label}
+                </Link>
+              ))}
               {!loading && user && (
                 <UserMenu user={user} onSignOut={signOut} isMobile={true} />
               )}

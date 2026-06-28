@@ -1185,30 +1185,47 @@ export async function getExploreData(
 export interface BrowsePillConfig {
   key: string;
   label: string;
-  emoji: string;
   query: string;
 }
 
 export const BROWSE_MOODS: BrowsePillConfig[] = [
-  { key: "workout", label: "Workout", emoji: "💪", query: "workout" },
-  { key: "chill", label: "Chill", emoji: "🌊", query: "chill" },
-  { key: "party", label: "Party", emoji: "🎉", query: "party" },
-  { key: "focus", label: "Focus", emoji: "🧠", query: "focus" },
-  { key: "sleep", label: "Sleep", emoji: "😴", query: "sleep" },
-  { key: "romance", label: "Romance", emoji: "💕", query: "romance" },
-  { key: "feelgood", label: "Feel Good", emoji: "☀️", query: "feel good" },
-  { key: "throwback", label: "Throwback", emoji: "🕺", query: "throwback" },
+  { key: "workout", label: "Workout", query: "workout" },
+  { key: "chill", label: "Chill", query: "chill" },
+  { key: "party", label: "Party", query: "party" },
+  { key: "focus", label: "Focus", query: "focus" },
+  { key: "sleep", label: "Sleep", query: "sleep" },
+  { key: "romance", label: "Romance", query: "romance" },
+  { key: "feelgood", label: "Feel Good", query: "feel good" },
+  { key: "throwback", label: "Throwback", query: "throwback" },
+  { key: "energize", label: "Energize", query: "energize" },
+  { key: "drive", label: "Drive", query: "driving" },
+  { key: "study", label: "Study", query: "study" },
+  { key: "morning", label: "Morning", query: "morning" },
+  { key: "night", label: "Night", query: "late night" },
+  { key: "rainy", label: "Rainy Day", query: "rainy day" },
+  { key: "summer", label: "Summer", query: "summer" },
+  { key: "acoustic", label: "Acoustic", query: "acoustic" },
 ];
 
 export const BROWSE_CATEGORIES: BrowsePillConfig[] = [
-  { key: "pop", label: "Pop", emoji: "🎵", query: "pop" },
-  { key: "hiphop", label: "Hip-Hop", emoji: "🎤", query: "hip hop" },
-  { key: "electronic", label: "Electronic", emoji: "🎹", query: "electronic" },
-  { key: "rock", label: "Rock", emoji: "🎸", query: "rock" },
-  { key: "rnb", label: "R&B", emoji: "💜", query: "r&b" },
-  { key: "latin", label: "Latin", emoji: "🌎", query: "latin" },
-  { key: "jazz", label: "Jazz", emoji: "🎷", query: "jazz" },
-  { key: "country", label: "Country", emoji: "🤠", query: "country" },
+  { key: "pop", label: "Pop", query: "pop" },
+  { key: "hiphop", label: "Hip-Hop", query: "hip hop" },
+  { key: "electronic", label: "Electronic", query: "electronic" },
+  { key: "rock", label: "Rock", query: "rock" },
+  { key: "rnb", label: "R&B", query: "r&b" },
+  { key: "latin", label: "Latin", query: "latin" },
+  { key: "jazz", label: "Jazz", query: "jazz" },
+  { key: "country", label: "Country", query: "country" },
+  { key: "indie", label: "Indie", query: "indie" },
+  { key: "classical", label: "Classical", query: "classical" },
+  { key: "metal", label: "Metal", query: "metal" },
+  { key: "folk", label: "Folk", query: "folk" },
+  { key: "blues", label: "Blues", query: "blues" },
+  { key: "soul", label: "Soul", query: "soul" },
+  { key: "alternative", label: "Alternative", query: "alternative" },
+  { key: "dance", label: "Dance", query: "dance" },
+  { key: "reggae", label: "Reggae", query: "reggae" },
+  { key: "kpop", label: "K-Pop", query: "k-pop" },
 ];
 
 export interface BrowsePill extends BrowsePillConfig {
