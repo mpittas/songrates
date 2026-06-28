@@ -208,18 +208,22 @@ export default function SongRow({
           </div>
 
           {/* Song Info */}
-          <div className="flex flex-col min-w-0">
-            <div className="flex items-center gap-x-2 mb-0.25">
+          <div className="flex min-w-0 flex-1 flex-col">
+            <div className="mb-0.25 flex min-w-0 items-center gap-x-2">
               {effectiveAlbumId ? (
                 <Link
                   href={`/album/${effectiveAlbumId}`}
-                  className="text-md font-semibold text-neutral-900 truncate hover:underline"
+                  className="min-w-0 flex-1 truncate text-md font-semibold text-neutral-900 hover:underline"
+                  title={title}
                 >
-                  {truncateText(title, 80)}
+                  {truncateText(title, 42)}
                 </Link>
               ) : (
-                <span className="text-md font-semibold text-neutral-900 truncate">
-                  {truncateText(title, 80)}
+                <span
+                  className="min-w-0 flex-1 truncate text-md font-semibold text-neutral-900"
+                  title={title}
+                >
+                  {truncateText(title, 42)}
                 </span>
               )}
             </div>

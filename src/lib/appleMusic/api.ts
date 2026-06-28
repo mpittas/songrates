@@ -917,6 +917,382 @@ export function parsePlaylist(item: any): ApplePlaylistResult {
   };
 }
 
+// ─── Explore ──────────────────────────────────────────────────────────────────
+
+export interface AppleGenreResult {
+  id: string;
+  name: string;
+}
+
+export interface AppleExploreGenreSection {
+  genre: AppleGenreResult;
+  songs: AppleSongResult[];
+  albums: AppleAlbumResult[];
+}
+
+export interface AppleExploreData {
+  topSongs: AppleSongResult[];
+  topAlbums: AppleAlbumResult[];
+  chartPlaylists: ApplePlaylistResult[];
+  editorialPlaylists: ApplePlaylistResult[];
+  genreSections: AppleExploreGenreSection[];
+}
+
+type AppleChartGroup<T> = { data?: T[] } | Array<{ data?: T[] }>;
+
+type AppleChartsResponse = {
+  results?: {
+    songs?: AppleChartGroup<unknown>;
+    albums?: AppleChartGroup<unknown>;
+    playlists?: AppleChartGroup<unknown>;
+  };
+};
+
+type AppleGenreResource = {
+  id: string;
+  attributes?: {
+    name?: string;
+  };
+};
+
+type AppleGenresResponse = {
+  data?: AppleGenreResource[];
+};
+
+type ApplePlaylistSearchResponse = {
+  results?: {
+    playlists?: {
+      data?: unknown[];
+    };
+  };
+};
+
+function normalizeChartData<T>(chartGroup: unknown): T[] {
+  if (!chartGroup) return [];
+
+  const charts = (Array.isArray(chartGroup) ? chartGroup : [chartGroup]) as {
+    data?: T[];
+  }[];
+  return charts.flatMap((chart) => chart.data || []);
+}
+
+function parseGenre(item: AppleGenreResource): AppleGenreResult {
+  const a = item.attributes || {};
+  return {
+    id: item.id,
+    name: a.name || "",
+  };
+}
+
+async function getCatalogCharts({
+  storefront = STOREFRONT,
+  types,
+  limit = 12,
+  genre,
+  withParam,
+}: {
+  storefront?: string;
+  types: ("songs" | "albums" | "playlists")[];
+  limit?: number;
+  genre?: string;
+  withParam?: string;
+}): Promise<{
+  songs: AppleSongResult[];
+  albums: AppleAlbumResult[];
+  playlists: ApplePlaylistResult[];
+}> {
+  const safeLimit = Math.max(1, Math.min(limit, 25));
+  const params = new URLSearchParams({
+    types: types.join(","),
+    limit: String(safeLimit),
+  });
+
+  if (genre) params.set("genre", genre);
+  if (withParam) params.set("with", withParam);
+
+  const cacheKey = `am-charts:${storefront}:${params.toString()}`;
+  const cached = playlistCache.get(cacheKey);
+  if (cached) {
+    return cached as {
+      songs: AppleSongResult[];
+      albums: AppleAlbumResult[];
+      playlists: ApplePlaylistResult[];
+    };
+  }
+
+  const data = await appleMusicFetch<AppleChartsResponse>(
+    `/catalog/${storefront}/charts?${params.toString()}`,
+  );
+
+  const charts = {
+    songs: normalizeChartData<unknown>(data?.results?.songs).map(parseSong),
+    albums: normalizeChartData<unknown>(data?.results?.albums).map(parseAlbum),
+    playlists: normalizeChartData<unknown>(data?.results?.playlists).map(
+      parsePlaylist,
+    ),
+  };
+
+  if (
+    charts.songs.length > 0 ||
+    charts.albums.length > 0 ||
+    charts.playlists.length > 0
+  ) {
+    playlistCache.set(cacheKey, charts, 3600 * 2);
+  }
+
+  return charts;
+}
+
+export async function getCatalogTopGenres(
+  storefront: string = STOREFRONT,
+  limit: number = 30,
+): Promise<AppleGenreResult[]> {
+  const safeLimit = Math.max(1, Math.min(limit, 100));
+  const cacheKey = `am-genres:${storefront}:${safeLimit}`;
+  const cached = playlistCache.get(cacheKey);
+  if (cached) return cached as AppleGenreResult[];
+
+  const data = await appleMusicFetch<AppleGenresResponse>(
+    `/catalog/${storefront}/genres?limit=${safeLimit}`,
+  );
+
+  const genres = (data?.data || [])
+    .map(parseGenre)
+    .filter((g: AppleGenreResult) => g.name);
+  if (genres.length > 0) {
+    playlistCache.set(cacheKey, genres, 3600 * 12);
+  }
+
+  return genres;
+}
+
+const EDITORIAL_PLAYLIST_LIMIT = 8;
+
+export async function getEditorialPlaylists(
+  storefront: string = STOREFRONT,
+  queries: string[] = [
+    "new music daily",
+    "new in music",
+    "fresh finds",
+    "new releases",
+  ],
+  limitPerQuery: number = 5,
+  limit: number = EDITORIAL_PLAYLIST_LIMIT,
+): Promise<ApplePlaylistResult[]> {
+  const cacheKey = `am-editorial-playlists:${storefront}:${queries.join("|")}:${limitPerQuery}:${limit}`;
+  const cached = playlistCache.get(cacheKey);
+  if (cached) return cached as ApplePlaylistResult[];
+
+  const settled = await Promise.all(
+    queries.map((query) =>
+      appleMusicFetch<ApplePlaylistSearchResponse>(
+        `/catalog/${storefront}/search?term=${encodeURIComponent(
+          query,
+        )}&types=playlists&limit=${Math.max(1, Math.min(limitPerQuery, 10))}`,
+      ),
+    ),
+  );
+
+  const unique = new Map<string, ApplePlaylistResult>();
+  for (const result of settled) {
+    for (const item of result?.results?.playlists?.data || []) {
+      const playlist = parsePlaylist(item);
+      if (playlist.id && !unique.has(playlist.id)) {
+        unique.set(playlist.id, playlist);
+      }
+    }
+  }
+
+  const playlists = Array.from(unique.values()).slice(0, limit);
+  if (playlists.length > 0) {
+    playlistCache.set(cacheKey, playlists, 3600 * 6);
+  }
+
+  return playlists;
+}
+
+export async function getExploreData(
+  storefront: string = STOREFRONT,
+): Promise<AppleExploreData> {
+  const [topCharts, playlistCharts, editorialPlaylists, genres] =
+    await Promise.all([
+      getCatalogCharts({
+        storefront,
+        types: ["songs", "albums"],
+        limit: 12,
+      }),
+      getCatalogCharts({
+        storefront,
+        types: ["playlists"],
+        limit: 8,
+        withParam: "dailyGlobalTopCharts,cityCharts",
+      }),
+      getEditorialPlaylists(storefront),
+      getCatalogTopGenres(storefront),
+    ]);
+
+  const preferredGenreNames = [
+    "Pop",
+    "Hip-Hop/Rap",
+    "R&B/Soul",
+    "Alternative",
+    "Electronic",
+    "Rock",
+  ];
+  const preferredGenres = preferredGenreNames
+    .map((name) => genres.find((genre) => genre.name === name))
+    .filter(Boolean) as AppleGenreResult[];
+
+  const genreCandidates =
+    preferredGenres.length > 0 ? preferredGenres : genres.slice(0, 4);
+
+  const genreCharts = await Promise.all(
+    genreCandidates.slice(0, 4).map(async (genre) => {
+      const charts = await getCatalogCharts({
+        storefront,
+        types: ["songs", "albums"],
+        limit: 6,
+        genre: genre.id,
+      });
+
+      return {
+        genre,
+        songs: charts.songs,
+        albums: charts.albums,
+      };
+    }),
+  );
+
+  return {
+    topSongs: topCharts.songs,
+    topAlbums: topCharts.albums,
+    chartPlaylists: playlistCharts.playlists,
+    editorialPlaylists,
+    genreSections: genreCharts.filter(
+      (section) => section.songs.length > 0 || section.albums.length > 0,
+    ),
+  };
+}
+
+// ─── Browse (Moods & Categories) ──────────────────────────────────────────────
+
+/**
+ * Curated browse pills. `query` is the search term sent to Apple Music's
+ * catalog search (types=playlists). Keep these editable — each maps a friendly
+ * label to a search term that yields good editorial playlists.
+ */
+export interface BrowsePillConfig {
+  key: string;
+  label: string;
+  emoji: string;
+  query: string;
+}
+
+export const BROWSE_MOODS: BrowsePillConfig[] = [
+  { key: "workout", label: "Workout", emoji: "💪", query: "workout" },
+  { key: "chill", label: "Chill", emoji: "🌊", query: "chill" },
+  { key: "party", label: "Party", emoji: "🎉", query: "party" },
+  { key: "focus", label: "Focus", emoji: "🧠", query: "focus" },
+  { key: "sleep", label: "Sleep", emoji: "😴", query: "sleep" },
+  { key: "romance", label: "Romance", emoji: "💕", query: "romance" },
+  { key: "feelgood", label: "Feel Good", emoji: "☀️", query: "feel good" },
+  { key: "throwback", label: "Throwback", emoji: "🕺", query: "throwback" },
+];
+
+export const BROWSE_CATEGORIES: BrowsePillConfig[] = [
+  { key: "pop", label: "Pop", emoji: "🎵", query: "pop" },
+  { key: "hiphop", label: "Hip-Hop", emoji: "🎤", query: "hip hop" },
+  { key: "electronic", label: "Electronic", emoji: "🎹", query: "electronic" },
+  { key: "rock", label: "Rock", emoji: "🎸", query: "rock" },
+  { key: "rnb", label: "R&B", emoji: "💜", query: "r&b" },
+  { key: "latin", label: "Latin", emoji: "🌎", query: "latin" },
+  { key: "jazz", label: "Jazz", emoji: "🎷", query: "jazz" },
+  { key: "country", label: "Country", emoji: "🤠", query: "country" },
+];
+
+export interface BrowsePill extends BrowsePillConfig {
+  playlists: ApplePlaylistResult[];
+}
+
+export interface BrowseSection {
+  key: "moods" | "categories";
+  label: string;
+  pills: BrowsePill[];
+}
+
+export interface AppleBrowseData {
+  moods: BrowseSection;
+  categories: BrowseSection;
+}
+
+/**
+ * Search the Apple Music catalog for playlists matching a single term.
+ * Mirrors getEditorialPlaylists() but for one query at a time, with its own
+ * cache key and a larger limit so each browse pill has plenty to show.
+ */
+export async function getBrowsePlaylists(
+  query: string,
+  storefront: string = STOREFRONT,
+  limit: number = 12,
+): Promise<ApplePlaylistResult[]> {
+  const safeLimit = Math.max(1, Math.min(limit, 25));
+  const cacheKey = `am-browse-playlists:${storefront}:${query}:${safeLimit}`;
+  const cached = playlistCache.get(cacheKey);
+  if (cached) return cached as ApplePlaylistResult[];
+
+  const result = await appleMusicFetch<ApplePlaylistSearchResponse>(
+    `/catalog/${storefront}/search?term=${encodeURIComponent(
+      query,
+    )}&types=playlists&limit=${safeLimit}`,
+  );
+
+  const playlists = (result?.results?.playlists?.data || [])
+    .map(parsePlaylist)
+    .filter((playlist) => playlist.id);
+
+  if (playlists.length > 0) {
+    playlistCache.set(cacheKey, playlists, 3600 * 6);
+  }
+
+  return playlists;
+}
+
+/**
+ * Pre-fetch all browse pills (moods + categories) in parallel. Each pill carries
+ * its own playlist array, so the client can switch pills instantly with no extra
+ * network calls. Results are cached at the getBrowsePlaylists level; pills with
+ * no results are dropped so the UI never shows an empty grid.
+ */
+export async function getBrowseData(
+  storefront: string = STOREFRONT,
+): Promise<AppleBrowseData> {
+  const fetchPills = (pills: BrowsePillConfig[]): Promise<BrowsePill[]> =>
+    Promise.all(
+      pills.map(async (pill) => ({
+        ...pill,
+        playlists: await getBrowsePlaylists(pill.query, storefront, 12),
+      })),
+    );
+
+  const [moodPills, categoryPills] = await Promise.all([
+    fetchPills(BROWSE_MOODS),
+    fetchPills(BROWSE_CATEGORIES),
+  ]);
+
+  return {
+    moods: {
+      key: "moods",
+      label: "Moods",
+      pills: moodPills.filter((pill) => pill.playlists.length > 0),
+    },
+    categories: {
+      key: "categories",
+      label: "Categories",
+      pills: categoryPills.filter((pill) => pill.playlists.length > 0),
+    },
+  };
+}
+
 /**
  * Apple Music Official Top 100 Playlist IDs
  */

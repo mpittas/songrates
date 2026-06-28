@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthenticated" }, { status: 401 });
   }
 
-  let body: { result?: unknown };
+  let body: { result?: unknown; clickedAt?: unknown };
   try {
     body = await request.json();
   } catch {
@@ -78,23 +78,36 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid result" }, { status: 400 });
   }
 
-  const { error } = await supabase.from("user_searches").upsert(
-    {
-      user_id: user.id,
-      result_id: result.id,
-      result_type: result.type,
-      result,
-      created_at: new Date().toISOString(),
-    },
-    { onConflict: "user_id,result_id" },
-  );
+  const clickedAt =
+    typeof body.clickedAt === "string" ? body.clickedAt : new Date().toISOString();
+
+  const { data, error } = await supabase
+    .from("user_searches")
+    .upsert(
+      {
+        user_id: user.id,
+        result_id: result.id,
+        result_type: result.type,
+        result,
+        created_at: clickedAt,
+      },
+      { onConflict: "user_id,result_id" },
+    )
+    .select("id, result, created_at")
+    .single();
 
   if (error) {
     console.error("Search history save failed:", error);
     return NextResponse.json({ error: "Save failed" }, { status: 500 });
   }
 
-  return NextResponse.json({ success: true }, { headers: NO_STORE });
+  const search: RecentSearchClick = {
+    recordId: data.id as string,
+    result: data.result as SearchResult,
+    clickedAt: data.created_at as string,
+  };
+
+  return NextResponse.json({ success: true, search }, { headers: NO_STORE });
 }
 
 /**

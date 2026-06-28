@@ -12,6 +12,7 @@ import MobileMenu from "@/components/layout/MobileMenu";
 import Button from "@/components/ui/Button";
 import UserMenu from "@/components/layout/UserMenu";
 import { useAuth } from "@/context/AuthContext";
+import { cn } from "@/lib/utils";
 interface HeaderProps {
   showSearch?: boolean;
 }
@@ -73,9 +74,20 @@ export default function Header({ showSearch }: HeaderProps) {
             )}
 
             <nav className="hidden flex-shrink-0 items-center gap-1 md:flex">
-              {!loading && (
-                <div className="flex items-center gap-3">
-                  {user ? (
+              <div className="flex items-center gap-3">
+                <Link
+                  href="/explore"
+                  className={cn(
+                    "rounded-full px-3 py-1.5 text-sm font-medium transition-colors",
+                    pathname === "/explore"
+                      ? "bg-neutral-900 text-white"
+                      : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900",
+                  )}
+                >
+                  Explore
+                </Link>
+                {!loading &&
+                  (user ? (
                     <UserMenu user={user} onSignOut={signOut} />
                   ) : (
                     <>
@@ -93,12 +105,22 @@ export default function Header({ showSearch }: HeaderProps) {
                         Sign up
                       </Button>
                     </>
-                  )}
-                </div>
-              )}
+                  ))}
+              </div>
             </nav>
 
             <div className="flex items-center gap-1 md:hidden">
+              <Link
+                href="/explore"
+                className={cn(
+                  "rounded-full px-3 py-1.5 text-sm font-medium transition-colors",
+                  pathname === "/explore"
+                    ? "bg-neutral-900 text-white"
+                    : "text-neutral-600 hover:bg-neutral-200/60 hover:text-neutral-900",
+                )}
+              >
+                Explore
+              </Link>
               {!loading && user && (
                 <UserMenu user={user} onSignOut={signOut} isMobile={true} />
               )}

@@ -14,6 +14,13 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
     <Drawer isOpen={isOpen} onClose={onClose} title="Menu">
       <nav className="flex flex-col gap-1">
         <Link
+          href="/explore"
+          onClick={onClose}
+          className="rounded-md px-1 py-3 text-sm font-mono text-neutral-200 transition-colors hover:text-[#00f0ff]"
+        >
+          Explore
+        </Link>
+        <Link
           href="/login?view=login"
           onClick={onClose}
           className="rounded-md px-1 py-3 text-sm font-mono text-neutral-200 transition-colors hover:text-[#00f0ff]"
