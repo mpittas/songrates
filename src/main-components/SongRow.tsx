@@ -16,12 +16,6 @@ import SongRowLyrics from "./SongRowLyrics";
 import SongRowDropdown from "./SongRowDropdown";
 import SongRowRating from "./SongRowRating";
 
-function truncateText(text: string, maxChars: number) {
-  const s = (text || "").trim();
-  if (s.length <= maxChars) return s;
-  return `${s.slice(0, Math.max(0, maxChars - 1))}…`;
-}
-
 async function copyTextToClipboard(text: string) {
   if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
     await navigator.clipboard.writeText(text);
@@ -134,6 +128,20 @@ export default function SongRow({
     return val;
   };
 
+  const resolvedArtworkUrl =
+    track?.albumImageUrl || artworkUrl || albumContext?.artworkUrl || undefined;
+
+  const handlePlay = useCallback(() => {
+    if (track) {
+      playTrack({
+        ...track,
+        albumImageUrl: resolvedArtworkUrl,
+      });
+    } else if (onPlay) {
+      onPlay();
+    }
+  }, [track, resolvedArtworkUrl, playTrack, onPlay]);
+
   const displayAlbum =
     album || track?.albumTitle || albumContext?.title || "Unknown Album";
   const durationMsForFavorite = (() => {
@@ -156,135 +164,143 @@ export default function SongRow({
 
   return (
     <div
-      className="flex flex-col bg-white rounded-lg border border-neutral-100 hover:border-neutral-300/90 group transition-colors duration-200 ease-in-out"
+      className="group flex w-full min-w-0 flex-col rounded-lg border border-neutral-100 bg-white transition-colors duration-200 ease-in-out hover:border-neutral-300/90"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      <div className="flex items-center gap-3 px-3 py-2.5 min-w-0">
+      <div className="flex w-full min-w-0 items-center gap-1.5 px-1.5 py-2 sm:gap-3 sm:px-3 sm:py-2.5">
         {/* Left Section */}
-        <div className="flex items-center gap-3 flex-1 min-w-0">
-          {/* Track Number / Play Icon */}
-          <div className="w-8 flex-shrink-0 flex items-center justify-center">
-            {hovered || isCurrentTrack ? (
-              <button
-                onClick={() => {
-                  if (track) {
-                    playTrack(track);
-                  } else if (onPlay) {
-                    onPlay();
+        <div className="flex min-w-0 flex-1 items-center gap-1.5 sm:gap-3">
+          <div className="flex shrink-0 items-center gap-1 sm:gap-3">
+            {/* Track Number / Play Icon */}
+            <div className="flex w-5 shrink-0 items-center justify-center sm:w-8">
+              {hovered || isCurrentTrack ? (
+                <button
+                  onClick={handlePlay}
+                  className="flex h-6 w-6 items-center justify-center rounded-full bg-neutral-800 text-neutral-100 transition-all hover:bg-neutral-700 sm:h-7 sm:w-7"
+                  aria-label={
+                    isCurrentTrack && isPlayerPlaying ? "Pause" : "Play"
                   }
-                }}
-                className="w-7 h-7 flex items-center justify-center rounded-full text-neutral-100 bg-neutral-800 hover:bg-neutral-700 transition-all"
-                aria-label={
-                  isCurrentTrack && isPlayerPlaying ? "Pause" : "Play"
-                }
-              >
-                {isCurrentTrack && isLoading ? (
-                  <span className="animate-pulse text-[10px]">...</span>
-                ) : isCurrentTrack && isPlayerPlaying ? (
-                  <FaPause size={12} />
-                ) : (
-                  <FaPlay size={12} className="ml-0.5" />
-                )}
-              </button>
-            ) : (
-              <span className="text-xs text-neutral-400 font-mono w-8 text-center">
-                {index}
-              </span>
-            )}
-          </div>
-
-          {/* Album Art */}
-          <div className="w-10 h-10 rounded-md bg-neutral-200 flex-shrink-0 flex items-center justify-center overflow-hidden">
-            {artworkUrl ? (
-              <img
-                src={artworkUrl}
-                alt={album}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <IoDiscOutline className="text-neutral-400" size={20} />
-            )}
-          </div>
-
-          {/* Song Info */}
-          <div className="flex min-w-0 flex-1 flex-col">
-            <div className="mb-0.25 flex min-w-0 items-center gap-x-2">
-              {effectiveAlbumId ? (
-                <Link
-                  href={`/album/${effectiveAlbumId}`}
-                  className="min-w-0 flex-1 truncate text-md font-semibold text-neutral-900 hover:underline"
-                  title={title}
                 >
-                  {truncateText(title, 42)}
-                </Link>
+                  {isCurrentTrack && isLoading ? (
+                    <span className="animate-pulse text-[10px]">...</span>
+                  ) : isCurrentTrack && isPlayerPlaying ? (
+                    <>
+                      <FaPause size={10} className="sm:hidden" />
+                      <FaPause size={12} className="hidden sm:block" />
+                    </>
+                  ) : (
+                    <>
+                      <FaPlay size={10} className="ml-0.5 sm:hidden" />
+                      <FaPlay size={12} className="ml-0.5 hidden sm:block" />
+                    </>
+                  )}
+                </button>
               ) : (
-                <span
-                  className="min-w-0 flex-1 truncate text-md font-semibold text-neutral-900"
-                  title={title}
-                >
-                  {truncateText(title, 42)}
+                <span className="w-5 text-center font-mono text-[10px] text-neutral-400 sm:w-8 sm:text-xs">
+                  {index}
                 </span>
               )}
             </div>
 
-            <div className="flex min-w-0 w-full flex-wrap items-center gap-x-1 text-xs text-neutral-500">
-              <span className="flex gap-x-1 min-w-0 max-w-full flex-wrap items-center">
+            {/* Album Art */}
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded bg-neutral-200 sm:h-10 sm:w-10 sm:rounded-md">
+              {artworkUrl ? (
+                <img
+                  src={artworkUrl}
+                  alt={album}
+                  loading="lazy"
+                  decoding="async"
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <IoDiscOutline className="text-neutral-400" size={16} />
+              )}
+            </div>
+          </div>
+
+          {/* Song Info */}
+          <div className="flex min-w-0 flex-1 flex-col justify-center gap-0 sm:gap-0.5">
+            <div className="flex min-w-0 items-center">
+              {effectiveAlbumId ? (
+                <Link
+                  href={`/album/${effectiveAlbumId}`}
+                  prefetch={false}
+                  className="min-w-0 flex-1 truncate text-xs font-semibold text-neutral-900 hover:underline sm:text-base"
+                  title={title}
+                >
+                  {title}
+                </Link>
+              ) : (
+                <span
+                  className="min-w-0 flex-1 truncate text-xs font-semibold text-neutral-900 sm:text-base"
+                  title={title}
+                >
+                  {title}
+                </span>
+              )}
+            </div>
+
+            <div className="flex min-w-0 items-center gap-x-1 truncate text-[11px] text-neutral-500 sm:text-xs">
+              <span className="min-w-0 truncate">
                 {(track?.artists?.length
                   ? track.artists
                   : [{ id: effectiveArtistId, name: artist }]
                 ).map((a, i) => (
                   <span
                     key={`${a.id || "noid"}-${i}-${a.name}`}
-                    className="inline-flex items-center gap-x-1"
+                    className="inline"
                   >
                     {i > 0 && (
                       <span className="font-mono tracking-tight text-neutral-400">
-                        ft.
+                        {" "}
+                        ft.{" "}
                       </span>
                     )}
                     {a.id ? (
                       <Link
                         href={`/artist/${createSlug(a.name, a.id)}`}
-                        className="shrink-0 hover:text-neutral-700 hover:underline"
+                        prefetch={false}
+                        className="hover:text-neutral-700 hover:underline"
                       >
-                        {truncateText(a.name, 50)}
+                        {a.name}
                       </Link>
                     ) : (
-                      <span className="shrink-0">
-                        {truncateText(a.name, 50)}
-                      </span>
+                      <span>{a.name}</span>
                     )}
                   </span>
                 ))}
               </span>
               {showAlbumInSubline ? (
                 <>
-                  <span className="text-neutral-300">•</span>
+                  <span className="hidden shrink-0 text-neutral-300 sm:inline">
+                    •
+                  </span>
                   {effectiveAlbumId ? (
                     <Link
                       href={`/album/${effectiveAlbumId}`}
-                      className="shrink-0 truncate max-w-[12rem] hover:text-neutral-700 hover:underline"
+                      prefetch={false}
+                      className="hidden min-w-0 max-w-48 shrink truncate hover:text-neutral-700 hover:underline sm:inline"
                     >
-                      {truncateText(displayAlbum, 50)}
+                      {displayAlbum}
                     </Link>
                   ) : (
-                    <span className="shrink-0 truncate max-w-[12rem]">
-                      {truncateText(displayAlbum, 50)}
+                    <span className="hidden min-w-0 max-w-48 shrink truncate sm:inline">
+                      {displayAlbum}
                     </span>
                   )}
                 </>
               ) : null}
-              <span className="text-neutral-300">•</span>
-              <div className="text-neutral-500 shrink-0">
+              <span className="shrink-0 text-neutral-300">•</span>
+              <span className="shrink-0 tabular-nums">
                 {formatDuration(duration)}
-              </div>
+              </span>
             </div>
           </div>
         </div>
 
         {/* Right Section */}
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex shrink-0 items-center gap-0.5 sm:gap-1.5">
           {/* Duration */}
 
           {/* Rating Circle */}

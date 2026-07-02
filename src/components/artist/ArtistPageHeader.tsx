@@ -21,16 +21,18 @@ export default function ArtistPageHeader({
   onPlayTopSongs,
 }: ArtistPageHeaderProps) {
   return (
-    <div className="relative z-10 mb-8 flex flex-wrap items-center justify-between gap-3">
-      <Button
-        href="/"
-        variant="secondary"
-        size="xs"
-        iconLeft={<FaArrowLeft size={14} className="mr-2" />}
-      >
-        BACK TO HOME
-      </Button>
-      <div className="flex flex-wrap items-center justify-end gap-3">
+    <div className="relative z-10 mb-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex items-center">
+        <Button
+          href="/"
+          variant="secondary"
+          size="xs"
+          iconLeft={<FaArrowLeft size={14} className="mr-2" />}
+        >
+          BACK TO HOME
+        </Button>
+      </div>
+      <div className="flex flex-wrap items-center gap-3 sm:justify-end">
         <FavoriteButton
           itemId={artistId}
           itemType="artist"

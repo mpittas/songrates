@@ -101,7 +101,7 @@ export default function SongRowDropdown({
         <button
           type="button"
           onClick={() => toggle()}
-          className="p-1.5 rounded-md text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 transition-colors"
+          className="p-1 rounded-md text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-700 sm:p-1.5"
           aria-label="More options"
         >
           <BsThreeDotsVertical size={14} />

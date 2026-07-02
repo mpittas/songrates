@@ -18,7 +18,7 @@ export default async function TrendingSongs() {
             badgeText="Global top 100"
           />
 
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-1.5 sm:gap-2">
             {songs.map((song, i) => (
               <SongRow
                 key={song.id}

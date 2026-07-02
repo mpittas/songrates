@@ -9,12 +9,15 @@ import type { AlbumInfo } from "@/types/music";
 export const albumKeys = {
   all: ["albums"] as const,
   detail: (slug: string) => [...albumKeys.all, slug] as const,
+  detailLite: (slug: string) => [...albumKeys.all, "lite", slug] as const,
 };
 
 // ─── Fetcher ────────────────────────────────────────────────────────────────────
 
-async function fetchAlbumInfo(slug: string): Promise<AlbumInfo> {
-  const res = await fetch(`/api/album-info?id=${encodeURIComponent(slug)}`);
+async function fetchAlbumInfo(slug: string, lite = false): Promise<AlbumInfo> {
+  const params = new URLSearchParams({ id: slug });
+  if (lite) params.set("lite", "1");
+  const res = await fetch(`/api/album-info?${params.toString()}`);
   if (!res.ok) throw new Error("Album not found");
   return res.json();
 }

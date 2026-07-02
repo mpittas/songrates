@@ -60,6 +60,8 @@ export {
   getAlbumDetail,
   getExploreData,
   getBrowseData,
+  getMoodsBrowseData,
+  getCategoriesBrowseData,
   getTrendingSongs,
   getDailyTop100Playlists,
   getPlaylistDetail,

@@ -12,7 +12,7 @@ export default function TopSongsList({ songs }: { songs: TopSong[] }) {
 
   return (
     <div>
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-1.5 sm:gap-2">
         {visible.map((song, i) => (
           <SongRow
             key={song.id}
@@ -21,7 +21,9 @@ export default function TopSongsList({ songs }: { songs: TopSong[] }) {
             artist={song.artistName}
             album={song.albumName || "Unknown Album"}
             duration={
-              song.durationMs ? formatTime(song.durationMs, "milliseconds") : "—"
+              song.durationMs
+                ? formatTime(song.durationMs, "milliseconds")
+                : "—"
             }
             artworkUrl={song.artworkUrl}
             artistId={song.artistId}

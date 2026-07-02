@@ -1,0 +1,293 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { FaListUl, FaMusic, FaCompactDisc, FaPlay } from "react-icons/fa";
+import { LuArrowLeft, LuPencil, LuTrash2 } from "react-icons/lu";
+
+import { usePlaylist } from "@/context/PlaylistContext";
+import { Playlist, PlaylistTrack, PlaylistAlbum } from "@/types/playlist";
+import { Album, Track } from "@/types/music";
+import { createClient } from "@/utils/supabase/client";
+import ArtistAlbumGridSection from "@/components/artist/ArtistAlbumGridSection";
+import Button from "@/components/ui/Button";
+import MySection from "@/components/ui/MySection";
+import PageHero from "@/components/ui/PageHero";
+import { cn } from "@/lib/utils";
+import { PAGE_CONTENT_TOP } from "@/lib/pageLayout";
+import { usePlayerCore } from "@/context/PlayerContext";
+import SongRow from "@/main-components/SongRow";
+import EditPlaylistModal from "@/components/playlist/EditPlaylistModal";
+
+interface PlaylistPageClientProps {
+  initialPlaylist: Playlist | null;
+  initialTracks: PlaylistTrack[];
+  initialAlbums: PlaylistAlbum[];
+}
+
+export default function PlaylistPageClient({
+  initialPlaylist,
+  initialTracks,
+  initialAlbums,
+}: PlaylistPageClientProps) {
+  const router = useRouter();
+  const { deletePlaylist } = usePlaylist();
+  const { playTrack } = usePlayerCore();
+
+  const [playlist, setPlaylist] = useState<Playlist | null>(initialPlaylist);
+  const [tracks] = useState<PlaylistTrack[]>(initialTracks);
+  const [albums] = useState<PlaylistAlbum[]>(initialAlbums);
+  const [deleting, setDeleting] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [savingEdits, setSavingEdits] = useState(false);
+  const [editName, setEditName] = useState(initialPlaylist?.name || "");
+
+  const handleDeletePlaylist = async () => {
+    if (!playlist) return;
+    if (!confirm("Are you sure you want to delete this playlist?")) return;
+    setDeleting(true);
+    await deletePlaylist(playlist.id);
+    router.push("/profile");
+  };
+
+  const handleSaveEdits = async () => {
+    if (!playlist) return;
+    const nextName = editName.trim();
+    if (!nextName) return;
+
+    setSavingEdits(true);
+    try {
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from("playlists")
+        .update({
+          name: nextName,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", playlist.id)
+        .eq("user_id", playlist.user_id)
+        .select("*")
+        .single();
+
+      if (!error && data) {
+        setPlaylist(data as Playlist);
+        setShowEditModal(false);
+      }
+    } finally {
+      setSavingEdits(false);
+    }
+  };
+
+  const playlistAlbums: Album[] = useMemo(
+    () =>
+      albums.map((a) => ({
+        id: a.album_id,
+        title: a.album_name || "Unknown Album",
+        artistName: a.artist_name || undefined,
+        artworkUrl: a.thumbnail_url || undefined,
+        releaseDate: a.release_date || undefined,
+      })),
+    [albums],
+  );
+
+  const queue = useMemo<Track[]>(() => {
+    if (!playlist || playlist.type !== "songs") return [];
+    return tracks.map((t, i) => ({
+      id: t.track_id,
+      number: String(i + 1),
+      title: t.track_name || "Unknown Track",
+      length: t.duration_ms || 0,
+      artists: t.artist_name ? [{ id: "", name: t.artist_name }] : [],
+      artistName: t.artist_name || "Unknown Artist",
+      artistId: "",
+      albumId: t.album_id || "",
+      albumTitle: t.album_name || playlist.name,
+      albumImageUrl: t.thumbnail_url || "/vinyl-placeholder.svg",
+      totalTracks: tracks.length,
+    }));
+  }, [playlist, tracks]);
+
+  if (!playlist) {
+    return (
+      <main className="min-h-screen">
+        <MySection className={cn(PAGE_CONTENT_TOP)}>
+          <div className="w-full max-w-4xl">
+            <Link
+              href="/profile"
+              prefetch={false}
+              className="inline-flex items-center gap-2 text-neutral-500 hover:text-neutral-900 transition-colors text-sm font-mono mb-8"
+            >
+              <LuArrowLeft size={14} />
+              Back to profile
+            </Link>
+            <div className="py-16 text-center">
+              <FaListUl size={32} className="text-neutral-700 mx-auto mb-4" />
+              <p className="text-neutral-500 font-mono text-sm">
+                Playlist not found
+              </p>
+            </div>
+          </div>
+        </MySection>
+      </main>
+    );
+  }
+
+  return (
+    <main className="min-h-screen">
+      <PageHero
+        eyebrow="Playlist"
+        title={playlist.name}
+        icon={
+          playlist.type === "albums" ? (
+            <FaCompactDisc size={30} />
+          ) : (
+            <FaListUl size={28} />
+          )
+        }
+        subtitle={
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-white/70">
+            <span>
+              {playlist.type === "albums"
+                ? `${albums.length} albums`
+                : `${tracks.length} tracks`}
+            </span>
+            <span className="text-white/40">/</span>
+            <span>
+              Created {new Date(playlist.created_at).toLocaleDateString()}
+            </span>
+          </div>
+        }
+        actions={
+          playlist.type === "songs" ? (
+            <button
+              type="button"
+              onClick={() => {
+                if (queue.length > 0) playTrack(queue[0], queue);
+              }}
+              disabled={queue.length === 0}
+              className={cn(
+                "group flex items-center gap-2 rounded-full bg-white px-4 py-3 font-mono font-semibold text-neutral-900 transition-transform",
+                queue.length > 0
+                  ? "hover:scale-105 active:scale-95"
+                  : "cursor-not-allowed opacity-60",
+              )}
+            >
+              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#e76418] text-white transition-transform group-hover:scale-105">
+                <FaPlay className="ml-0.5" size={12} />
+              </div>
+              <span className="text-sm font-bold tracking-tight sm:text-base">
+                Play songs
+              </span>
+            </button>
+          ) : null
+        }
+      />
+
+      <MySection className={cn("pb-20")} container={false}>
+        <div className="mx-auto w-full max-w-[1180px] px-4 sm:px-6">
+          <div className="mb-8 flex flex-wrap items-center justify-between gap-3 pt-12">
+            <Button
+              href="/profile"
+              variant="secondary"
+              size="xs"
+              iconLeft={<LuArrowLeft size={14} className=" mr-2" />}
+            >
+              BACK TO PLAYLISTS
+            </Button>
+
+            <div className="flex items-center gap-3">
+              <Button
+                onClick={() => setShowEditModal(true)}
+                variant="secondary"
+                size="xs"
+                iconLeft={<LuPencil size={14} className=" mr-2" />}
+              >
+                EDIT DETAILS
+              </Button>
+
+              <Button
+                onClick={handleDeletePlaylist}
+                disabled={deleting}
+                variant="secondary"
+                size="xs"
+                className="text-neutral-900"
+                iconLeft={<LuTrash2 size={14} className=" mr-2" />}
+              >
+                {deleting ? "DELETING..." : "DELETE"}
+              </Button>
+            </div>
+          </div>
+
+          {playlist.type === "albums" ? (
+            albums.length === 0 ? (
+              <div className="py-16 text-center border border-[#e1e1e1] bg-white rounded-md">
+                <FaCompactDisc
+                  size={32}
+                  className="text-neutral-700 mx-auto mb-4"
+                />
+                <p className="text-neutral-600 font-mono text-sm">
+                  No albums in this playlist
+                </p>
+                <p className="text-neutral-700 text-xs mt-1">
+                  Add albums from album pages
+                </p>
+              </div>
+            ) : (
+              <ArtistAlbumGridSection
+                albums={playlistAlbums}
+                initialCount={playlistAlbums.length}
+                ratingMode="any"
+                columns={4}
+              />
+            )
+          ) : tracks.length === 0 ? (
+            <div className="py-16 text-center border border-[#e1e1e1] bg-white rounded-md">
+              <FaMusic size={32} className="text-neutral-700 mx-auto mb-4" />
+              <p className="text-neutral-600 font-mono text-sm">
+                No tracks in this playlist
+              </p>
+              <p className="text-neutral-700 text-xs mt-1">
+                Add tracks from album pages
+              </p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-y-1.5">
+              {queue.map((t, i) => (
+                <SongRow
+                  key={`${t.id}-${i}`}
+                  index={i + 1}
+                  title={t.title}
+                  artist={t.artistName || "Unknown Artist"}
+                  album={t.albumTitle || playlist.name}
+                  duration={String(tracks[i]?.duration_ms ?? "")}
+                  artworkUrl={t.albumImageUrl || "/vinyl-placeholder.svg"}
+                  track={t}
+                  artistId=""
+                  albumId={t.albumId || ""}
+                  albumContext={{
+                    albumId: t.albumId || "",
+                    title: t.albumTitle || playlist.name,
+                    artistName: t.artistName || "Unknown Artist",
+                    totalTracks: tracks.length,
+                    artworkUrl: t.albumImageUrl || undefined,
+                  }}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      </MySection>
+
+      {showEditModal && playlist && (
+        <EditPlaylistModal
+          name={editName}
+          saving={savingEdits}
+          onNameChange={setEditName}
+          onClose={() => setShowEditModal(false)}
+          onSave={handleSaveEdits}
+        />
+      )}
+    </main>
+  );
+}

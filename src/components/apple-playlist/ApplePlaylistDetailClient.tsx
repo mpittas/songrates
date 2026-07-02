@@ -11,6 +11,7 @@ import {
   type AppleSongResult,
 } from "@/lib/appleMusic/api";
 import { mapAppleSongToTrackInfo } from "@/lib/appleMusic/mapAppleSongToTrackInfo";
+import { fetchPlaylistEnrichments } from "@/lib/fetchPlaylistEnrichments";
 import { usePlayerCore } from "@/context/PlayerContext";
 import SongRow from "@/main-components/SongRow";
 import type { AlbumContext, Track } from "@/types/music";
@@ -60,24 +61,8 @@ export default function ApplePlaylistDetailClient({
 
     (async () => {
       try {
-        const ids = idsToEnrich.slice().sort().join(",");
-        const res = await fetch(
-          `/api/apple-playlist-enrich?ids=${encodeURIComponent(ids)}`,
-          { signal: ac.signal },
-        );
-        if (!res.ok) return;
-        const data = (await res.json()) as {
-          enrichments?: Record<
-            string,
-            {
-              artists?: { id: string; name: string }[];
-              artistId?: string;
-              albumId?: string;
-            }
-          >;
-        };
-        const en = data.enrichments;
-        if (!en) return;
+        const en = await fetchPlaylistEnrichments(idsToEnrich, ac.signal);
+        if (Object.keys(en).length === 0) return;
 
         setTracks((prev) =>
           prev.map((t) => {

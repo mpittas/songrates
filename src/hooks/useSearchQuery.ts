@@ -23,6 +23,41 @@ interface SearchApiData {
 
 // ─── Fetcher ───────────────────────────────────────────────────────────────────
 
+function flattenGrouped(grouped: GroupedSearchResults): SearchResult[] {
+  return [...grouped.artists, ...grouped.albums, ...grouped.songs];
+}
+
+function normalizeSearchApiData(
+  data: Omit<SearchApiData, "meta"> & {
+    meta?: SearchApiData["meta"];
+  },
+): SearchApiData {
+  if (data.results.length > 0 || !data.grouped) {
+    return {
+      results: data.results,
+      grouped: data.grouped,
+      meta: data.meta ?? {
+        query: "",
+        category: "all",
+        totalResults: data.results.length,
+        took: 0,
+      },
+    };
+  }
+
+  const results = flattenGrouped(data.grouped);
+  return {
+    ...data,
+    results,
+    meta: {
+      query: data.meta?.query ?? "",
+      category: data.meta?.category ?? "all",
+      totalResults: data.meta?.totalResults ?? results.length,
+      took: data.meta?.took ?? 0,
+    },
+  };
+}
+
 async function fetchSearchResults(
   query: string,
   category: SearchCategory,
@@ -38,11 +73,11 @@ async function fetchSearchResults(
   }
 
   const data = await res.json();
-  return {
+  return normalizeSearchApiData({
     results: data.results || [],
     grouped: data.grouped || null,
     meta: data.meta,
-  };
+  });
 }
 
 // ─── Category extraction from "all" grouped data ─────────────────────────────

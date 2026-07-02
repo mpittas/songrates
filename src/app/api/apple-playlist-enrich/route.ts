@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { fetchAppleSongEnrichmentsByIds } from "@/lib/appleMusic/api";
 import { playlistEnrichCache } from "@/lib/cache";
-import { CACHE_HEADERS } from "@/lib/api-utils";
+import { CACHE_HEADERS, createApiTimer } from "@/lib/api-utils";
 
 const MAX_IDS = 400;
 
@@ -27,11 +27,14 @@ function normalizeIds(ids: unknown[]): string[] {
     .slice(0, MAX_IDS);
 }
 
-async function buildEnrichmentResponse(songIds: string[]) {
+async function buildEnrichmentResponse(
+  songIds: string[],
+  timer: ReturnType<typeof createApiTimer>,
+) {
   if (songIds.length === 0) {
     return NextResponse.json(
       { enrichments: {} },
-      { headers: CACHE_HEADERS.playlist },
+      { headers: timer.headers(CACHE_HEADERS.playlist) },
     );
   }
 
@@ -40,11 +43,13 @@ async function buildEnrichmentResponse(songIds: string[]) {
   if (cached) {
     return NextResponse.json(
       { enrichments: cached },
-      { headers: CACHE_HEADERS.playlist },
+      { headers: timer.headers({ ...CACHE_HEADERS.playlist, "X-Cache": "HIT" }) },
     );
   }
 
-  const map = await fetchAppleSongEnrichmentsByIds(songIds);
+  const map = await timer.measure("apple_enrich", () =>
+    fetchAppleSongEnrichmentsByIds(songIds),
+  );
   const enrichments: PlaylistEnrichments = {};
 
   for (const [id, v] of map) {
@@ -61,31 +66,42 @@ async function buildEnrichmentResponse(songIds: string[]) {
 
   return NextResponse.json(
     { enrichments },
-    { headers: CACHE_HEADERS.playlist },
+    { headers: timer.headers({ ...CACHE_HEADERS.playlist, "X-Cache": "MISS" }) },
   );
 }
 
 export async function GET(request: NextRequest) {
+  const timer = createApiTimer();
   const ids = request.nextUrl.searchParams.get("ids");
   if (!ids) {
-    return NextResponse.json({ error: "ids query required" }, { status: 400 });
+    return NextResponse.json(
+      { error: "ids query required" },
+      { status: 400, headers: timer.headers() },
+    );
   }
 
-  return buildEnrichmentResponse(normalizeIds(ids.split(",")));
+  return buildEnrichmentResponse(normalizeIds(ids.split(",")), timer);
 }
 
 export async function POST(request: NextRequest) {
+  const timer = createApiTimer();
   let body: unknown;
   try {
-    body = await request.json();
+    body = await timer.measure("request_json", () => request.json());
   } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Invalid JSON" },
+      { status: 400, headers: timer.headers() },
+    );
   }
 
   const ids = (body as { ids?: unknown })?.ids;
   if (!Array.isArray(ids) || ids.length === 0) {
-    return NextResponse.json({ error: "ids array required" }, { status: 400 });
+    return NextResponse.json(
+      { error: "ids array required" },
+      { status: 400, headers: timer.headers() },
+    );
   }
 
-  return buildEnrichmentResponse(normalizeIds(ids));
+  return buildEnrichmentResponse(normalizeIds(ids), timer);
 }

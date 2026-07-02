@@ -4,7 +4,7 @@ import BrowseSectionClient from "@/components/playlists/BrowseSectionClient";
 import PlaylistsHero from "@/components/playlists/PlaylistsHero";
 import MySection from "@/components/ui/MySection";
 import { countPlaylists, pickHeroArtworks } from "@/lib/browseHero";
-import { getBrowseData } from "@/lib/appleMusic/api";
+import { getCategoriesBrowseData } from "@/lib/appleMusic/api";
 
 /** ISR: regenerate playlists page at most once every 6 hours. */
 export const revalidate = 21600;
@@ -15,8 +15,7 @@ export const metadata = {
 };
 
 export default async function PlaylistsPage() {
-  const data = await getBrowseData();
-  const { categories } = data;
+  const categories = await getCategoriesBrowseData();
   const hasData = categories.pills.length > 0;
 
   return (

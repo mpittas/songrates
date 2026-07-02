@@ -118,6 +118,7 @@ export default function AlbumCard({
     return (
       <Link
         href={`/album/${slug}`}
+        prefetch={false}
         onMouseEnter={handleMouseEnter}
         className="flex items-center gap-4 p-2 hover:bg-[#f7f7f7] border-b border-[#ececec] last:border-0 group transition-colors"
       >
@@ -163,6 +164,7 @@ export default function AlbumCard({
       <div className={cn("relative", isCompact ? "mb-2" : "mb-3")}>
         <Link
           href={`/album/${slug}`}
+          prefetch={false}
           onMouseEnter={handleMouseEnter}
           className={cn(
             "block aspect-square bg-[#efefef] overflow-hidden relative border border-[#e1e1e1] group-hover:border-[#c9c9c9] transition-colors",
@@ -219,6 +221,7 @@ export default function AlbumCard({
       <div className="flex justify-between items-start gap-2">
         <Link
           href={`/album/${slug}`}
+          prefetch={false}
           onMouseEnter={handleMouseEnter}
           className="flex-1 min-w-0 block"
         >

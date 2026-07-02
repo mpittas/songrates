@@ -36,7 +36,7 @@ function albumToCard(album: {
     id: album.id,
     title: album.name,
     artistName: album.artistName,
-    artworkUrl: artworkUrl(album.artworkUrl, 500),
+    artworkUrl: artworkUrl(album.artworkUrl, 300),
     releaseDate: album.releaseDate,
   };
 }
@@ -96,7 +96,7 @@ function GenreSection({ section }: { section: AppleExploreGenreSection }) {
           ))}
         </div>
 
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-1.5 sm:gap-2">
           {songs.map((song, index) => (
             <SongRow
               key={song.id}
@@ -141,7 +141,6 @@ function GenreSection({ section }: { section: AppleExploreGenreSection }) {
 export default async function ExplorePage() {
   const explore = await getExploreData();
   const hasExploreData =
-    explore.topSongs.length > 0 ||
     explore.topAlbums.length > 0 ||
     explore.chartPlaylists.length > 0 ||
     explore.editorialPlaylists.length > 0 ||
@@ -155,48 +154,6 @@ export default async function ExplorePage() {
         <EmptyExploreState />
       ) : (
         <>
-          {explore.topSongs.length > 0 && (
-            <MySection className="py-8">
-              <HeadingRow title="Top Songs" badgeText="Apple Music charts" />
-              <div className="flex flex-col gap-2">
-                {explore.topSongs.slice(0, 10).map((song, index) => (
-                  <SongRow
-                    key={song.id}
-                    index={index + 1}
-                    title={song.name}
-                    artist={song.artistName}
-                    album={song.albumName || "Unknown Album"}
-                    duration={formatTime(song.durationMs, "milliseconds")}
-                    artworkUrl={artworkUrl(song.artworkUrl, 80)}
-                    track={{
-                      id: song.id,
-                      title: song.name,
-                      artistName: song.artistName,
-                      artistId: song.artistId,
-                      artists: song.artists,
-                      albumId: song.albumId,
-                      albumTitle: song.albumName,
-                      albumImageUrl: artworkUrl(song.artworkUrl, 300),
-                      length: song.durationMs,
-                    }}
-                    albumContext={
-                      song.albumId
-                        ? {
-                            albumId: song.albumId,
-                            title: song.albumName || "Unknown Album",
-                            artistName: song.artistName,
-                            totalTracks: 1,
-                            artworkUrl: artworkUrl(song.artworkUrl, 300),
-                            releaseDate: song.releaseDate,
-                          }
-                        : undefined
-                    }
-                  />
-                ))}
-              </div>
-            </MySection>
-          )}
-
           {explore.editorialPlaylists.length > 0 && (
             <MySection className="py-8">
               <HeadingRow
@@ -205,13 +162,15 @@ export default async function ExplorePage() {
                 seeAllHref="/playlists"
               />
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-                {explore.editorialPlaylists.slice(0, 8).map((playlist, index) => (
-                  <PlaylistCard
-                    key={playlist.id}
-                    playlist={playlist}
-                    index={index}
-                  />
-                ))}
+                {explore.editorialPlaylists
+                  .slice(0, 8)
+                  .map((playlist, index) => (
+                    <PlaylistCard
+                      key={playlist.id}
+                      playlist={playlist}
+                      index={index}
+                    />
+                  ))}
               </div>
             </MySection>
           )}

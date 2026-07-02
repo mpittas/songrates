@@ -4,6 +4,7 @@ import { mapArtistDiscographyToPageData } from "@/lib/artistPageModel";
 import { resolveArtistId } from "@/lib/resolveArtistId";
 import { PAGE_CONTENT_TOP } from "@/lib/pageLayout";
 import { cn } from "@/lib/utils";
+import type { Metadata } from "next";
 
 /** ISR: regenerate artist pages at most once every 6 hours.
  *  Artist metadata/discography changes slowly and each rebuild fans out to Apple Music.
@@ -22,6 +23,21 @@ export async function generateStaticParams() {
 interface PageProps {
   params: Promise<{ id: string }>;
 }
+
+/** noindex for the same reason as album pages: artist pages are pure Apple
+ *  Music catalog mirrors. Indexing them only attracts scrapers. */
+export const generateMetadata = async ({
+  params,
+}: PageProps): Promise<Metadata> => {
+  const { id } = await params;
+  return {
+    title: "songrates",
+    robots: { index: false, follow: false },
+    alternates: {
+      canonical: `/artist/${id}`,
+    },
+  };
+};
 
 export default async function ArtistPage({ params }: PageProps) {
   const { id: slug } = await params;

@@ -5,6 +5,11 @@
  * up N songs/albums/artists, we batch them into one `?ids=a,b,c` call per
  * chunk. Used by playlist rows, liked-item rows, and rated-item rows so the
  * first HTML paint is not blocked by per-row fetches.
+ *
+ * Chunks run with bounded concurrency (3 at a time) instead of sequentially,
+ * so a 100-track playlist (2 chunks) finishes in one round-trip rather than
+ * two. Concurrency is kept low to avoid tripping Apple Music's per-JWT rate
+ * limiter.
  */
 
 import {
@@ -13,10 +18,8 @@ import {
   artworkUrl,
   APPLE_MUSIC_REVALIDATE_SECONDS,
 } from "./core";
-import { appleTags } from "@/lib/cache";
-import {
-  artistsFromCatalogSongResource,
-} from "./parsers";
+import { appleTags, mapWithConcurrency } from "@/lib/cache";
+import { artistsFromCatalogSongResource } from "./parsers";
 import type {
   AppleSongEnrichment,
   AppleAlbumEnrichment,
@@ -32,6 +35,18 @@ export type {
 /** Apple `ids=` URLs get long; chunk to stay under practical limits. */
 const ENRICH_CHUNK_SIZE = 60;
 
+/** Max concurrent chunk fetches per enrichment call. */
+const ENRICH_CONCURRENCY = 3;
+
+/** Split an array of IDs into fixed-size chunks. */
+function chunkIds<T>(items: readonly T[], size: number): T[][] {
+  const chunks: T[][] = [];
+  for (let i = 0; i < items.length; i += size) {
+    chunks.push(items.slice(i, i + size));
+  }
+  return chunks;
+}
+
 /**
  * Batch-fetch catalog songs with artist + album relationships (for playlist rows).
  * Used after the playlist response so the first HTML paint is not blocked.
@@ -42,9 +57,11 @@ export async function fetchAppleSongEnrichmentsByIds(
 ): Promise<Map<string, AppleSongEnrichment>> {
   const enrichmentMap = new Map<string, AppleSongEnrichment>();
   const uniqueIds = [...new Set(songIds.filter(Boolean))];
+  if (uniqueIds.length === 0) return enrichmentMap;
 
-  for (let i = 0; i < uniqueIds.length; i += ENRICH_CHUNK_SIZE) {
-    const chunk = uniqueIds.slice(i, i + ENRICH_CHUNK_SIZE);
+  const chunks = chunkIds(uniqueIds, ENRICH_CHUNK_SIZE);
+
+  await mapWithConcurrency(chunks, ENRICH_CONCURRENCY, async (chunk) => {
     const ids = chunk.join(",");
     const songsData = await appleMusicFetch<{
       data?: Array<{
@@ -69,7 +86,7 @@ export async function fetchAppleSongEnrichmentsByIds(
       revalidate: APPLE_MUSIC_REVALIDATE_SECONDS,
     });
 
-    if (!songsData?.data) continue;
+    if (!songsData?.data) return;
 
     for (const song of songsData.data) {
       const songAlbum = song.relationships?.albums?.data?.[0];
@@ -81,7 +98,7 @@ export async function fetchAppleSongEnrichmentsByIds(
         durationMs: song.attributes?.durationInMillis,
       });
     }
-  }
+  });
 
   return enrichmentMap;
 }
@@ -95,9 +112,11 @@ export async function fetchAppleAlbumEnrichmentsByIds(
 ): Promise<Map<string, AppleAlbumEnrichment>> {
   const enrichmentMap = new Map<string, AppleAlbumEnrichment>();
   const uniqueIds = [...new Set(albumIds.filter(Boolean))];
+  if (uniqueIds.length === 0) return enrichmentMap;
 
-  for (let i = 0; i < uniqueIds.length; i += ENRICH_CHUNK_SIZE) {
-    const chunk = uniqueIds.slice(i, i + ENRICH_CHUNK_SIZE);
+  const chunks = chunkIds(uniqueIds, ENRICH_CHUNK_SIZE);
+
+  await mapWithConcurrency(chunks, ENRICH_CONCURRENCY, async (chunk) => {
     const ids = chunk.join(",");
     const data = await appleMusicFetch<{
       data?: Array<{
@@ -117,7 +136,7 @@ export async function fetchAppleAlbumEnrichmentsByIds(
       revalidate: APPLE_MUSIC_REVALIDATE_SECONDS,
     });
 
-    if (!data?.data) continue;
+    if (!data?.data) return;
 
     for (const album of data.data) {
       const attrs = album.attributes;
@@ -132,7 +151,7 @@ export async function fetchAppleAlbumEnrichmentsByIds(
         releaseDate: attrs?.releaseDate,
       });
     }
-  }
+  });
 
   return enrichmentMap;
 }
@@ -146,9 +165,11 @@ export async function fetchAppleArtistEnrichmentsByIds(
 ): Promise<Map<string, AppleArtistEnrichment>> {
   const enrichmentMap = new Map<string, AppleArtistEnrichment>();
   const uniqueIds = [...new Set(artistIds.filter(Boolean))];
+  if (uniqueIds.length === 0) return enrichmentMap;
 
-  for (let i = 0; i < uniqueIds.length; i += ENRICH_CHUNK_SIZE) {
-    const chunk = uniqueIds.slice(i, i + ENRICH_CHUNK_SIZE);
+  const chunks = chunkIds(uniqueIds, ENRICH_CHUNK_SIZE);
+
+  await mapWithConcurrency(chunks, ENRICH_CONCURRENCY, async (chunk) => {
     const ids = chunk.join(",");
     const data = await appleMusicFetch<{
       data?: Array<{
@@ -164,7 +185,7 @@ export async function fetchAppleArtistEnrichmentsByIds(
       revalidate: APPLE_MUSIC_REVALIDATE_SECONDS,
     });
 
-    if (!data?.data) continue;
+    if (!data?.data) return;
 
     for (const artist of data.data) {
       const attrs = artist.attributes;
@@ -176,7 +197,7 @@ export async function fetchAppleArtistEnrichmentsByIds(
         genres: attrs?.genreNames,
       });
     }
-  }
+  });
 
   return enrichmentMap;
 }

@@ -80,7 +80,7 @@ export default function AlbumDetailPageLayout({
           </div>
 
           <div className="relative mb-8 flex flex-col items-start gap-8 md:flex-row md:gap-12">
-            <div className="group relative w-40 shrink-0 self-start sm:w-52 md:w-72">
+            <div className="group relative w-full shrink-0 self-start sm:w-52 md:w-72">
               <div className="relative aspect-square">
                 <Tilt3DImage
                   src={artworkSrc}
@@ -91,11 +91,11 @@ export default function AlbumDetailPageLayout({
               </div>
             </div>
 
-            <div className="flex w-full min-w-0 flex-1 flex-col items-start justify-center pt-4">
+            <div className="flex w-full min-w-0 flex-1 flex-col items-start justify-center md:pt-4">
               <button
                 type="button"
                 onClick={onPlayClick}
-                className="group mb-8 flex cursor-pointer items-center gap-2 rounded-full bg-white p-3 transition-transform hover:scale-105"
+                className="w-full md:w-auto group mb-5 md:mb-8 flex cursor-pointer items-center gap-2 rounded-full bg-white p-3 transition-transform hover:scale-105"
               >
                 <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#e76418] text-white transition-transform group-hover:scale-105">
                   <FaPlay className="ml-1" size={12} />
@@ -105,20 +105,18 @@ export default function AlbumDetailPageLayout({
                 </span>
               </button>
 
-              <h1 className="mb-4 text-3xl font-bold leading-11 tracking-tight text-neutral-900 md:text-4xl">
+              <h1 className="mb-4 text-3xl leading-9 font-bold md:leading-11 tracking-tight text-neutral-900 md:text-4xl">
                 {title}
               </h1>
 
               {subtitle != null ? subtitle : null}
 
               {metaRow != null ? (
-                <div className="mb-6 flex w-full flex-wrap items-center gap-2 border-t border-neutral-950/10 pt-4 font-mono text-sm text-neutral-900">
+                <div className="md:mb-6 flex w-full flex-wrap items-center gap-2 border-t border-neutral-950/10 pt-4 font-mono text-sm text-neutral-900">
                   {metaRow}
                 </div>
               ) : null}
             </div>
-
-            <div className="mt-4 flex min-w-[240px] shrink-0 flex-col gap-3" />
           </div>
 
           {afterHero}

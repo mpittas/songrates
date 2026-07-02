@@ -1,3 +1,4 @@
+import { artworkUrl } from "@/lib/appleMusic/api";
 import type { TopSong, Track } from "@/types/music";
 
 /** Build a player queue from chart / top songs. */
@@ -8,7 +9,7 @@ export function topSongsToTrackQueue(topSongs: TopSong[]): Track[] {
     artistName: s.artistName,
     artistId: s.artistId,
     albumId: s.albumId,
-    albumImageUrl: s.artworkUrl,
+    albumImageUrl: s.artworkUrl ? artworkUrl(s.artworkUrl, 100) : undefined,
     albumTitle: s.albumName,
     releaseDate: s.releaseDate,
     length: s.durationMs,

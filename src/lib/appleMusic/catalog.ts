@@ -19,6 +19,7 @@ import {
   playlistCache,
   singleFlight,
   appleTags,
+  mapWithConcurrency,
 } from "@/lib/cache";
 import {
   parseArtist,
@@ -544,41 +545,63 @@ async function getBrowsePlaylists(
 }
 
 /**
- * Pre-fetch all browse pills (moods + categories) in parallel. Each pill carries
- * its own playlist array, so the client can switch pills instantly with no extra
- * network calls. Results are cached at the getBrowsePlaylists level; pills with
- * no results are dropped so the UI never shows an empty grid.
+ * Pre-fetch browse pills with bounded concurrency. Each pill carries its own
+ * playlist array, so the client can switch pills instantly with no extra
+ * network calls.
+ *
+ * Concurrency is capped at 4: bursting all 16–18 pills in parallel was the
+ * root cause of the 429 storm observed during `next build` (28 rate-limited
+ * requests in a single build). 4 concurrent calls finish in well under the
+ * ISR budget while staying under Apple Music's per-JWT rate limit.
+ */
+async function fetchBrowseSection(
+  sectionKey: string,
+  sectionLabel: string,
+  pills: BrowsePillConfig[],
+  storefront: string = STOREFRONT,
+): Promise<BrowseSection> {
+  const resolvedPills = await mapWithConcurrency(pills, 4, async (pill) => ({
+    ...pill,
+    playlists: await getBrowsePlaylists(pill.query, storefront, 12),
+  }));
+
+  return {
+    key: sectionKey,
+    label: sectionLabel,
+    pills: resolvedPills.filter((pill) => pill.playlists.length > 0),
+  } as BrowseSection;
+}
+
+export async function getMoodsBrowseData(
+  storefront: string = STOREFRONT,
+): Promise<BrowseSection> {
+  return fetchBrowseSection("moods", "Moods", BROWSE_MOODS, storefront);
+}
+
+export async function getCategoriesBrowseData(
+  storefront: string = STOREFRONT,
+): Promise<BrowseSection> {
+  return fetchBrowseSection(
+    "categories",
+    "Categories",
+    BROWSE_CATEGORIES,
+    storefront,
+  );
+}
+
+/**
+ * Pre-fetch all browse pills (moods + categories) in parallel.
+ * Prefer getMoodsBrowseData / getCategoriesBrowseData on single-purpose pages.
  */
 export async function getBrowseData(
   storefront: string = STOREFRONT,
 ): Promise<AppleBrowseData> {
-  const fetchPills = (
-    pills: BrowsePillConfig[],
-  ): Promise<{ key: string; label: string; query: string; playlists: ApplePlaylistResult[] }[]> =>
-    Promise.all(
-      pills.map(async (pill) => ({
-        ...pill,
-        playlists: await getBrowsePlaylists(pill.query, storefront, 12),
-      })),
-    );
-
-  const [moodPills, categoryPills] = await Promise.all([
-    fetchPills(BROWSE_MOODS),
-    fetchPills(BROWSE_CATEGORIES),
+  const [moods, categories] = await Promise.all([
+    getMoodsBrowseData(storefront),
+    getCategoriesBrowseData(storefront),
   ]);
 
-  return {
-    moods: {
-      key: "moods",
-      label: "Moods",
-      pills: moodPills.filter((pill) => pill.playlists.length > 0),
-    } as BrowseSection,
-    categories: {
-      key: "categories",
-      label: "Categories",
-      pills: categoryPills.filter((pill) => pill.playlists.length > 0),
-    } as BrowseSection,
-  };
+  return { moods, categories };
 }
 
 // ─── Top 100 / Trending ───────────────────────────────────────────────────────

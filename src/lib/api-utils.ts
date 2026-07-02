@@ -19,6 +19,59 @@ export const CACHE_HEADERS = {
   },
 } as const;
 
+type ApiTimingMetric = {
+  name: string;
+  duration: number;
+};
+
+function sanitizeServerTimingName(name: string) {
+  return name.replace(/[^a-zA-Z0-9_-]/g, "_");
+}
+
+function formatServerTiming(metrics: ApiTimingMetric[]) {
+  return metrics
+    .map(
+      ({ name, duration }) =>
+        `${sanitizeServerTimingName(name)};dur=${Math.max(0, Math.round(duration))}`,
+    )
+    .join(", ");
+}
+
+export function createApiTimer() {
+  const startedAt = performance.now();
+  const metrics: ApiTimingMetric[] = [];
+
+  return {
+    async measure<T>(name: string, work: () => Promise<T>): Promise<T> {
+      const metricStartedAt = performance.now();
+      try {
+        return await work();
+      } finally {
+        metrics.push({
+          name,
+          duration: performance.now() - metricStartedAt,
+        });
+      }
+    },
+    elapsed() {
+      return Math.round(performance.now() - startedAt);
+    },
+    headers(extraHeaders?: Record<string, string>) {
+      const total = Math.round(performance.now() - startedAt);
+      const serverTiming = formatServerTiming([
+        ...metrics,
+        { name: "total", duration: total },
+      ]);
+
+      return {
+        ...extraHeaders,
+        "Server-Timing": serverTiming,
+        "X-Response-Time": `${total}ms`,
+      };
+    },
+  };
+}
+
 export function successResponse<T>(
   data: T,
   cacheType: keyof typeof CACHE_HEADERS = "artist",

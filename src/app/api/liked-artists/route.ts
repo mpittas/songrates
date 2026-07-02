@@ -5,6 +5,7 @@ import {
   fetchAppleArtistEnrichmentsByIds,
   type AppleArtistEnrichment,
 } from "@/lib/appleMusic/api";
+import { createApiTimer } from "@/lib/api-utils";
 
 const DEFAULT_PAGE_SIZE = 24;
 const MAX_PAGE_SIZE = 50;
@@ -22,7 +23,8 @@ export interface LikedArtistDTO {
  * persisted for any rows missing it so subsequent loads are instant.
  */
 export async function GET(request: NextRequest) {
-  const supabase = await createClient();
+  const timer = createApiTimer();
+  const supabase = await timer.measure("supabase_client", () => createClient());
   const url = new URL(request.url);
   const requestedUserId = url.searchParams.get("userId");
   const page = Math.max(1, Number(url.searchParams.get("page") || 1) || 1);
@@ -38,11 +40,14 @@ export async function GET(request: NextRequest) {
 
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+  } = await timer.measure("supabase_auth", () => supabase.auth.getUser());
 
   const targetUserId = requestedUserId || user?.id;
   if (!targetUserId) {
-    return NextResponse.json({ error: "Unauthenticated" }, { status: 401 });
+    return NextResponse.json(
+      { error: "Unauthenticated" },
+      { status: 401, headers: timer.headers() },
+    );
   }
 
   const from = (page - 1) * pageSize;
@@ -61,13 +66,16 @@ export async function GET(request: NextRequest) {
     query = query.or(`item_name.ilike.%${escaped}%`);
   }
 
-  const { data, error, count } = await query
-    .order("created_at", { ascending: false })
-    .range(from, to);
+  const { data, error, count } = await timer.measure("supabase_liked_artists", async () =>
+    query.order("created_at", { ascending: false }).range(from, to),
+  );
 
   if (error) {
     console.error("Liked artists fetch failed:", error);
-    return NextResponse.json({ error: "Fetch failed" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Fetch failed" },
+      { status: 500, headers: timer.headers() },
+    );
   }
 
   type Row = {
@@ -96,7 +104,9 @@ export async function GET(request: NextRequest) {
 
   if (missingArtistIds.length > 0) {
     try {
-      enrichmentMap = await fetchAppleArtistEnrichmentsByIds(missingArtistIds);
+      enrichmentMap = await timer.measure("apple_enrich", () =>
+        fetchAppleArtistEnrichmentsByIds(missingArtistIds),
+      );
 
       for (const row of rows) {
         const enriched = enrichmentMap.get(row.item_id);
@@ -109,15 +119,17 @@ export async function GET(request: NextRequest) {
       if (isOwner && rowsNeedingPersist.size > 0) {
         const updates = rows.filter((r) => rowsNeedingPersist.has(r.id));
         if (updates.length > 0) {
-          await Promise.all(
-            updates.map((r) =>
-              supabase
-                .from("user_favorites")
-                .update({
-                  item_name: r.item_name,
-                  thumbnail_url: r.thumbnail_url,
-                })
-                .eq("id", r.id),
+          await timer.measure("supabase_backfill", () =>
+            Promise.all(
+              updates.map((r) =>
+                supabase
+                  .from("user_favorites")
+                  .update({
+                    item_name: r.item_name,
+                    thumbnail_url: r.thumbnail_url,
+                  })
+                  .eq("id", r.id),
+              ),
             ),
           );
         }
@@ -140,6 +152,6 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.json(
     { artists, total, page, pageSize, hasMore },
-    { headers: { "Cache-Control": "private, no-store" } },
+    { headers: timer.headers({ "Cache-Control": "private, no-store" }) },
   );
 }

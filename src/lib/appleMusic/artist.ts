@@ -52,32 +52,56 @@ export function classifyAlbumType(album: {
 }
 
 /**
- * Fetch artist + all views in a single API call using ?views= parameter.
- * This matches the data shown on music.apple.com artist pages.
+ * Fetch artist + discography views.
+ *
+ * The artist's full discography is split into two parallel Apple Music calls
+ * instead of one giant `?views=...` request. Prolific artists (Drake, Michael
+ * Jackson, etc.) return payloads large enough that Apple's gateway has been
+ * observed returning 504s, which cascaded into Vercel function timeouts (300s)
+ * and OOM kills. Splitting keeps each response small and lets either half
+ * succeed independently — the page renders with whatever data arrives.
  *
  * Wrapped with React cache() so multiple components in the same render tree
  * (e.g. hero + top songs + discography) share a single upstream call.
  */
 export const getArtistWithViews = cache(
   async (artistId: string): Promise<ArtistDiscography | null> => {
-    const cacheKey = `am-artist-full-v3:${artistId}`;
+    const cacheKey = `am-artist-full-v4:${artistId}`;
     const cached = artistCache.get(cacheKey);
     if (cached) return cached as ArtistDiscography;
 
     return singleFlight(cacheKey, async () => {
-      const data = await appleMusicFetch<any>(
-        `/catalog/${STOREFRONT}/artists/${artistId}?views=top-songs,featured-albums,full-albums,singles,compilation-albums,appears-on-albums&include[songs]=albums`,
-        {
-          tags: [appleTags.artist(artistId)],
-          revalidate: APPLE_MUSIC_REVALIDATE_SECONDS,
-        },
-      );
+      const tags = [appleTags.artist(artistId)];
 
-      const item = data?.data?.[0];
+      // Call 1 (critical): artist metadata + top songs + featured albums.
+      // Call 2 (heavy): the four discography album-list views.
+      // Run in parallel; each has the full revalidate window so the Data Cache
+      // usually absorbs one or both.
+      const [coreData, discoData] = await Promise.all([
+        appleMusicFetch<any>(
+          `/catalog/${STOREFRONT}/artists/${artistId}?views=top-songs,featured-albums&include[songs]=albums`,
+          { tags, revalidate: APPLE_MUSIC_REVALIDATE_SECONDS },
+        ),
+        appleMusicFetch<any>(
+          `/catalog/${STOREFRONT}/artists/${artistId}?views=full-albums,singles,compilation-albums,appears-on-albums`,
+          { tags, revalidate: APPLE_MUSIC_REVALIDATE_SECONDS },
+        ).catch((err) => {
+          // Discography is best-effort: never let a failure here take down the
+          // whole page. Top songs + featured albums still render.
+          console.warn(
+            `Artist ${artistId}: discography fetch failed, rendering partial:`,
+            err,
+          );
+          return null;
+        }),
+      ]);
+
+      const item = coreData?.data?.[0];
       if (!item) return null;
 
       const a = item.attributes || {};
-      const views = item.views || {};
+      const coreViews = item.views || {};
+      const discoViews = discoData?.data?.[0]?.views || {};
 
       const artist: AppleArtistDetail = {
         id: item.id,
@@ -88,7 +112,7 @@ export const getArtistWithViews = cache(
       };
 
       // Parse top songs from the view
-      const topSongsData = views["top-songs"]?.data || [];
+      const topSongsData = coreViews["top-songs"]?.data || [];
       const topSongs: AppleTopSong[] = topSongsData.map((s: any) => {
         const sa = s.attributes || {};
         const songAlbumRel = s.relationships?.albums?.data?.[0];
@@ -112,7 +136,7 @@ export const getArtistWithViews = cache(
         const songsData = await appleMusicFetch<any>(
           `/catalog/${STOREFRONT}/songs?ids=${ids}&include=artists,albums`,
           {
-            tags: [appleTags.artist(artistId)],
+            tags,
             revalidate: APPLE_MUSIC_REVALIDATE_SECONDS,
           },
         );
@@ -143,17 +167,19 @@ export const getArtistWithViews = cache(
         artist,
         topSongs,
         featuredAlbums: sortByDateDesc(
-          parseAlbumItems(views["featured-albums"]?.data || []),
+          parseAlbumItems(coreViews["featured-albums"]?.data || []),
         ),
         fullAlbums: sortByDateDesc(
-          parseAlbumItems(views["full-albums"]?.data || []),
+          parseAlbumItems(discoViews["full-albums"]?.data || []),
         ),
-        singles: sortByDateDesc(parseAlbumItems(views["singles"]?.data || [])),
+        singles: sortByDateDesc(
+          parseAlbumItems(discoViews["singles"]?.data || []),
+        ),
         compilations: sortByDateDesc(
-          parseAlbumItems(views["compilation-albums"]?.data || []),
+          parseAlbumItems(discoViews["compilation-albums"]?.data || []),
         ),
         appearsOn: sortByDateDesc(
-          parseAlbumItems(views["appears-on-albums"]?.data || []),
+          parseAlbumItems(discoViews["appears-on-albums"]?.data || []),
         ),
       };
 

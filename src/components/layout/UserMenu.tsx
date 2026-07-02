@@ -81,6 +81,7 @@ export default function UserMenu({
           </div>
           <Link
             href="/profile"
+            prefetch={false}
             className="flex items-center gap-3 px-4 py-2.5 text-sm text-neutral-700 hover:text-neutral-950 hover:bg-neutral-100 transition-colors"
             onClick={() => setIsOpen(false)}
           >
@@ -135,6 +136,7 @@ export default function UserMenu({
             <nav className="flex flex-col gap-4">
               <Link
                 href="/profile"
+                prefetch={false}
                 className="flex items-center gap-3 text-base text-neutral-300 hover:text-white transition-colors uppercase tracking-widest"
                 onClick={() => setIsOpen(false)}
               >

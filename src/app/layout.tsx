@@ -17,7 +17,16 @@ const inter = Inter({
   subsets: ["latin"],
 });
 
+/** metadataBase resolves all relative OG/canonical URLs against the canonical
+ *  production origin. We point it at songrates.com (the primary domain) so
+ *  OpenGraph image URLs and canonical links emitted by Next.js Metadata
+ *  always reference the production host regardless of which deployment
+ *  alias served the page (preview, *.vercel.app, or custom domain). */
+const PRODUCTION_ORIGIN =
+  process.env.NEXT_PUBLIC_SITE_ORIGIN ?? "https://songrates.com";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(PRODUCTION_ORIGIN),
   title: "songrates",
   description: "minimal music discovery",
 };

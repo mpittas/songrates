@@ -288,13 +288,24 @@ function LoginContent() {
           </Button>
         </form>
 
-        <p className="mt-6 text-sm text-neutral-500 text-center">
+        <p
+          className={
+            isLogin
+              ? "mt-6 text-center text-base text-neutral-700"
+              : "mt-6 text-center text-sm text-neutral-500"
+          }
+        >
           {isLogin ? "Don't have an account? " : "Already have an account? "}
           <button
+            type="button"
             onClick={toggleView}
-            className="text-neutral-900 hover:underline font-medium"
+            className={
+              isLogin
+                ? "font-semibold text-neutral-900 underline underline-offset-4 decoration-2 hover:text-black"
+                : "font-medium text-neutral-900 hover:underline"
+            }
           >
-            {isLogin ? "Sign Up" : "Log in"}
+            {isLogin ? "Sign up" : "Log in"}
           </button>
         </p>
       </div>

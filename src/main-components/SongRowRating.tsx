@@ -92,21 +92,24 @@ export default function SongRowRating({
     });
   };
 
-  const dismissPopover = useCallback((immediate: boolean) => {
-    clearPendingPopoverWork();
-    const beginExit = () => {
-      setPopoverEntering(false);
-      unmountTimerRef.current = setTimeout(() => {
-        setPopoverMounted(false);
-        unmountTimerRef.current = null;
-      }, POPOVER_EXIT_MS);
-    };
-    if (immediate) {
-      beginExit();
-    } else {
-      closeTimerRef.current = setTimeout(beginExit, POPOVER_LEAVE_MS);
-    }
-  }, [clearPendingPopoverWork]);
+  const dismissPopover = useCallback(
+    (immediate: boolean) => {
+      clearPendingPopoverWork();
+      const beginExit = () => {
+        setPopoverEntering(false);
+        unmountTimerRef.current = setTimeout(() => {
+          setPopoverMounted(false);
+          unmountTimerRef.current = null;
+        }, POPOVER_EXIT_MS);
+      };
+      if (immediate) {
+        beginExit();
+      } else {
+        closeTimerRef.current = setTimeout(beginExit, POPOVER_LEAVE_MS);
+      }
+    },
+    [clearPendingPopoverWork],
+  );
 
   const scheduleClosePopover = () => dismissPopover(false);
 
@@ -134,9 +137,12 @@ export default function SongRowRating({
       : "No rating has been submitted for this song yet";
 
   return (
-    <div className="relative flex items-center gap-2" ref={ratingRef}>
+    <div
+      className="relative flex items-center gap-0.5 sm:gap-2"
+      ref={ratingRef}
+    >
       <Tooltip content={publicRatingTooltip}>
-        <span className="flex items-center gap-1 rounded-md px-1.5 py-1 text-xs font-medium text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-600">
+        <span className="hidden items-center gap-1 rounded-md px-1.5 py-1 text-xs font-medium text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-600 sm:flex">
           <RiUserStarLine size={14} />
           {publicRating && publicRating > 0 ? publicRating.toFixed(1) : "−"}
         </span>
@@ -149,7 +155,7 @@ export default function SongRowRating({
         <button
           type="button"
           onClick={() => openPopover()}
-          className={`w-8 h-8 rounded-full ${ratingBg} flex items-center justify-center text-xs font-semibold transition-all hover:scale-105 ${
+          className={`flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-semibold transition-all hover:scale-105 sm:h-8 sm:w-8 sm:text-xs ${ratingBg} ${
             displayRating && displayRating > 0
               ? "text-white"
               : "text-neutral-400"
@@ -160,7 +166,10 @@ export default function SongRowRating({
           {displayRating && displayRating > 0 ? (
             displayRating
           ) : (
-            <LuStar size={16} className="shrink-0" aria-hidden />
+            <>
+              <LuStar size={12} className="shrink-0 sm:hidden" aria-hidden />
+              <LuStar size={16} className="hidden shrink-0 sm:block" aria-hidden />
+            </>
           )}
         </button>
 

@@ -134,3 +134,34 @@ export const appleTags = {
   trending: "apple-trending",
   dailyTop100: "apple-daily-top-100",
 } as const;
+
+// ─── Bounded-concurrency mapper ──────────────────────────────────────────────
+//
+// Like Promise.all, but never runs more than `limit` tasks at once. Apple Music
+// rate-limits a single JWT aggressively; bursting 34 parallel browse searches
+// (or 60-song enrichment chunks) trips the 429 limiter. Keeping the in-flight
+// count small avoids the retry storm seen in build logs while still finishing
+// fast enough for ISR pages.
+
+export async function mapWithConcurrency<T, R>(
+  items: readonly T[],
+  limit: number,
+  mapper: (item: T, index: number) => Promise<R>,
+): Promise<R[]> {
+  const safeLimit = Math.max(1, Math.min(limit, items.length || 1));
+  const results = new Array<R>(items.length);
+  let cursor = 0;
+
+  async function worker() {
+    while (true) {
+      const i = cursor++;
+      if (i >= items.length) return;
+      results[i] = await mapper(items[i], i);
+    }
+  }
+
+  await Promise.all(
+    Array.from({ length: safeLimit }, () => worker()),
+  );
+  return results;
+}

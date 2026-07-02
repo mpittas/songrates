@@ -10,7 +10,7 @@ import type {
   SongSearchResult,
   GroupedSearchResults,
 } from "@/types/search";
-import { CACHE_HEADERS } from "@/lib/api-utils";
+import { CACHE_HEADERS, createApiTimer } from "@/lib/api-utils";
 
 const VALID_CATEGORIES = new Set(["all", "artist", "album", "song"]);
 
@@ -18,7 +18,7 @@ const VALID_CATEGORIES = new Set(["all", "artist", "album", "song"]);
  * GET /api/search?q=hello&category=song
  */
 export async function GET(request: NextRequest) {
-  const start = performance.now();
+  const timer = createApiTimer();
   const searchParams = request.nextUrl.searchParams;
   const q = searchParams.get("q");
   const categoryParam = searchParams.get("category") || "all";
@@ -52,7 +52,9 @@ export async function GET(request: NextRequest) {
     };
 
     const limit = category === "all" ? 8 : 20;
-    const appleResults = await searchAppleMusic(q, typeMap[category], limit);
+    const appleResults = await timer.measure("apple_search", () =>
+      searchAppleMusic(q, typeMap[category], limit),
+    );
 
     // Map Apple Music results to our search result types
     const artists: ArtistSearchResult[] = appleResults.artists.map((a) => ({
@@ -94,30 +96,35 @@ export async function GET(request: NextRequest) {
       releaseDate: s.releaseDate,
     }));
 
-    // Build flat results list
-    const results: SearchResult[] = [...artists, ...albums, ...songs];
+    // Build flat results list (category-specific tabs only — "all" uses grouped)
+    const results: SearchResult[] =
+      category === "all" ? [] : [...artists, ...albums, ...songs];
 
-    // Build grouped results for "all" category
     const grouped: GroupedSearchResults | undefined =
       category === "all" ? { artists, albums, songs } : undefined;
 
-    const took = Math.round(performance.now() - start);
+    const took = timer.elapsed();
+
+    const totalResults =
+      category === "all"
+        ? artists.length + albums.length + songs.length
+        : results.length;
 
     const response: SearchApiResponse = {
       results,
-      meta: { query: q, category, totalResults: results.length, took },
+      meta: { query: q, category, totalResults, took },
     };
 
     const body = grouped ? { ...response, grouped } : response;
 
     return NextResponse.json(body, {
-      headers: CACHE_HEADERS.search,
+      headers: timer.headers(CACHE_HEADERS.search),
     });
   } catch (error) {
     console.error("Search API error:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
-      { status: 500 },
+      { status: 500, headers: timer.headers() },
     );
   }
 }

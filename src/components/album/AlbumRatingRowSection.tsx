@@ -101,16 +101,16 @@ export default function AlbumRatingRowSection({
   const personalScore = hasPersonalAverage ? averageScore : "-";
 
   return (
-    <div className="mb-8 grid w-full grid-cols-1 md:grid-cols-2">
+    <div className="mb-8 grid w-full grid-cols-1 gap-2 md:grid-cols-2 md:gap-0">
       <RatingStatTile
-        className="rounded-l-xl"
+        className="rounded-xl border border-white/10 md:rounded-l-xl md:rounded-r-none md:border-r-0"
         icon={<FaGlobeAmericas size={14} />}
         label="Public rating"
         detail={publicDetail}
         score={publicScore}
       />
       <RatingStatTile
-        className="rounded-r-xl border-l border-white/10"
+        className="rounded-xl border border-white/10 md:rounded-r-xl md:rounded-l-none md:border-0 md:border-y md:border-r md:border-l md:border-white/10"
         icon={<FaUser size={14} />}
         label={personalDetail}
         detail={personalLabel}

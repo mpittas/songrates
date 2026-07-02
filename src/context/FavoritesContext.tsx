@@ -71,9 +71,10 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
         toFavoriteKey(row.item_type, row.item_id),
       );
     },
-    staleTime: 5 * 60 * 1000,
-    gcTime: 30 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
+    gcTime: 60 * 60 * 1000,
     refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
 
   const favoriteSet = useMemo(

@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 interface MobileMenuProps {
   isOpen: boolean;
   onClose: () => void;
+  showAuthLinks?: boolean;
 }
 
 const NAV_LINKS = [
@@ -25,7 +26,11 @@ function isNavLinkActive(pathname: string, href: string) {
   return pathname === href;
 }
 
-export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
+export default function MobileMenu({
+  isOpen,
+  onClose,
+  showAuthLinks = false,
+}: MobileMenuProps) {
   const pathname = usePathname();
 
   return (
@@ -35,6 +40,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
           <Link
             key={href}
             href={href}
+            prefetch={false}
             onClick={onClose}
             className={cn(
               "rounded-md px-1 py-3 text-sm font-mono transition-colors",
@@ -46,22 +52,27 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
             {label}
           </Link>
         ))}
-        <Link
-          href="/login?view=login"
-          onClick={onClose}
-          className="rounded-md px-1 py-3 text-sm font-mono text-neutral-200 transition-colors hover:text-[#00f0ff]"
-        >
-          Log in
-        </Link>
-        <Button
-          href="/login?view=signup"
-          onClick={onClose}
-          variant="border"
-          size="md"
-          className="mt-2 w-full rounded-none"
-        >
-          Sign up
-        </Button>
+        {showAuthLinks && (
+          <>
+            <Link
+              href="/login?view=login"
+              prefetch={false}
+              onClick={onClose}
+              className="rounded-md px-1 py-3 text-sm font-mono text-neutral-200 transition-colors hover:text-[#00f0ff]"
+            >
+              Log in
+            </Link>
+            <Button
+              href="/login?view=signup"
+              onClick={onClose}
+              variant="border"
+              size="md"
+              className="mt-2 w-full rounded-none"
+            >
+              Sign up
+            </Button>
+          </>
+        )}
       </nav>
     </Drawer>
   );

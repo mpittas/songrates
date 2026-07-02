@@ -26,12 +26,12 @@ export default function AlbumTracklistPopover({
   const listRef = useRef<HTMLDivElement>(null);
 
   const { data: album, isLoading } = useQuery({
-    queryKey: albumKeys.detail(albumId),
+    queryKey: albumKeys.detailLite(albumId),
     queryFn: async ({ signal }) => {
-      const res = await fetch(
-        `/api/album-info?id=${encodeURIComponent(albumId)}`,
-        { signal },
-      );
+      const params = new URLSearchParams({ id: albumId, lite: "1" });
+      const res = await fetch(`/api/album-info?${params.toString()}`, {
+        signal,
+      });
       if (!res.ok) throw new Error("Failed to fetch album");
       return (await res.json()) as AlbumInfo;
     },

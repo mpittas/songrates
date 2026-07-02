@@ -167,7 +167,6 @@ export function RatingsProvider({ children }: { children: React.ReactNode }) {
         if (albumsResult.error) throw albumsResult.error;
 
         const newRatings: Record<string, number> = {};
-        // Group track IDs by album for easier construction
         const albumTracksMap: Record<string, string[]> = {};
 
         ratingsResult.rows.forEach((r) => {
@@ -199,9 +198,21 @@ export function RatingsProvider({ children }: { children: React.ReactNode }) {
       }
     };
 
-    fetchPersonalData();
+    const scheduleFetch = () => {
+      if (typeof requestIdleCallback !== "undefined") {
+        const idleId = requestIdleCallback(() => fetchPersonalData(), {
+          timeout: 2500,
+        });
+        return () => cancelIdleCallback(idleId);
+      }
+      const timeoutId = window.setTimeout(fetchPersonalData, 0);
+      return () => window.clearTimeout(timeoutId);
+    };
+
+    const cancelScheduledFetch = scheduleFetch();
 
     return () => {
+      cancelScheduledFetch();
       supabase.removeChannel(channel);
     };
 

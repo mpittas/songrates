@@ -1,6 +1,7 @@
 import AlbumPageContent from "@/components/album/AlbumPageContent";
 import { getAlbumInfo } from "@/lib/appleMusic/albumInfo";
 import { resolveAlbumId } from "@/lib/resolveAlbumId";
+import type { Metadata } from "next";
 
 /** ISR: regenerate album pages at most once every 6 hours.
  *  Album metadata is public and slow-moving, so server rendering avoids an
@@ -26,6 +27,23 @@ export async function generateStaticParams() {
 interface PageProps {
   params: Promise<{ id: string }>;
 }
+
+/** noindex: album pages are pure product data mirrors of Apple Music and have
+ *  no SEO value for us. Keeping them out of the index removes the incentive
+ *  for crawlers to enumerate millions of album IDs (which is what drives the
+ *  Vercel bill). Human visitors and share links still work fine. */
+export const generateMetadata = async ({
+  params,
+}: PageProps): Promise<Metadata> => {
+  const { id } = await params;
+  return {
+    title: "songrates",
+    robots: { index: false, follow: false },
+    alternates: {
+      canonical: `/album/${id}`,
+    },
+  };
+};
 
 export default async function AlbumPage({ params }: PageProps) {
   const { id: slug } = await params;

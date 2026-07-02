@@ -21,7 +21,7 @@ function TrendingSongsFallback() {
             <div className="h-4 w-12 bg-neutral-900/10 rounded animate-pulse" />
           </div>
 
-          <div className="mt-6 flex flex-col gap-2">
+          <div className="mt-6 flex flex-col gap-1.5 sm:gap-2">
             {Array.from({ length: 8 }).map((_, i) => (
               <div
                 key={i}

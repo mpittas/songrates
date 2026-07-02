@@ -9,6 +9,7 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   href?: string;
   className?: string;
   isExternal?: boolean;
+  prefetch?: boolean;
 }
 
 export default function Button({
@@ -20,6 +21,7 @@ export default function Button({
   href,
   className = "",
   isExternal = false,
+  prefetch = false,
   ...props
 }: ButtonProps) {
   const baseStyles =
@@ -73,7 +75,7 @@ export default function Button({
       );
     }
     return (
-      <Link href={href} className={combinedClasses}>
+      <Link href={href} prefetch={prefetch} className={combinedClasses}>
         {content}
       </Link>
     );

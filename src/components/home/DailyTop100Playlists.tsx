@@ -23,6 +23,7 @@ export default async function DailyTop100Playlists() {
                 <Link
                   key={playlist.id}
                   href={`/apple-playlist/${playlist.id}`}
+                  prefetch={false}
                   className="group overflow-hidden rounded-xl border border-[#dfdfdf] bg-white p-2 shadow-[0_1px_0_rgba(0,0,0,0.04)] transition-all hover:-translate-y-0.5 hover:shadow-sm"
                 >
                   <div className="relative aspect-square w-full overflow-hidden rounded-md bg-[#ececec]">

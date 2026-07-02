@@ -147,7 +147,7 @@ export default function StackedCard({
     return (
       <div className={rootClassName}>
         <div className="relative">
-          <Link href={href} className="block">
+          <Link href={href} prefetch={false} className="block">
             {content}
           </Link>
           {optionsMenu}

@@ -6,10 +6,9 @@ import { usePathname } from "next/navigation";
 import SongratesLogo from "@/components/layout/SongratesLogo";
 import MySection from "@/components/ui/MySection";
 import HeaderSearchBar from "@/components/search/HeaderSearchBar";
-import { FaBars } from "react-icons/fa";
-import { IoSearch } from "react-icons/io5";
-import MobileMenu from "@/components/layout/MobileMenu";
+import { IoMenu, IoSearch } from "react-icons/io5";
 import Button from "@/components/ui/Button";
+import MobileMenu from "@/components/layout/MobileMenu";
 import UserMenu from "@/components/layout/UserMenu";
 import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
@@ -41,21 +40,12 @@ function navLinkClassName(pathname: string, href: string) {
   );
 }
 
-function mobileNavLinkClassName(pathname: string, href: string) {
-  return cn(
-    "rounded-full px-3 py-1.5 text-sm font-medium transition-colors",
-    isNavLinkActive(pathname, href)
-      ? "bg-neutral-900 text-white"
-      : "text-neutral-600 hover:bg-neutral-200/60 hover:text-neutral-900",
-  );
-}
-
 export default function Header({ showSearch }: HeaderProps) {
   const { user, signOut, loading } = useAuth();
   const pathname = usePathname();
 
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const shouldShowSearch = showSearch ?? pathname !== "/";
 
@@ -66,6 +56,7 @@ export default function Header({ showSearch }: HeaderProps) {
           <div className="flex h-[3.25rem] items-center justify-between gap-3 transition-all duration-300 md:gap-4">
             <Link
               href="/"
+              prefetch={false}
               aria-label="Songrates home"
               className="relative flex flex-shrink-0 items-center outline-offset-4 transition-opacity hover:opacity-80"
             >
@@ -106,12 +97,13 @@ export default function Header({ showSearch }: HeaderProps) {
               </>
             )}
 
-            <nav className="hidden flex-shrink-0 items-center gap-1 md:flex">
-              <div className="flex items-center gap-3">
+            <nav className="hidden flex-shrink-0 items-center md:flex">
+              <div className="flex items-center gap-1">
                 {NAV_LINKS.map(({ href, label }) => (
                   <Link
                     key={href}
                     href={href}
+                    prefetch={false}
                     className={navLinkClassName(pathname, href)}
                   >
                     {label}
@@ -121,47 +113,37 @@ export default function Header({ showSearch }: HeaderProps) {
                   (user ? (
                     <UserMenu user={user} onSignOut={signOut} />
                   ) : (
-                    <>
-                      <Link
-                        href="/login?view=login"
-                        className="text-[13px] font-medium tracking-wide text-neutral-600 transition-colors hover:text-neutral-900"
-                      >
-                        Log in
-                      </Link>
-                      <Button
-                        href="/login?view=signup"
-                        variant="border"
-                        size="sm"
-                      >
-                        Sign up
-                      </Button>
-                    </>
+                    <Button
+                      href="/login?view=login"
+                      variant="primary"
+                      size="sm"
+                    >
+                      Sign in
+                    </Button>
                   ))}
               </div>
             </nav>
 
             <div className="flex items-center gap-1 md:hidden">
-              {NAV_LINKS.map(({ href, label }) => (
-                <Link
-                  key={href}
-                  href={href}
-                  className={mobileNavLinkClassName(pathname, href)}
-                >
-                  {label}
-                </Link>
-              ))}
+              <button
+                type="button"
+                className="rounded-md p-2 text-neutral-600 transition-colors hover:bg-neutral-200/60 hover:text-neutral-900"
+                onClick={() => setIsMobileMenuOpen(true)}
+                aria-label="Open menu"
+              >
+                <IoMenu size={24} />
+              </button>
               {!loading && user && (
                 <UserMenu user={user} onSignOut={signOut} isMobile={true} />
               )}
               {!loading && !user && (
-                <button
-                  type="button"
-                  className="rounded-md p-2 text-neutral-600 transition-colors hover:bg-neutral-200/60 hover:text-neutral-900"
-                  onClick={() => setIsMobileMenuOpen(true)}
-                  aria-label="Open menu"
+                <Button
+                  href="/login?view=login"
+                  variant="primary"
+                  size="sm"
                 >
-                  <FaBars size={20} />
-                </button>
+                  Sign in
+                </Button>
               )}
             </div>
           </div>
@@ -171,6 +153,7 @@ export default function Header({ showSearch }: HeaderProps) {
       <MobileMenu
         isOpen={isMobileMenuOpen}
         onClose={() => setIsMobileMenuOpen(false)}
+        showAuthLinks={!loading && !user}
       />
     </>
   );

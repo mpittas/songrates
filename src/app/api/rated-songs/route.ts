@@ -5,6 +5,7 @@ import {
   fetchAppleSongEnrichmentsByIds,
   type AppleSongEnrichment,
 } from "@/lib/appleMusic/api";
+import { createApiTimer } from "@/lib/api-utils";
 
 export type RatedSongArtist = { id: string; name: string };
 
@@ -59,7 +60,8 @@ function hasCompleteStoredMetadata(row: {
 }
 
 export async function GET(request: NextRequest) {
-  const supabase = await createClient();
+  const timer = createApiTimer();
+  const supabase = await timer.measure("supabase_client", () => createClient());
   const url = new URL(request.url);
   const requestedUserId = url.searchParams.get("userId");
   const page = Math.max(1, Number(url.searchParams.get("page") || 1) || 1);
@@ -76,11 +78,14 @@ export async function GET(request: NextRequest) {
 
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+  } = await timer.measure("supabase_auth", () => supabase.auth.getUser());
 
   const targetUserId = requestedUserId || user?.id;
   if (!targetUserId) {
-    return NextResponse.json({ error: "Unauthenticated" }, { status: 401 });
+    return NextResponse.json(
+      { error: "Unauthenticated" },
+      { status: 401, headers: timer.headers() },
+    );
   }
 
   const from = (page - 1) * pageSize;
@@ -112,11 +117,16 @@ export async function GET(request: NextRequest) {
     query = query.order("created_at", { ascending: false });
   }
 
-  const { data, error, count } = await query.range(from, to);
+  const { data, error, count } = await timer.measure("supabase_rated_songs", async () =>
+    query.range(from, to),
+  );
 
   if (error) {
     console.error("Rated songs fetch failed:", error);
-    return NextResponse.json({ error: "Fetch failed" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Fetch failed" },
+      { status: 500, headers: timer.headers() },
+    );
   }
 
   type FavoriteRow = {
@@ -138,23 +148,28 @@ export async function GET(request: NextRequest) {
   const hasMore = to + 1 < total;
 
   if (rows.length === 0) {
-    return NextResponse.json({
-      songs: [],
-      total,
-      page,
-      pageSize,
-      hasMore: false,
-    });
+    return NextResponse.json(
+      {
+        songs: [],
+        total,
+        page,
+        pageSize,
+        hasMore: false,
+      },
+      { headers: timer.headers({ "Cache-Control": "private, no-store" }) },
+    );
   }
 
   const albumIds = Array.from(
     new Set(rows.map((r) => r.album_id).filter((id): id is string => !!id)),
   );
-  const { data: albumRows } = await supabase
-    .from("user_albums")
-    .select("album_id, title, artist_name, thumbnail_url, total_tracks")
-    .eq("user_id", targetUserId)
-    .in("album_id", albumIds);
+  const { data: albumRows } = await timer.measure("supabase_albums", async () =>
+    supabase
+      .from("user_albums")
+      .select("album_id, title, artist_name, thumbnail_url, total_tracks")
+      .eq("user_id", targetUserId)
+      .in("album_id", albumIds),
+  );
 
   type AlbumRow = {
     album_id: string;
@@ -181,7 +196,9 @@ export async function GET(request: NextRequest) {
 
   if (missingMetaIds.length > 0) {
     try {
-      enrichmentMap = await fetchAppleSongEnrichmentsByIds(missingMetaIds);
+      enrichmentMap = await timer.measure("apple_enrich", () =>
+        fetchAppleSongEnrichmentsByIds(missingMetaIds),
+      );
 
       for (const row of rows) {
         const enriched = enrichmentMap.get(row.item_id);
@@ -204,11 +221,11 @@ export async function GET(request: NextRequest) {
 
       if (isOwner) {
         const updates = rows.filter((row) => enrichmentMap.has(row.item_id));
-        await Promise.all(
-          updates.map((row) =>
-            supabase
-              .from("user_favorites")
-              .update({
+        if (updates.length > 0) {
+          await timer.measure("supabase_backfill", async () =>
+            await supabase.from("user_favorites").upsert(
+              updates.map((row) => ({
+                id: row.id,
                 item_name: row.item_name,
                 artist_name: row.artist_name,
                 artist_id: row.artist_id,
@@ -218,10 +235,11 @@ export async function GET(request: NextRequest) {
                 album_id: row.album_id,
                 album_name: row.album_name,
                 duration_ms: row.duration_ms,
-              })
-              .eq("id", row.id),
-          ),
-        );
+              })),
+              { onConflict: "id" },
+            ),
+          );
+        }
       }
     } catch (e) {
       console.error("Apple enrichment for rated songs failed:", e);
@@ -229,11 +247,13 @@ export async function GET(request: NextRequest) {
   }
 
   const ratingTrackIds = rows.map((r) => r.item_id);
-  const { data: ratingRows } = await supabase
-    .from("ratings")
-    .select("track_id, rating")
-    .eq("user_id", targetUserId)
-    .in("track_id", ratingTrackIds);
+  const { data: ratingRows } = await timer.measure("supabase_ratings", async () =>
+    supabase
+      .from("ratings")
+      .select("track_id, rating")
+      .eq("user_id", targetUserId)
+      .in("track_id", ratingTrackIds),
+  );
   const ratingByTrackId = new Map<string, number>();
   for (const row of ratingRows || []) {
     ratingByTrackId.set(row.track_id as string, Number(row.rating));
@@ -275,6 +295,6 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.json(
     { songs, total, page, pageSize, hasMore },
-    { headers: { "Cache-Control": "private, no-store" } },
+    { headers: timer.headers({ "Cache-Control": "private, no-store" }) },
   );
 }

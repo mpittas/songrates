@@ -62,7 +62,7 @@ export default function AlbumSkeleton() {
                 <div className="aspect-square w-full rounded-xl bg-neutral-200/70 ring-1 ring-neutral-200/80" />
               </div>
 
-              <div className="flex w-full min-w-0 flex-1 flex-col items-start justify-center pt-4">
+              <div className="flex w-full min-w-0 flex-1 flex-col items-start justify-center md:pt-4">
                 <div className="mb-8 flex items-center gap-2 rounded-full border border-neutral-200/60 bg-white p-3 shadow-[0_1px_0_rgba(0,0,0,0.04)]">
                   <div className="flex h-7 w-7 items-center justify-center rounded-full bg-neutral-200/90" />
                   <ShimmerBar className="h-5 w-28" />
@@ -89,7 +89,10 @@ export default function AlbumSkeleton() {
                 </div>
               </div>
 
-              <div className="mt-4 hidden min-w-[240px] shrink-0 md:block" aria-hidden />
+              <div
+                className="mt-4 hidden min-w-[240px] shrink-0 md:block"
+                aria-hidden
+              />
             </div>
 
             {/* Rating row — AlbumRatingRowSection */}

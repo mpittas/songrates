@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { createClient } from "@/utils/supabase/server";
 import { fetchAppleSongEnrichmentsByIds } from "@/lib/appleMusic/api";
+import { createApiTimer } from "@/lib/api-utils";
 
 export type LikedSongArtist = { id: string; name: string };
 
@@ -52,7 +53,8 @@ function artistsForRow(row: {
  * backfilled and persisted for any rows missing it so subsequent loads are instant.
  */
 export async function GET(request: NextRequest) {
-  const supabase = await createClient();
+  const timer = createApiTimer();
+  const supabase = await timer.measure("supabase_client", () => createClient());
   const url = new URL(request.url);
   const requestedUserId = url.searchParams.get("userId");
   const page = Math.max(1, Number(url.searchParams.get("page") || 1) || 1);
@@ -68,11 +70,14 @@ export async function GET(request: NextRequest) {
 
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+  } = await timer.measure("supabase_auth", () => supabase.auth.getUser());
 
   const targetUserId = requestedUserId || user?.id;
   if (!targetUserId) {
-    return NextResponse.json({ error: "Unauthenticated" }, { status: 401 });
+    return NextResponse.json(
+      { error: "Unauthenticated" },
+      { status: 401, headers: timer.headers() },
+    );
   }
 
   type Row = {
@@ -107,13 +112,16 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const { data, error, count } = await query
-    .order("created_at", { ascending: false })
-    .range(from, to);
+  const { data, error, count } = await timer.measure("supabase_liked_songs", async () =>
+    query.order("created_at", { ascending: false }).range(from, to),
+  );
 
   if (error) {
     console.error("Liked songs fetch failed:", error);
-    return NextResponse.json({ error: "Fetch failed" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Fetch failed" },
+      { status: 500, headers: timer.headers() },
+    );
   }
 
   const rows: Row[] = data || [];
@@ -136,8 +144,8 @@ export async function GET(request: NextRequest) {
 
   if (missingMetaIds.length > 0) {
     try {
-      const enrichmentMap = await fetchAppleSongEnrichmentsByIds(
-        Array.from(new Set(missingMetaIds)),
+      const enrichmentMap = await timer.measure("apple_enrich", () =>
+        fetchAppleSongEnrichmentsByIds(Array.from(new Set(missingMetaIds))),
       );
 
       for (const row of rows) {
@@ -151,6 +159,8 @@ export async function GET(request: NextRequest) {
           row.duration_ms = enriched.durationMs;
         if (enriched.artists.length > 0) {
           if (!row.artist_id) row.artist_id = enriched.artists[0]?.id ?? null;
+          if (!row.artist_name)
+            row.artist_name = enriched.artists[0]?.name ?? null;
           if (parseStoredArtists(row.artists).length === 0) {
             row.artists = enriched.artists;
           }
@@ -160,21 +170,21 @@ export async function GET(request: NextRequest) {
       if (isOwner) {
         const updates = rows.filter((r) => enrichmentMap.has(r.item_id));
         if (updates.length > 0) {
-          await Promise.all(
-            updates.map((r) =>
-              supabase
-                .from("user_favorites")
-                .update({
-                  item_name: r.item_name,
-                  album_id: r.album_id,
-                  album_name: r.album_name,
-                  duration_ms: r.duration_ms,
-                  artist_id: r.artist_id,
-                  artists: parseStoredArtists(r.artists).length
-                    ? r.artists
-                    : null,
-                })
-                .eq("id", r.id),
+          await timer.measure("supabase_backfill", async () =>
+            await supabase.from("user_favorites").upsert(
+              updates.map((r) => ({
+                id: r.id,
+                item_name: r.item_name,
+                artist_name: r.artist_name,
+                album_id: r.album_id,
+                album_name: r.album_name,
+                duration_ms: r.duration_ms,
+                artist_id: r.artist_id,
+                artists: parseStoredArtists(r.artists).length
+                  ? r.artists
+                  : null,
+              })),
+              { onConflict: "id" },
             ),
           );
         }
@@ -202,6 +212,6 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.json(
     { songs, total, page, pageSize, hasMore },
-    { headers: { "Cache-Control": "private, no-store" } },
+    { headers: timer.headers({ "Cache-Control": "private, no-store" }) },
   );
 }
