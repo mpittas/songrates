@@ -1,0 +1,17 @@
+{
+  "servers": {
+    "vercel": {
+      "type": "http",
+      "url": "https://mcp.vercel.com"
+    },
+    "supabase": {
+      "type": "http",
+      "url": "https://mcp.supabase.com/mcp?project_ref=jxrbngdkhpjymabansjm"
+    },
+    "chrome-devtools": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "chrome-devtools-mcp@latest", "--headless", "--isolated"]
+    }
+  }
+}
