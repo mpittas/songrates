@@ -1,0 +1,21 @@
+# songrates.com — LLM / AI crawler policy
+# Catalog pages are not for training or bulk indexing.
+
+User-agent: *
+Disallow: /album/
+Disallow: /artist/
+Disallow: /apple-playlist/
+Disallow: /playlist/
+Disallow: /api/
+Disallow: /login/
+Disallow: /auth/
+Disallow: /profile/
+Disallow: /user/
+Disallow: /settings/
+Disallow: /complete-profile/
+Disallow: /favourite-artists/
+
+Allow: /
+Allow: /explore/
+Allow: /moods/
+Allow: /playlists/

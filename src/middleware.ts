@@ -83,7 +83,13 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
+     * - robots.txt, sitemap.xml, ads.txt, llms.txt (metadata / crawler files)
+     *
+     * Metadata files must bypass middleware so crawlers can read them. If
+     * robots.txt hits the bot-blocking logic above, every crawler gets 403
+     * instead of your disallow rules — the main driver of edge 4xx volume.
+     * See https://nextjs.org/docs/app/api-reference/file-conventions/metadata
      */
-    "/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!api|_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|ads.txt|llms.txt|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };
