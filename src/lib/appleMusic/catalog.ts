@@ -438,7 +438,7 @@ export async function getExploreData(
       const charts = await getCatalogCharts({
         storefront,
         types: ["songs", "albums"],
-        limit: 6,
+        limit: 12,
         genre: genre.id,
       });
 

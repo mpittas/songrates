@@ -1,6 +1,6 @@
 import MySection from "@/components/ui/MySection";
 import { cn } from "@/lib/utils";
-import { PAGE_CONTENT_TOP } from "@/lib/pageLayout";
+import { PAGE_CONTAINER, PAGE_CONTENT_TOP } from "@/lib/pageLayout";
 
 function ShimmerBar({ className }: { className?: string }) {
   return <div className={cn("rounded-md bg-neutral-300/80", className)} />;
@@ -42,7 +42,8 @@ export default function AlbumSkeleton() {
 
         <div
           className={cn(
-            "relative z-10 mx-auto w-full max-w-[1180px] px-4 sm:px-6",
+            "relative z-10",
+            PAGE_CONTAINER,
             PAGE_CONTENT_TOP,
           )}
         >

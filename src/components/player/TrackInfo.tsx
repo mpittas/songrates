@@ -7,37 +7,42 @@ import { TrackInfoProps } from "@/types/player";
 export default function TrackInfo({ currentTrack }: TrackInfoProps) {
   if (!currentTrack) return null;
 
+  const albumHref = currentTrack.albumId
+    ? `/album/${currentTrack.albumId}`
+    : undefined;
+  const artistHref = currentTrack.artistId
+    ? `/artist/${currentTrack.artistId}`
+    : undefined;
+
   return (
-    <div className="flex items-center gap-4 min-w-0 w-full">
-      {/* Album Art */}
+    <div className="flex min-w-0 items-center gap-3">
       <Link
-        href={currentTrack.albumId ? `/album/${currentTrack.albumId}` : "#"}
-        className="w-10 h-10 relative shrink-0 border border-[#d7d7d7] hover:border-[#bfbfbf] transition-colors overflow-hidden group/image rounded-sm"
+        href={albumHref || "#"}
+        className="relative size-11 shrink-0 overflow-hidden rounded-lg bg-white/5 ring-1 ring-white/10 transition-transform duration-200 hover:scale-[1.03] md:size-14"
+        aria-label={currentTrack.title}
       >
         <OptimizedImage
           src={currentTrack.albumImageUrl || "/vinyl-placeholder.svg"}
           alt={currentTrack.artistName || "Unknown Artist"}
-          width={40}
-          height={40}
+          width={56}
+          height={56}
           priority
-          className="object-cover transition-all"
+          className="size-full object-cover"
           fallbackSrc="/vinyl-placeholder.svg"
           fallbackText={currentTrack.title?.slice(0, 2) || "??"}
         />
       </Link>
 
-      <div className="min-w-0 flex flex-col justify-center">
+      <div className="min-w-0">
         <Link
-          href={currentTrack.albumId ? `/album/${currentTrack.albumId}` : "#"}
-          className="text-sm text-neutral-900 truncate hover:text-black transition-colors block"
+          href={albumHref || "#"}
+          className="block truncate text-[13px] font-medium tracking-tight text-white transition-colors hover:underline md:text-sm"
         >
           {currentTrack.title}
         </Link>
         <Link
-          href={
-            currentTrack.artistId ? `/artist/${currentTrack.artistId}` : "#"
-          }
-          className="text-xs text-neutral-500 truncate hover:text-neutral-900 transition-colors"
+          href={artistHref || "#"}
+          className="mt-0.5 block truncate text-[11px] text-white/50 transition-colors hover:text-white/80 md:text-xs"
         >
           {currentTrack.artistName}
         </Link>

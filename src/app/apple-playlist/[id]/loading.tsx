@@ -1,4 +1,4 @@
-import { PAGE_CONTENT_TOP } from "@/lib/pageLayout";
+import { PAGE_CONTAINER, PAGE_CONTENT_TOP } from "@/lib/pageLayout";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { FaArrowLeft } from "react-icons/fa";
@@ -8,7 +8,8 @@ export default function ApplePlaylistLoading() {
     <main className="min-h-screen bg-[#f0e5df]/30">
       <div
         className={cn(
-          "mx-auto max-w-[1180px] px-4 sm:px-6 pb-24",
+          PAGE_CONTAINER,
+          "pb-24",
           PAGE_CONTENT_TOP,
         )}
       >

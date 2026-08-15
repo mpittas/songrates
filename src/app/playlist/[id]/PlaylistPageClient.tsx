@@ -15,7 +15,7 @@ import Button from "@/components/ui/Button";
 import MySection from "@/components/ui/MySection";
 import PageHero from "@/components/ui/PageHero";
 import { cn } from "@/lib/utils";
-import { PAGE_CONTENT_TOP } from "@/lib/pageLayout";
+import { PAGE_CONTAINER, PAGE_CONTENT_TOP } from "@/lib/pageLayout";
 import { usePlayerCore } from "@/context/PlayerContext";
 import SongRow from "@/main-components/SongRow";
 import EditPlaylistModal from "@/components/playlist/EditPlaylistModal";
@@ -185,7 +185,7 @@ export default function PlaylistPageClient({
       />
 
       <MySection className={cn("pb-20")} container={false}>
-        <div className="mx-auto w-full max-w-[1180px] px-4 sm:px-6">
+        <div className={PAGE_CONTAINER}>
           <div className="mb-8 flex flex-wrap items-center justify-between gap-3 pt-12">
             <Button
               href="/profile"

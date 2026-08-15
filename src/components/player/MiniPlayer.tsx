@@ -1,14 +1,15 @@
 "use client";
 
 import { usePlayer } from "@/context/PlayerContext";
-import { FaTimes, FaYoutube, FaList } from "react-icons/fa";
-import { useEffect, useRef, useState, useCallback, useMemo } from "react";
-import { YouTubeProps, YouTubeEvent } from "react-youtube";
-import { YouTubePlayer } from "@/types/player";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { YouTubeEvent, YouTubeProps } from "react-youtube";
+import { LuList, LuTv, LuX, LuYoutube } from "react-icons/lu";
 
 import { useRatingsContext as useRatings } from "@/context/RatingsContext";
-import ColorRating from "@/components/rating/ColorRating";
+import TrackRating from "@/components/rating/TrackRating";
 import { AlbumContext } from "@/types/music";
+import { YouTubePlayer } from "@/types/player";
+import { cn } from "@/lib/utils";
 
 import TrackInfo from "./TrackInfo";
 import PlaybackControls from "./PlaybackControls";
@@ -16,6 +17,54 @@ import ProgressBar from "./ProgressBar";
 import VolumeControl from "./VolumeControl";
 import VideoPlayer from "./VideoPlayer";
 import AlbumTracklistPopover from "./AlbumTracklistPopover";
+
+function IconButton({
+  label,
+  active,
+  onClick,
+  href,
+  children,
+}: {
+  label: string;
+  active?: boolean;
+  onClick?: () => void;
+  href?: string;
+  children: React.ReactNode;
+}) {
+  const className = cn(
+    "flex size-8 items-center justify-center rounded-full transition-colors duration-150",
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40",
+    active ? "text-white" : "text-white/40 hover:text-white",
+  );
+
+  if (href) {
+    return (
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={label}
+        title={label}
+        onClick={onClick}
+        className={className}
+      >
+        {children}
+      </a>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      title={label}
+      className={className}
+    >
+      {children}
+    </button>
+  );
+}
 
 export default function MiniPlayer() {
   const {
@@ -38,71 +87,50 @@ export default function MiniPlayer() {
     hasNext,
     hasPrev,
     isRepeating,
-
     toggleRepeat,
     isShuffling,
     toggleShuffle,
   } = usePlayer();
 
-  const { ratings, setRating } = useRatings();
+  const { ratings } = useRatings();
   const playerRef = useRef<YouTubePlayer | null>(null);
-  const showTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const tracklistButtonRef = useRef<HTMLButtonElement>(null);
   const [showVideo, setShowVideo] = useState(false);
   const [showTracklist, setShowTracklist] = useState(false);
 
   const rating = currentTrack ? ratings[currentTrack.id] || 0 : 0;
-
-  const handleRate = useCallback(
-    (val: number) => {
-      if (!currentTrack) return;
-
-      if (
-        currentTrack.albumId &&
-        currentTrack.albumTitle &&
-        currentTrack.totalTracks !== undefined
-      ) {
-        const albumContext: AlbumContext = {
+  const albumContext: AlbumContext | undefined =
+    currentTrack?.albumId &&
+    currentTrack.albumTitle &&
+    currentTrack.totalTracks !== undefined
+      ? {
           albumId: currentTrack.albumId,
           title: currentTrack.albumTitle,
           artistName: currentTrack.artistName || "Unknown Artist",
           releaseDate: currentTrack.releaseDate,
           totalTracks: currentTrack.totalTracks,
           artworkUrl: currentTrack.albumImageUrl,
-        };
-        setRating(currentTrack.id, val, albumContext);
-      } else {
-        setRating(currentTrack.id, val);
-      }
-    },
-    [currentTrack, setRating],
-  );
-
-  const handleMouseEnterTracklist = () => {
-    if (showTimeoutRef.current) clearTimeout(showTimeoutRef.current);
-    setShowTracklist(true);
-  };
-
-  const handleMouseLeaveTracklist = () => {
-    showTimeoutRef.current = setTimeout(() => {
-      setShowTracklist(false);
-    }, 100);
-  };
+        }
+      : undefined;
 
   const [volume, setVolume] = useState(100);
   const [isMuted, setIsMuted] = useState(false);
 
   useEffect(() => {
+    if (!currentTrack) setShowTracklist(false);
+  }, [currentTrack]);
+
+  useEffect(() => {
     if (!videoId || !isPlaying) return;
 
     const interval = setInterval(() => {
-      // Check if player is available and has methods
       if (
         playerRef.current &&
         typeof playerRef.current.getCurrentTime === "function"
       ) {
         const time = playerRef.current.getCurrentTime();
         const duration = playerRef.current.getDuration();
-        const loaded = playerRef.current.getVideoLoadedFraction(); // 0 to 1
+        const loaded = playerRef.current.getVideoLoadedFraction();
         updateProgress(time, duration, loaded);
       }
     }, 100);
@@ -111,7 +139,6 @@ export default function MiniPlayer() {
   }, [videoId, isPlaying, updateProgress]);
 
   useEffect(() => {
-    // Reset player ref when videoId becomes null (player unmounts)
     if (!videoId) {
       playerRef.current = null;
       setPlayerRef(null);
@@ -125,7 +152,6 @@ export default function MiniPlayer() {
         typeof playerRef.current.getPlayerState === "function"
       ) {
         const state = playerRef.current.getPlayerState();
-        // 1 = playing, 2 = paused
         if (state === 1 && !isPlaying) {
           setIsPlaying(true);
         } else if (state === 2 && isPlaying) {
@@ -155,7 +181,6 @@ export default function MiniPlayer() {
       if (isPlaying) {
         event.target.playVideo();
       } else {
-        // Ensure it doesn't autoplay if state says paused
         event.target.pauseVideo();
       }
     },
@@ -164,15 +189,12 @@ export default function MiniPlayer() {
 
   const onStateChange: YouTubeProps["onStateChange"] = useCallback(
     (event: YouTubeEvent) => {
-      // 1 = playing
       if (event.data === 1) {
         if (!isPlaying) setIsPlaying(true);
       }
-      // 2 = paused
       if (event.data === 2) {
         if (isPlaying) setIsPlaying(false);
       }
-      // 0 = ended
       if (event.data === 0) {
         if (isRepeating && playerRef.current) {
           playerRef.current.seekTo(0, true);
@@ -235,7 +257,11 @@ export default function MiniPlayer() {
     [],
   );
 
-  // No early return here to keep the YouTube instance mounted in VideoPlayer
+  const youtubeHref = currentTrack
+    ? `https://www.youtube.com/results?search_query=${encodeURIComponent(
+        `${currentTrack.artistName} ${currentTrack.title}`,
+      )}`
+    : undefined;
 
   return (
     <>
@@ -252,51 +278,37 @@ export default function MiniPlayer() {
       )}
 
       <div
-        className={`fixed bottom-0 left-0 right-0 z-[60] border-t border-[#dcdcdc] bg-[#ebe8e5]/95 backdrop-blur-sm safe-area-bottom transition-transform duration-500 ease-in-out ${
-          currentTrack ? "translate-y-0" : "translate-y-full"
-        }`}
+        className={cn(
+          "fixed right-0 bottom-0 left-0 z-[60] safe-area-bottom",
+          "bg-[#0a0a0a] text-white",
+          "transition-transform duration-400 ease-[cubic-bezier(0.22,1,0.36,1)]",
+          currentTrack ? "translate-y-0" : "translate-y-full",
+        )}
       >
-        <div className="flex items-center justify-between gap-2 md:gap-6 px-4 py-3 w-full">
-          {/* Track Info - Left */}
-          <div className="flex-1 basis-0 min-w-0">
+        <div className="md:hidden">
+          <ProgressBar
+            compact
+            currentTime={currentTime}
+            duration={duration}
+            buffered={buffered}
+            onSeek={seekTo}
+          />
+        </div>
+
+        <div className="flex items-center gap-2 px-3 py-2.5 md:grid md:grid-cols-[minmax(0,1fr)_minmax(280px,1.4fr)_minmax(0,1fr)] md:gap-6 md:px-4 md:py-3">
+          <div className="flex min-w-0 flex-1 items-center gap-3 md:flex-none">
             {currentTrack && <TrackInfo currentTrack={currentTrack} />}
-          </div>
-
-          {/* Controls - Center */}
-          <div className="flex-[3] flex items-center justify-center gap-2 md:gap-6">
-            <div className="md:hidden">
-              {/* Mobile only simplified controls if needed, but PlaybackControls handles responsive inside? 
-                   Let's keep it simple: Show controls, but hide bar on very narrow screens if needed, 
-                   or actually, let's keep the bar but make it flexible.
-               */}
-            </div>
-
-            {/* Rating Component - Desktop */}
-            <div className="hidden md:block">
-              <ColorRating rating={rating} onRate={handleRate} />
-            </div>
-
-            {/* Tracklist Popover Trigger - Desktop Left of Controls */}
-            <div
-              className="hidden md:block relative"
-              onMouseEnter={handleMouseEnterTracklist}
-              onMouseLeave={handleMouseLeaveTracklist}
-            >
-              <button
-                className={`p-2 text-neutral-500 hover:text-neutral-900 transition-colors ${
-                  showTracklist ? "text-neutral-900" : ""
-                }`}
-              >
-                <FaList size={14} />
-              </button>
-
-              <AlbumTracklistPopover
-                albumId={currentTrack?.albumId || ""}
-                currentTrackId={currentTrack?.id || ""}
-                isVisible={showTracklist && !!currentTrack?.albumId}
+            <div className="hidden shrink-0 md:block">
+              <TrackRating
+                trackId={currentTrack?.id}
+                albumContext={albumContext}
+                displayRating={rating}
+                showPublicRating={false}
               />
             </div>
+          </div>
 
+          <div className="flex shrink-0 flex-col items-center justify-center gap-1.5">
             <PlaybackControls
               isPlaying={isPlaying}
               isLoading={isLoading}
@@ -311,8 +323,7 @@ export default function MiniPlayer() {
               isShuffling={isShuffling}
               onToggleShuffle={toggleShuffle}
             />
-
-            <div className="hidden md:flex items-center gap-4 w-[500px]">
+            <div className="hidden w-full max-w-[520px] md:block">
               <ProgressBar
                 currentTime={currentTime}
                 duration={duration}
@@ -320,76 +331,70 @@ export default function MiniPlayer() {
                 onSeek={seekTo}
               />
             </div>
+          </div>
+
+          <div className="hidden items-center justify-end gap-0.5 md:flex">
+            <button
+              ref={tracklistButtonRef}
+              type="button"
+              aria-label="Album tracks"
+              title="Album tracks"
+              aria-expanded={showTracklist}
+              onClick={() => setShowTracklist((open) => !open)}
+              className={cn(
+                "flex size-8 items-center justify-center rounded-full transition-colors duration-150",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40",
+                showTracklist ? "text-white" : "text-white/40 hover:text-white",
+              )}
+            >
+              <LuList size={16} strokeWidth={2} />
+            </button>
+            <AlbumTracklistPopover
+              albumId={currentTrack?.albumId || ""}
+              currentTrackId={currentTrack?.id || ""}
+              isVisible={showTracklist}
+              anchorRef={tracklistButtonRef}
+              onClose={() => setShowTracklist(false)}
+            />
+
             <VolumeControl
               volume={volume}
               isMuted={isMuted}
               onVolumeChange={handleVolumeChange}
               onToggleMute={toggleMute}
             />
+
+            <IconButton
+              label={showVideo ? "Hide video" : "Show video"}
+              active={showVideo}
+              onClick={() => setShowVideo((open) => !open)}
+            >
+              <LuTv size={16} strokeWidth={2} />
+            </IconButton>
+
+            {youtubeHref ? (
+              <IconButton
+                label="Open in YouTube"
+                href={youtubeHref}
+                onClick={pausePlayback}
+              >
+                <LuYoutube size={16} strokeWidth={2} />
+              </IconButton>
+            ) : null}
+
+            <IconButton label="Close player" onClick={stopPlayback}>
+              <LuX size={16} strokeWidth={2} />
+            </IconButton>
           </div>
 
-          {/* Right Side - Extras (Hidden on Mobile) */}
-          <div className="hidden md:flex flex-1 basis-0 items-center gap-3 justify-end">
-            <div className="h-4 w-px bg-[#d2d2d2] mx-2" />
-
-            <button
-              onClick={() => setShowVideo(!showVideo)}
-              className={`text-[10px] font-mono px-2 py-1 border transition-colors ${
-                showVideo
-                  ? "border-[#1f1f1f] text-neutral-900 bg-[#eaeaea]"
-                  : "border-[#d2d2d2] text-neutral-600 hover:border-[#bdbdbd] hover:text-neutral-900"
-              }`}
-              aria-label={showVideo ? "Hide video" : "Show video"}
-            >
-              {showVideo ? "hide video" : "show video"}
-            </button>
-
-            {/* Tracklist Popover Trigger */}
-
-            <a
-              href={
-                currentTrack
-                  ? `https://www.youtube.com/results?search_query=${encodeURIComponent(
-                      currentTrack.artistName + " " + currentTrack.title,
-                    )}`
-                  : "#"
-              }
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => pausePlayback()}
-              className="text-neutral-600 hover:text-neutral-900 transition-colors"
-              title="Open in YouTube"
-              aria-label="Open in YouTube"
-            >
-              <FaYoutube size={16} />
-            </a>
-            <button
-              onClick={stopPlayback}
-              className="text-neutral-500 hover:text-neutral-900 transition-colors ml-2"
-              aria-label="Close player"
-            >
-              <FaTimes size={14} />
-            </button>
-          </div>
-
-          {/* Mobile Close Button (visible only on mobile) */}
           <button
+            type="button"
             onClick={stopPlayback}
-            className="md:hidden text-neutral-500 hover:text-neutral-900 transition-colors ml-2 p-2"
+            className="flex size-8 shrink-0 items-center justify-center rounded-full text-white/40 transition-colors hover:text-white md:hidden"
             aria-label="Close player"
           >
-            <FaTimes size={16} />
+            <LuX size={16} strokeWidth={2} />
           </button>
-        </div>
-
-        {/* Mobile Progress Bar absolute at top */}
-        <div className="md:hidden absolute top-0 left-0 right-0 h-[2px] w-full bg-[#d4d4d4]">
-          <div
-            className="h-full bg-[#1f1f1f] transition-all duration-100 ease-linear"
-            style={{
-              width: `${duration > 0 ? (currentTime / duration) * 100 : 0}%`,
-            }}
-          />
         </div>
       </div>
     </>

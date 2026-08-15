@@ -1,29 +1,44 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { formatTime } from "@/lib/utils";
-import { useEffect, useRef } from "react";
-import { FaPlay, FaPause } from "react-icons/fa";
+import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { createPortal } from "react-dom";
+import { LuPause, LuPlay } from "react-icons/lu";
 import { usePlayerCore } from "@/context/PlayerContext";
 import { useRatingsContext as useRatings } from "@/context/RatingsContext";
 import { RATING_COLORS } from "@/components/rating/constants";
-import { AlbumInfo } from "@/types/music";
+import { AlbumInfo, Track } from "@/types/music";
 import { albumKeys } from "@/hooks/useAlbumInfo";
+import { cn, formatTime } from "@/lib/utils";
 
 interface AlbumTracklistPopoverProps {
   albumId: string;
   currentTrackId: string;
   isVisible: boolean;
+  anchorRef: RefObject<HTMLElement | null>;
+  onClose: () => void;
 }
 
 export default function AlbumTracklistPopover({
   albumId,
   currentTrackId,
   isVisible,
+  anchorRef,
+  onClose,
 }: AlbumTracklistPopoverProps) {
-  const { playTrack, isPlaying } = usePlayerCore();
+  const { playTrack, isPlaying, queue } = usePlayerCore();
   const { ratings } = useRatings();
   const listRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = useState(false);
+  const [pos, setPos] = useState({ top: 0, left: 0 });
+
+  const queuedAlbumTracks = useMemo(() => {
+    if (!albumId) return [];
+    return queue.filter((track) => track.albumId === albumId);
+  }, [albumId, queue]);
+
+  const hasQueuedAlbum = queuedAlbumTracks.length > 1;
 
   const { data: album, isLoading } = useQuery({
     queryKey: albumKeys.detailLite(albumId),
@@ -35,14 +50,77 @@ export default function AlbumTracklistPopover({
       if (!res.ok) throw new Error("Failed to fetch album");
       return (await res.json()) as AlbumInfo;
     },
-    enabled: isVisible && !!albumId,
+    enabled: isVisible && !!albumId && !hasQueuedAlbum,
     staleTime: 10 * 60 * 1000,
     gcTime: 60 * 60 * 1000,
     refetchOnWindowFocus: false,
     retry: 1,
   });
 
-  // Auto-scroll to active track
+  const tracks: Track[] = hasQueuedAlbum
+    ? queuedAlbumTracks
+    : (album?.tracks ?? []).map((track) => ({
+        id: track.id,
+        title: track.title,
+        artistName: album?.artist.name,
+        artistId: album?.artist.id,
+        albumId: album?.id,
+        albumImageUrl: album?.artworkUrl,
+        albumTitle: album?.title,
+        releaseDate: album?.releaseDate,
+        totalTracks: album?.tracks.length,
+        length: track.length,
+        number: track.number,
+        artists: track.artists,
+      }));
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isVisible) return;
+
+    const updatePos = () => {
+      const anchor = anchorRef.current;
+      if (!anchor) return;
+      const rect = anchor.getBoundingClientRect();
+      setPos({
+        top: rect.top - 10,
+        left: rect.left + rect.width / 2,
+      });
+    };
+
+    updatePos();
+    window.addEventListener("scroll", updatePos, true);
+    window.addEventListener("resize", updatePos);
+    return () => {
+      window.removeEventListener("scroll", updatePos, true);
+      window.removeEventListener("resize", updatePos);
+    };
+  }, [anchorRef, isVisible]);
+
+  useEffect(() => {
+    if (!isVisible) return;
+
+    const handlePointerDown = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (panelRef.current?.contains(target)) return;
+      if (anchorRef.current?.contains(target)) return;
+      onClose();
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [anchorRef, isVisible, onClose]);
+
   useEffect(() => {
     if (isVisible && album && currentTrackId && listRef.current) {
       const activeElement = listRef.current.querySelector(
@@ -54,97 +132,110 @@ export default function AlbumTracklistPopover({
     }
   }, [isVisible, album, currentTrackId]);
 
-  if (!isVisible) return null;
+  if (!isVisible || !mounted) return null;
 
-  return (
-    <div className="absolute bottom-full left-1/2 -translate-x-1/2 translate-y-1 pb-1 z-50 group/popover">
-      <div className="w-80 max-h-96 bg-white backdrop-blur-md border border-[#dcdcdc] shadow-2xl overflow-hidden flex flex-col animate-in fade-in slide-in-from-bottom-2 duration-300 origin-bottom rounded-md">
-        {/* Header */}
-        <div className="p-3 border-b border-[#e6e6e6] bg-[#f7f7f7]">
-          <h3 className="text-neutral-900 text-xs font-mono font-bold truncate">
-            {isLoading ? "Loading..." : album?.title || "Unknown Album"}
+  return createPortal(
+    <div
+      ref={panelRef}
+      className="fixed z-[70]"
+      style={{
+        top: pos.top,
+        left: pos.left,
+        transform: "translate(-50%, -100%)",
+      }}
+    >
+      <div className="flex max-h-96 w-80 flex-col overflow-hidden rounded-xl border border-white/10 bg-[#141414] shadow-[0_16px_40px_rgba(0,0,0,0.45)]">
+        <div className="border-b border-white/10 px-3.5 py-3">
+          <h3 className="truncate text-xs font-medium tracking-tight text-white">
+            {!albumId
+              ? "Album tracks"
+              : isLoading && !hasQueuedAlbum
+                ? "Loading…"
+                : album?.title ||
+                  queuedAlbumTracks[0]?.albumTitle ||
+                  "Unknown Album"}
           </h3>
-          <p className="text-neutral-500 text-[10px] truncate">
-            {isLoading ? "..." : album?.artist?.name}
+          <p className="mt-0.5 truncate text-[11px] text-white/45">
+            {!albumId
+              ? "No album is linked to this track"
+              : isLoading && !hasQueuedAlbum
+                ? " "
+                : album?.artist?.name || queuedAlbumTracks[0]?.artistName}
           </p>
         </div>
 
-        {/* Tracklist */}
         <div
           ref={listRef}
-          className="overflow-y-auto flex-1 p-0 scrollbar-thin scrollbar-thumb-neutral-300 scrollbar-track-transparent overscroll-contain"
+          className="flex-1 overflow-y-auto overscroll-contain"
         >
-          {isLoading ? (
-            <div className="p-4 space-y-2">
+          {!albumId ? (
+            <p className="px-3.5 py-6 text-center text-xs text-white/45">
+              Play a song from an album to see its tracklist.
+            </p>
+          ) : isLoading && !hasQueuedAlbum ? (
+            <div className="space-y-2 p-3">
               {[...Array(5)].map((_, i) => (
                 <div
                   key={i}
-                  className="h-8 bg-[#efefef] animate-pulse rounded"
+                  className="h-8 animate-pulse rounded-md bg-white/10"
                 />
               ))}
             </div>
+          ) : tracks.length === 0 ? (
+            <p className="px-3.5 py-6 text-center text-xs text-white/45">
+              Couldn’t load this album’s tracks.
+            </p>
           ) : (
-            album?.tracks?.map((track) => {
+            tracks.map((track) => {
               const isCurrent = track.id === currentTrackId;
 
               return (
-                <div
+                <button
                   key={track.id}
+                  type="button"
                   data-track-id={track.id}
-                  className={`group flex items-center gap-2 px-3 py-2 text-xs transition-colors cursor-pointer ${
+                  className={cn(
+                    "group flex w-full items-center gap-2 px-3 py-2 text-left text-xs transition-colors",
                     isCurrent
-                      ? "bg-[#f2f2f2] text-neutral-900"
-                      : "text-neutral-600 hover:bg-[#f7f7f7] hover:text-neutral-900"
-                  }`}
+                      ? "bg-white/8 text-white"
+                      : "text-white/65 hover:bg-white/6 hover:text-white",
+                  )}
                   onClick={() => {
-                    playTrack({
-                      id: track.id,
-                      title: track.title,
-                      artistName: album.artist.name,
-                      artistId: album.artist.id,
-                      albumId: album.id,
-                      albumImageUrl:
-                        album.artworkUrl || "/vinyl-placeholder.svg",
-                      albumTitle: album.title,
-                      releaseDate: album.releaseDate,
-                      totalTracks: album.tracks?.length,
-                    });
+                    playTrack(track, tracks);
                   }}
                 >
-                  {/* Playing Indicator / Number */}
-                  <div className="w-4 flex justify-center shrink-0 font-mono text-[10px]">
+                  <div className="flex w-4 shrink-0 justify-center text-[10px] tabular-nums">
                     {isCurrent ? (
                       isPlaying ? (
-                        <FaPause size={8} />
+                        <LuPause size={10} />
                       ) : (
-                        <FaPlay size={8} />
+                        <LuPlay size={10} />
                       )
                     ) : (
-                      <span className="group-hover:hidden text-neutral-600">
-                        {track.number}
-                      </span>
+                      <>
+                        <span className="text-white/35 group-hover:hidden">
+                          {track.number}
+                        </span>
+                        <span className="hidden text-white group-hover:block">
+                          <LuPlay size={10} />
+                        </span>
+                      </>
                     )}
-                    <span className="hidden group-hover:block text-neutral-700">
-                      {!isCurrent && <FaPlay size={8} />}
-                    </span>
                   </div>
 
-                  {/* Track Title */}
-                  <span className="truncate flex-1 font-medium">
+                  <span className="min-w-0 flex-1 truncate font-medium">
                     {track.title}
                   </span>
 
-                  {/* Duration */}
-                  {track.length && (
-                    <span className="text-[10px] font-mono opacity-60 text-neutral-600">
+                  {track.length ? (
+                    <span className="text-[10px] tabular-nums text-white/35">
                       {formatTime(track.length, "milliseconds")}
                     </span>
-                  )}
+                  ) : null}
 
-                  {/* Rating */}
-                  {ratings[track.id] && (
+                  {ratings[track.id] ? (
                     <span
-                      className="text-[9px] font-mono px-1 py-0.5 shrink-0"
+                      className="shrink-0 rounded px-1 py-0.5 text-[9px] tabular-nums"
                       style={{
                         backgroundColor: `${RATING_COLORS[ratings[track.id] - 1]}22`,
                         color: RATING_COLORS[ratings[track.id] - 1],
@@ -152,13 +243,14 @@ export default function AlbumTracklistPopover({
                     >
                       {ratings[track.id]}
                     </span>
-                  )}
-                </div>
+                  ) : null}
+                </button>
               );
             })
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

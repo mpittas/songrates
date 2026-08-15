@@ -1,4 +1,6 @@
 import OptimizedImage from "@/components/ui/OptimizedImage";
+import { PAGE_CONTAINER } from "@/lib/pageLayout";
+import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { FaUser, FaChevronRight } from "react-icons/fa";
 import type { IconType } from "react-icons";
@@ -76,7 +78,7 @@ export default function ProfileLayout({
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 -mt-16 relative z-10">
+      <div className={cn(PAGE_CONTAINER, "-mt-16 relative z-10")}>
         <div className="flex flex-col lg:flex-row gap-14 ">
           {/* LEFT SIDEBAR */}
           <aside className="w-full lg:w-60 shrink-0">

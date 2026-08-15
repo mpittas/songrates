@@ -47,6 +47,7 @@ interface SongRowProps {
   albumId?: string;
   albumContext?: AlbumContext;
   onPlay?: () => void;
+  queue?: Track[];
   onRate?: (rating: number) => void;
   onAddToPlaylist?: () => void;
   onShare?: () => void;
@@ -68,6 +69,7 @@ export default function SongRow({
   albumId,
   albumContext,
   onPlay,
+  queue,
   onRate,
   onAddToPlaylist,
   onShare,
@@ -133,14 +135,34 @@ export default function SongRow({
 
   const handlePlay = useCallback(() => {
     if (track) {
-      playTrack({
-        ...track,
-        albumImageUrl: resolvedArtworkUrl,
-      });
+      playTrack(
+        {
+          ...track,
+          albumImageUrl: resolvedArtworkUrl,
+          albumId: track.albumId ?? albumId ?? albumContext?.albumId,
+          albumTitle: track.albumTitle ?? albumContext?.title ?? album,
+          artistName: track.artistName ?? artist,
+          artistId: track.artistId ?? effectiveArtistId,
+          releaseDate: track.releaseDate ?? albumContext?.releaseDate,
+          totalTracks: track.totalTracks ?? albumContext?.totalTracks,
+        },
+        queue,
+      );
     } else if (onPlay) {
       onPlay();
     }
-  }, [track, resolvedArtworkUrl, playTrack, onPlay]);
+  }, [
+    track,
+    resolvedArtworkUrl,
+    albumId,
+    albumContext,
+    album,
+    artist,
+    effectiveArtistId,
+    queue,
+    playTrack,
+    onPlay,
+  ]);
 
   const displayAlbum =
     album || track?.albumTitle || albumContext?.title || "Unknown Album";

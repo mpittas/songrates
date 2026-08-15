@@ -1,5 +1,6 @@
 import { ReactNode } from "react";
 
+import { PAGE_CONTAINER_WIDTH } from "@/lib/pageLayout";
 import { cn } from "@/lib/utils";
 
 interface PageHeroProps {
@@ -17,7 +18,7 @@ interface PageHeroProps {
 
 /**
  * Shared page hero banner. Renders at the page container width
- * (max-w-[1180px], centered) so it aligns with page content below.
+ * so it aligns with page content below.
  */
 export default function PageHero({
   eyebrow,
@@ -29,7 +30,7 @@ export default function PageHero({
 }: PageHeroProps) {
   return (
     <section className="px-2 pt-2">
-      <div className="mx-auto w-full max-w-[1180px]">
+      <div className={PAGE_CONTAINER_WIDTH}>
         <div className="relative overflow-hidden rounded-2xl">
           {/* Base gradient */}
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_15%_20%,#3a2722_0%,#231a18_45%,#15110f_100%)]" />

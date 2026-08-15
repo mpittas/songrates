@@ -1,17 +1,16 @@
 import Link from "next/link";
-import { FaArrowTrendUp, FaMusic } from "react-icons/fa6";
+import { FaMusic } from "react-icons/fa6";
+
 import AlbumCard from "@/components/album/AlbumCard";
-import ExploreHero from "@/components/explore/ExploreHero";
+import ExploreGenreRow from "@/components/explore/ExploreGenreRow";
+import FeaturedPlaylistCard from "@/components/explore/FeaturedPlaylistCard";
 import MySection from "@/components/ui/MySection";
 import HeadingRow from "@/main-components/HeadingRow";
 import PlaylistCard from "@/main-components/PlaylistCard";
 import SongRow from "@/main-components/SongRow";
-import {
-  AppleExploreGenreSection,
-  artworkUrl,
-  getExploreData,
-} from "@/lib/appleMusic/api";
-import { formatTime } from "@/lib/utils";
+import { artworkUrl, getExploreData } from "@/lib/appleMusic/api";
+import { PAGE_CONTENT_TOP } from "@/lib/pageLayout";
+import { cn, formatTime } from "@/lib/utils";
 import { Album } from "@/types/music";
 
 /** ISR: regenerate explore page at most once every 6 hours.
@@ -64,113 +63,54 @@ function EmptyExploreState() {
   );
 }
 
-function GenreSection({ section }: { section: AppleExploreGenreSection }) {
-  const albums = section.albums.slice(0, 4);
-  const songs = section.songs.slice(0, 4);
-
-  return (
-    <div className="rounded-2xl border border-neutral-200 bg-white p-4 sm:p-5">
-      <div className="mb-4 flex items-center justify-between gap-4">
-        <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-400">
-            Genre chart
-          </p>
-          <h3 className="text-xl font-semibold text-neutral-900">
-            {section.genre.name}
-          </h3>
-        </div>
-        <FaArrowTrendUp className="shrink-0 text-neutral-300" size={22} />
-      </div>
-
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(240px,0.8fr)]">
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {albums.map((album, index) => (
-            <AlbumCard
-              key={album.id}
-              album={albumToCard(album)}
-              isPriority={index === 0}
-              size="compact"
-              showRating={false}
-              showOptionsMenu={false}
-            />
-          ))}
-        </div>
-
-        <div className="flex flex-col gap-1.5 sm:gap-2">
-          {songs.map((song, index) => (
-            <SongRow
-              key={song.id}
-              index={index + 1}
-              title={song.name}
-              artist={song.artistName}
-              album={song.albumName || "Unknown Album"}
-              duration={formatTime(song.durationMs, "milliseconds")}
-              artworkUrl={artworkUrl(song.artworkUrl, 80)}
-              showAlbumInSubline={false}
-              track={{
-                id: song.id,
-                title: song.name,
-                artistName: song.artistName,
-                artistId: song.artistId,
-                artists: song.artists,
-                albumId: song.albumId,
-                albumTitle: song.albumName,
-                albumImageUrl: artworkUrl(song.artworkUrl, 300),
-                length: song.durationMs,
-              }}
-              albumContext={
-                song.albumId
-                  ? {
-                      albumId: song.albumId,
-                      title: song.albumName || "Unknown Album",
-                      artistName: song.artistName,
-                      totalTracks: 1,
-                      artworkUrl: artworkUrl(song.artworkUrl, 300),
-                      releaseDate: song.releaseDate,
-                    }
-                  : undefined
-              }
-            />
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export default async function ExplorePage() {
   const explore = await getExploreData();
+  const featuredPlaylists = explore.editorialPlaylists.slice(0, 2);
+  const morePlaylists = explore.editorialPlaylists.slice(2, 8);
+  const topSongs = explore.topSongs.slice(0, 8);
   const hasExploreData =
     explore.topAlbums.length > 0 ||
     explore.chartPlaylists.length > 0 ||
     explore.editorialPlaylists.length > 0 ||
-    explore.genreSections.length > 0;
+    explore.genreSections.length > 0 ||
+    topSongs.length > 0;
 
   return (
-    <main className="min-h-screen bg-[#F2EFED] pb-16 text-neutral-900">
-      <ExploreHero />
-
+    <main
+      className={cn(
+        "min-h-screen bg-[#F2EFED] pb-16 text-neutral-900",
+        PAGE_CONTENT_TOP,
+      )}
+    >
       {!hasExploreData ? (
         <EmptyExploreState />
       ) : (
         <>
-          {explore.editorialPlaylists.length > 0 && (
+          {featuredPlaylists.length > 0 && (
             <MySection className="py-8">
-              <HeadingRow
-                title="Fresh Playlists"
-                badgeText="Editorial search"
-                seeAllHref="/playlists"
-              />
+              <HeadingRow title="Featured" />
+              <div className="grid gap-4 sm:grid-cols-2">
+                {featuredPlaylists.map((playlist) => (
+                  <FeaturedPlaylistCard
+                    key={playlist.id}
+                    playlist={playlist}
+                  />
+                ))}
+              </div>
+            </MySection>
+          )}
+
+          {morePlaylists.length > 0 && (
+            <MySection className="py-8">
+              <HeadingRow title="Fresh Playlists" seeAllHref="/playlists" />
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-                {explore.editorialPlaylists
-                  .slice(0, 8)
-                  .map((playlist, index) => (
-                    <PlaylistCard
-                      key={playlist.id}
-                      playlist={playlist}
-                      index={index}
-                    />
-                  ))}
+                {morePlaylists.map((playlist, index) => (
+                  <PlaylistCard
+                    key={playlist.id}
+                    playlist={playlist}
+                    index={index}
+                  />
+                ))}
               </div>
             </MySection>
           )}
@@ -192,9 +132,52 @@ export default async function ExplorePage() {
             </MySection>
           )}
 
+          {topSongs.length > 0 && (
+            <MySection className="py-8">
+              <HeadingRow title="Trending Songs" />
+              <div className="grid gap-1.5 sm:grid-cols-2 sm:gap-x-6 sm:gap-y-2">
+                {topSongs.map((song, index) => (
+                  <SongRow
+                    key={song.id}
+                    index={index + 1}
+                    title={song.name}
+                    artist={song.artistName}
+                    album={song.albumName || "Unknown Album"}
+                    duration={formatTime(song.durationMs, "milliseconds")}
+                    artworkUrl={artworkUrl(song.artworkUrl, 80)}
+                    showAlbumInSubline={false}
+                    track={{
+                      id: song.id,
+                      title: song.name,
+                      artistName: song.artistName,
+                      artistId: song.artistId,
+                      artists: song.artists,
+                      albumId: song.albumId,
+                      albumTitle: song.albumName,
+                      albumImageUrl: artworkUrl(song.artworkUrl, 300),
+                      length: song.durationMs,
+                    }}
+                    albumContext={
+                      song.albumId
+                        ? {
+                            albumId: song.albumId,
+                            title: song.albumName || "Unknown Album",
+                            artistName: song.artistName,
+                            totalTracks: 1,
+                            artworkUrl: artworkUrl(song.artworkUrl, 300),
+                            releaseDate: song.releaseDate,
+                          }
+                        : undefined
+                    }
+                  />
+                ))}
+              </div>
+            </MySection>
+          )}
+
           {explore.chartPlaylists.length > 0 && (
             <MySection className="py-8">
-              <HeadingRow title="Global And City Charts" />
+              <HeadingRow title="Charts" />
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
                 {explore.chartPlaylists.map((playlist, index) => (
                   <PlaylistCard
@@ -208,11 +191,11 @@ export default async function ExplorePage() {
           )}
 
           {explore.genreSections.length > 0 && (
-            <MySection className="py-8">
-              <HeadingRow title="Explore By Genre" />
-              <div className="grid gap-5">
+            <MySection className="bg-white py-10">
+              <HeadingRow title="By Genre" />
+              <div className="flex flex-col gap-4">
                 {explore.genreSections.map((section) => (
-                  <GenreSection key={section.genre.id} section={section} />
+                  <ExploreGenreRow key={section.genre.id} section={section} />
                 ))}
               </div>
             </MySection>

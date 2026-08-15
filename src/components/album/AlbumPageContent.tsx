@@ -280,6 +280,7 @@ export default function AlbumPageContent({
             track={track}
             artistId={track.artists?.[0]?.id || album.artist?.id || ""}
             albumId={album.id}
+            queue={queue}
             albumContext={{
               albumId: album.id,
               title: album.title,

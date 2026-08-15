@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import Button from "@/components/ui/Button";
+import { PAGE_CONTAINER } from "@/lib/pageLayout";
+import { cn } from "@/lib/utils";
 
 export interface AlbumReadOnlyBannerProps {
   slug: string;
@@ -30,7 +32,12 @@ export default function AlbumReadOnlyBanner({
               )`,
       }}
     >
-      <div className="mx-auto flex w-full max-w-[1180px] flex-col gap-3 px-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+      <div
+        className={cn(
+          PAGE_CONTAINER,
+          "flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between",
+        )}
+      >
         <div className="text-sm leading-snug text-white">
           <span className="text-white/70">Read only · </span>
           {displayName ? (

@@ -1,80 +1,58 @@
-import { useRef, useState, useEffect, useCallback } from "react";
-import { formatTime } from "@/lib/utils";
+import { useCallback, useEffect, useRef, useState } from "react";
 
+import { cn, formatTime } from "@/lib/utils";
 import { ProgressBarProps } from "@/types/player";
+
+function clampPercent(clientX: number, rect: DOMRect) {
+  return Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+}
 
 export default function ProgressBar({
   currentTime,
   duration,
   buffered,
   onSeek,
+  compact = false,
 }: ProgressBarProps) {
   const progressRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [dragProgress, setDragProgress] = useState<number | null>(null);
 
-  const handleProgressClick = useCallback(
-    (e: React.MouseEvent<HTMLDivElement>) => {
+  const seekFromClientX = useCallback(
+    (clientX: number, commit: boolean) => {
       if (!progressRef.current || duration === 0) return;
-      const rect = progressRef.current.getBoundingClientRect();
-      const percent = (e.clientX - rect.left) / rect.width;
-      const newTime = percent * duration;
-      onSeek(newTime);
-      setDragProgress(null);
+      const percent = clampPercent(
+        clientX,
+        progressRef.current.getBoundingClientRect(),
+      );
+      setDragProgress(percent * 100);
+      if (commit) {
+        onSeek(percent * duration);
+        setDragProgress(null);
+      }
     },
     [duration, onSeek],
   );
 
-  const handleProgressDrag = useCallback(
-    (e: React.MouseEvent<HTMLDivElement>) => {
-      if (!isDragging || !progressRef.current || duration === 0) return;
-      const rect = progressRef.current.getBoundingClientRect();
-      const percent = Math.max(
-        0,
-        Math.min(1, (e.clientX - rect.left) / rect.width),
-      );
-      setDragProgress(percent * 100);
-    },
-    [isDragging, duration],
-  );
-
-  const handleDragStart = () => {
-    setIsDragging(true);
-  };
-
-  const handleDragEnd = useCallback(
-    (e: React.MouseEvent<HTMLDivElement>) => {
-      if (!isDragging) return;
-      setIsDragging(false);
-
-      if (dragProgress !== null && duration > 0) {
-        const newTime = (dragProgress / 100) * duration;
-        onSeek(newTime);
-      }
-      setDragProgress(null);
-    },
-    [isDragging, dragProgress, duration, onSeek],
-  );
-
   useEffect(() => {
-    const handleGlobalMouseUp = () => {
-      if (isDragging) {
-        setIsDragging(false);
-        if (dragProgress !== null && duration > 0) {
-          const newTime = (dragProgress / 100) * duration;
-          onSeek(newTime);
-        }
-        setDragProgress(null);
-      }
+    if (!isDragging) return;
+
+    const handleMove = (e: MouseEvent) => {
+      e.preventDefault();
+      seekFromClientX(e.clientX, false);
+    };
+    const handleUp = (e: MouseEvent) => {
+      seekFromClientX(e.clientX, true);
+      setIsDragging(false);
     };
 
-    if (isDragging) {
-      window.addEventListener("mouseup", handleGlobalMouseUp);
-    }
+    window.addEventListener("mousemove", handleMove);
+    window.addEventListener("mouseup", handleUp);
     return () => {
-      window.removeEventListener("mouseup", handleGlobalMouseUp);
+      window.removeEventListener("mousemove", handleMove);
+      window.removeEventListener("mouseup", handleUp);
     };
-  }, [isDragging, dragProgress, duration, onSeek]);
+  }, [isDragging, seekFromClientX]);
 
   const progress =
     dragProgress !== null
@@ -83,34 +61,70 @@ export default function ProgressBar({
         ? (currentTime / duration) * 100
         : 0;
 
-  return (
-    <div className="flex items-center gap-3 flex-1">
-      <span className="text-[10px] text-neutral-500 font-mono w-8 text-right">
-        {formatTime(currentTime, "seconds")}
-      </span>
-
+  const slider = (
+    <div
+      ref={progressRef}
+      role="slider"
+      aria-label="Seek"
+      aria-valuemin={0}
+      aria-valuemax={Math.floor(duration)}
+      aria-valuenow={Math.floor(currentTime)}
+      tabIndex={0}
+      className={cn(
+        "group relative cursor-pointer select-none",
+        compact ? "h-3 w-full" : "h-3 flex-1",
+      )}
+      onClick={(e) => seekFromClientX(e.clientX, true)}
+      onMouseDown={(e) => {
+        e.preventDefault();
+        setIsDragging(true);
+        seekFromClientX(e.clientX, false);
+      }}
+      onKeyDown={(e) => {
+        if (duration === 0) return;
+        if (e.key === "ArrowRight") onSeek(Math.min(duration, currentTime + 5));
+        if (e.key === "ArrowLeft") onSeek(Math.max(0, currentTime - 5));
+      }}
+    >
       <div
-        ref={progressRef}
-        className="flex-1 h-1 bg-[#1a1a1f] cursor-pointer group relative rounded-full overflow-visible select-none"
-        onClick={handleProgressClick}
-        onMouseDown={handleDragStart}
-        onMouseMove={handleProgressDrag}
-        onMouseUp={handleDragEnd}
+        className={cn(
+          "absolute left-0 right-0 overflow-hidden rounded-full bg-white/15",
+          compact
+            ? "top-0 h-[2px] group-hover:h-[3px]"
+            : "top-1/2 h-[3px] -translate-y-1/2 group-hover:h-[5px]",
+          "transition-[height] duration-150",
+        )}
       >
         <div
-          className="absolute top-0 left-0 h-full bg-neutral-600 transition-all duration-300"
+          className="absolute inset-y-0 left-0 bg-white/20"
           style={{ width: `${(buffered || 0) * 100}%` }}
         />
-
         <div
-          className="absolute top-0 left-0 h-full bg-[#00f0ff] relative"
+          className="absolute inset-y-0 left-0 bg-white"
           style={{ width: `${progress}%` }}
-        >
-          <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full shadow-md scale-0 group-hover:scale-100 transition-transform duration-100 opacity-100 scale-100" />
-        </div>
+        />
       </div>
+      <div
+        className={cn(
+          "pointer-events-none absolute top-1/2 size-2.5 -translate-y-1/2 rounded-full bg-white shadow-[0_1px_4px_rgba(0,0,0,0.45)]",
+          "scale-0 opacity-0 transition-transform duration-150",
+          "group-hover:scale-100 group-hover:opacity-100 group-focus-visible:scale-100 group-focus-visible:opacity-100",
+          isDragging && "scale-100 opacity-100",
+        )}
+        style={{ left: `calc(${progress}% - 5px)` }}
+      />
+    </div>
+  );
 
-      <span className="text-[10px] text-neutral-500 font-mono w-8">
+  if (compact) return slider;
+
+  return (
+    <div className="flex w-full items-center gap-2.5">
+      <span className="w-8 text-right text-[11px] tabular-nums text-white/40">
+        {formatTime(currentTime, "seconds")}
+      </span>
+      {slider}
+      <span className="w-8 text-[11px] tabular-nums text-white/40">
         {formatTime(duration, "seconds")}
       </span>
     </div>

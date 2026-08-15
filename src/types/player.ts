@@ -100,4 +100,5 @@ export interface ProgressBarProps {
   duration: number;
   buffered: number;
   onSeek: (time: number) => void;
+  compact?: boolean;
 }

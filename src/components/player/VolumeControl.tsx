@@ -1,7 +1,12 @@
-import { useRef, useState, useEffect, useCallback } from "react";
-import { FaVolumeUp, FaVolumeDown, FaVolumeMute } from "react-icons/fa";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { LuVolume1, LuVolume2, LuVolumeX } from "react-icons/lu";
 
+import { cn } from "@/lib/utils";
 import { VolumeControlProps } from "@/types/player";
+
+function clampPercent(clientX: number, rect: DOMRect) {
+  return Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+}
 
 export default function VolumeControl({
   volume,
@@ -9,99 +14,93 @@ export default function VolumeControl({
   onVolumeChange,
   onToggleMute,
 }: VolumeControlProps) {
-  const [showVolumeSlider, setShowVolumeSlider] = useState(false);
-  const [isDraggingVolume, setIsDraggingVolume] = useState(false);
-  const volumeSliderRef = useRef<HTMLDivElement>(null);
+  const sliderRef = useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
-  const updateVolumeFromEvent = useCallback(
-    (clientY: number) => {
-      if (!volumeSliderRef.current) return;
-      const rect = volumeSliderRef.current.getBoundingClientRect();
-      const height = rect.height;
-      const y = clientY - rect.top;
-      // 0 at bottom, 1 at top
-      const percent = Math.max(0, Math.min(1, 1 - y / height));
-      const newVol = Math.round(percent * 100);
-
-      onVolumeChange(newVol);
+  const setFromClientX = useCallback(
+    (clientX: number) => {
+      if (!sliderRef.current) return;
+      const percent = clampPercent(
+        clientX,
+        sliderRef.current.getBoundingClientRect(),
+      );
+      onVolumeChange(Math.round(percent * 100));
     },
     [onVolumeChange],
   );
 
-  const handleVolumeDragStart = (e: React.MouseEvent<HTMLDivElement>) => {
-    setIsDraggingVolume(true);
-    updateVolumeFromEvent(e.clientY);
-  };
-
   useEffect(() => {
-    const handleGlobalMouseMove = (e: MouseEvent) => {
-      if (isDraggingVolume) {
-        e.preventDefault(); // Prevent selection
-        updateVolumeFromEvent(e.clientY);
-      }
-    };
+    if (!isDragging) return;
 
-    const handleGlobalMouseUp = () => {
-      if (isDraggingVolume) {
-        setIsDraggingVolume(false);
-      }
+    const handleMove = (e: MouseEvent) => {
+      e.preventDefault();
+      setFromClientX(e.clientX);
     };
+    const handleUp = () => setIsDragging(false);
 
-    if (isDraggingVolume) {
-      window.addEventListener("mousemove", handleGlobalMouseMove);
-      window.addEventListener("mouseup", handleGlobalMouseUp);
-    }
+    window.addEventListener("mousemove", handleMove);
+    window.addEventListener("mouseup", handleUp);
     return () => {
-      window.removeEventListener("mousemove", handleGlobalMouseMove);
-      window.removeEventListener("mouseup", handleGlobalMouseUp);
+      window.removeEventListener("mousemove", handleMove);
+      window.removeEventListener("mouseup", handleUp);
     };
-  }, [isDraggingVolume, updateVolumeFromEvent]);
+  }, [isDragging, setFromClientX]);
+
+  const level = isMuted ? 0 : volume;
+  const VolumeIcon =
+    isMuted || volume === 0 ? LuVolumeX : volume < 50 ? LuVolume1 : LuVolume2;
 
   return (
-    <div
-      className="relative group flex items-center justify-center"
-      onMouseEnter={() => setShowVolumeSlider(true)}
-      onMouseLeave={() => setShowVolumeSlider(false)}
-    >
+    <div className="group/volume flex items-center gap-1.5">
       <button
+        type="button"
         onClick={onToggleMute}
-        className="text-neutral-500 hover:text-white transition-colors p-2"
+        aria-label={isMuted ? "Unmute" : "Mute"}
+        className="flex size-8 items-center justify-center rounded-full text-white/45 transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
       >
-        {isMuted || volume === 0 ? (
-          <FaVolumeMute size={14} />
-        ) : volume < 50 ? (
-          <FaVolumeDown size={14} />
-        ) : (
-          <FaVolumeUp size={14} />
-        )}
+        <VolumeIcon size={16} strokeWidth={2} />
       </button>
 
-      {/* Vertical Slider popup */}
       <div
-        className={`absolute bottom-full left-1/2 -translate-x-1/2 w-10 h-40 bg-[#0a0a0d] border border-[#1a1a1f] shadow-xl flex items-end justify-center pb-4 z-50 transition-all duration-200 ease-out origin-bottom ${
-          showVolumeSlider || isDraggingVolume
-            ? "opacity-100 visible translate-y-0 scale-100"
-            : "opacity-0 invisible translate-y-2 scale-95 pointer-events-none"
-        }`}
+        ref={sliderRef}
+        role="slider"
+        aria-label="Volume"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={level}
+        tabIndex={0}
+        className="relative h-3 w-20 cursor-pointer select-none"
+        onClick={(e) => setFromClientX(e.clientX)}
+        onMouseDown={(e) => {
+          e.preventDefault();
+          setIsDragging(true);
+          setFromClientX(e.clientX);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "ArrowRight") onVolumeChange(Math.min(100, volume + 5));
+          if (e.key === "ArrowLeft") onVolumeChange(Math.max(0, volume - 5));
+        }}
       >
         <div
-          ref={volumeSliderRef}
-          className="w-2 h-32 bg-neutral-800 relative cursor-pointer group/slider py-2 select-none"
-          onMouseDown={(e) => {
-            e.preventDefault();
-            handleVolumeDragStart(e);
-          }}
+          className={cn(
+            "absolute top-1/2 left-0 right-0 h-[3px] -translate-y-1/2 overflow-hidden rounded-full bg-white/15",
+            "transition-[height] duration-150 group-hover/volume:h-[5px]",
+          )}
         >
           <div
-            className="absolute bottom-0 left-0 w-full bg-[#00f0ff]"
-            style={{ height: `${isMuted ? 0 : volume}%` }}
-          />
-          {/* Knob */}
-          <div
-            className="absolute left-1/2 -translate-x-1/2 w-4 h-4 bg-white shadow-lg opacity-0 group-hover/slider:opacity-100 transition-opacity"
-            style={{ bottom: `calc(${isMuted ? 0 : volume}% - 8px)` }}
+            className="absolute inset-y-0 left-0 bg-white"
+            style={{ width: `${level}%` }}
           />
         </div>
+        <div
+          className={cn(
+            "pointer-events-none absolute top-1/2 size-2.5 -translate-y-1/2 rounded-full bg-white shadow-[0_1px_4px_rgba(0,0,0,0.45)]",
+            "scale-0 opacity-0 transition-transform duration-150",
+            "group-hover/volume:scale-100 group-hover/volume:opacity-100",
+            isDragging && "scale-100 opacity-100",
+          )}
+          style={{ left: `calc(${level}% - 5px)` }}
+        />
       </div>
     </div>
   );

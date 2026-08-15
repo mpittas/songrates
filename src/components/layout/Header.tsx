@@ -111,7 +111,13 @@ export default function Header({ showSearch }: HeaderProps) {
                 ))}
                 {!loading &&
                   (user ? (
-                    <UserMenu user={user} onSignOut={signOut} />
+                    <>
+                      <div
+                        aria-hidden
+                        className="mx-1.5 h-4 w-px bg-neutral-200"
+                      />
+                      <UserMenu user={user} onSignOut={signOut} />
+                    </>
                   ) : (
                     <Button
                       href="/login?view=login"

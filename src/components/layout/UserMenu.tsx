@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import Link from "next/link";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import Image from "next/image";
-import Drawer from "@/components/ui/Drawer";
-import { FaUserCircle, FaSignOutAlt } from "react-icons/fa";
+import Link from "next/link";
 import { User } from "@supabase/supabase-js";
+import { LuLogOut, LuSettings } from "react-icons/lu";
+import { cn } from "@/lib/utils";
 
 interface UserMenuProps {
   user: User;
@@ -13,150 +13,218 @@ interface UserMenuProps {
   isMobile?: boolean;
 }
 
-export default function UserMenu({
-  user,
-  onSignOut,
-  isMobile = false,
-}: UserMenuProps) {
+function getDisplayName(user: User) {
+  return (
+    user.user_metadata?.full_name ||
+    user.user_metadata?.name ||
+    user.user_metadata?.username ||
+    user.email?.split("@")[0] ||
+    "Account"
+  );
+}
+
+function getInitials(name: string) {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) {
+    return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+  }
+  return name.slice(0, 1).toUpperCase() || "A";
+}
+
+function UserAvatar({
+  url,
+  name,
+  size,
+}: {
+  url?: string;
+  name: string;
+  size: number;
+}) {
+  if (url) {
+    return (
+      <Image
+        src={url}
+        alt=""
+        width={size}
+        height={size}
+        className="rounded-full object-cover"
+      />
+    );
+  }
+
+  return (
+    <span
+      aria-hidden
+      className="flex items-center justify-center rounded-full bg-neutral-900 font-medium text-white"
+      style={{ width: size, height: size, fontSize: size * 0.38 }}
+    >
+      {getInitials(name)}
+    </span>
+  );
+}
+
+function MenuRow({
+  icon,
+  children,
+  href,
+  onClick,
+}: {
+  icon: ReactNode;
+  children: ReactNode;
+  href?: string;
+  onClick?: () => void;
+}) {
+  const className = cn(
+    "flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-left text-sm text-neutral-700",
+    "transition-colors duration-150",
+    "hover:bg-neutral-100 hover:text-neutral-950",
+    "focus-visible:bg-neutral-100 focus-visible:outline-none",
+  );
+
+  const content = (
+    <>
+      <span className="flex size-4 shrink-0 items-center justify-center text-neutral-500">
+        {icon}
+      </span>
+      <span className="min-w-0 truncate">{children}</span>
+    </>
+  );
+
+  if (href) {
+    return (
+      <Link
+        href={href}
+        prefetch={false}
+        role="menuitem"
+        className={className}
+        onClick={onClick}
+      >
+        {content}
+      </Link>
+    );
+  }
+
+  return (
+    <button type="button" role="menuitem" className={className} onClick={onClick}>
+      {content}
+    </button>
+  );
+}
+
+export default function UserMenu({ user, onSignOut }: UserMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const menuId = useId();
 
-  // Close menu when clicking outside (desktop only)
+  const displayName = getDisplayName(user);
+  const email = user.email ?? "";
+  const username = user.user_metadata?.username as string | undefined;
+  const avatarUrl = user.user_metadata?.avatar_url as string | undefined;
+  const secondary = username ? `@${username}` : email;
+  const showSecondary = Boolean(secondary && secondary !== displayName);
+
   useEffect(() => {
-    if (isMobile) {
-      if (isOpen) {
-        document.body.style.overflow = "hidden";
-      } else {
-        document.body.style.overflow = "unset";
-      }
-      return () => {
-        document.body.style.overflow = "unset";
-      };
-    }
+    if (!isOpen) return;
 
-    function handleClickOutside(event: MouseEvent) {
+    function handlePointerDown(event: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
     }
-    document.addEventListener("mousedown", handleClickOutside);
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setIsOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isOpen, isMobile]);
+  }, [isOpen]);
 
-  const avatarUrl = user.user_metadata?.avatar_url;
-  const fullName = user.user_metadata?.full_name || user.email;
-
-  // Internal DrawerContent removed in favor of reusable Drawer component
+  const close = () => setIsOpen(false);
 
   return (
     <div className="relative" ref={menuRef}>
       <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center justify-center rounded-full overflow-hidden border-2 border-transparent hover:border-neutral-300 transition-all focus:outline-none"
-        aria-label="User menu"
-      >
-        {avatarUrl ? (
-          <Image
-            src={avatarUrl}
-            alt="User Avatar"
-            width={38}
-            height={38}
-            className="rounded-full"
-          />
-        ) : (
-          <FaUserCircle className="text-neutral-400" size={38} />
+        type="button"
+        onClick={() => setIsOpen((open) => !open)}
+        aria-label="Account menu"
+        aria-haspopup="menu"
+        aria-expanded={isOpen}
+        aria-controls={menuId}
+        className={cn(
+          "flex size-8 items-center justify-center overflow-hidden rounded-full",
+          "ring-2 ring-offset-2 ring-offset-white transition-[box-shadow,transform] duration-150",
+          "focus-visible:outline-none focus-visible:ring-neutral-900",
+          isOpen
+            ? "ring-neutral-900"
+            : "ring-transparent hover:ring-neutral-300",
         )}
+      >
+        <UserAvatar url={avatarUrl} name={displayName} size={32} />
       </button>
 
-      {/* Desktop Dropdown */}
-      {!isMobile && isOpen && (
-        <div className="absolute right-0 mt-2 w-48 rounded-lg bg-white border border-[#dedede] py-1 z-50 animate-in fade-in zoom-in-95 duration-100 shadow-md">
-          <div className="px-4 py-2 border-b border-[#ececec]">
-            <p className="text-sm font-medium text-neutral-900 truncate">
-              {fullName}
-            </p>
-            <p className="text-xs text-neutral-500 truncate">{user.email}</p>
-          </div>
+      {isOpen ? (
+        <div
+          id={menuId}
+          role="menu"
+          aria-label="Account"
+          className={cn(
+            "absolute right-0 z-50 mt-2 w-72 max-w-[calc(100vw-1.5rem)] origin-top-right",
+            "rounded-xl border border-neutral-200 bg-white p-1.5",
+            "shadow-[0_8px_24px_rgba(15,15,15,0.12),0_2px_6px_rgba(15,15,15,0.06)]",
+            "animate-in fade-in slide-in-from-top-1 duration-150",
+          )}
+        >
           <Link
             href="/profile"
             prefetch={false}
-            className="flex items-center gap-3 px-4 py-2.5 text-sm text-neutral-700 hover:text-neutral-950 hover:bg-neutral-100 transition-colors"
-            onClick={() => setIsOpen(false)}
+            role="menuitem"
+            onClick={close}
+            className="flex items-center gap-3 rounded-lg px-2.5 py-2.5 transition-colors hover:bg-neutral-50 focus-visible:bg-neutral-50 focus-visible:outline-none"
           >
-            <FaUserCircle size={14} />
-            Profile
-          </Link>
-          <button
-            onClick={() => {
-              setIsOpen(false);
-              onSignOut();
-            }}
-            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-neutral-700 hover:text-red-600 hover:bg-neutral-100 transition-colors text-left"
-          >
-            <FaSignOutAlt size={14} />
-            Sign Out
-          </button>
-        </div>
-      )}
-
-      {/* Mobile Drawer */}
-      {isMobile && (
-        <Drawer
-          isOpen={isOpen}
-          onClose={() => setIsOpen(false)}
-          title="Profile"
-        >
-          <div className="flex flex-col gap-6">
-            <div className="pb-6 border-b border-white/10">
-              <div className="flex items-center gap-4 mb-3">
-                {avatarUrl ? (
-                  <Image
-                    src={avatarUrl}
-                    alt="User Avatar"
-                    width={48}
-                    height={48}
-                    className="rounded-full"
-                  />
-                ) : (
-                  <FaUserCircle className="text-neutral-400" size={48} />
-                )}
-                <div className="overflow-hidden">
-                  <p className="text-sm font-medium text-white truncate">
-                    {fullName}
-                  </p>
-                  <p className="text-xs text-neutral-500 truncate">
-                    {user.email}
-                  </p>
-                </div>
-              </div>
+            <UserAvatar url={avatarUrl} name={displayName} size={40} />
+            <div className="min-w-0">
+              <p className="truncate text-sm font-medium tracking-tight text-neutral-950">
+                {displayName}
+              </p>
+              {showSecondary ? (
+                <p className="truncate text-xs text-neutral-500">{secondary}</p>
+              ) : null}
+              <p className="mt-1 text-xs font-medium text-neutral-900">
+                View profile
+              </p>
             </div>
+          </Link>
 
-            <nav className="flex flex-col gap-4">
-              <Link
-                href="/profile"
-                prefetch={false}
-                className="flex items-center gap-3 text-base text-neutral-300 hover:text-white transition-colors uppercase tracking-widest"
-                onClick={() => setIsOpen(false)}
-              >
-                <FaUserCircle size={16} />
-                Profile
-              </Link>
-              <button
-                onClick={() => {
-                  setIsOpen(false);
-                  onSignOut();
-                }}
-                className="flex items-center gap-3 text-base text-neutral-300 hover:text-red-400 transition-colors uppercase tracking-widest text-left mt-4"
-              >
-                <FaSignOutAlt size={16} />
-                Sign Out
-              </button>
-            </nav>
-          </div>
-        </Drawer>
-      )}
+          <div className="mx-1.5 my-1 h-px bg-neutral-100" />
+
+          <MenuRow
+            href="/settings"
+            icon={<LuSettings size={16} strokeWidth={1.75} />}
+            onClick={close}
+          >
+            Settings
+          </MenuRow>
+
+          <div className="mx-1.5 my-1 h-px bg-neutral-100" />
+
+          <MenuRow
+            icon={<LuLogOut size={16} strokeWidth={1.75} />}
+            onClick={() => {
+              close();
+              void onSignOut();
+            }}
+          >
+            Sign out
+          </MenuRow>
+        </div>
+      ) : null}
     </div>
   );
 }

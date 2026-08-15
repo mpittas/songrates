@@ -1,10 +1,14 @@
 import { FaBolt } from "react-icons/fa6";
 
-import BrowseSectionClient from "@/components/playlists/BrowseSectionClient";
-import MoodsHero from "@/components/playlists/MoodsHero";
+import MoodPlaylistGrid from "@/components/playlists/MoodPlaylistGrid";
 import MySection from "@/components/ui/MySection";
-import { countPlaylists, pickHeroArtworks } from "@/lib/browseHero";
-import { getMoodsBrowseData } from "@/lib/appleMusic/api";
+import {
+  type ApplePlaylistResult,
+  type BrowsePill,
+  getMoodsBrowseData,
+} from "@/lib/appleMusic/api";
+import { PAGE_CONTENT_TOP } from "@/lib/pageLayout";
+import { cn } from "@/lib/utils";
 
 /** ISR: regenerate moods page at most once every 6 hours. */
 export const revalidate = 21600;
@@ -14,20 +18,42 @@ export const metadata = {
   description: "Browse curated Apple Music playlists by mood.",
 };
 
+function flattenMoodPlaylists(pills: BrowsePill[]): ApplePlaylistResult[] {
+  const seen = new Set<string>();
+  const playlists: ApplePlaylistResult[] = [];
+  const queues = pills.map((pill) => [...pill.playlists]);
+  let added = true;
+
+  while (added) {
+    added = false;
+    for (const queue of queues) {
+      const next = queue.shift();
+      if (!next) continue;
+      added = true;
+      if (seen.has(next.id)) continue;
+      seen.add(next.id);
+      playlists.push(next);
+    }
+  }
+
+  return playlists;
+}
+
 export default async function MoodsPage() {
   const moods = await getMoodsBrowseData();
-  const hasData = moods.pills.length > 0;
+  const playlists = flattenMoodPlaylists(moods.pills);
 
   return (
-    <main className="min-h-screen bg-[#F2EFED] pb-16 text-neutral-900">
-      <MoodsHero
-        moodCount={hasData ? moods.pills.length : undefined}
-        totalPlaylists={hasData ? countPlaylists(moods.pills) : undefined}
-        heroArtworks={pickHeroArtworks(moods.pills, 4)}
-      />
-
-      {hasData ? (
-        <BrowseSectionClient section={moods} />
+    <main
+      className={cn(
+        "min-h-screen bg-[#F2EFED] pb-16 text-neutral-900",
+        PAGE_CONTENT_TOP,
+      )}
+    >
+      {playlists.length > 0 ? (
+        <MySection className="pb-8">
+          <MoodPlaylistGrid playlists={playlists} moods={moods.pills} />
+        </MySection>
       ) : (
         <MySection className="py-16">
           <div className="rounded-2xl border border-neutral-200 bg-white p-8 text-center">

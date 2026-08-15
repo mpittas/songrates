@@ -7,7 +7,7 @@ import { LuListMusic } from "react-icons/lu";
 import MySection from "@/components/ui/MySection";
 import Tilt3DImage from "@/components/ui/Tilt3DImage";
 import SearchInput from "@/components/search/SearchInput";
-import { PAGE_CONTENT_TOP } from "@/lib/pageLayout";
+import { PAGE_CONTAINER, PAGE_CONTENT_TOP } from "@/lib/pageLayout";
 import { cn } from "@/lib/utils";
 
 export interface AlbumDetailPageLayoutProps {
@@ -70,7 +70,8 @@ export default function AlbumDetailPageLayout({
 
         <div
           className={cn(
-            "relative z-10 mx-auto w-full max-w-[1180px] px-4 sm:px-6",
+            "relative z-10",
+            PAGE_CONTAINER,
             PAGE_CONTENT_TOP,
           )}
         >

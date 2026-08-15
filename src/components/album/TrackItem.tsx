@@ -16,7 +16,7 @@ import { HiOutlineMicrophone, HiEllipsisVertical } from "react-icons/hi2";
 import { useRatingsContext as useRatings } from "@/context/RatingsContext";
 import { usePlayerCore } from "@/context/PlayerContext";
 import { createSlug } from "@/lib/utils";
-import ColorRating from "@/components/rating/ColorRating";
+import TrackRating from "@/components/rating/TrackRating";
 import Button from "@/components/ui/Button";
 import FavoriteButton from "@/components/ui/FavoriteButton";
 import DropdownMenu from "@/components/ui/DropdownMenu";
@@ -63,7 +63,7 @@ export default function TrackItem({
   const trackRef = useRef<HTMLDivElement>(null);
   const [lyricsFontSize, setLyricsFontSize] = useState(12);
   const [showPlaylistModal, setShowPlaylistModal] = useState(false);
-  const { ratings, setRating } = useRatings();
+  const { ratings } = useRatings();
   const { currentTrack, isPlaying, isLoading, playTrack } = usePlayerCore();
   const rating =
     forcedRating !== undefined ? forcedRating : ratings[track.id] || 0;
@@ -206,14 +206,13 @@ export default function TrackItem({
               className={`flex items-center gap-2 ${isReadOnly ? "opacity-60" : ""}`}
             >
               {isReadOnly && <FaLock size={10} className="text-neutral-600" />}
-              <div className={isReadOnly ? "pointer-events-none" : ""}>
-                <ColorRating
-                  rating={rating}
-                  onRate={(val) =>
-                    !isReadOnly && setRating(track.id, val, albumContext)
-                  }
-                />
-              </div>
+              <TrackRating
+                trackId={track.id}
+                albumContext={albumContext}
+                displayRating={rating}
+                showPublicRating={false}
+                readOnly={isReadOnly}
+              />
 
               {/* User Rating Digit (Read Only Mode) - Now on right side of progress bar */}
               {isReadOnly && rating > 0 && (

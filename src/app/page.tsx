@@ -3,6 +3,7 @@ import HomeHero from "@/components/home/HomeHero";
 import LatestRatedAlbums from "@/components/home/LatestRatedAlbums";
 import DailyTop100Playlists from "@/components/home/DailyTop100Playlists";
 import TrendingSongs from "@/components/home/TrendingSongs";
+import MySection from "@/components/ui/MySection";
 
 /** ISR: regenerate home page at most once every 6 hours.
  *  The Apple Music chart sections are slow-moving and expensive to rebuild. */
@@ -11,7 +12,7 @@ export const revalidate = 21600;
 function TrendingSongsFallback() {
   return (
     <section className="py-12 sm:py-14">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <MySection>
         <div className="w-full">
           <div className="flex items-end justify-between gap-4">
             <div className="flex items-center gap-3">
@@ -30,7 +31,7 @@ function TrendingSongsFallback() {
             ))}
           </div>
         </div>
-      </div>
+      </MySection>
     </section>
   );
 }

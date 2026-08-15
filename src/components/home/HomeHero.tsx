@@ -1,58 +1,24 @@
-"use client";
-
 import SearchBar from "@/components/search/SearchBar";
-import MySection from "@/components/ui/MySection";
-import dynamic from "next/dynamic";
-import { Suspense, useEffect, useState } from "react";
-
-const Silk = dynamic(() => import("@/components/mesh/Silk"), {
-  ssr: false,
-  loading: () => (
-    <div className="absolute inset-0 bg-[radial-gradient(circle_at_0%_20%,#ff7f5f_0%,#f05f45_18%,#8f1d28_40%,#181018_72%,#0f0c11_100%)]" />
-  ),
-});
+import { PAGE_CONTAINER_WIDTH } from "@/lib/pageLayout";
+import { cn } from "@/lib/utils";
+import { Suspense } from "react";
 
 export default function HomeHero() {
-  const [showSilk, setShowSilk] = useState(false);
-
-  useEffect(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-
-    const mountSilk = () => setShowSilk(true);
-    const requestIdle = window.requestIdleCallback;
-    const cancelIdle = window.cancelIdleCallback;
-
-    if (typeof requestIdle === "function") {
-      const idleId = requestIdle(mountSilk, { timeout: 2500 });
-      return () => cancelIdle?.(idleId);
-    }
-
-    const timeoutId = globalThis.setTimeout(mountSilk, 1500);
-
-    return () => {
-      globalThis.clearTimeout(timeoutId);
-    };
-  }, []);
-
   return (
     <section className="px-2 pt-2">
-      <div className="relative rounded-2xl">
-        <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl">
+      <div
+        className={cn(
+          PAGE_CONTAINER_WIDTH,
+          "relative overflow-hidden rounded-2xl",
+        )}
+      >
+        <div className="pointer-events-none absolute inset-0">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_0%_20%,#ff7f5f_0%,#f05f45_18%,#8f1d28_40%,#181018_72%,#0f0c11_100%)]" />
-          {showSilk ? (
-            <Silk
-              color="#ed4e39"
-              speed={4}
-              scale={1.15}
-              noiseIntensity={1.25}
-              rotation={0.12}
-            />
-          ) : null}
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_0%_20%,rgba(255,127,95,0.35)_0%,rgba(143,29,40,0.2)_35%,transparent_65%)]" />
           <div className="absolute inset-0 bg-[linear-gradient(120deg,rgba(255,255,255,0.18)_0%,rgba(255,255,255,0)_30%)]" />
         </div>
 
-        <MySection className="relative z-10 overflow-visible py-14 sm:py-16">
+        <div className="relative z-10 px-4 py-14 sm:px-6 sm:py-16">
           <div className="mx-auto flex w-full max-w-3xl flex-col items-center text-center">
             <h1 className="text-4xl font-medium tracking-tight text-white sm:text-5xl">
               Discover and Rate Music
@@ -64,7 +30,7 @@ export default function HomeHero() {
               </Suspense>
             </div>
           </div>
-        </MySection>
+        </div>
       </div>
     </section>
   );

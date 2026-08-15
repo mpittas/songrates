@@ -1,13 +1,49 @@
 import {
-  FaPlay,
-  FaPause,
-  FaStepBackward,
-  FaStepForward,
-  FaRedo,
-  FaRandom,
-} from "react-icons/fa";
+  LuPause,
+  LuPlay,
+  LuRepeat,
+  LuShuffle,
+  LuSkipBack,
+  LuSkipForward,
+} from "react-icons/lu";
 
+import { cn } from "@/lib/utils";
 import { PlaybackControlsProps } from "@/types/player";
+
+function ControlButton({
+  label,
+  disabled,
+  active,
+  onClick,
+  children,
+}: {
+  label: string;
+  disabled?: boolean;
+  active?: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={label}
+      title={label}
+      className={cn(
+        "flex size-8 items-center justify-center rounded-full transition-colors duration-150",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40",
+        disabled
+          ? "cursor-not-allowed text-white/20"
+          : active
+            ? "text-white"
+            : "text-white/45 hover:text-white",
+      )}
+    >
+      {children}
+    </button>
+  );
+}
 
 export default function PlaybackControls({
   isPlaying,
@@ -19,70 +55,64 @@ export default function PlaybackControls({
   hasNext,
   hasPrev,
   isRepeating,
-
   onToggleRepeat,
   isShuffling,
   onToggleShuffle,
 }: PlaybackControlsProps) {
   return (
-    <div className="flex items-center gap-4">
-      <button
-        onClick={onPrev}
+    <div className="flex items-center gap-1 md:gap-1.5">
+      <div className="hidden md:block">
+        <ControlButton
+          label="Shuffle"
+          active={isShuffling}
+          onClick={onToggleShuffle}
+        >
+          <LuShuffle size={15} strokeWidth={2} />
+        </ControlButton>
+      </div>
+
+      <ControlButton
+        label="Previous"
         disabled={!hasPrev}
-        className={`text-neutral-500 hover:text-neutral-900 transition-colors ${
-          !hasPrev ? "opacity-30 cursor-not-allowed hover:text-neutral-500" : ""
-        }`}
+        onClick={onPrev}
       >
-        <FaStepBackward size={14} />
-      </button>
+        <LuSkipBack size={18} strokeWidth={2.2} />
+      </ControlButton>
 
       <button
+        type="button"
         onClick={onTogglePlay}
         disabled={isLoading || !hasVideoId}
-        className="w-8 h-8 flex items-center justify-center bg-[#1f1f1f] text-white rounded-full hover:bg-black transition-colors disabled:opacity-50"
+        aria-label={isPlaying ? "Pause" : "Play"}
+        className={cn(
+          "mx-1 flex size-9 items-center justify-center rounded-full bg-white text-black",
+          "transition-transform duration-150 hover:scale-105 active:scale-95",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50",
+          "disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:scale-100",
+        )}
       >
         {isLoading ? (
-          <span className="animate-pulse text-[8px]">...</span>
+          <span className="size-3.5 animate-pulse rounded-full bg-black/25" />
         ) : isPlaying ? (
-          <FaPause size={10} />
+          <LuPause size={16} strokeWidth={2.4} />
         ) : (
-          <FaPlay size={10} className="ml-0.5" />
+          <LuPlay size={16} strokeWidth={2.4} className="ml-0.5" />
         )}
       </button>
 
-      <button
-        onClick={onNext}
-        disabled={!hasNext}
-        className={`text-neutral-500 hover:text-neutral-900 transition-colors ${
-          !hasNext ? "opacity-30 cursor-not-allowed hover:text-neutral-500" : ""
-        }`}
-      >
-        <FaStepForward size={14} />
-      </button>
+      <ControlButton label="Next" disabled={!hasNext} onClick={onNext}>
+        <LuSkipForward size={18} strokeWidth={2.2} />
+      </ControlButton>
 
-      <button
-        onClick={onToggleShuffle}
-        className={`transition-colors ${
-          isShuffling
-            ? "text-neutral-900"
-            : "text-neutral-500 hover:text-neutral-900"
-        }`}
-        title="Shuffle"
-      >
-        <FaRandom size={14} />
-      </button>
-
-      <button
-        onClick={onToggleRepeat}
-        className={`transition-colors ${
-          isRepeating
-            ? "text-neutral-900"
-            : "text-neutral-500 hover:text-neutral-900"
-        }`}
-        title="Repeat Song"
-      >
-        <FaRedo size={14} />
-      </button>
+      <div className="hidden md:block">
+        <ControlButton
+          label="Repeat song"
+          active={isRepeating}
+          onClick={onToggleRepeat}
+        >
+          <LuRepeat size={15} strokeWidth={2} />
+        </ControlButton>
+      </div>
     </div>
   );
 }
