@@ -94,9 +94,16 @@ export default function CompleteProfilePage() {
       }
 
       // Update profile with username
+      const avatarUrl =
+        (typeof user.user_metadata?.avatar_url === "string" &&
+          user.user_metadata.avatar_url) ||
+        (typeof user.user_metadata?.picture === "string" &&
+          user.user_metadata.picture) ||
+        null;
+
       const { error: updateError } = await supabase
         .from("profiles")
-        .update({ username })
+        .update({ username, avatar_url: avatarUrl })
         .eq("id", user.id);
 
       if (updateError) {

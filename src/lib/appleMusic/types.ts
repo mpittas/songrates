@@ -215,10 +215,17 @@ export interface AppleExploreData {
   genreSections: AppleExploreGenreSection[];
 }
 
+export interface BrowseSubgenre {
+  key: string;
+  label: string;
+  query: string;
+}
+
 export interface BrowsePillConfig {
   key: string;
   label: string;
   query: string;
+  subgenres?: BrowseSubgenre[];
 }
 
 export interface BrowsePill extends BrowsePillConfig {
@@ -252,11 +259,14 @@ export type AppleGenreResource = {
   id: string;
   attributes?: {
     name?: string;
+    parentId?: string;
+    parentName?: string;
   };
 };
 
 export type AppleGenresResponse = {
   data?: AppleGenreResource[];
+  next?: string;
 };
 
 export type ApplePlaylistSearchResponse = {

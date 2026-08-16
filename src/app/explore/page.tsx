@@ -102,7 +102,7 @@ export default async function ExplorePage() {
 
           {morePlaylists.length > 0 && (
             <MySection className="py-8">
-              <HeadingRow title="Fresh Playlists" seeAllHref="/playlists" />
+              <HeadingRow title="Fresh Playlists" seeAllHref="/genres" />
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
                 {morePlaylists.map((playlist, index) => (
                   <PlaylistCard

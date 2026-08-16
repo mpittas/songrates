@@ -43,6 +43,7 @@ import type {
   AppleGenreResult,
   AppleExploreData,
   BrowsePillConfig,
+  BrowseSubgenre,
   BrowseSection,
   AppleBrowseData,
   AppleChartsResponse,
@@ -324,24 +325,33 @@ async function getCatalogCharts({
 
 async function getCatalogTopGenres(
   storefront: string = STOREFRONT,
-  limit: number = 30,
+  limit: number = 100,
 ): Promise<AppleGenreResult[]> {
   const safeLimit = Math.max(1, Math.min(limit, 100));
   const cacheKey = `am-genres:${storefront}:${safeLimit}`;
   const cached = playlistCache.get(cacheKey);
   if (cached) return cached as AppleGenreResult[];
 
-  const data = await appleMusicFetch<AppleGenresResponse>(
-    `/catalog/${storefront}/genres?limit=${safeLimit}`,
-    {
+  const genres: AppleGenreResult[] = [];
+  const seen = new Set<string>();
+  let path: string | null = `/catalog/${storefront}/genres?limit=${safeLimit}`;
+
+  for (let page = 0; page < 8 && path; page++) {
+    const data = await appleMusicFetch<AppleGenresResponse>(path, {
       tags: [`apple-genres-${storefront}`],
       revalidate: 3600 * 24,
-    },
-  );
+    });
 
-  const genres = (data?.data || [])
-    .map(parseGenre)
-    .filter((g: AppleGenreResult) => g.name);
+    for (const genre of (data?.data || []).map(parseGenre)) {
+      if (!genre.name || seen.has(genre.id)) continue;
+      seen.add(genre.id);
+      genres.push(genre);
+    }
+
+    const next = data?.next;
+    path = next ? next.replace(/^\/v1/, "") : null;
+  }
+
   if (genres.length > 0) {
     playlistCache.set(cacheKey, genres, 3600 * 12);
   }
@@ -508,6 +518,139 @@ export const BROWSE_CATEGORIES: BrowsePillConfig[] = [
   { key: "kpop", label: "K-Pop", query: "k-pop" },
 ];
 
+/** Non-listening nodes in Apple's Music genre tree. */
+const SKIP_GENRE_NAMES = new Set([
+  "Music",
+  "Music Videos",
+  "Karaoke",
+  "Spoken Word",
+  "Hörspiele",
+]);
+
+type ItunesGenreNode = {
+  id?: number | string;
+  name?: string;
+  subgenres?: Record<string, ItunesGenreNode>;
+};
+
+function genreSearchQuery(name: string): string {
+  return name.replace(/\//g, " ").replace(/\s+/g, " ").trim();
+}
+
+function itunesChildren(node: ItunesGenreNode | undefined): ItunesGenreNode[] {
+  return Object.values(node?.subgenres || {}).filter(Boolean);
+}
+
+function toSubgenre(node: ItunesGenreNode): BrowseSubgenre | null {
+  if (!node.name || node.id == null || SKIP_GENRE_NAMES.has(node.name)) {
+    return null;
+  }
+  return {
+    key: String(node.id),
+    label: node.name,
+    query: genreSearchQuery(node.name),
+  };
+}
+
+function toStyle(node: ItunesGenreNode): BrowsePillConfig | null {
+  if (!node.name || node.id == null || SKIP_GENRE_NAMES.has(node.name)) {
+    return null;
+  }
+
+  const subgenres = itunesChildren(node)
+    .map(toSubgenre)
+    .filter((sub): sub is BrowseSubgenre => Boolean(sub))
+    .sort((a, b) => a.label.localeCompare(b.label));
+
+  return {
+    key: String(node.id),
+    label: node.name,
+    query: genreSearchQuery(node.name),
+    subgenres: subgenres.length > 0 ? subgenres : undefined,
+  };
+}
+
+/**
+ * Apple's full Music genre tree (same IDs as catalog genres). Public iTunes
+ * storefront endpoint — no MusicKit token required.
+ */
+async function getItunesMusicStyles(
+  storefront: string,
+): Promise<BrowsePillConfig[]> {
+  const cacheKey = `itunes-music-styles:${storefront}`;
+  const cached = playlistCache.get(cacheKey);
+  if (cached) return cached as BrowsePillConfig[];
+
+  try {
+    const urls = [
+      `https://itunes.apple.com/${storefront}/WebObjects/MZStoreServices.woa/ws/genres?id=34`,
+      "https://itunes.apple.com/WebObjects/MZStoreServices.woa/ws/genres?id=34",
+    ];
+
+    for (const url of urls) {
+      const res = await fetch(url, {
+        next: { revalidate: 86400, tags: [`itunes-genres-${storefront}`] },
+      });
+      if (!res.ok) continue;
+
+      const data = (await res.json()) as
+        | Record<string, ItunesGenreNode>
+        | ItunesGenreNode;
+      const root =
+        data && typeof data === "object" && "34" in data
+          ? (data as Record<string, ItunesGenreNode>)["34"]
+          : (data as ItunesGenreNode);
+
+      const styles = itunesChildren(root)
+        .map(toStyle)
+        .filter((style): style is BrowsePillConfig => Boolean(style))
+        .sort((a, b) => a.label.localeCompare(b.label));
+
+      if (styles.length > 0) {
+        playlistCache.set(cacheKey, styles, 86400);
+        return styles;
+      }
+    }
+
+    return [];
+  } catch (err) {
+    console.error("iTunes genre tree fetch failed:", err);
+    return [];
+  }
+}
+
+/**
+ * Top-level Apple Music styles for the Genres page: the complete Music
+ * genre tree, merged with catalog top-chart genres from
+ * GET /v1/catalog/{storefront}/genres.
+ */
+async function getAppleMusicStyles(
+  storefront: string,
+): Promise<BrowsePillConfig[]> {
+  const [itunesStyles, catalogGenres] = await Promise.all([
+    getItunesMusicStyles(storefront),
+    getCatalogTopGenres(storefront),
+  ]);
+
+  const byId = new Map<string, BrowsePillConfig>();
+  for (const style of itunesStyles) byId.set(style.key, style);
+
+  for (const genre of catalogGenres) {
+    if (!genre.name || SKIP_GENRE_NAMES.has(genre.name)) continue;
+    if (byId.has(genre.id)) continue;
+    byId.set(genre.id, {
+      key: genre.id,
+      label: genre.name,
+      query: genreSearchQuery(genre.name),
+    });
+  }
+
+  const styles = [...byId.values()].sort((a, b) =>
+    a.label.localeCompare(b.label),
+  );
+  return styles.length > 0 ? styles : BROWSE_CATEGORIES;
+}
+
 /**
  * Search the Apple Music catalog for playlists matching a single term.
  * Mirrors getEditorialPlaylists() but for one query at a time, with its own
@@ -544,6 +687,14 @@ async function getBrowsePlaylists(
   return playlists;
 }
 
+export async function searchCatalogPlaylists(
+  query: string,
+  storefront: string = STOREFRONT,
+  limit: number = 12,
+): Promise<ApplePlaylistResult[]> {
+  return getBrowsePlaylists(query, storefront, limit);
+}
+
 /**
  * Pre-fetch browse pills with bounded concurrency. Each pill carries its own
  * playlist array, so the client can switch pills instantly with no extra
@@ -559,16 +710,23 @@ async function fetchBrowseSection(
   sectionLabel: string,
   pills: BrowsePillConfig[],
   storefront: string = STOREFRONT,
+  keepEmpty = false,
 ): Promise<BrowseSection> {
   const resolvedPills = await mapWithConcurrency(pills, 4, async (pill) => ({
     ...pill,
-    playlists: await getBrowsePlaylists(pill.query, storefront, 12),
+    playlists: await getBrowsePlaylists(
+      pill.query,
+      storefront,
+      keepEmpty ? 8 : 12,
+    ),
   }));
 
   return {
     key: sectionKey,
     label: sectionLabel,
-    pills: resolvedPills.filter((pill) => pill.playlists.length > 0),
+    pills: keepEmpty
+      ? resolvedPills
+      : resolvedPills.filter((pill) => pill.playlists.length > 0),
   } as BrowseSection;
 }
 
@@ -581,12 +739,8 @@ export async function getMoodsBrowseData(
 export async function getCategoriesBrowseData(
   storefront: string = STOREFRONT,
 ): Promise<BrowseSection> {
-  return fetchBrowseSection(
-    "categories",
-    "Categories",
-    BROWSE_CATEGORIES,
-    storefront,
-  );
+  const styles = await getAppleMusicStyles(storefront);
+  return fetchBrowseSection("categories", "Genres", styles, storefront, true);
 }
 
 /**

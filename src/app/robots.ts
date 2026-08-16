@@ -5,7 +5,7 @@ import type { MetadataRoute } from "next";
  *
  * Catalog pages (/album/*, /artist/*) are the main driver of bot-driven Vercel
  * charges: bots enumerate millions of Apple Music IDs and each one SSRs a fresh
- * page. Disallowing them keeps the home/explore/moods/marketing pages indexable
+ * page. Disallowing them keeps the home/explore/moods/genres pages indexable
  * while preventing catalog enumeration from inflating function invocations.
  *
  * See https://nextjs.org/docs/app/api-reference/file-conventions/metadata/robots
@@ -16,7 +16,7 @@ export default function robots(): MetadataRoute.Robots {
       {
         // Well-behaved search engines: allow marketing pages, block catalog/API/auth/profile.
         userAgent: ["*", "googlebot", "bingbot"],
-        allow: ["/", "/explore", "/moods", "/playlists"],
+        allow: ["/", "/explore", "/moods", "/genres"],
         disallow: [
           "/album",
           "/artist",

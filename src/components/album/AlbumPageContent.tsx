@@ -18,13 +18,19 @@ import { useAlbumViewingUserRatings } from "@/hooks/useAlbumViewingUserRatings";
 import { useShareLinkParams } from "@/hooks/useShareLinkParams";
 import { PAGE_CONTENT_TOP } from "@/lib/pageLayout";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/context/AuthContext";
 import {
   computeTrackRatingStats,
   getAlbumPlayLabel,
   getAlbumSubtitleArtists,
+  isReviewableAlbumType,
 } from "@/lib/albumPageStats";
+import { useAlbumReviews } from "@/hooks/useAlbumReviews";
 import AlbumReadOnlyBanner from "./AlbumReadOnlyBanner";
 import AlbumOtherVersions from "./AlbumOtherVersions";
+import AlbumReviewsButton from "./AlbumReviewsButton";
+import AlbumReviewModal from "./AlbumReviewModal";
+import AlbumReviewsSection from "./AlbumReviewsSection";
 import type { AlbumInfo } from "@/types/music";
 
 export interface AlbumPageContentProps {
@@ -59,10 +65,20 @@ export default function AlbumPageContent({
     fallbackUserName,
   );
 
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const { playTrack } = usePlayerCore();
   const [isPlaylistModalOpen, setIsPlaylistModalOpen] = useState(false);
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const isReviewable = isReviewableAlbumType(album?.type);
+  const {
+    reviews,
+    count: reviewCount,
+    loading: reviewsLoading,
+    saveReview,
+    deleteReview,
+  } = useAlbumReviews(album?.id, isReviewable);
 
   useEffect(() => {
     if (!album?.id) return;
@@ -117,6 +133,8 @@ export default function AlbumPageContent({
   const tracks = album.tracks || [];
   const { totalTracks, ratedTracksCount, isFullyRated, averageScore } =
     computeTrackRatingStats(tracks, activeRatings);
+  const myRatingStats = computeTrackRatingStats(tracks, myRatings);
+  const canWriteReview = Boolean(user) && myRatingStats.isFullyRated;
 
   const publicData = publicAlbumRatings[album.id] ?? null;
   const primaryArtist = album.tracks?.[0]?.artists?.[0] ?? album.artist ?? null;
@@ -132,8 +150,13 @@ export default function AlbumPageContent({
     setIsPlaylistModalOpen(true);
   };
 
+  const ownReview = user
+    ? reviews.find((review) => review.userId === user.id)
+    : undefined;
+
   return (
-    <AlbumDetailPageLayout
+    <>
+      <AlbumDetailPageLayout
       beforeConstrained={
         viewingUserId && slug ? (
           <AlbumReadOnlyBanner
@@ -177,6 +200,8 @@ export default function AlbumPageContent({
           >
             SAVE ALBUM
           </Button>
+
+          {isReviewable ? <AlbumReviewsButton count={reviewCount} /> : null}
 
           {isPlaylistModalOpen && (
             <AlbumPlaylistSelectorModal
@@ -292,7 +317,46 @@ export default function AlbumPageContent({
           />
         </div>
       ))}
-      bottom={<AlbumOtherVersions versions={album.otherVersions} />}
-    />
+      bottom={
+        <>
+          {isReviewable ? (
+            <AlbumReviewsSection
+              reviews={reviews}
+              loading={reviewsLoading}
+              currentUserId={user?.id}
+              currentUserAvatarUrl={
+                (typeof user?.user_metadata?.avatar_url === "string" &&
+                  user.user_metadata.avatar_url) ||
+                (typeof user?.user_metadata?.picture === "string" &&
+                  user.user_metadata.picture) ||
+                null
+              }
+              canWrite={canWriteReview}
+              isSignedIn={Boolean(user)}
+              isFullyRated={myRatingStats.isFullyRated}
+              ratedTracksCount={myRatingStats.ratedTracksCount}
+              totalTracks={myRatingStats.totalTracks}
+              albumType={album.type}
+              showWriteHints={!viewingUserId}
+              onWrite={() => setIsReviewModalOpen(true)}
+              onEdit={() => setIsReviewModalOpen(true)}
+              onDeleteOwn={() => deleteReview(user!.id)}
+            />
+          ) : null}
+          <AlbumOtherVersions versions={album.otherVersions} />
+        </>
+      }
+      />
+      {isReviewModalOpen && canWriteReview ? (
+        <AlbumReviewModal
+          albumTitle={album.title}
+          albumType={album.type}
+          averageScore={myRatingStats.averageScore}
+          initialBody={ownReview?.body || ""}
+          onClose={() => setIsReviewModalOpen(false)}
+          onSave={saveReview}
+        />
+      ) : null}
+    </>
   );
 }

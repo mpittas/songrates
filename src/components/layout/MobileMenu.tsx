@@ -15,15 +15,11 @@ interface MobileMenuProps {
 const NAV_LINKS = [
   { href: "/explore", label: "Explore" },
   { href: "/moods", label: "Moods" },
-  { href: "/playlists", label: "Playlists" },
+  { href: "/genres", label: "Genres" },
 ] as const;
 
 function isNavLinkActive(pathname: string, href: string) {
-  if (href === "/playlists") {
-    return pathname === "/playlists" || pathname.startsWith("/playlist/");
-  }
-
-  return pathname === href;
+  return pathname === href || pathname.startsWith(`${href}/`);
 }
 
 export default function MobileMenu({

@@ -8,6 +8,11 @@ export function getAlbumPlayLabel(type: string | undefined): string {
   return "Play album";
 }
 
+/** Written reviews are only offered on full albums and EPs. */
+export function isReviewableAlbumType(type: string | undefined): boolean {
+  return type === "Album" || type === "EP";
+}
+
 export function computeTrackRatingStats(
   tracks: TrackInfo[],
   activeRatings: Record<string, number>,

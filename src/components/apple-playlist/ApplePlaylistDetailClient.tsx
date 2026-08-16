@@ -172,7 +172,7 @@ export default function ApplePlaylistDetailClient({
       searchFocused={isSearchFocused}
       trackRows={filteredTracks.map((track, i) => (
         <div
-          key={track.id}
+          key={`${track.number}-${track.id}`}
           className={
             track.id === highlightTrackId
               ? "rounded-lg ring-2 ring-neutral-300"

@@ -18,12 +18,20 @@ export async function GET(request: Request) {
 
       if (user) {
         // Ensure profile row exists (handle race condition with trigger)
+        const avatarUrl =
+          (typeof user.user_metadata?.avatar_url === "string" &&
+            user.user_metadata.avatar_url) ||
+          (typeof user.user_metadata?.picture === "string" &&
+            user.user_metadata.picture) ||
+          null;
+
         await supabase.from("profiles").upsert(
           {
             id: user.id,
             display_name: user.user_metadata?.username || user.email || null,
+            avatar_url: avatarUrl,
           },
-          { onConflict: "id", ignoreDuplicates: true },
+          { onConflict: "id" },
         );
 
         // Check if profile has username
