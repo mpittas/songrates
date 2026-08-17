@@ -1,9 +1,8 @@
 import ApplePlaylistDetailClient from "@/components/apple-playlist/ApplePlaylistDetailClient";
+import CollectionDetailPageLayout from "@/components/layout/CollectionDetailPageLayout";
+import Button from "@/components/ui/Button";
 import { getPlaylistDetail } from "@/lib/appleMusic/api";
-import { PAGE_CONTAINER, PAGE_CONTENT_TOP } from "@/lib/pageLayout";
-import { cn } from "@/lib/utils";
-import Link from "next/link";
-import { FaArrowLeft, FaListUl } from "react-icons/fa";
+import { FaArrowLeft } from "react-icons/fa";
 
 /** ISR: regenerate playlist pages at most once every 6 hours.
  *  Apple editorial/chart playlists are slow-moving and expensive to rebuild.
@@ -30,29 +29,31 @@ export default async function ApplePlaylistPage({ params }: PageProps) {
 
   if (!playlist) {
     return (
-      <main className="min-h-screen">
-        <div
-          className={cn(
-            PAGE_CONTAINER,
-            "pb-20",
-            PAGE_CONTENT_TOP,
-          )}
-        >
-          <Link
-            href="/"
-            className="mb-8 inline-flex items-center gap-2 font-mono text-sm text-neutral-500 transition-colors hover:text-neutral-900"
+      <CollectionDetailPageLayout
+        topBarLeft={
+          <Button
+            href="/genres"
+            variant="secondary"
+            size="xs"
+            iconLeft={<FaArrowLeft size={14} className="mr-2" />}
           >
-            <FaArrowLeft size={12} />
-            Back to Home
-          </Link>
-          <div className="py-16 text-center">
-            <FaListUl size={32} className="mx-auto mb-4 text-neutral-700" />
-            <p className="font-mono text-sm text-neutral-500">
-              Playlist not found
-            </p>
-          </div>
-        </div>
-      </main>
+            BACK TO PLAYLISTS
+          </Button>
+        }
+        artworkSrc="/vinyl-placeholder.svg"
+        artworkAlt="Playlist not found"
+        title="Playlist not found"
+        subtitle={
+          <p className="mb-4 text-md text-neutral-600">
+            This playlist is missing or unavailable.
+          </p>
+        }
+        list={
+          <p className="py-16 text-center text-sm text-neutral-500">
+            Try another playlist from genres or explore.
+          </p>
+        }
+      />
     );
   }
 

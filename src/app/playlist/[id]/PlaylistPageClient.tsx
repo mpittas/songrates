@@ -2,9 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { FaListUl, FaMusic, FaCompactDisc, FaPlay } from "react-icons/fa";
-import { LuArrowLeft, LuPencil, LuTrash2 } from "react-icons/lu";
+import { FaArrowLeft, FaMusic, FaCompactDisc } from "react-icons/fa";
+import { LuPencil, LuTrash2 } from "react-icons/lu";
 
 import { usePlaylist } from "@/context/PlaylistContext";
 import { Playlist, PlaylistTrack, PlaylistAlbum } from "@/types/playlist";
@@ -12,10 +11,7 @@ import { Album, Track } from "@/types/music";
 import { createClient } from "@/utils/supabase/client";
 import ArtistAlbumGridSection from "@/components/artist/ArtistAlbumGridSection";
 import Button from "@/components/ui/Button";
-import MySection from "@/components/ui/MySection";
-import PageHero from "@/components/ui/PageHero";
-import { cn } from "@/lib/utils";
-import { PAGE_CONTAINER, PAGE_CONTENT_TOP } from "@/lib/pageLayout";
+import CollectionDetailPageLayout from "@/components/layout/CollectionDetailPageLayout";
 import { usePlayerCore } from "@/context/PlayerContext";
 import SongRow from "@/main-components/SongRow";
 import EditPlaylistModal from "@/components/playlist/EditPlaylistModal";
@@ -24,6 +20,26 @@ interface PlaylistPageClientProps {
   initialPlaylist: Playlist | null;
   initialTracks: PlaylistTrack[];
   initialAlbums: PlaylistAlbum[];
+}
+
+function CollectionEmptyState({
+  icon: Icon,
+  title,
+  description,
+}: {
+  icon: typeof FaMusic;
+  title: string;
+  description: string;
+}) {
+  return (
+    <div className="py-20 text-center">
+      <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-white ring-1 ring-neutral-200">
+        <Icon size={20} className="text-neutral-400" />
+      </div>
+      <p className="mb-1 text-base font-semibold text-neutral-900">{title}</p>
+      <p className="text-sm text-neutral-500">{description}</p>
+    </div>
+  );
 }
 
 export default function PlaylistPageClient({
@@ -42,13 +58,20 @@ export default function PlaylistPageClient({
   const [showEditModal, setShowEditModal] = useState(false);
   const [savingEdits, setSavingEdits] = useState(false);
   const [editName, setEditName] = useState(initialPlaylist?.name || "");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+
+  const backHref =
+    playlist?.type === "albums"
+      ? "/profile/album-playlist"
+      : "/profile/songs-playlist";
 
   const handleDeletePlaylist = async () => {
     if (!playlist) return;
     if (!confirm("Are you sure you want to delete this playlist?")) return;
     setDeleting(true);
     await deletePlaylist(playlist.id);
-    router.push("/profile");
+    router.push(backHref);
   };
 
   const handleSaveEdits = async () => {
@@ -108,163 +131,130 @@ export default function PlaylistPageClient({
     }));
   }, [playlist, tracks]);
 
+  const q = searchQuery.toLowerCase();
+
+  const filteredQueue = useMemo(() => {
+    return queue
+      .map((track, index) => ({ track, index }))
+      .filter(({ track }) => {
+        if (!q) return true;
+        return (
+          track.title.toLowerCase().includes(q) ||
+          (track.artistName || "").toLowerCase().includes(q) ||
+          (track.albumTitle || "").toLowerCase().includes(q)
+        );
+      });
+  }, [queue, q]);
+
+  const filteredAlbums = useMemo(() => {
+    if (!q) return playlistAlbums;
+    return playlistAlbums.filter(
+      (a) =>
+        a.title.toLowerCase().includes(q) ||
+        (a.artistName || "").toLowerCase().includes(q),
+    );
+  }, [playlistAlbums, q]);
+
+  const coverSrc =
+    playlist?.type === "albums"
+      ? albums.find((album) => album.thumbnail_url)?.thumbnail_url
+      : tracks.find((track) => track.thumbnail_url)?.thumbnail_url;
+
   if (!playlist) {
     return (
-      <main className="min-h-screen">
-        <MySection className={cn(PAGE_CONTENT_TOP)}>
-          <div className="w-full max-w-4xl">
-            <Link
-              href="/profile"
-              prefetch={false}
-              className="inline-flex items-center gap-2 text-neutral-500 hover:text-neutral-900 transition-colors text-sm font-mono mb-8"
-            >
-              <LuArrowLeft size={14} />
-              Back to profile
-            </Link>
-            <div className="py-16 text-center">
-              <FaListUl size={32} className="text-neutral-700 mx-auto mb-4" />
-              <p className="text-neutral-500 font-mono text-sm">
-                Playlist not found
-              </p>
-            </div>
-          </div>
-        </MySection>
-      </main>
+      <CollectionDetailPageLayout
+        topBarLeft={
+          <Button
+            href="/profile"
+            variant="secondary"
+            size="xs"
+            iconLeft={<FaArrowLeft size={14} className="mr-2" />}
+          >
+            BACK TO PROFILE
+          </Button>
+        }
+        artworkSrc="/vinyl-placeholder.svg"
+        artworkAlt="Playlist not found"
+        title="Playlist not found"
+        subtitle={
+          <p className="mb-4 text-md text-neutral-600">
+            This playlist is missing or was deleted.
+          </p>
+        }
+        list={
+          <p className="py-16 text-center text-sm text-neutral-500">
+            Try another playlist from your profile.
+          </p>
+        }
+      />
     );
   }
 
-  return (
-    <main className="min-h-screen">
-      <PageHero
-        eyebrow="Playlist"
-        title={playlist.name}
-        icon={
-          playlist.type === "albums" ? (
-            <FaCompactDisc size={30} />
-          ) : (
-            <FaListUl size={28} />
+  const isAlbums = playlist.type === "albums";
+  const countLabel = isAlbums
+    ? `${albums.length} ${albums.length === 1 ? "album" : "albums"}`
+    : `${tracks.length} ${tracks.length === 1 ? "track" : "tracks"}`;
+  const createdLabel = new Date(playlist.created_at).toLocaleDateString(
+    "en-US",
+    {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    },
+  );
+
+  const listContent = isAlbums
+    ? albums.length === 0
+      ? (
+          <CollectionEmptyState
+            icon={FaCompactDisc}
+            title="No albums yet"
+            description="Add albums from any album page."
+          />
+        )
+      : filteredAlbums.length === 0
+        ? (
+            <p className="py-12 text-center text-sm text-neutral-500">
+              No albums match “{searchQuery}”.
+            </p>
           )
-        }
-        subtitle={
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-white/70">
-            <span>
-              {playlist.type === "albums"
-                ? `${albums.length} albums`
-                : `${tracks.length} tracks`}
-            </span>
-            <span className="text-white/40">/</span>
-            <span>
-              Created {new Date(playlist.created_at).toLocaleDateString()}
-            </span>
-          </div>
-        }
-        actions={
-          playlist.type === "songs" ? (
-            <button
-              type="button"
-              onClick={() => {
-                if (queue.length > 0) playTrack(queue[0], queue);
-              }}
-              disabled={queue.length === 0}
-              className={cn(
-                "group flex items-center gap-2 rounded-full bg-white px-4 py-3 font-mono font-semibold text-neutral-900 transition-transform",
-                queue.length > 0
-                  ? "hover:scale-105 active:scale-95"
-                  : "cursor-not-allowed opacity-60",
-              )}
-            >
-              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#e76418] text-white transition-transform group-hover:scale-105">
-                <FaPlay className="ml-0.5" size={12} />
-              </div>
-              <span className="text-sm font-bold tracking-tight sm:text-base">
-                Play songs
-              </span>
-            </button>
-          ) : null
-        }
-      />
-
-      <MySection className={cn("pb-20")} container={false}>
-        <div className={PAGE_CONTAINER}>
-          <div className="mb-8 flex flex-wrap items-center justify-between gap-3 pt-12">
-            <Button
-              href="/profile"
-              variant="secondary"
-              size="xs"
-              iconLeft={<LuArrowLeft size={14} className=" mr-2" />}
-            >
-              BACK TO PLAYLISTS
-            </Button>
-
-            <div className="flex items-center gap-3">
-              <Button
-                onClick={() => setShowEditModal(true)}
-                variant="secondary"
-                size="xs"
-                iconLeft={<LuPencil size={14} className=" mr-2" />}
-              >
-                EDIT DETAILS
-              </Button>
-
-              <Button
-                onClick={handleDeletePlaylist}
-                disabled={deleting}
-                variant="secondary"
-                size="xs"
-                className="text-neutral-900"
-                iconLeft={<LuTrash2 size={14} className=" mr-2" />}
-              >
-                {deleting ? "DELETING..." : "DELETE"}
-              </Button>
-            </div>
-          </div>
-
-          {playlist.type === "albums" ? (
-            albums.length === 0 ? (
-              <div className="py-16 text-center border border-[#e1e1e1] bg-white rounded-md">
-                <FaCompactDisc
-                  size={32}
-                  className="text-neutral-700 mx-auto mb-4"
-                />
-                <p className="text-neutral-600 font-mono text-sm">
-                  No albums in this playlist
-                </p>
-                <p className="text-neutral-700 text-xs mt-1">
-                  Add albums from album pages
-                </p>
-              </div>
-            ) : (
-              <ArtistAlbumGridSection
-                albums={playlistAlbums}
-                initialCount={playlistAlbums.length}
-                ratingMode="any"
-                columns={4}
-              />
-            )
-          ) : tracks.length === 0 ? (
-            <div className="py-16 text-center border border-[#e1e1e1] bg-white rounded-md">
-              <FaMusic size={32} className="text-neutral-700 mx-auto mb-4" />
-              <p className="text-neutral-600 font-mono text-sm">
-                No tracks in this playlist
-              </p>
-              <p className="text-neutral-700 text-xs mt-1">
-                Add tracks from album pages
-              </p>
-            </div>
-          ) : (
+        : (
+            <ArtistAlbumGridSection
+              albums={filteredAlbums}
+              initialCount={filteredAlbums.length}
+              ratingMode="any"
+              columns={4}
+            />
+          )
+    : tracks.length === 0
+      ? (
+          <CollectionEmptyState
+            icon={FaMusic}
+            title="No tracks yet"
+            description="Add tracks from any album page."
+          />
+        )
+      : filteredQueue.length === 0
+        ? (
+            <p className="py-12 text-center text-sm text-neutral-500">
+              No tracks match “{searchQuery}”.
+            </p>
+          )
+        : (
             <div className="flex flex-col gap-y-1.5">
-              {queue.map((t, i) => (
+              {filteredQueue.map(({ track: t, index }) => (
                 <SongRow
-                  key={`${t.id}-${i}`}
-                  index={i + 1}
+                  key={`${t.id}-${index}`}
+                  index={index + 1}
                   title={t.title}
                   artist={t.artistName || "Unknown Artist"}
                   album={t.albumTitle || playlist.name}
-                  duration={String(tracks[i]?.duration_ms ?? "")}
+                  duration={String(tracks[index]?.duration_ms ?? "")}
                   artworkUrl={t.albumImageUrl || "/vinyl-placeholder.svg"}
                   track={t}
                   artistId=""
                   albumId={t.albumId || ""}
+                  queue={queue}
                   albumContext={{
                     albumId: t.albumId || "",
                     title: t.albumTitle || playlist.name,
@@ -275,9 +265,80 @@ export default function PlaylistPageClient({
                 />
               ))}
             </div>
-          )}
-        </div>
-      </MySection>
+          );
+
+  return (
+    <>
+      <CollectionDetailPageLayout
+        topBarLeft={
+          <Button
+            href={backHref}
+            variant="secondary"
+            size="xs"
+            iconLeft={<FaArrowLeft size={14} className="mr-2" />}
+          >
+            BACK TO PLAYLISTS
+          </Button>
+        }
+        topBarRight={
+          <>
+            <Button
+              onClick={() => setShowEditModal(true)}
+              variant="secondary"
+              size="xs"
+              iconLeft={<LuPencil size={14} className="mr-2" />}
+            >
+              EDIT
+            </Button>
+            <Button
+              onClick={handleDeletePlaylist}
+              disabled={deleting}
+              variant="secondary"
+              size="xs"
+              iconLeft={<LuTrash2 size={14} className="mr-2" />}
+            >
+              {deleting ? "DELETING..." : "DELETE"}
+            </Button>
+          </>
+        }
+        artworkSrc={coverSrc || "/vinyl-placeholder.svg"}
+        artworkAlt={playlist.name}
+        onPlayClick={
+          isAlbums
+            ? undefined
+            : () => {
+                if (queue.length > 0) playTrack(queue[0], queue);
+              }
+        }
+        playLabel="Play playlist"
+        playDisabled={!isAlbums && queue.length === 0}
+        title={playlist.name}
+        subtitle={
+          <p className="mb-4 text-md text-neutral-600">
+            {isAlbums ? "Album playlist" : "Song playlist"}
+          </p>
+        }
+        metaRow={
+          <>
+            <span className="rounded bg-neutral-100 px-2 py-1 text-xs font-semibold text-neutral-700">
+              {isAlbums ? "Albums" : "Songs"}
+            </span>
+            <span>•</span>
+            <span>{countLabel}</span>
+            <span>•</span>
+            <span>{createdLabel}</span>
+          </>
+        }
+        listHeading={isAlbums ? "Albums" : "Tracklist"}
+        searchQuery={searchQuery}
+        onSearchQueryChange={setSearchQuery}
+        onSearchClear={() => setSearchQuery("")}
+        onSearchFocus={() => setIsSearchFocused(true)}
+        onSearchBlur={() => setIsSearchFocused(false)}
+        searchFocused={isSearchFocused}
+        searchPlaceholder={isAlbums ? "search albums..." : "search tracks..."}
+        list={listContent}
+      />
 
       {showEditModal && playlist && (
         <EditPlaylistModal
@@ -288,6 +349,6 @@ export default function PlaylistPageClient({
           onSave={handleSaveEdits}
         />
       )}
-    </main>
+    </>
   );
 }

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRatingsContext as useRatings } from "@/context/RatingsContext";
 import { createSlug } from "@/lib/utils";
-import AlbumDetailPageLayout from "@/components/album/AlbumDetailPageLayout";
+import CollectionDetailPageLayout from "@/components/layout/CollectionDetailPageLayout";
 import AlbumRatingRowSection from "@/components/album/AlbumRatingRowSection";
 import AlbumSkeleton from "@/components/album/AlbumSkeleton";
 import Button from "@/components/ui/Button";
@@ -156,7 +156,7 @@ export default function AlbumPageContent({
 
   return (
     <>
-      <AlbumDetailPageLayout
+      <CollectionDetailPageLayout
       beforeConstrained={
         viewingUserId && slug ? (
           <AlbumReadOnlyBanner
@@ -283,40 +283,44 @@ export default function AlbumPageContent({
       onSearchFocus={() => setIsSearchFocused(true)}
       onSearchBlur={() => setIsSearchFocused(false)}
       searchFocused={isSearchFocused}
-      trackRows={filteredTracks.map((track, i) => (
-        <div
-          key={track.id}
-          className={
-            track.id === highlightTrackId
-              ? "rounded-lg ring-2 ring-neutral-300"
-              : ""
-          }
-        >
-          <SongRow
-            index={Number(track.number) || i + 1}
-            title={track.title}
-            artist={track.artists?.[0]?.name || album.artist?.name || "Unknown"}
-            album={album.title}
-            duration={String(track.length || "")}
-            artworkUrl={imageUrl}
-            rating={
-              viewingUserRatings ? viewingUserRatings[track.id] || 0 : undefined
-            }
-            track={track}
-            artistId={track.artists?.[0]?.id || album.artist?.id || ""}
-            albumId={album.id}
-            queue={queue}
-            albumContext={{
-              albumId: album.id,
-              title: album.title,
-              artistName: album.artist?.name || "Unknown Artist",
-              releaseDate: album.releaseDate,
-              totalTracks: album.tracks?.length || 0,
-              artworkUrl: album.artworkUrl,
-            }}
-          />
+      list={
+        <div className="flex flex-col gap-y-1.5">
+          {filteredTracks.map((track, i) => (
+            <div
+              key={track.id}
+              className={
+                track.id === highlightTrackId
+                  ? "rounded-lg ring-2 ring-neutral-300"
+                  : ""
+              }
+            >
+              <SongRow
+                index={Number(track.number) || i + 1}
+                title={track.title}
+                artist={track.artists?.[0]?.name || album.artist?.name || "Unknown"}
+                album={album.title}
+                duration={String(track.length || "")}
+                artworkUrl={imageUrl}
+                rating={
+                  viewingUserRatings ? viewingUserRatings[track.id] || 0 : undefined
+                }
+                track={track}
+                artistId={track.artists?.[0]?.id || album.artist?.id || ""}
+                albumId={album.id}
+                queue={queue}
+                albumContext={{
+                  albumId: album.id,
+                  title: album.title,
+                  artistName: album.artist?.name || "Unknown Artist",
+                  releaseDate: album.releaseDate,
+                  totalTracks: album.tracks?.length || 0,
+                  artworkUrl: album.artworkUrl,
+                }}
+              />
+            </div>
+          ))}
         </div>
-      ))}
+      }
       bottom={
         <>
           {isReviewable ? (

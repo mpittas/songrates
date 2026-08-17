@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-import AlbumDetailPageLayout from "@/components/album/AlbumDetailPageLayout";
 import Button from "@/components/ui/Button";
+import CollectionDetailPageLayout from "@/components/layout/CollectionDetailPageLayout";
 import { useShareLinkParams } from "@/hooks/useShareLinkParams";
 import {
   artworkUrl,
@@ -39,8 +39,6 @@ function albumContextFromTrack(
 export default function ApplePlaylistDetailClient({
   playlist,
 }: ApplePlaylistDetailClientProps) {
-  // Read the highlight-track query param on the client only (after hydration)
-  // so it never participates in the server render or the CDN cache key.
   const { track: highlightTrackId } = useShareLinkParams();
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -50,10 +48,7 @@ export default function ApplePlaylistDetailClient({
 
   useEffect(() => {
     const idsToEnrich = playlist.tracks
-      .filter(
-        (t) =>
-          !(t.artists && t.artists.length > 0) && !t.artistId,
-      )
+      .filter((t) => !(t.artists && t.artists.length > 0) && !t.artistId)
       .map((t) => t.id);
     if (idsToEnrich.length === 0) return;
 
@@ -94,7 +89,6 @@ export default function ApplePlaylistDetailClient({
     () =>
       tracks.map((s, i) => ({
         ...mapAppleSongToTrackInfo(s, heroImageUrl),
-        // Playlist order, not album track number (Apple's trackNumber per album).
         number: String(i + 1),
       })),
     [tracks, heroImageUrl],
@@ -130,29 +124,28 @@ export default function ApplePlaylistDetailClient({
   );
 
   return (
-    <AlbumDetailPageLayout
+    <CollectionDetailPageLayout
       topBarLeft={
         <Button
-          href="/"
+          href="/genres"
           variant="secondary"
           size="xs"
-          iconLeft={<FaArrowLeft size={14} className=" mr-2" />}
+          iconLeft={<FaArrowLeft size={14} className="mr-2" />}
         >
-          BACK TO HOME
+          BACK TO PLAYLISTS
         </Button>
       }
       artworkSrc={heroImageUrl}
       artworkAlt={playlist.name}
       onPlayClick={() => {
-        if (queue.length > 0) {
-          playTrack(queue[0], queue);
-        }
+        if (queue.length > 0) playTrack(queue[0], queue);
       }}
       playLabel="Play playlist"
+      playDisabled={queue.length === 0}
       title={playlist.name}
       subtitle={
-        <p className="text-md mb-4 text-neutral-600">
-          Apple Music · {playlist.curatorName}
+        <p className="mb-4 text-md text-neutral-600">
+          {playlist.curatorName || "Apple Music"}
         </p>
       }
       metaRow={
@@ -161,7 +154,10 @@ export default function ApplePlaylistDetailClient({
             Playlist
           </span>
           <span>•</span>
-          <span>{playlist.trackCount} tracks</span>
+          <span>
+            {playlist.trackCount}{" "}
+            {playlist.trackCount === 1 ? "track" : "tracks"}
+          </span>
         </>
       }
       searchQuery={searchQuery}
@@ -170,31 +166,36 @@ export default function ApplePlaylistDetailClient({
       onSearchFocus={() => setIsSearchFocused(true)}
       onSearchBlur={() => setIsSearchFocused(false)}
       searchFocused={isSearchFocused}
-      trackRows={filteredTracks.map((track, i) => (
-        <div
-          key={`${track.number}-${track.id}`}
-          className={
-            track.id === highlightTrackId
-              ? "rounded-lg ring-2 ring-neutral-300"
-              : ""
-          }
-        >
-          <SongRow
-            index={Number(track.number) || i + 1}
-            title={track.title}
-            artist={
-              track.artists?.[0]?.name || track.artistName || "Unknown"
-            }
-            album={track.albumTitle || playlist.name}
-            duration={String(track.length || "")}
-            artworkUrl={track.albumImageUrl || heroImageUrl}
-            track={track}
-            artistId={track.artists?.[0]?.id || track.artistId || ""}
-            albumId={track.albumId || ""}
-            albumContext={albumContextFromTrack(track)}
-          />
+      list={
+        <div className="flex flex-col gap-y-1.5">
+          {filteredTracks.map((track, i) => (
+            <div
+              key={`${track.number}-${track.id}`}
+              className={
+                track.id === highlightTrackId
+                  ? "rounded-lg ring-2 ring-neutral-300"
+                  : ""
+              }
+            >
+              <SongRow
+                index={Number(track.number) || i + 1}
+                title={track.title}
+                artist={
+                  track.artists?.[0]?.name || track.artistName || "Unknown"
+                }
+                album={track.albumTitle || playlist.name}
+                duration={String(track.length || "")}
+                artworkUrl={track.albumImageUrl || heroImageUrl}
+                track={track}
+                artistId={track.artists?.[0]?.id || track.artistId || ""}
+                albumId={track.albumId || ""}
+                queue={queue}
+                albumContext={albumContextFromTrack(track)}
+              />
+            </div>
+          ))}
         </div>
-      ))}
+      }
     />
   );
 }
