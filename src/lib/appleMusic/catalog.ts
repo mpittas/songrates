@@ -337,10 +337,13 @@ async function getCatalogTopGenres(
   let path: string | null = `/catalog/${storefront}/genres?limit=${safeLimit}`;
 
   for (let page = 0; page < 8 && path; page++) {
-    const data = await appleMusicFetch<AppleGenresResponse>(path, {
-      tags: [`apple-genres-${storefront}`],
-      revalidate: 3600 * 24,
-    });
+    const data: AppleGenresResponse | null = await appleMusicFetch<AppleGenresResponse>(
+      path,
+      {
+        tags: [`apple-genres-${storefront}`],
+        revalidate: 3600 * 24,
+      },
+    );
 
     for (const genre of (data?.data || []).map(parseGenre)) {
       if (!genre.name || seen.has(genre.id)) continue;
@@ -348,7 +351,7 @@ async function getCatalogTopGenres(
       genres.push(genre);
     }
 
-    const next = data?.next;
+    const next: string | undefined = data?.next;
     path = next ? next.replace(/^\/v1/, "") : null;
   }
 
