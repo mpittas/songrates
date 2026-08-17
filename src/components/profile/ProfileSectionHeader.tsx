@@ -41,17 +41,19 @@ function ProfileFilterTabs({
             key={tab.id}
             type="button"
             onClick={() => onFilterChange(tab.id)}
-            className={`flex items-center gap-2 p-1.5 text-xs font-semibold uppercase tracking-wide rounded-md transition-colors whitespace-nowrap cursor-pointer ${
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-full transition-colors whitespace-nowrap cursor-pointer ${
               isActive
                 ? "bg-neutral-900 text-white"
-                : "bg-stone-300 text-neutral-900 hover:bg-neutral-300"
+                : "bg-white text-neutral-600 ring-1 ring-neutral-200 hover:text-neutral-900 hover:ring-neutral-300"
             }`}
           >
             {tab.label}
             {tab.count != null && (
               <span
-                className={`inline-flex leading-2 items-center justify-center min-w-[1.25rem] p-1 rounded text-[11px] font-bold bg-neutral-900 text-white ${
-                  isActive ? "bg-white !text-neutral-900" : ""
+                className={`inline-flex min-w-5 items-center justify-center rounded-full px-1.5 py-0.5 text-[11px] font-semibold tabular-nums ${
+                  isActive
+                    ? "bg-white text-neutral-900"
+                    : "bg-neutral-100 text-neutral-600"
                 }`}
               >
                 {tab.count}
@@ -93,9 +95,11 @@ export default function ProfileSectionHeader({
         }`}
       >
         <div className="flex items-center gap-2.5 min-w-0">
-          <h2 className="text-2xl font-semibold text-neutral-900">{title}</h2>
+          <h2 className="text-xl font-semibold tracking-tight text-neutral-900 sm:text-2xl">
+            {title}
+          </h2>
           {count != null && (
-            <span className="inline-flex items-center justify-center min-w-[1.25rem] px-2 py-1 rounded-md text-[11px] font-bold bg-white text-neutral-900 border border-neutral-200 shrink-0">
+            <span className="inline-flex min-w-6 shrink-0 items-center justify-center rounded-full bg-neutral-200 px-2 py-0.5 text-[11px] font-semibold tabular-nums text-neutral-700">
               {count}
             </span>
           )}
@@ -122,7 +126,7 @@ export default function ProfileSectionHeader({
                   value={searchValue}
                   onChange={(e) => onSearchChange(e.target.value)}
                   placeholder={searchPlaceholder}
-                  className="w-full h-8 rounded-md border border-neutral-300 bg-white pl-8 pr-2 text-xs font-mono text-neutral-900 placeholder:text-neutral-500"
+                  className="h-8 w-full rounded-full border border-neutral-200 bg-white pl-8 pr-3 text-xs text-neutral-900 placeholder:text-neutral-400"
                 />
               </div>
             )}

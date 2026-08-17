@@ -30,11 +30,11 @@ export const PROFILE_NAV_ITEMS: ProfileNavItem[] = [
   { segment: "liked-albums", label: "Liked albums", icon: FaCompactDisc },
   {
     segment: "favourite-artists",
-    label: "Favourite artists",
+    label: "Artists",
     icon: FaMicrophoneAlt,
   },
-  { segment: "songs-playlist", label: "Songs Playlist", icon: FaLayerGroup },
-  { segment: "album-playlist", label: "Album Playlist", icon: FaCompactDisc },
+  { segment: "songs-playlist", label: "Song playlists", icon: FaLayerGroup },
+  { segment: "album-playlist", label: "Album playlists", icon: FaCompactDisc },
 ];
 
 export function ownProfilePath(segment: ProfileNavSegment): string {

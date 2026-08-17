@@ -91,12 +91,14 @@ export default function OwnRatedMusicSection() {
       />
 
       {filteredAlbums.length === 0 ? (
-        <div className="py-16 text-center border-2 border-dashed border-neutral-200 rounded-2xl bg-neutral-50">
-          <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
-            <FaStar size={24} className="text-neutral-400" />
+        <div className="py-20 text-center">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-white ring-1 ring-neutral-200">
+            <FaStar size={20} className="text-neutral-400" />
           </div>
-          <p className="text-neutral-900 font-bold text-lg mb-1">No albums found</p>
-          <p className="text-neutral-500 text-sm">
+          <p className="mb-1 text-base font-semibold text-neutral-900">
+            No albums found
+          </p>
+          <p className="text-sm text-neutral-500">
             {activeTab === "full"
               ? "You haven't fully rated any albums yet"
               : activeTab === "partial"

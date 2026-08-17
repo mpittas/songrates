@@ -10,8 +10,8 @@ export default function ProfileLayout({
     <OwnProfileShell>
       <Suspense
         fallback={
-          <div className="py-12 text-center text-xs font-mono uppercase tracking-widest text-neutral-400">
-            Loading profile section...
+          <div className="py-12 text-center text-sm text-neutral-400">
+            Loading collection...
           </div>
         }
       >

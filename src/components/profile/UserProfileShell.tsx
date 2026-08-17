@@ -2,10 +2,12 @@
 
 import ProfileLayout from "@/components/profile/ProfileLayout";
 import ProfileQuickLinks from "@/components/profile/ProfileQuickLinks";
+import { enlargeAvatarUrl } from "@/lib/albumReviews";
 
 export interface UserProfileShellProfile {
   id: string;
   username: string;
+  display_name: string | null;
   avatar_url: string | null;
   created_at: string;
 }
@@ -27,10 +29,13 @@ export default function UserProfileShell({
     <ProfileLayout
       user={{
         username: profile.username,
-        avatarUrl: profile.avatar_url,
-        subtitle: `Member since ${memberSince}`,
+        displayName: profile.display_name,
+        avatarUrl: enlargeAvatarUrl(profile.avatar_url),
+        subtitle: `Joined ${memberSince}`,
       }}
-      quickLinks={<ProfileQuickLinks mode="user" username={profile.username} />}
+      quickLinks={
+        <ProfileQuickLinks mode="user" username={profile.username} />
+      }
     >
       {children}
     </ProfileLayout>

@@ -171,7 +171,7 @@ export default function SongCollectionsSection({
   return (
     <section>
       <ProfileSectionHeader
-        title="Songs Playlist"
+        title="Song playlists"
         count={!isPrivate && !loading ? filteredCollections.length : undefined}
         searchValue={searchQuery}
         onSearchChange={setSearchQuery}
