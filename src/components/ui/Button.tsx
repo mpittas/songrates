@@ -21,7 +21,7 @@ export default function Button({
   href,
   className = "",
   isExternal = false,
-  prefetch = false,
+  prefetch,
   ...props
 }: ButtonProps) {
   const baseStyles =

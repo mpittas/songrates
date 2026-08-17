@@ -3,7 +3,7 @@
 import { cn, createSlug } from "@/lib/utils";
 import OptimizedImage from "@/components/ui/OptimizedImage";
 import { useState } from "react";
-import Link from "next/link";
+import InstantLink from "@/components/ui/InstantLink";
 import ArtistCardDropdown from "@/components/artist/ArtistCardDropdown";
 
 export interface ArtistCardArtist {
@@ -39,9 +39,8 @@ export default function ArtistCard({
   return (
     <div className="group block text-center">
       <div className={cn("relative mx-auto", isCompact ? "mb-2 w-24" : "mb-3 w-full max-w-[180px]")}>
-        <Link
+        <InstantLink
           href={`/artist/${slug}`}
-          prefetch={false}
           className={cn(
             "block aspect-square bg-[#efefef] overflow-hidden relative border border-[#e1e1e1] group-hover:border-[#c9c9c9] transition-colors rounded-full",
           )}
@@ -68,7 +67,7 @@ export default function ArtistCard({
               </span>
             </div>
           )}
-        </Link>
+        </InstantLink>
 
         {showOptionsMenu && (
           <div
@@ -88,7 +87,7 @@ export default function ArtistCard({
         )}
       </div>
 
-      <Link href={`/artist/${slug}`} prefetch={false} className="block min-w-0">
+      <InstantLink href={`/artist/${slug}`} className="block min-w-0">
         <h3
           className={cn(
             "text-neutral-900 font-medium truncate group-hover:text-black transition-colors leading-tight",
@@ -107,7 +106,7 @@ export default function ArtistCard({
             {primaryGenre}
           </p>
         )}
-      </Link>
+      </InstantLink>
     </div>
   );
 }

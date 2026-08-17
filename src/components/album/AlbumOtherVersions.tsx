@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import InstantLink from "@/components/ui/InstantLink";
 import OptimizedImage from "@/components/ui/OptimizedImage";
 import { createSlug } from "@/lib/utils";
 import type { AlbumInfo } from "@/types/music";
@@ -23,7 +23,7 @@ export default function AlbumOtherVersions({ versions }: AlbumOtherVersionsProps
         {versions.map((version) => {
           const versionSlug = createSlug(version.name, version.id);
           return (
-            <Link key={version.id} href={`/album/${versionSlug}`} className="group">
+            <InstantLink key={version.id} href={`/album/${versionSlug}`} className="group">
               <div className="relative aspect-square overflow-hidden rounded-md border border-[#dddddd] bg-white transition-colors group-hover:border-[#c9c9c9]">
                 <OptimizedImage
                   src={version.artworkUrl || "/vinyl-placeholder.svg"}
@@ -43,7 +43,7 @@ export default function AlbumOtherVersions({ versions }: AlbumOtherVersionsProps
                   {version.trackCount ? ` · ${version.trackCount} tracks` : ""}
                 </p>
               </div>
-            </Link>
+            </InstantLink>
           );
         })}
       </div>

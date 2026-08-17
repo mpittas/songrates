@@ -1,7 +1,7 @@
 import { getDailyTop100Playlists, artworkUrl } from "@/lib/appleMusic/api";
 import OptimizedImage from "@/components/ui/OptimizedImage";
 import MySection from "@/components/ui/MySection";
-import Link from "next/link";
+import InstantLink from "@/components/ui/InstantLink";
 import HeadingRow from "@/main-components/HeadingRow";
 
 export default async function DailyTop100Playlists() {
@@ -20,10 +20,9 @@ export default async function DailyTop100Playlists() {
               const imageUrl = artworkUrl(playlist.artworkUrl, 400);
 
               return (
-                <Link
+                <InstantLink
                   key={playlist.id}
                   href={`/apple-playlist/${playlist.id}`}
-                  prefetch={false}
                   className="group overflow-hidden rounded-xl border border-[#dfdfdf] bg-white p-2 shadow-[0_1px_0_rgba(0,0,0,0.04)] transition-all hover:-translate-y-0.5 hover:shadow-sm"
                 >
                   <div className="relative aspect-square w-full overflow-hidden rounded-md bg-[#ececec]">
@@ -47,7 +46,7 @@ export default async function DailyTop100Playlists() {
                       {playlist.curatorName || "Playlist"}
                     </p>
                   </div>
-                </Link>
+                </InstantLink>
               );
             })}
           </div>

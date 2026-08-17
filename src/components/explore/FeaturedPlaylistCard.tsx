@@ -1,4 +1,4 @@
-import Link from "next/link";
+import InstantLink from "@/components/ui/InstantLink";
 
 import OptimizedImage from "@/components/ui/OptimizedImage";
 import { artworkUrl, type ApplePlaylistResult } from "@/lib/appleMusic/api";
@@ -9,9 +9,8 @@ export default function FeaturedPlaylistCard({
   playlist: ApplePlaylistResult;
 }) {
   return (
-    <Link
+    <InstantLink
       href={`/apple-playlist/${playlist.id}`}
-      prefetch={false}
       className="group relative block overflow-hidden rounded-2xl bg-neutral-900"
     >
       <div className="relative aspect-[16/9]">
@@ -34,6 +33,6 @@ export default function FeaturedPlaylistCard({
           {playlist.name}
         </h3>
       </div>
-    </Link>
+    </InstantLink>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import InstantLink from "@/components/ui/InstantLink";
 import Button from "@/components/ui/Button";
 import { PAGE_CONTAINER } from "@/lib/pageLayout";
 import { cn } from "@/lib/utils";
@@ -43,12 +43,12 @@ export default function AlbumReadOnlyBanner({
           {displayName ? (
             <>
               Viewing ratings by{" "}
-              <Link
+              <InstantLink
                 href={`/user/${displayName}`}
                 className="text-white underline decoration-white/40 underline-offset-2 transition-colors hover:decoration-white"
               >
                 @{displayName}
-              </Link>
+              </InstantLink>
             </>
           ) : (
             <span>Viewing another user&apos;s ratings</span>

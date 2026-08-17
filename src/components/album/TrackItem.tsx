@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import Link from "next/link";
+import InstantLink from "@/components/ui/InstantLink";
 import {
   FaPlay,
   FaPause,
@@ -167,13 +167,13 @@ export default function TrackItem({
                   </span>
                   {features.map((a, i, arr) => (
                     <span key={a.id} className="text-[11px]">
-                      <Link
+                      <InstantLink
                         href={`/artist/${createSlug(a.name, a.id)}`}
                         className="text-neutral-500 hover:text-neutral-900 transition-colors"
                         onClick={(e) => e.stopPropagation()}
                       >
                         {a.name}
-                      </Link>
+                      </InstantLink>
                       {i < arr.length - 1 && (
                         <span className="text-neutral-600 ml-0.5">,</span>
                       )}

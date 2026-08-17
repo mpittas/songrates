@@ -52,7 +52,6 @@ export default function Header({ showSearch }: HeaderProps) {
           <div className="flex h-[3.25rem] items-center justify-between gap-3 transition-all duration-300 md:gap-4">
             <Link
               href="/"
-              prefetch={false}
               aria-label="Songrates home"
               className="relative flex flex-shrink-0 items-center outline-offset-4 transition-opacity hover:opacity-80"
             >
@@ -99,7 +98,6 @@ export default function Header({ showSearch }: HeaderProps) {
                   <Link
                     key={href}
                     href={href}
-                    prefetch={false}
                     className={navLinkClassName(pathname, href)}
                   >
                     {label}

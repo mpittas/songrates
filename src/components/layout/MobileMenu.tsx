@@ -36,7 +36,6 @@ export default function MobileMenu({
           <Link
             key={href}
             href={href}
-            prefetch={false}
             onClick={onClose}
             className={cn(
               "rounded-md px-1 py-3 text-sm font-mono transition-colors",
@@ -52,7 +51,6 @@ export default function MobileMenu({
           <>
             <Link
               href="/login?view=login"
-              prefetch={false}
               onClick={onClose}
               className="rounded-md px-1 py-3 text-sm font-mono text-neutral-200 transition-colors hover:text-[#00f0ff]"
             >

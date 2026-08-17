@@ -1,4 +1,5 @@
-import { createClient } from "@/utils/supabase/server";
+import { cache } from "react";
+import { createPublicClient } from "@/utils/supabase/public";
 
 export interface UserProfile {
   id: string;
@@ -11,10 +12,10 @@ export interface UserProfile {
   show_playlists: boolean;
 }
 
-export async function getUserProfile(
+export const getUserProfile = cache(async function getUserProfile(
   username: string,
 ): Promise<UserProfile | null> {
-  const supabase = await createClient();
+  const supabase = createPublicClient();
 
   const { data, error } = await supabase
     .from("profiles")
@@ -36,4 +37,4 @@ export async function getUserProfile(
     show_favorites: data.show_favorites ?? true,
     show_playlists: data.show_playlists ?? true,
   };
-}
+});

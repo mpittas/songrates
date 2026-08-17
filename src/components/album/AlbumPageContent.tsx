@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
+import InstantLink from "@/components/ui/InstantLink";
 import { useRatingsContext as useRatings } from "@/context/RatingsContext";
 import { createSlug } from "@/lib/utils";
 import CollectionDetailPageLayout from "@/components/layout/CollectionDetailPageLayout";
@@ -230,12 +230,12 @@ export default function AlbumPageContent({
           {subtitleArtists.map((a, i, arr) => (
             <span key={a.id || `${a.name}-${i}`}>
               {a.id ? (
-                <Link
+                <InstantLink
                   href={`/artist/${createSlug(a.name, a.id)}`}
                   className="transition-colors hover:text-neutral-900 hover:underline"
                 >
                   {a.name}
-                </Link>
+                </InstantLink>
               ) : (
                 <span>{a.name}</span>
               )}

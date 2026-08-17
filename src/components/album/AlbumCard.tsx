@@ -2,13 +2,12 @@
 
 import { cn, createSlug } from "@/lib/utils";
 import OptimizedImage from "@/components/ui/OptimizedImage";
-import { useState, useRef, useCallback } from "react";
-import Link from "next/link";
+import { useState } from "react";
+import InstantLink from "@/components/ui/InstantLink";
 import { useRatingsContext } from "@/context/RatingsContext";
 import AlbumRatingBadge from "@/components/rating/AlbumRatingBadge";
 import AlbumCardDropdown from "@/components/album/AlbumCardDropdown";
 import { Album } from "@/types/music";
-import { usePrefetchAlbum } from "@/hooks/useAlbumInfo";
 
 export interface AlbumCardProps {
   album: Album;
@@ -103,23 +102,13 @@ export default function AlbumCard({
   const imageUrl = album.artworkUrl || "/vinyl-placeholder.svg";
   const [imageError, setImageError] = useState(false);
   const [optionsOpen, setOptionsOpen] = useState(false);
-  const prefetchAlbum = usePrefetchAlbum();
-  const prefetchedRef = useRef(false);
 
   const slug = createSlug(album.title, album.id);
 
-  const handleMouseEnter = useCallback(() => {
-    if (prefetchedRef.current) return;
-    prefetchedRef.current = true;
-    prefetchAlbum(slug);
-  }, [slug, prefetchAlbum]);
-
   if (layout === "list") {
     return (
-      <Link
+      <InstantLink
         href={`/album/${slug}`}
-        prefetch={false}
-        onMouseEnter={handleMouseEnter}
         className="flex items-center gap-4 p-2 hover:bg-[#f7f7f7] border-b border-[#ececec] last:border-0 group transition-colors"
       >
         <div className="relative w-12 h-12 shrink-0 overflow-hidden bg-[#efefef] rounded-sm">
@@ -155,17 +144,15 @@ export default function AlbumCard({
             {album.releaseDate?.split("-")[0] || "—"}
           </span>
         </div>
-      </Link>
+      </InstantLink>
     );
   }
 
   return (
     <div className="group block">
       <div className={cn("relative", isCompact ? "mb-2" : "mb-3")}>
-        <Link
+        <InstantLink
           href={`/album/${slug}`}
-          prefetch={false}
-          onMouseEnter={handleMouseEnter}
           className={cn(
             "block aspect-square bg-[#efefef] overflow-hidden relative border border-[#e1e1e1] group-hover:border-[#c9c9c9] transition-colors",
             isCompact ? "rounded-sm" : "rounded-md",
@@ -197,7 +184,7 @@ export default function AlbumCard({
           )}
 
           {showRating && <RatingBadge album={album} mode={ratingMode} />}
-        </Link>
+        </InstantLink>
 
         {showOptionsMenu && (
           <div
@@ -219,10 +206,8 @@ export default function AlbumCard({
       </div>
 
       <div className="flex justify-between items-start gap-2">
-        <Link
+        <InstantLink
           href={`/album/${slug}`}
-          prefetch={false}
-          onMouseEnter={handleMouseEnter}
           className="flex-1 min-w-0 block"
         >
           <h3
@@ -244,7 +229,7 @@ export default function AlbumCard({
               {album.releaseDate?.split("-")[0] || "—"}
             </p>
           </div>
-        </Link>
+        </InstantLink>
       </div>
     </div>
   );

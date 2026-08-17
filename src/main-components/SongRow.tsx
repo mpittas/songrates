@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import Link from "next/link";
+import InstantLink from "@/components/ui/InstantLink";
 import { FaPlay, FaPause } from "react-icons/fa6";
 import { IoDiscOutline } from "react-icons/io5";
 import { usePlayerCore } from "@/context/PlayerContext";
@@ -245,14 +245,13 @@ export default function SongRow({
           <div className="flex min-w-0 flex-1 flex-col justify-center gap-0 sm:gap-0.5">
             <div className="flex min-w-0 items-center">
               {effectiveAlbumId ? (
-                <Link
+                <InstantLink
                   href={`/album/${effectiveAlbumId}`}
-                  prefetch={false}
                   className="min-w-0 flex-1 truncate text-xs font-semibold text-neutral-900 hover:underline sm:text-base"
                   title={title}
                 >
                   {title}
-                </Link>
+                </InstantLink>
               ) : (
                 <span
                   className="min-w-0 flex-1 truncate text-xs font-semibold text-neutral-900 sm:text-base"
@@ -280,13 +279,12 @@ export default function SongRow({
                       </span>
                     )}
                     {a.id ? (
-                      <Link
+                      <InstantLink
                         href={`/artist/${createSlug(a.name, a.id)}`}
-                        prefetch={false}
                         className="hover:text-neutral-700 hover:underline"
                       >
                         {a.name}
-                      </Link>
+                      </InstantLink>
                     ) : (
                       <span>{a.name}</span>
                     )}
@@ -299,13 +297,12 @@ export default function SongRow({
                     •
                   </span>
                   {effectiveAlbumId ? (
-                    <Link
+                    <InstantLink
                       href={`/album/${effectiveAlbumId}`}
-                      prefetch={false}
                       className="hidden min-w-0 max-w-48 shrink truncate hover:text-neutral-700 hover:underline sm:inline"
                     >
                       {displayAlbum}
-                    </Link>
+                    </InstantLink>
                   ) : (
                     <span className="hidden min-w-0 max-w-48 shrink truncate sm:inline">
                       {displayAlbum}

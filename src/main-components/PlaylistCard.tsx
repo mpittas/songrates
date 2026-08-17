@@ -1,4 +1,4 @@
-import Link from "next/link";
+import InstantLink from "@/components/ui/InstantLink";
 import OptimizedImage from "@/components/ui/OptimizedImage";
 import { artworkUrl, type ApplePlaylistResult } from "@/lib/appleMusic/api";
 
@@ -10,9 +10,8 @@ export default function PlaylistCard({
   index?: number;
 }) {
   return (
-    <Link
+    <InstantLink
       href={`/apple-playlist/${playlist.id}`}
-      prefetch={false}
       className="group flex min-w-0 flex-col overflow-hidden rounded-xl border border-[#dfdfdf] bg-white p-2 shadow-[0_1px_0_rgba(0,0,0,0.04)] transition-all hover:-translate-y-0.5 hover:border-neutral-300 hover:shadow-sm"
     >
       <div className="relative aspect-square w-full overflow-hidden rounded-md bg-[#ececec]">
@@ -33,6 +32,6 @@ export default function PlaylistCard({
           {playlist.curatorName || "Apple Music"}
         </p>
       </div>
-    </Link>
+    </InstantLink>
   );
 }

@@ -94,7 +94,6 @@ function MenuRow({
     return (
       <Link
         href={href}
-        prefetch={false}
         role="menuitem"
         className={className}
         onClick={onClick}
@@ -183,7 +182,6 @@ export default function UserMenu({ user, onSignOut }: UserMenuProps) {
         >
           <Link
             href="/profile"
-            prefetch={false}
             role="menuitem"
             onClick={close}
             className="flex items-center gap-3 rounded-lg px-2.5 py-2.5 transition-colors hover:bg-neutral-50 focus-visible:bg-neutral-50 focus-visible:outline-none"

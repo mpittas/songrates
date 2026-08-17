@@ -9,6 +9,7 @@ import { FaSignOutAlt, FaCog } from "react-icons/fa";
 import { createClient } from "@/utils/supabase/client";
 import ProfileLayout from "@/components/profile/ProfileLayout";
 import ProfileQuickLinks from "@/components/profile/ProfileQuickLinks";
+import ProfilePageSkeleton from "@/components/layout/ProfilePageSkeleton";
 import Button from "@/components/ui/Button";
 import { enlargeAvatarUrl } from "@/lib/albumReviews";
 import type { ProfileNavSegment } from "@/lib/profileNav";
@@ -71,20 +72,7 @@ export default function OwnProfileShell({
   }, [albumRatings, ratings, playlists]);
 
   if (loading) {
-    return (
-      <main className="min-h-screen bg-[var(--background)]">
-        <div className="h-44 animate-pulse bg-[#c13a62] sm:h-56 md:h-64" />
-        <div className="mx-auto w-full max-w-[1180px] px-4 sm:px-6">
-          <div className="-mt-12 flex items-end gap-4 sm:-mt-14">
-            <div className="h-24 w-24 animate-pulse rounded-full bg-neutral-300 ring-[3px] ring-[var(--background)] sm:h-28 sm:w-28" />
-            <div className="mb-2 space-y-2">
-              <div className="h-8 w-40 animate-pulse rounded-md bg-neutral-300" />
-              <div className="h-4 w-28 animate-pulse rounded-md bg-neutral-200" />
-            </div>
-          </div>
-        </div>
-      </main>
-    );
+    return <ProfilePageSkeleton />;
   }
 
   if (!user) {

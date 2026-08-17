@@ -1,10 +1,10 @@
-import Link from "next/link";
+import InstantLink from "@/components/ui/InstantLink";
 
 import OptimizedImage from "@/components/ui/OptimizedImage";
 import MySection from "@/components/ui/MySection";
 import HeadingRow from "@/main-components/HeadingRow";
 import { createSlug } from "@/lib/utils";
-import { createClient } from "@/utils/supabase/server";
+import { createPublicClient } from "@/utils/supabase/public";
 
 interface RatedAlbum {
   userId: string;
@@ -31,7 +31,7 @@ interface RPCAlbum {
 
 /** ISR-aligned with home page — avoids a client-side Supabase round-trip per visit. */
 export default async function LatestRatedAlbums() {
-  const supabase = await createClient();
+  const supabase = createPublicClient();
 
   const { data, error } = await supabase.rpc("get_latest_completed_albums", {
     limit_count: 4,
@@ -82,7 +82,7 @@ export default async function LatestRatedAlbums() {
                       </time>
                     </div>
 
-                    <Link href={href} prefetch={false} className="flex gap-4">
+                    <InstantLink href={href} className="flex gap-4">
                       <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-md bg-[#ececec]">
                         <OptimizedImage
                           src={imageUrl}
@@ -101,18 +101,17 @@ export default async function LatestRatedAlbums() {
                           {album.artistName}
                         </p>
                       </div>
-                    </Link>
+                    </InstantLink>
 
                     <div className="mt-1 flex items-center justify-between border-t border-[#ececec] pt-2.5">
                       <span className="inline-flex items-center gap-1.5 text-[10px] text-neutral-500">
                         <span className="tracking-wider">By:</span>
-                        <Link
+                        <InstantLink
                           href={`/user/${album.userName}`}
-                          prefetch={false}
                           className="font-medium transition-colors hover:text-neutral-900 hover:underline"
                         >
                           @{album.userName}
-                        </Link>
+                        </InstantLink>
                       </span>
                       <span className="rounded-full bg-[#4fbf82] px-2 py-0.5 text-[11px] font-semibold text-white">
                         {album.rating.toFixed(1)}

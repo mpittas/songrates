@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
+import InstantLink from "@/components/ui/InstantLink";
 import { artworkUrl } from "@/lib/appleMusic/api";
 import { cn } from "@/lib/utils";
 import OptimizedImage from "@/components/ui/OptimizedImage";
@@ -147,9 +147,9 @@ export default function StackedCard({
     return (
       <div className={rootClassName}>
         <div className="relative">
-          <Link href={href} prefetch={false} className="block">
+          <InstantLink href={href} className="block">
             {content}
-          </Link>
+          </InstantLink>
           {optionsMenu}
         </div>
       </div>

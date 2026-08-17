@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
+import InstantLink from "@/components/ui/InstantLink";
 import { IoMusicalNotes, IoDisc, IoPerson, IoClose } from "react-icons/io5";
 
 import { useSearchQuery } from "@/hooks/useSearchQuery";
@@ -15,7 +15,6 @@ import type {
   SongSearchResult,
 } from "@/types/search";
 import { createSlug, formatTime } from "@/lib/utils";
-import { usePrefetchAlbum } from "@/hooks/useAlbumInfo";
 
 // ─── Category Filter Tabs ──────────────────────────────────────────────────────
 
@@ -106,7 +105,7 @@ function ArtistRow({
   reserveRightSpace?: boolean;
 }) {
   return (
-    <Link
+    <InstantLink
       href={`/artist/${createSlug(result.title, result.id)}`}
       onClick={onSelect}
       className={`flex items-center gap-3 p-3 hover:bg-[#f7f7f7] transition-colors group${reserveRightSpace ? " pr-9" : ""}`}
@@ -137,7 +136,7 @@ function ArtistRow({
       <span className="text-[10px] text-neutral-600 font-mono flex-shrink-0 uppercase tracking-wider">
         Artist
       </span>
-    </Link>
+    </InstantLink>
   );
 }
 
@@ -150,13 +149,11 @@ function AlbumRow({
   onSelect?: () => void;
   reserveRightSpace?: boolean;
 }) {
-  const prefetchAlbum = usePrefetchAlbum();
   const slug = createSlug(result.title, result.id);
 
   return (
-    <Link
+    <InstantLink
       href={`/album/${slug}`}
-      onMouseEnter={() => prefetchAlbum(slug)}
       onClick={onSelect}
       className={`flex items-center gap-3 p-3 hover:bg-[#f7f7f7] transition-colors group${reserveRightSpace ? " pr-9" : ""}`}
     >
@@ -175,7 +172,7 @@ function AlbumRow({
       <span className="text-[10px] text-neutral-600 font-mono flex-shrink-0 uppercase tracking-wider">
         {result.albumType || "Album"}
       </span>
-    </Link>
+    </InstantLink>
   );
 }
 
@@ -188,7 +185,6 @@ function SongRow({
   onSelect?: () => void;
   reserveRightSpace?: boolean;
 }) {
-  const prefetchAlbum = usePrefetchAlbum();
   const albumSlug = result.albumId
     ? createSlug(result.albumName || result.title, result.albumId)
     : null;
@@ -232,14 +228,13 @@ function SongRow({
 
   if (href) {
     return (
-      <Link
+      <InstantLink
         href={href}
-        onMouseEnter={() => albumSlug && prefetchAlbum(albumSlug)}
         onClick={onSelect}
         className={rowClass}
       >
         {content}
-      </Link>
+      </InstantLink>
     );
   }
 
@@ -528,7 +523,7 @@ export default function SearchResults({
           </div>
           <div className="divide-y divide-[#1a1a1f]/50">
             {history.map((artist) => (
-              <Link
+              <InstantLink
                 key={artist.id}
                 href={`/artist/${createSlug(artist.name, artist.id)}`}
                 className="flex items-center justify-between p-3 hover:bg-[#0f0f12] transition-colors group"
@@ -547,7 +542,7 @@ export default function SearchResults({
                 <span className="text-[10px] text-neutral-600 font-mono">
                   {formatTimeAgo(artist.visitedAt)}
                 </span>
-              </Link>
+              </InstantLink>
             ))}
           </div>
         </div>
