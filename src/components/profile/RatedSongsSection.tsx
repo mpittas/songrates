@@ -135,7 +135,6 @@ export default function RatedSongsSection({
         albumId: song.albumId,
         title: song.albumName,
         artistName: song.artistName,
-        totalTracks: 1,
         artworkUrl: song.thumbnailUrl || undefined,
       };
 
@@ -230,7 +229,6 @@ export default function RatedSongsSection({
                           albumId: song.albumId,
                           title: albumTitle,
                           artistName: song.artistName,
-                          totalTracks: 1,
                           artworkUrl: song.thumbnailUrl || undefined,
                         }
                       : undefined

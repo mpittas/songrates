@@ -163,7 +163,6 @@ export default async function ExplorePage() {
                             albumId: song.albumId,
                             title: song.albumName || "Unknown Album",
                             artistName: song.artistName,
-                            totalTracks: 1,
                             artworkUrl: artworkUrl(song.artworkUrl, 300),
                             releaseDate: song.releaseDate,
                           }

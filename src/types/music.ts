@@ -97,7 +97,8 @@ export interface AlbumContext {
   title: string;
   artistName: string;
   releaseDate?: string;
-  totalTracks: number;
+  /** Actual album track count. Omit when unknown — never pass a placeholder like 1. */
+  totalTracks?: number;
   artworkUrl?: string;
 }
 

@@ -5,6 +5,8 @@ import { FaStar } from "react-icons/fa";
 import { createClient } from "@/utils/supabase/client";
 import ArtistAlbumGridSection from "@/components/artist/ArtistAlbumGridSection";
 import ProfileSectionHeader from "@/components/profile/ProfileSectionHeader";
+import { useAlbumTrackCounts } from "@/hooks/useAlbumTrackCounts";
+import { isFullyRatedAlbum, isPartiallyRatedAlbum } from "@/lib/albumPageStats";
 import type { Album } from "@/types/music";
 
 interface RatedAlbum {
@@ -65,7 +67,9 @@ export default function UserRatedMusicSection({ userId }: { userId: string }) {
       (
         ratings as { track_id: string; album_id: string; rating: number }[]
       )?.forEach((r) => {
-        trackRatings[r.track_id] = Number(r.rating);
+        const value = Number(r.rating);
+        if (!(value > 0)) return;
+        trackRatings[r.track_id] = value;
         if (!albumTracksMap[r.album_id]) {
           albumTracksMap[r.album_id] = [];
         }
@@ -111,27 +115,39 @@ export default function UserRatedMusicSection({ userId }: { userId: string }) {
     fetchUserAlbums();
   }, [userId]);
 
-  const fullAlbumsCount = albums.filter(
-    (a) => a.ratedTrackIds.length >= a.totalTracks && a.totalTracks > 0,
+  const albumIds = useMemo(() => albums.map((album) => album.id), [albums]);
+  const trackCounts = useAlbumTrackCounts(albumIds);
+
+  const albumsWithTrackCounts = useMemo(
+    () =>
+      albums.map((album) => ({
+        ...album,
+        totalTracks: trackCounts[album.id] || album.totalTracks,
+      })),
+    [albums, trackCounts],
+  );
+
+  const fullAlbumsCount = albumsWithTrackCounts.filter((a) =>
+    isFullyRatedAlbum(a.ratedTrackIds.length, a.totalTracks),
   ).length;
 
-  const partialAlbumsCount = albums.filter(
-    (a) => a.ratedTrackIds.length > 0 && a.ratedTrackIds.length < a.totalTracks,
+  const partialAlbumsCount = albumsWithTrackCounts.filter((a) =>
+    isPartiallyRatedAlbum(a.ratedTrackIds.length, a.totalTracks),
   ).length;
 
   const filteredAlbums: Album[] = useMemo(() => {
-    return albums
+    return albumsWithTrackCounts
       .filter((album) => {
         if (activeTab === "all") return true;
         if (activeTab === "full") {
-          return (
-            album.ratedTrackIds.length >= album.totalTracks &&
-            album.totalTracks > 0
+          return isFullyRatedAlbum(
+            album.ratedTrackIds.length,
+            album.totalTracks,
           );
         }
-        return (
-          album.ratedTrackIds.length > 0 &&
-          album.ratedTrackIds.length < album.totalTracks
+        return isPartiallyRatedAlbum(
+          album.ratedTrackIds.length,
+          album.totalTracks,
         );
       })
       .filter((album) => {
@@ -151,7 +167,7 @@ export default function UserRatedMusicSection({ userId }: { userId: string }) {
         releaseDate: album.releaseDate,
         rating: album.rating,
       }));
-  }, [albums, activeTab, searchQuery]);
+  }, [albumsWithTrackCounts, activeTab, searchQuery]);
 
   return (
     <section>

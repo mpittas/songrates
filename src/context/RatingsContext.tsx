@@ -14,6 +14,7 @@ import { createClient } from "@/utils/supabase/client";
 import { AlbumContext, RatedAlbumData, PublicAlbumRating } from "@/types/music";
 import { generateUUID } from "@/lib/utils";
 import { fetchAllRows } from "@/lib/supabase/fetchAllRows";
+import { isFullyRatedAlbum } from "@/lib/albumPageStats";
 
 interface RatingsContextType {
   ratings: Record<string, number>;
@@ -27,6 +28,16 @@ interface RatingsContextType {
   ) => void;
   getAlbumRating: (albumId: string) => number | null;
   removeAlbumRating: (albumId: string) => Promise<void>;
+  syncAlbumTotalTracks: (albumId: string, totalTracks: number) => void;
+}
+
+function resolveAlbumTotalTracks(
+  incoming: number | undefined,
+  existing: number | undefined,
+): number {
+  if (incoming && incoming > 0) return incoming;
+  if (existing && existing > 0) return existing;
+  return 0;
 }
 
 interface DBPublicAlbumRating {
@@ -76,9 +87,62 @@ export function RatingsProvider({ children }: { children: React.ReactNode }) {
     Record<string, PublicAlbumRating>
   >({});
   const requestedPublicAlbumIdsRef = useRef<Set<string>>(new Set());
+  const didSyncTrackCountsRef = useRef(false);
+  const albumRatingsRef = useRef(albumRatings);
+  albumRatingsRef.current = albumRatings;
+
+  const persistAlbumTotalTracks = useCallback(
+    async (
+      targetUserId: string,
+      patches: { albumId: string; totalTracks: number }[],
+    ) => {
+      if (patches.length === 0) return;
+      await Promise.all(
+        patches.map(({ albumId, totalTracks }) =>
+          supabase
+            .from("user_albums")
+            .update({ total_tracks: totalTracks })
+            .eq("user_id", targetUserId)
+            .eq("album_id", albumId),
+        ),
+      );
+    },
+    [supabase],
+  );
+
+  const applyAlbumTrackCounts = useCallback(
+    (counts: Record<string, number>, persistUserId?: string | null) => {
+      const patches: { albumId: string; totalTracks: number }[] = [];
+      for (const [albumId, totalTracks] of Object.entries(counts)) {
+        const album = albumRatingsRef.current[albumId];
+        if (!album || !totalTracks || album.totalTracks === totalTracks) {
+          continue;
+        }
+        patches.push({ albumId, totalTracks });
+      }
+
+      if (patches.length === 0) return;
+
+      setAlbumRatings((prev) => {
+        const next = { ...prev };
+        for (const { albumId, totalTracks } of patches) {
+          const album = next[albumId];
+          if (!album) continue;
+          next[albumId] = { ...album, totalTracks };
+        }
+        return next;
+      });
+
+      if (persistUserId) {
+        void persistAlbumTotalTracks(persistUserId, patches);
+      }
+    },
+    [persistAlbumTotalTracks],
+  );
 
   // Fetch from Supabase
   useEffect(() => {
+    didSyncTrackCountsRef.current = false;
     // Subscribe to public rating changes, but load initial rows on demand.
     const channel = supabase
       .channel("public_ratings_changes")
@@ -170,12 +234,15 @@ export function RatingsProvider({ children }: { children: React.ReactNode }) {
         const albumTracksMap: Record<string, string[]> = {};
 
         ratingsResult.rows.forEach((r) => {
-          newRatings[r.track_id] = Number(r.rating);
+          const value = Number(r.rating);
+          newRatings[r.track_id] = value;
 
-          if (!albumTracksMap[r.album_id]) {
-            albumTracksMap[r.album_id] = [];
+          if (value > 0) {
+            if (!albumTracksMap[r.album_id]) {
+              albumTracksMap[r.album_id] = [];
+            }
+            albumTracksMap[r.album_id].push(r.track_id);
           }
-          albumTracksMap[r.album_id].push(r.track_id);
         });
         setRatings(newRatings);
 
@@ -193,6 +260,36 @@ export function RatingsProvider({ children }: { children: React.ReactNode }) {
           };
         });
         setAlbumRatings(newAlbumRatings);
+
+        const albumIds = Object.keys(newAlbumRatings);
+        if (albumIds.length > 0 && !didSyncTrackCountsRef.current) {
+          didSyncTrackCountsRef.current = true;
+          void (async () => {
+            try {
+              const counts: Record<string, number> = {};
+              const chunkSize = 240;
+              for (let i = 0; i < albumIds.length; i += chunkSize) {
+                const res = await fetch("/api/album-track-counts", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    ids: albumIds.slice(i, i + chunkSize),
+                  }),
+                });
+                if (!res.ok) continue;
+                const data = (await res.json()) as {
+                  counts?: Record<string, number>;
+                };
+                Object.assign(counts, data.counts);
+              }
+              if (Object.keys(counts).length > 0) {
+                applyAlbumTrackCounts(counts, effectiveUserId);
+              }
+            } catch (syncError) {
+              console.error("Failed to sync album track counts", syncError);
+            }
+          })();
+        }
       } catch (e) {
         console.error("Failed to load ratings from Supabase", e);
       }
@@ -217,7 +314,7 @@ export function RatingsProvider({ children }: { children: React.ReactNode }) {
     };
 
     // Only fetch when user changes, supabase is now stable
-  }, [user, supabase]);
+  }, [user, supabase, applyAlbumTrackCounts]);
 
   const ensurePublicAlbumRatings = useCallback(
     async (albumIds: string[]) => {
@@ -269,7 +366,7 @@ export function RatingsProvider({ children }: { children: React.ReactNode }) {
             title: albumContext.title,
             artistName: albumContext.artistName,
             releaseDate: albumContext.releaseDate,
-            totalTracks: albumContext.totalTracks,
+            totalTracks: 0,
             artworkUrl: albumContext.artworkUrl,
             ratedTrackIds: [],
           };
@@ -284,6 +381,11 @@ export function RatingsProvider({ children }: { children: React.ReactNode }) {
             newRatedTrackIds = newRatedTrackIds.filter((id) => id !== trackId);
           }
 
+          const totalTracks = resolveAlbumTotalTracks(
+            albumContext.totalTracks,
+            currentAlbum.totalTracks,
+          );
+
           return {
             ...prev,
             [albumContext.albumId]: {
@@ -291,7 +393,7 @@ export function RatingsProvider({ children }: { children: React.ReactNode }) {
               title: albumContext.title,
               artistName: albumContext.artistName,
               releaseDate: albumContext.releaseDate,
-              totalTracks: albumContext.totalTracks,
+              totalTracks,
               artworkUrl: albumContext.artworkUrl || currentAlbum.artworkUrl,
               ratedTrackIds: newRatedTrackIds,
               ratedAt: currentAlbum.ratedAt || new Date().toISOString(),
@@ -335,15 +437,22 @@ export function RatingsProvider({ children }: { children: React.ReactNode }) {
           );
         }
 
-        const { error: aError } = await supabase.from("user_albums").upsert({
+        const albumRow = {
           user_id: targetUserId,
           album_id: albumContext.albumId,
           title: albumContext.title,
           artist_name: albumContext.artistName,
           release_date: albumContext.releaseDate,
-          total_tracks: albumContext.totalTracks,
           thumbnail_url: albumContext.artworkUrl || null,
-        });
+          total_tracks: resolveAlbumTotalTracks(
+            albumContext.totalTracks,
+            albumRatingsRef.current[albumContext.albumId]?.totalTracks,
+          ),
+        };
+
+        const { error: aError } = await supabase
+          .from("user_albums")
+          .upsert(albumRow);
 
         if (aError) {
           console.error("Error saving album to Supabase", aError);
@@ -368,7 +477,9 @@ export function RatingsProvider({ children }: { children: React.ReactNode }) {
       const album = albumRatings[albumId];
       if (!album || album.ratedTrackIds.length === 0) return null;
 
-      if (album.ratedTrackIds.length < album.totalTracks) return null;
+      if (!isFullyRatedAlbum(album.ratedTrackIds.length, album.totalTracks)) {
+        return null;
+      }
 
       let total = 0;
       let count = 0;
@@ -450,6 +561,20 @@ export function RatingsProvider({ children }: { children: React.ReactNode }) {
     [user, supabase, albumRatings],
   );
 
+  const syncAlbumTotalTracks = useCallback(
+    (albumId: string, totalTracks: number) => {
+      if (!albumId || !totalTracks) return;
+      applyAlbumTrackCounts(
+        { [albumId]: totalTracks },
+        user?.id ||
+          (typeof window !== "undefined"
+            ? localStorage.getItem("songrates_guest_id")
+            : null),
+      );
+    },
+    [applyAlbumTrackCounts, user?.id],
+  );
+
   const value = useMemo(
     () => ({
       ratings,
@@ -459,6 +584,7 @@ export function RatingsProvider({ children }: { children: React.ReactNode }) {
       ensurePublicAlbumRatings,
       getAlbumRating,
       removeAlbumRating,
+      syncAlbumTotalTracks,
     }),
     [
       ratings,
@@ -468,6 +594,7 @@ export function RatingsProvider({ children }: { children: React.ReactNode }) {
       ensurePublicAlbumRatings,
       getAlbumRating,
       removeAlbumRating,
+      syncAlbumTotalTracks,
     ],
   );
 

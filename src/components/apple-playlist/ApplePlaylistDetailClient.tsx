@@ -31,7 +31,6 @@ function albumContextFromTrack(
     artistName:
       track.artists?.[0]?.name || track.artistName || "Unknown Artist",
     releaseDate: track.releaseDate,
-    totalTracks: track.totalTracks ?? 0,
     artworkUrl: track.albumImageUrl,
   };
 }
@@ -115,12 +114,11 @@ export default function ApplePlaylistDetailClient({
         albumImageUrl: t.albumImageUrl,
         albumTitle: t.albumTitle || playlist.name,
         releaseDate: t.releaseDate,
-        totalTracks: playlist.trackCount,
         artists: t.artists,
         length: t.length,
         number: t.number,
       })),
-    [trackInfos, playlist.name, playlist.trackCount],
+        [trackInfos, playlist.name],
   );
 
   return (

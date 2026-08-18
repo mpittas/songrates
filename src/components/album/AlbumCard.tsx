@@ -7,6 +7,7 @@ import InstantLink from "@/components/ui/InstantLink";
 import { useRatingsContext } from "@/context/RatingsContext";
 import AlbumRatingBadge from "@/components/rating/AlbumRatingBadge";
 import AlbumCardDropdown from "@/components/album/AlbumCardDropdown";
+import { isFullyRatedAlbum } from "@/lib/albumPageStats";
 import { Album } from "@/types/music";
 
 export interface AlbumCardProps {
@@ -53,7 +54,7 @@ function RatingBadge({
     if (count > 0) {
       personalScore = (sum / count).toFixed(1);
     }
-    isFull = totalTracks > 0 && ratedCount >= totalTracks;
+    isFull = isFullyRatedAlbum(ratedCount, totalTracks);
   } else if (album.rating) {
     personalScore = album.rating;
     isFull = true;

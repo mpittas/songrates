@@ -56,8 +56,10 @@ export default function AlbumPageContent({
   );
   const {
     ratings: myRatings,
+    albumRatings,
     publicAlbumRatings,
     ensurePublicAlbumRatings,
+    syncAlbumTotalTracks,
   } = useRatings();
   const { viewingUserRatings, viewingUserName } = useAlbumViewingUserRatings(
     albumId,
@@ -84,6 +86,18 @@ export default function AlbumPageContent({
     if (!album?.id) return;
     void ensurePublicAlbumRatings([album.id]);
   }, [album?.id, ensurePublicAlbumRatings]);
+
+  useEffect(() => {
+    if (!album?.id || !album.tracks?.length) return;
+    if (!albumRatings[album.id]) return;
+    if (albumRatings[album.id].totalTracks === album.tracks.length) return;
+    syncAlbumTotalTracks(album.id, album.tracks.length);
+  }, [
+    album?.id,
+    album?.tracks?.length,
+    albumRatings,
+    syncAlbumTotalTracks,
+  ]);
 
   const queue = useMemo(() => {
     if (!album) return [];

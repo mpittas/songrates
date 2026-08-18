@@ -71,6 +71,7 @@ export type AppleAlbumEnrichment = {
   artistId?: string;
   artworkUrl?: string;
   releaseDate?: string;
+  trackCount?: number;
 };
 
 export type AppleArtistEnrichment = {

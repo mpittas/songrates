@@ -5,6 +5,7 @@ import { FaStar } from "react-icons/fa";
 import { useRatingsContext } from "@/context/RatingsContext";
 import ArtistAlbumGridSection from "@/components/artist/ArtistAlbumGridSection";
 import ProfileSectionHeader from "@/components/profile/ProfileSectionHeader";
+import { isFullyRatedAlbum, isPartiallyRatedAlbum } from "@/lib/albumPageStats";
 import type { Album } from "@/types/music";
 
 export default function OwnRatedMusicSection() {
@@ -17,12 +18,12 @@ export default function OwnRatedMusicSection() {
     [albumRatings],
   );
 
-  const fullAlbumsCount = allUserAlbums.filter(
-    (a) => a.ratedTrackIds.length >= a.totalTracks && a.totalTracks > 0,
+  const fullAlbumsCount = allUserAlbums.filter((a) =>
+    isFullyRatedAlbum(a.ratedTrackIds.length, a.totalTracks),
   ).length;
 
-  const partialAlbumsCount = allUserAlbums.filter(
-    (a) => a.ratedTrackIds.length > 0 && a.ratedTrackIds.length < a.totalTracks,
+  const partialAlbumsCount = allUserAlbums.filter((a) =>
+    isPartiallyRatedAlbum(a.ratedTrackIds.length, a.totalTracks),
   ).length;
 
   const filteredAlbums: Album[] = useMemo(() => {
@@ -31,11 +32,12 @@ export default function OwnRatedMusicSection() {
       .filter((a) => {
         if (activeTab === "all") return true;
         if (activeTab === "full") {
-          return a.ratedTrackIds.length >= a.totalTracks && a.totalTracks > 0;
+          return isFullyRatedAlbum(a.ratedTrackIds.length, a.totalTracks);
         }
-        return (
-          a.ratedTrackIds.length > 0 && a.ratedTrackIds.length < a.totalTracks
-        );
+        if (activeTab === "partial") {
+          return isPartiallyRatedAlbum(a.ratedTrackIds.length, a.totalTracks);
+        }
+        return true;
       })
       .filter((a) => {
         const q = searchQuery.trim().toLowerCase();

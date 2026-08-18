@@ -127,7 +127,6 @@ export default function PlaylistPageClient({
       albumId: t.album_id || "",
       albumTitle: t.album_name || playlist.name,
       albumImageUrl: t.thumbnail_url || "/vinyl-placeholder.svg",
-      totalTracks: tracks.length,
     }));
   }, [playlist, tracks]);
 
@@ -259,7 +258,6 @@ export default function PlaylistPageClient({
                     albumId: t.albumId || "",
                     title: t.albumTitle || playlist.name,
                     artistName: t.artistName || "Unknown Artist",
-                    totalTracks: tracks.length,
                     artworkUrl: t.albumImageUrl || undefined,
                   }}
                 />

@@ -100,9 +100,7 @@ export default function MiniPlayer() {
 
   const rating = currentTrack ? ratings[currentTrack.id] || 0 : 0;
   const albumContext: AlbumContext | undefined =
-    currentTrack?.albumId &&
-    currentTrack.albumTitle &&
-    currentTrack.totalTracks !== undefined
+    currentTrack?.albumId && currentTrack.albumTitle
       ? {
           albumId: currentTrack.albumId,
           title: currentTrack.albumTitle,

@@ -13,13 +13,30 @@ export function isReviewableAlbumType(type: string | undefined): boolean {
   return type === "Album" || type === "EP";
 }
 
+/** True when every track on the release has a rating. Unknown totals are not full. */
+export function isFullyRatedAlbum(
+  ratedCount: number,
+  totalTracks: number | null | undefined,
+): boolean {
+  const total = Number(totalTracks) || 0;
+  return total > 0 && ratedCount >= total;
+}
+
+/** Any ratings, but not a complete album (including unknown track counts). */
+export function isPartiallyRatedAlbum(
+  ratedCount: number,
+  totalTracks: number | null | undefined,
+): boolean {
+  return ratedCount > 0 && !isFullyRatedAlbum(ratedCount, totalTracks);
+}
+
 export function computeTrackRatingStats(
   tracks: TrackInfo[],
   activeRatings: Record<string, number>,
 ) {
   const totalTracks = tracks.length;
   const ratedTracksCount = tracks.filter((tr) => activeRatings[tr.id] > 0).length;
-  const isFullyRated = totalTracks > 0 && ratedTracksCount === totalTracks;
+  const isFullyRated = isFullyRatedAlbum(ratedTracksCount, totalTracks);
   const currentTotalScore = tracks.reduce(
     (acc, tr) => acc + (activeRatings[tr.id] || 0),
     0,

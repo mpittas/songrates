@@ -45,7 +45,6 @@ export default function TopSongsList({ songs }: { songs: TopSong[] }) {
                     albumId: song.albumId,
                     title: song.albumName || "Unknown Album",
                     artistName: song.artistName,
-                    totalTracks: 1,
                     artworkUrl: song.artworkUrl,
                     releaseDate: song.releaseDate,
                   }

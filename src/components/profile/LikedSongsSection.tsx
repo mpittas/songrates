@@ -215,7 +215,6 @@ export default function LikedSongsSection({
                           albumId: song.albumId,
                           title: albumTitle,
                           artistName: song.artistName,
-                          totalTracks: 1,
                           artworkUrl: song.thumbnailUrl || undefined,
                         }
                       : undefined

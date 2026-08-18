@@ -125,6 +125,7 @@ export async function fetchAppleAlbumEnrichmentsByIds(
           name?: string;
           artistName?: string;
           releaseDate?: string;
+          trackCount?: number;
           artwork?: { url?: string };
         };
         relationships?: {
@@ -149,6 +150,7 @@ export async function fetchAppleAlbumEnrichmentsByIds(
           ? artworkUrl(attrs.artwork.url, 300)
           : undefined,
         releaseDate: attrs?.releaseDate,
+        trackCount: attrs?.trackCount,
       });
     }
   });
