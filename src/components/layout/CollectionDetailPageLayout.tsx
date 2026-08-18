@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { FaPlay } from "react-icons/fa";
 import { LuListMusic } from "react-icons/lu";
 
+import ArtworkColorWash from "@/components/layout/ArtworkColorWash";
 import MySection from "@/components/ui/MySection";
 import Tilt3DImage from "@/components/ui/Tilt3DImage";
 import SearchInput from "@/components/search/SearchInput";
@@ -69,7 +70,7 @@ export default function CollectionDetailPageLayout({
   return (
     <main className="min-h-screen text-neutral-900">
       <MySection className={sectionClassName} container={false}>
-        <div className="absolute left-0 top-0 z-0 h-[500px] w-full bg-linear-to-b from-[#f0e5df] to-[#f0e5df]/0" />
+        <ArtworkColorWash src={artworkSrc} />
         {beforeConstrained}
 
         <div className={cn("relative z-10", PAGE_CONTAINER, PAGE_CONTENT_TOP)}>
