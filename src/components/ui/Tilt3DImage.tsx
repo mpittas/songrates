@@ -113,17 +113,13 @@ export default function Tilt3DImage({
     [maxTilt, perspective, scale, canTilt],
   );
 
-  const containerStyle: CSSProperties = {
+  const tiltStyle: CSSProperties = {
     transform: transform || undefined,
     transformStyle: "preserve-3d",
     transition: isHovering
-      ? "transform 80ms ease-out, box-shadow 350ms ease-out"
-      : "transform 400ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 400ms ease-out",
-    willChange: "transform",
-    boxShadow:
-      isHovering && canTilt
-        ? "0 18px 40px -12px rgba(0,0,0,0.45), 0 6px 14px -8px rgba(0,0,0,0.3)"
-        : "0 0 0 0 rgba(0,0,0,0)",
+      ? "transform 80ms ease-out"
+      : "transform 400ms cubic-bezier(0.22, 1, 0.36, 1)",
+    willChange: isHovering && canTilt ? "transform" : undefined,
   };
 
   return (
@@ -132,29 +128,41 @@ export default function Tilt3DImage({
       onPointerMove={handlePointerMove}
       onPointerLeave={reset}
       onPointerCancel={reset}
-      className={`relative h-full w-full rounded-xl ${className}`}
-      style={containerStyle}
+      className={`relative h-full w-full ${className}`}
     >
-      <div className="relative h-full w-full overflow-hidden rounded-xl transform-[translateZ(0)]">
-        <OptimizedImage
-          src={src}
-          alt={alt}
-          fill
-          className="rounded-xl object-cover"
-          priority
-          fallbackText={fallbackText}
-          fallbackSrc={fallbackSrc}
-        />
+      {/* Shadow sits on its own layer and only fades opacity. */}
+      {canTilt ? (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 -z-10 transition-opacity duration-300 ease-out"
+          style={{ opacity: isHovering ? 1 : 0 }}
+        >
+          <div className="absolute -inset-x-[18%] top-[22%] -bottom-[16%] rounded-4xl bg-[#2a1c16]/32 blur-2xl" />
+        </div>
+      ) : null}
 
-        {glare && isHovering && canTilt ? (
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-0 rounded-xl mix-blend-overlay"
-            style={{
-              background: `radial-gradient(ellipse 75% 60% at ${glarePos.x}% ${glarePos.y}%, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0.15) 38%, rgba(255,255,255,0) 70%)`,
-            }}
+      <div className="relative h-full w-full rounded-xl" style={tiltStyle}>
+        <div className="relative h-full w-full overflow-hidden rounded-xl transform-[translateZ(0)]">
+          <OptimizedImage
+            src={src}
+            alt={alt}
+            fill
+            className="rounded-xl object-cover"
+            priority
+            fallbackText={fallbackText}
+            fallbackSrc={fallbackSrc}
           />
-        ) : null}
+
+          {glare && isHovering && canTilt ? (
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-0 rounded-xl mix-blend-overlay"
+              style={{
+                background: `radial-gradient(ellipse 75% 60% at ${glarePos.x}% ${glarePos.y}%, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0.15) 38%, rgba(255,255,255,0) 70%)`,
+              }}
+            />
+          ) : null}
+        </div>
       </div>
     </div>
   );
