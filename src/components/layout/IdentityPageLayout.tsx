@@ -26,14 +26,13 @@ export default function IdentityPageLayout({
       <div className="relative">
         <div className="relative h-44 overflow-hidden sm:h-56 md:h-64">
           <ProfileCover />
-          <div className="absolute inset-0 bg-gradient-to-t from-[var(--background)] from-0% via-[var(--background)]/40 via-45% to-transparent" />
         </div>
 
         <div className={cn(PAGE_CONTAINER, "relative z-10")}>
-          <div className="flex flex-col gap-5 pb-5 sm:flex-row sm:items-end sm:justify-between sm:gap-8">
-            <div className="-mt-12 flex min-w-0 items-end gap-4 sm:-mt-14 sm:gap-5">
-              {media}
-              <div className="min-w-0 pb-0.5 sm:pb-1">
+          <div className="flex flex-col gap-4 pb-5 sm:flex-row sm:items-start sm:justify-between sm:gap-8">
+            <div className="flex min-w-0 items-start gap-4 sm:gap-5">
+              <div className="-mt-12 shrink-0 sm:-mt-14">{media}</div>
+              <div className="min-w-0 pt-4 sm:pt-5">
                 <h1 className="truncate text-3xl font-semibold tracking-tight text-neutral-900 sm:text-4xl">
                   {title}
                 </h1>
@@ -44,7 +43,7 @@ export default function IdentityPageLayout({
             </div>
 
             {actions ? (
-              <div className="flex shrink-0 flex-wrap items-center gap-2 sm:pb-1">
+              <div className="flex shrink-0 flex-wrap items-center gap-2 pt-1 sm:pt-5">
                 {actions}
               </div>
             ) : null}

@@ -99,7 +99,6 @@ export default function OwnProfileShell({
         username,
         displayName: profile.displayName,
         avatarUrl,
-        subtitle: user.email,
       }}
       actions={
         <>

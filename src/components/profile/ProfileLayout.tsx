@@ -17,7 +17,7 @@ interface ProfileLayoutProps {
     username: string;
     displayName?: string | null;
     avatarUrl: string | null;
-    subtitle: React.ReactNode;
+    subtitle?: React.ReactNode;
   };
   actions?: React.ReactNode;
   quickLinks?: React.ReactNode;
@@ -30,7 +30,9 @@ export default function ProfileLayout({
   quickLinks,
   children,
 }: ProfileLayoutProps) {
-  const displayName = user.displayName?.trim() || user.username;
+  const trimmedName = user.displayName?.trim() || "";
+  const displayName =
+    trimmedName && !trimmedName.includes("@") ? trimmedName : user.username;
 
   return (
     <IdentityPageLayout

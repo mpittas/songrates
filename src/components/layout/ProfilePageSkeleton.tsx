@@ -3,9 +3,11 @@ export default function ProfilePageSkeleton() {
     <main className="min-h-screen bg-[var(--background)]">
       <div className="h-44 animate-pulse bg-[#c13a62] sm:h-56 md:h-64" />
       <div className="mx-auto w-full max-w-[1180px] px-4 sm:px-6">
-        <div className="-mt-12 flex items-end gap-4 sm:-mt-14">
-          <div className="h-24 w-24 animate-pulse rounded-full bg-neutral-300 ring-[3px] ring-[var(--background)] sm:h-28 sm:w-28" />
-          <div className="mb-2 space-y-2">
+        <div className="flex items-start gap-4 sm:gap-5">
+          <div className="-mt-12 sm:-mt-14">
+            <div className="h-24 w-24 animate-pulse rounded-full bg-neutral-300 ring-[3px] ring-[var(--background)] sm:h-28 sm:w-28" />
+          </div>
+          <div className="space-y-2 pt-4 sm:pt-5">
             <div className="h-8 w-40 animate-pulse rounded-md bg-neutral-300" />
             <div className="h-4 w-28 animate-pulse rounded-md bg-neutral-200" />
           </div>
