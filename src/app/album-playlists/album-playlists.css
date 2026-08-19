@@ -1,0 +1,120 @@
+.ap-font-bricolage {
+  font-family: var(--font-ap-bricolage), ui-sans-serif, system-ui, sans-serif;
+}
+
+.ap-font-shoulders {
+  font-family: var(--font-ap-shoulders), ui-sans-serif, system-ui, sans-serif;
+}
+
+.ap-font-redhat {
+  font-family: var(--font-ap-redhat), ui-sans-serif, system-ui, sans-serif;
+}
+
+.ap-font-anybody {
+  font-family: var(--font-ap-anybody), ui-sans-serif, system-ui, sans-serif;
+}
+
+.ap-font-gloock {
+  font-family: var(--font-ap-gloock), ui-serif, Georgia, serif;
+}
+
+.ap-font-anek {
+  font-family: var(--font-ap-anek), ui-sans-serif, system-ui, sans-serif;
+}
+
+.ap-releases,
+.ap-booth,
+.ap-shelves,
+.ap-stage,
+.ap-folio,
+.ap-discs {
+  padding-bottom: 6rem;
+}
+
+.ap-scroll-hide {
+  scrollbar-width: none;
+}
+
+.ap-scroll-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.ap-spine-type {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
+
+.ap-releases ::selection {
+  background: #3c2e8a;
+  color: #f7f4ff;
+}
+
+.ap-booth ::selection,
+.ap-stage ::selection {
+  background: #f4f4f2;
+  color: #0c0c0c;
+}
+
+.ap-shelves ::selection {
+  background: #16161a;
+  color: #eef0f5;
+}
+
+.ap-folio ::selection {
+  background: #2546d8;
+  color: #f4f5f8;
+}
+
+.ap-discs ::selection {
+  background: #13202e;
+  color: #eef3f7;
+}
+
+.ap-disc {
+  box-shadow:
+    0 22px 40px -24px rgb(19 32 46 / 0.55),
+    inset 0 0 0 1px rgb(19 32 46 / 0.08),
+    inset 0 0 0 14px rgb(19 32 46 / 0.05);
+}
+
+.ap-disc-hole {
+  background: #eef3f7;
+  box-shadow: 0 0 0 3px rgb(19 32 46 / 0.18);
+}
+
+.ap-disc-active {
+  box-shadow:
+    0 28px 50px -22px rgb(19 32 46 / 0.5),
+    inset 0 0 0 1px rgb(19 32 46 / 0.08),
+    inset 0 0 0 14px rgb(19 32 46 / 0.05);
+}
+
+.ap-release-item {
+  animation: ap-release-in 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes ap-release-in {
+  from {
+    opacity: 0;
+    filter: blur(6px);
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ap-release-item {
+    animation: none;
+  }
+}
+
+@media (max-width: 639px) {
+  .ap-spine-type {
+    writing-mode: horizontal-tb;
+    transform: none;
+  }
+}
