@@ -12,6 +12,11 @@ import {
 
 import { Track } from "@/types/music";
 import {
+  inferPlaybackSource,
+  isSamePlaybackSource,
+} from "@/lib/playbackSource";
+import {
+  PlaybackSource,
   PlayerContextType,
   PlayerCoreContextType,
   PlayerProgressContextType,
@@ -105,6 +110,9 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
   const [queue, setQueue] = useState<Track[]>([]);
   const [originalQueue, setOriginalQueue] = useState<Track[]>([]);
+  const [playbackSource, setPlaybackSource] = useState<PlaybackSource | null>(
+    null,
+  );
 
   const playerRef = useRef<YouTubePlayer | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -136,9 +144,63 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const applyQueue = useCallback(
+    (track: Track, newQueue?: Track[]) => {
+      if (newQueue) {
+        if (isShuffling) {
+          setOriginalQueue(newQueue);
+          setQueue(shuffleArray(newQueue, track.id));
+        } else {
+          setQueue(newQueue);
+        }
+        return;
+      }
+
+      if (!queue.find((t) => t.id === track.id)) {
+        const newQ = [track];
+        setQueue(newQ);
+        if (isShuffling) {
+          setOriginalQueue(newQ);
+        }
+      }
+    },
+    [isShuffling, queue],
+  );
+
+  const resolveSource = useCallback(
+    (
+      track: Track,
+      newQueue?: Track[],
+      source?: PlaybackSource,
+      isNewSession?: boolean,
+    ) => {
+      if (source) {
+        setPlaybackSource(source);
+        return;
+      }
+      if (newQueue || isNewSession) {
+        setPlaybackSource(inferPlaybackSource(track) ?? null);
+      }
+    },
+    [],
+  );
+
   const playTrack = useCallback(
-    async (track: Track, newQueue?: Track[]) => {
+    async (track: Track, newQueue?: Track[], source?: PlaybackSource) => {
       if (currentTrack?.id === track.id && videoId) {
+        const switchingSource =
+          !!source && !isSamePlaybackSource(source, playbackSource);
+
+        if (switchingSource) {
+          applyQueue(track, newQueue);
+          resolveSource(track, newQueue, source);
+          if (!isPlaying && playerRef.current) {
+            playerRef.current.playVideo?.();
+            setIsPlaying(true);
+          }
+          return;
+        }
+
         if (playerRef.current) {
           if (isPlaying) {
             playerRef.current.pauseVideo?.();
@@ -153,20 +215,13 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      if (newQueue) {
-        if (isShuffling) {
-          setOriginalQueue(newQueue);
-          setQueue(shuffleArray(newQueue, track.id));
-        } else {
-          setQueue(newQueue);
-        }
-      } else if (!queue.find((t) => t.id === track.id)) {
-        const newQ = [track];
-        setQueue(newQ);
-        if (isShuffling) {
-          setOriginalQueue(newQ);
-        }
-      }
+      applyQueue(track, newQueue);
+      resolveSource(
+        track,
+        newQueue,
+        source,
+        !newQueue && !queue.some((queued) => queued.id === track.id),
+      );
 
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
@@ -240,8 +295,10 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       currentLyricsTrackId,
       videoId,
       isPlaying,
+      playbackSource,
       queue,
-      isShuffling,
+      applyQueue,
+      resolveSource,
     ],
   );
 
@@ -262,6 +319,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     setIsPlaying(false);
     setCurrentTime(0);
     setDuration(0);
+    setPlaybackSource(null);
   }, []);
 
   const pausePlayback = useCallback(() => {
@@ -332,6 +390,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       isPlaying,
       isLoading,
       queue,
+      playbackSource,
       setIsPlaying,
       playTrack,
       stopPlayback,
@@ -356,6 +415,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       isPlaying,
       isLoading,
       queue,
+      playbackSource,
       playTrack,
       stopPlayback,
       pausePlayback,

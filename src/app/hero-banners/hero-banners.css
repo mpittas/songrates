@@ -1,0 +1,46 @@
+.hero-cut-image {
+  clip-path: polygon(0 0, 100% 0, 82% 100%, 0% 100%);
+}
+
+.hero-vinyl-grooves {
+  background:
+    radial-gradient(
+      circle at 50% 50%,
+      #c9a227 0 13%,
+      #1a1208 13.4% 14.2%,
+      #0a0a0a 14.2% 15%,
+      transparent 15.1%
+    ),
+    repeating-radial-gradient(
+      circle at 50% 50%,
+      #141414 0 1px,
+      #0d0d0d 2px,
+      #1a1a1a 3px
+    );
+}
+
+.hero-bloom ::selection {
+  background: #8f1d28;
+  color: #faf8f5;
+}
+
+.hero-sleeve ::selection {
+  background: #111111;
+  color: #f4f4f2;
+}
+
+.hero-stack ::selection {
+  background: #d8f56a;
+  color: #10211c;
+}
+
+.hero-cut ::selection {
+  background: #ff6a3d;
+  color: #0a0a0a;
+}
+
+@media (max-width: 767px) {
+  .hero-cut-image {
+    clip-path: none;
+  }
+}

@@ -48,7 +48,7 @@ export function ContextDropdownMenuItem({
         close?.();
       }}
       className={cn(
-        "w-full text-left flex items-center gap-3 px-3 py-2 text-sm font-mono text-neutral-600 hover:text-neutral-900 hover:bg-[#f5f5f5] transition-colors",
+        "w-full cursor-pointer text-left flex items-center gap-3 px-3 py-2 text-sm text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 transition-colors",
         className,
       )}
     >

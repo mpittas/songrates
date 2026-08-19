@@ -86,6 +86,16 @@ export default function ArtistSkeleton() {
                 </div>
               </div>
 
+              {/* Latest Songs */}
+              <div>
+                <AccordionHeaderSkeleton />
+                <div className="pt-2">
+                  <SongRowSkeleton />
+                  <SongRowSkeleton showSubline />
+                  <SongRowSkeleton />
+                </div>
+              </div>
+
               {/* Essential — 3-up grid */}
               <div>
                 <AccordionHeaderSkeleton />

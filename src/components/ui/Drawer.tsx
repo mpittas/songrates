@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { FaTimes } from "react-icons/fa";
+import { IoClose } from "react-icons/io5";
+
+import { cn } from "@/lib/utils";
 
 interface DrawerProps {
   isOpen: boolean;
@@ -18,52 +20,80 @@ export default function Drawer({
   children,
 }: DrawerProps) {
   const [mounted, setMounted] = useState(false);
+  const [rendered, setRendered] = useState(false);
+  const titleId = useId();
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const previousOverflow = useRef<string>("");
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
   useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "unset";
-    }
-    return () => {
-      document.body.style.overflow = "unset";
-    };
+    if (isOpen) setRendered(true);
   }, [isOpen]);
 
-  if (!mounted) return null;
+  useEffect(() => {
+    if (!isOpen) return;
+
+    previousOverflow.current = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    closeButtonRef.current?.focus();
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") onClose();
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow.current;
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isOpen, onClose]);
+
+  if (!mounted || (!isOpen && !rendered)) return null;
 
   return createPortal(
     <div
-      className={`fixed inset-0 z-[100] transform transition-transform duration-300 ease-in-out ${
-        isOpen ? "translate-x-0" : "translate-x-full"
-      }`}
-      role="dialog"
-      aria-modal="true"
+      className={cn(
+        "fixed inset-0 z-100",
+        isOpen ? "pointer-events-auto" : "pointer-events-none",
+      )}
+      aria-hidden={!isOpen}
+      {...(!isOpen ? { inert: true } : {})}
     >
-      {/* Backdrop */}
       <div
-        className={`absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300 ${
-          isOpen ? "opacity-100" : "opacity-0"
-        }`}
+        className={cn(
+          "absolute inset-0 bg-neutral-950/40 transition-opacity duration-300",
+          isOpen ? "opacity-100" : "opacity-0",
+        )}
         onClick={onClose}
       />
 
-      {/* Drawer Content */}
-      <div className="absolute right-0 top-0 bottom-0 w-[80%] max-w-sm bg-[#0a0a0f] border-l border-white/10 shadow-2xl p-6 flex flex-col">
-        <div className="flex justify-between items-center mb-8">
-          <span className="font-mono text-sm tracking-wide text-neutral-50">
+      <div
+        role={isOpen ? "dialog" : undefined}
+        aria-modal={isOpen ? true : undefined}
+        aria-labelledby={titleId}
+        className={cn(
+          "absolute top-0 right-0 bottom-0 flex w-[min(100%,20rem)] flex-col border-l border-neutral-200 bg-white p-6 shadow-[0_8px_32px_rgba(15,15,15,0.12)] transition-transform duration-300 ease-out",
+          isOpen ? "translate-x-0" : "translate-x-full",
+        )}
+      >
+        <div className="mb-8 flex items-center justify-between">
+          <span
+            id={titleId}
+            className="text-sm font-medium tracking-tight text-neutral-900"
+          >
             {title || "Menu"}
           </span>
           <button
+            ref={closeButtonRef}
+            type="button"
             onClick={onClose}
-            className="text-neutral-400 hover:text-white transition-colors p-2"
+            className="flex size-10 cursor-pointer items-center justify-center rounded-md text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-900"
             aria-label="Close menu"
           >
-            <FaTimes size={20} />
+            <IoClose size={22} />
           </button>
         </div>
 

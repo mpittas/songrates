@@ -6,6 +6,21 @@ import {
 } from "@/lib/appleMusic/api";
 import type { Album, ArtistInfo, TopSong } from "@/types/music";
 
+function mapAppleSong(s: ArtistDiscography["topSongs"][number]): TopSong {
+  return {
+    id: s.id,
+    name: s.name,
+    artistName: s.artistName,
+    artistId: s.artistId,
+    artists: s.artists,
+    albumName: s.albumName,
+    albumId: s.albumId,
+    artworkUrl: s.artworkUrl ? artworkUrl(s.artworkUrl, 100) : undefined,
+    releaseDate: s.releaseDate,
+    durationMs: s.durationMs,
+  };
+}
+
 function mapAppleAlbum(a: AppleArtistAlbum, typeOverride?: string): Album {
   return {
     id: a.id,
@@ -26,6 +41,7 @@ export function mapArtistDiscographyToPageData(
   artistName: string;
   artistInfo: ArtistInfo;
   topSongs: TopSong[];
+  latestSongs: TopSong[];
   essentialAlbums: Album[];
   albums: Album[];
   epsAndSingles: Album[];
@@ -33,18 +49,10 @@ export function mapArtistDiscographyToPageData(
 } {
   const { artist } = discography;
 
-  const topSongs: TopSong[] = discography.topSongs.map((s) => ({
-    id: s.id,
-    name: s.name,
-    artistName: s.artistName,
-    artistId: s.artistId,
-    artists: s.artists,
-    albumName: s.albumName,
-    albumId: s.albumId,
-    artworkUrl: s.artworkUrl ? artworkUrl(s.artworkUrl, 100) : undefined,
-    releaseDate: s.releaseDate,
-    durationMs: s.durationMs,
-  }));
+  const topSongs: TopSong[] = discography.topSongs.map(mapAppleSong);
+  const latestSongs: TopSong[] = (discography.latestSongs || []).map(
+    mapAppleSong,
+  );
 
   const essentialAlbums = discography.featuredAlbums.map((a) =>
     mapAppleAlbum(a, "Album"),
@@ -65,6 +73,7 @@ export function mapArtistDiscographyToPageData(
     artistName: artist.name,
     artistInfo,
     topSongs,
+    latestSongs,
     essentialAlbums,
     albums,
     epsAndSingles,

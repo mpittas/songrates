@@ -18,6 +18,10 @@ export interface TrackRatingProps {
   onRate?: (rating: number) => void;
   showPublicRating?: boolean;
   readOnly?: boolean;
+  /** Unrated circle on dark surfaces (mini player). */
+  appearance?: "light" | "dark";
+  /** Where the hover popover anchors relative to the circle. */
+  popoverAlign?: "center" | "left";
 }
 
 const ratingColors: Record<number, string> = {
@@ -45,6 +49,8 @@ export default function TrackRating({
   onRate,
   showPublicRating = true,
   readOnly = false,
+  appearance = "light",
+  popoverAlign = "center",
 }: TrackRatingProps) {
   const [popoverMounted, setPopoverMounted] = useState(false);
   const [popoverEntering, setPopoverEntering] = useState(false);
@@ -93,11 +99,12 @@ export default function TrackRating({
     const trigger = triggerRef.current;
     if (!trigger) return;
     const rect = trigger.getBoundingClientRect();
-    setPos({
-      top: rect.top - 8,
-      left: rect.left + rect.width / 2,
-    });
-  }, []);
+    setPos(
+      popoverAlign === "left"
+        ? { top: rect.top - 8, left: rect.left }
+        : { top: rect.top - 8, left: rect.left + rect.width / 2 },
+    );
+  }, [popoverAlign]);
 
   const openPopover = () => {
     if (readOnly) return;
@@ -167,7 +174,9 @@ export default function TrackRating({
   const ratingBg =
     displayRating && displayRating > 0
       ? ratingColors[displayRating]
-      : "bg-neutral-200";
+      : appearance === "dark"
+        ? "bg-neutral-800 ring-1 ring-white/10"
+        : "bg-neutral-200";
   const publicRatingTooltip =
     publicRating && publicRating > 0
       ? "Average public rating from all users"
@@ -194,11 +203,13 @@ export default function TrackRating({
           type="button"
           onClick={() => openPopover()}
           className={cn(
-            "flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-semibold transition-all hover:scale-105 sm:h-8 sm:w-8 sm:text-xs",
+            "flex h-6 w-6 cursor-pointer items-center justify-center rounded-full text-[10px] font-semibold transition-all hover:scale-105 sm:h-8 sm:w-8 sm:text-xs",
             ratingBg,
             displayRating && displayRating > 0
               ? "text-white"
-              : "text-neutral-400",
+              : appearance === "dark"
+                ? "text-neutral-500"
+                : "text-neutral-400",
           )}
           aria-expanded={popoverMounted && popoverEntering}
           aria-label="Rate song"
@@ -227,14 +238,18 @@ export default function TrackRating({
             style={{
               top: pos.top,
               left: pos.left,
-              transform: "translate(-50%, -100%)",
+              transform:
+                popoverAlign === "left"
+                  ? "translate(0, -100%)"
+                  : "translate(-50%, -100%)",
             }}
             onMouseEnter={openPopover}
             onMouseLeave={scheduleClosePopover}
           >
             <div
               className={cn(
-                "relative flex flex-col items-center justify-center rounded-2xl bg-neutral-800 p-3 shadow-2xl/15 origin-bottom transition-[opacity,transform] ease-out motion-reduce:transition-none",
+                "relative flex flex-col items-center justify-center rounded-2xl bg-neutral-800 p-3 shadow-2xl/15 transition-[opacity,transform] ease-out motion-reduce:transition-none",
+                popoverAlign === "left" ? "origin-bottom-left" : "origin-bottom",
                 popoverEntering
                   ? "pointer-events-auto translate-y-0 scale-100 opacity-100"
                   : "pointer-events-none translate-y-1 scale-[0.96] opacity-0",
@@ -273,7 +288,12 @@ export default function TrackRating({
                 ))}
               </div>
               <div
-                className="pointer-events-none absolute top-full left-1/2 -translate-x-1/2"
+                className={cn(
+                  "pointer-events-none absolute top-full",
+                  popoverAlign === "left"
+                    ? "left-4"
+                    : "left-1/2 -translate-x-1/2",
+                )}
                 aria-hidden
               >
                 <div className="h-0 w-0 border-x-[7px] border-t-[6px] border-x-transparent border-t-neutral-800" />

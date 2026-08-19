@@ -90,9 +90,11 @@ export default function AlbumRatingRowSection({
       : `${ratedTracksCount}/${totalTracks} rated`
     : "Rate below";
 
-  const publicDetail = publicData?.ratingCount
-    ? `from ${publicData.ratingCount} users`
-    : "No ratings";
+  const publicUserCount = publicData?.ratingCount ?? 0;
+  const publicDetail =
+    publicUserCount > 0
+      ? `from ${publicUserCount} ${publicUserCount === 1 ? "user" : "users"}`
+      : "No ratings";
 
   const publicScore = publicData?.averageRating
     ? publicData.averageRating.toFixed(1)

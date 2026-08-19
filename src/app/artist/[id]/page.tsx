@@ -66,6 +66,7 @@ export default async function ArtistPage({ params }: PageProps) {
       artistName={pageData.artistName}
       artistInfo={pageData.artistInfo}
       topSongs={pageData.topSongs}
+      latestSongs={pageData.latestSongs}
       essentialAlbums={pageData.essentialAlbums}
       albums={pageData.albums}
       epsAndSingles={pageData.epsAndSingles}

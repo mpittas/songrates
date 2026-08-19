@@ -4,8 +4,6 @@ import { PAGE_CONTAINER_WIDTH } from "@/lib/pageLayout";
 import { cn } from "@/lib/utils";
 
 interface PageHeroProps {
-  /** Small uppercase label above the title. */
-  eyebrow?: string;
   title: string;
   /** Supporting line under the title. */
   subtitle?: ReactNode;
@@ -21,7 +19,6 @@ interface PageHeroProps {
  * so it aligns with page content below.
  */
 export default function PageHero({
-  eyebrow,
   title,
   subtitle,
   icon,
@@ -36,10 +33,7 @@ export default function PageHero({
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_15%_20%,#3a2722_0%,#231a18_45%,#15110f_100%)]" />
           {/* Warm accent */}
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_85%_10%,rgba(237,78,57,0.18)_0%,transparent_50%)]" />
-          {/* Top sheen */}
           <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.06)_0%,transparent_40%)]" />
-          {/* Noise texture */}
-          <div className="explore-hero-noise pointer-events-none absolute inset-0 opacity-[0.12] mix-blend-overlay" />
 
           <div
             className={cn(
@@ -55,12 +49,7 @@ export default function PageHero({
               ) : null}
 
               <div className="min-w-0">
-                {eyebrow ? (
-                  <div className="text-xs font-mono uppercase tracking-widest text-white/60">
-                    {eyebrow}
-                  </div>
-                ) : null}
-                <h1 className="mt-1 break-words text-3xl font-medium tracking-tight text-white sm:text-4xl">
+                <h1 className="break-words text-3xl font-medium tracking-tight text-white sm:text-4xl">
                   {title}
                 </h1>
                 {subtitle ? (

@@ -1,32 +1,38 @@
+import { PAGE_CONTAINER } from "@/lib/pageLayout";
+import { cn } from "@/lib/utils";
+
 export default function ProfilePageSkeleton() {
   return (
-    <main className="min-h-screen bg-[var(--background)]">
-      <div className="h-44 animate-pulse bg-[#c13a62] sm:h-56 md:h-64" />
-      <div className="mx-auto w-full max-w-[1180px] px-4 sm:px-6">
-        <div className="flex items-start gap-4 sm:gap-5">
-          <div className="-mt-12 sm:-mt-14">
-            <div className="h-24 w-24 animate-pulse rounded-full bg-neutral-300 ring-[3px] ring-[var(--background)] sm:h-28 sm:w-28" />
-          </div>
-          <div className="space-y-2 pt-4 sm:pt-5">
-            <div className="h-8 w-40 animate-pulse rounded-md bg-neutral-300" />
-            <div className="h-4 w-28 animate-pulse rounded-md bg-neutral-200" />
-          </div>
-        </div>
-        <div className="mt-8 flex gap-3">
-          {Array.from({ length: 5 }).map((_, index) => (
-            <div
-              key={index}
-              className="h-8 w-20 animate-pulse rounded-full bg-neutral-200"
-            />
-          ))}
-        </div>
-        <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-          {Array.from({ length: 10 }).map((_, index) => (
-            <div key={index} className="space-y-2">
-              <div className="aspect-square animate-pulse rounded-md bg-neutral-200" />
-              <div className="h-3 w-3/4 animate-pulse rounded bg-neutral-200" />
+    <main className="min-h-screen bg-stone-100">
+      <div className="h-40 animate-pulse bg-neutral-800 sm:h-44 md:h-48" />
+      <div className={cn(PAGE_CONTAINER)}>
+        <div className="-mt-16 flex flex-col gap-14 lg:flex-row">
+          <aside className="w-full shrink-0 lg:w-60">
+            <div className="flex flex-col items-center rounded-xl border border-neutral-100 bg-white p-4">
+              <div className="-mt-12 mb-3 h-22 w-22 animate-pulse rounded-full bg-neutral-300" />
+              <div className="h-5 w-28 animate-pulse rounded-md bg-neutral-200" />
+              <div className="mt-2 h-4 w-20 animate-pulse rounded-md bg-neutral-100" />
+              <div className="mt-6 w-full space-y-2">
+                {Array.from({ length: 6 }).map((_, index) => (
+                  <div
+                    key={index}
+                    className="h-10 w-full animate-pulse rounded-lg bg-neutral-100"
+                  />
+                ))}
+              </div>
             </div>
-          ))}
+          </aside>
+          <div className="mt-4 flex-1 lg:mt-26">
+            <div className="mb-8 h-7 w-40 animate-pulse rounded-md bg-neutral-200" />
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+              {Array.from({ length: 8 }).map((_, index) => (
+                <div key={index} className="space-y-2">
+                  <div className="aspect-square animate-pulse rounded-md bg-neutral-200" />
+                  <div className="h-3 w-3/4 animate-pulse rounded bg-neutral-200" />
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </main>

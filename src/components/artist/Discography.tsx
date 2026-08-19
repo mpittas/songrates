@@ -2,7 +2,13 @@
 
 import { useMemo } from "react";
 import { IoDiscOutline } from "react-icons/io5";
-import { LuStar, LuListMusic, LuDiscAlbum, LuUsersRound } from "react-icons/lu";
+import {
+  LuStar,
+  LuListMusic,
+  LuDiscAlbum,
+  LuUsersRound,
+  LuClock,
+} from "react-icons/lu";
 import ArtistAccordion from "./ArtistAccordion";
 import TopSongsList from "./TopSongsList";
 import ArtistAlbumGridSection from "./ArtistAlbumGridSection";
@@ -15,6 +21,7 @@ import type { Album, TopSong } from "@/types/music";
 
 interface DiscographyProps {
   topSongs: TopSong[];
+  latestSongs: TopSong[];
   essentialAlbums: Album[];
   albums: Album[];
   epsAndSingles: Album[];
@@ -25,6 +32,7 @@ interface DiscographyProps {
 
 export default function Discography({
   topSongs,
+  latestSongs = [],
   essentialAlbums,
   albums,
   epsAndSingles,
@@ -36,6 +44,11 @@ export default function Discography({
   const filteredTopSongs = useMemo(
     () => filterTopSongsByQuery(topSongs, searchQuery),
     [topSongs, searchQuery],
+  );
+
+  const filteredLatestSongs = useMemo(
+    () => filterTopSongsByQuery(latestSongs, searchQuery),
+    [latestSongs, searchQuery],
   );
 
   const filteredEssential = useMemo(
@@ -68,6 +81,17 @@ export default function Discography({
           defaultOpen={true}
         >
           <TopSongsList songs={filteredTopSongs} />
+        </ArtistAccordion>
+      )}
+
+      {filteredLatestSongs.length > 0 && (
+        <ArtistAccordion
+          title="Latest Songs"
+          count={filteredLatestSongs.length}
+          icon={<LuClock aria-hidden />}
+          defaultOpen={true}
+        >
+          <TopSongsList songs={filteredLatestSongs} trailing="releaseDate" />
         </ArtistAccordion>
       )}
 

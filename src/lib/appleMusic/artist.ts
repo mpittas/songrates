@@ -2,8 +2,8 @@
  * Artist domain operations.
  *
  * `getArtistWithViews` is the single entry point for an artist page: it pulls
- * the artist + all discography views in one Apple Music call, then a second
- * batched /songs call to resolve featured-artist IDs on top songs.
+ * the artist + discography views, a small latest-release/singles call with
+ * tracks, then a batched /songs call to resolve featured-artist IDs.
  */
 
 import { cache } from "react";
@@ -19,6 +19,10 @@ import {
   parseAlbumItems,
   sortByDateDesc,
 } from "./parsers";
+import {
+  collectLatestSongsFromAlbums,
+  latestSongCreditsArtist,
+} from "./latestSongs";
 import type {
   ArtistDiscography,
   AppleArtistDetail,
@@ -54,7 +58,7 @@ export function classifyAlbumType(album: {
 /**
  * Fetch artist + discography views.
  *
- * The artist's full discography is split into two parallel Apple Music calls
+ * The artist's full discography is split into parallel Apple Music calls
  * instead of one giant `?views=...` request. Prolific artists (Drake, Michael
  * Jackson, etc.) return payloads large enough that Apple's gateway has been
  * observed returning 504s, which cascaded into Vercel function timeouts (300s)
@@ -66,7 +70,7 @@ export function classifyAlbumType(album: {
  */
 export const getArtistWithViews = cache(
   async (artistId: string): Promise<ArtistDiscography | null> => {
-    const cacheKey = `am-artist-full-v4:${artistId}`;
+    const cacheKey = `am-artist-full-v6:${artistId}`;
     const cached = artistCache.get(cacheKey);
     if (cached) return cached as ArtistDiscography;
 
@@ -75,9 +79,12 @@ export const getArtistWithViews = cache(
 
       // Call 1 (critical): artist metadata + top songs + featured albums.
       // Call 2 (heavy): the four discography album-list views.
+      // Call 3 (small): latest-release + singles with tracks for "Latest Songs".
+      // Apple has no latest-songs view; singles/latest-release with
+      // include[albums]=tracks is the documented way to get recent recordings.
       // Run in parallel; each has the full revalidate window so the Data Cache
-      // usually absorbs one or both.
-      const [coreData, discoData] = await Promise.all([
+      // usually absorbs them.
+      const [coreData, discoData, latestData] = await Promise.all([
         appleMusicFetch<any>(
           `/catalog/${STOREFRONT}/artists/${artistId}?views=top-songs,featured-albums&include[songs]=albums`,
           { tags, revalidate: APPLE_MUSIC_REVALIDATE_SECONDS },
@@ -90,6 +97,16 @@ export const getArtistWithViews = cache(
           // whole page. Top songs + featured albums still render.
           console.warn(
             `Artist ${artistId}: discography fetch failed, rendering partial:`,
+            err,
+          );
+          return null;
+        }),
+        appleMusicFetch<any>(
+          `/catalog/${STOREFRONT}/artists/${artistId}?views=latest-release,singles&include[albums]=tracks&include[songs]=artists,featured-artists`,
+          { tags, revalidate: APPLE_MUSIC_REVALIDATE_SECONDS },
+        ).catch((err) => {
+          console.warn(
+            `Artist ${artistId}: latest songs fetch failed, omitting section:`,
             err,
           );
           return null;
@@ -131,8 +148,20 @@ export const getArtistWithViews = cache(
         };
       });
 
-      if (topSongs.length > 0) {
-        const ids = topSongs.map((t) => t.id).join(",");
+      const latestViews = latestData?.data?.[0]?.views || {};
+      let latestSongs = collectLatestSongsFromAlbums(
+        [
+          ...(latestViews["latest-release"]?.data || []),
+          ...(latestViews["singles"]?.data || []),
+        ],
+        { id: artistId, name: artist.name },
+      );
+
+      const songsNeedingCredits = [...topSongs, ...latestSongs];
+      if (songsNeedingCredits.length > 0) {
+        const ids = [...new Set(songsNeedingCredits.map((t) => t.id))].join(
+          ",",
+        );
         const songsData = await appleMusicFetch<any>(
           `/catalog/${STOREFRONT}/songs?ids=${ids}&include=artists,albums`,
           {
@@ -140,32 +169,17 @@ export const getArtistWithViews = cache(
             revalidate: APPLE_MUSIC_REVALIDATE_SECONDS,
           },
         );
-        if (songsData?.data) {
-          const artistMap = new Map<string, { id: string; name: string }[]>();
-          for (const song of songsData.data) {
-            artistMap.set(song.id, artistsFromCatalogSongResource(song));
-          }
-          for (const ts of topSongs) {
-            const list = artistMap.get(ts.id);
-            if (list && list.length > 0) {
-              ts.artists = list;
-              ts.artistId = list[0].id;
-            } else if (artist.id && ts.artistName) {
-              ts.artists = [{ id: artist.id, name: ts.artistName }];
-            }
-          }
-        } else {
-          for (const ts of topSongs) {
-            if (artist.id && ts.artistName) {
-              ts.artists = [{ id: artist.id, name: ts.artistName }];
-            }
-          }
-        }
+        applySongArtistCredits(topSongs, songsData?.data, artist);
+        applySongArtistCredits(latestSongs, songsData?.data, artist, false);
+        latestSongs = latestSongs.filter((song) =>
+          latestSongCreditsArtist(song, artist),
+        );
       }
 
       const result: ArtistDiscography = {
         artist,
         topSongs,
+        latestSongs,
         featuredAlbums: sortByDateDesc(
           parseAlbumItems(coreViews["featured-albums"]?.data || []),
         ),
@@ -188,3 +202,28 @@ export const getArtistWithViews = cache(
     });
   },
 );
+
+function applySongArtistCredits(
+  songs: AppleTopSong[],
+  catalogSongs: any[] | undefined,
+  fallbackArtist: AppleArtistDetail,
+  allowFallback = true,
+) {
+  const artistMap = new Map<string, { id: string; name: string }[]>();
+  for (const song of catalogSongs || []) {
+    artistMap.set(song.id, artistsFromCatalogSongResource(song));
+  }
+  for (const song of songs) {
+    const list = artistMap.get(song.id);
+    if (list && list.length > 0) {
+      song.artists = list;
+      song.artistId = list[0].id;
+    } else if (
+      allowFallback &&
+      fallbackArtist.id &&
+      song.artistName
+    ) {
+      song.artists = [{ id: fallbackArtist.id, name: song.artistName }];
+    }
+  }
+}

@@ -100,6 +100,8 @@ export interface AlbumContext {
   /** Actual album track count. Omit when unknown — never pass a placeholder like 1. */
   totalTracks?: number;
   artworkUrl?: string;
+  /** "Album" | "EP" | "Single" | "Compilation" — omit when unknown. */
+  albumType?: string;
 }
 
 export interface RatedAlbumData {
@@ -111,9 +113,17 @@ export interface RatedAlbumData {
   ratedTrackIds: string[];
   ratedAt?: string;
   artworkUrl?: string;
+  albumType?: string;
 }
 
 export interface PublicAlbumRating {
+  albumId: string;
+  averageRating: number;
+  ratingCount: number;
+}
+
+export interface PublicTrackRating {
+  trackId: string;
   albumId: string;
   averageRating: number;
   ratingCount: number;

@@ -32,7 +32,7 @@ function IconButton({
   children: React.ReactNode;
 }) {
   const className = cn(
-    "flex size-8 items-center justify-center rounded-full transition-colors duration-150",
+    "flex size-8 cursor-pointer items-center justify-center rounded-full transition-colors duration-150",
     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40",
     active ? "text-white" : "text-white/40 hover:text-white",
   );
@@ -90,6 +90,7 @@ export default function MiniPlayer() {
     toggleRepeat,
     isShuffling,
     toggleShuffle,
+    playbackSource,
   } = usePlayer();
 
   const { ratings } = useRatings();
@@ -261,6 +262,14 @@ export default function MiniPlayer() {
       )}`
     : undefined;
 
+  const tracklistLabel =
+    playbackSource?.type === "playlist" ||
+    playbackSource?.type === "apple-playlist"
+      ? "Playlist tracks"
+      : playbackSource?.type === "artist"
+        ? "Played tracks"
+        : "Album tracks";
+
   return (
     <>
       {videoId && (
@@ -280,8 +289,12 @@ export default function MiniPlayer() {
           "fixed right-0 bottom-0 left-0 z-[60] safe-area-bottom",
           "bg-[#0a0a0a] text-white",
           "transition-transform duration-400 ease-[cubic-bezier(0.22,1,0.36,1)]",
-          currentTrack ? "translate-y-0" : "translate-y-full",
+          currentTrack
+            ? "translate-y-0"
+            : "pointer-events-none translate-y-full",
         )}
+        aria-hidden={!currentTrack}
+        {...(!currentTrack ? { inert: true } : {})}
       >
         <div className="md:hidden">
           <ProgressBar
@@ -294,16 +307,23 @@ export default function MiniPlayer() {
         </div>
 
         <div className="flex items-center gap-2 px-3 py-2.5 md:grid md:grid-cols-[minmax(0,1fr)_minmax(280px,1.4fr)_minmax(0,1fr)] md:gap-6 md:px-4 md:py-3">
-          <div className="flex min-w-0 flex-1 items-center gap-3 md:flex-none">
-            {currentTrack && <TrackInfo currentTrack={currentTrack} />}
+          <div className="flex min-w-0 flex-1 items-center gap-2.5 md:flex-none md:gap-3">
             <div className="hidden shrink-0 md:block">
               <TrackRating
                 trackId={currentTrack?.id}
                 albumContext={albumContext}
                 displayRating={rating}
                 showPublicRating={false}
+                appearance="dark"
+                popoverAlign="left"
               />
             </div>
+            {currentTrack && (
+              <TrackInfo
+                currentTrack={currentTrack}
+                playbackSource={playbackSource}
+              />
+            )}
           </div>
 
           <div className="flex shrink-0 flex-col items-center justify-center gap-1.5">
@@ -335,12 +355,12 @@ export default function MiniPlayer() {
             <button
               ref={tracklistButtonRef}
               type="button"
-              aria-label="Album tracks"
-              title="Album tracks"
+              aria-label={tracklistLabel}
+              title={tracklistLabel}
               aria-expanded={showTracklist}
               onClick={() => setShowTracklist((open) => !open)}
               className={cn(
-                "flex size-8 items-center justify-center rounded-full transition-colors duration-150",
+                "flex size-8 cursor-pointer items-center justify-center rounded-full transition-colors duration-150",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40",
                 showTracklist ? "text-white" : "text-white/40 hover:text-white",
               )}
@@ -388,7 +408,7 @@ export default function MiniPlayer() {
           <button
             type="button"
             onClick={stopPlayback}
-            className="flex size-8 shrink-0 items-center justify-center rounded-full text-white/40 transition-colors hover:text-white md:hidden"
+            className="flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full text-white/40 transition-colors hover:text-white md:hidden"
             aria-label="Close player"
           >
             <LuX size={16} strokeWidth={2} />

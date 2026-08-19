@@ -38,10 +38,10 @@ export default function MobileMenu({
             href={href}
             onClick={onClose}
             className={cn(
-              "rounded-md px-1 py-3 text-sm font-mono transition-colors",
+              "rounded-lg px-3 py-3 text-sm font-medium transition-colors",
               isNavLinkActive(pathname, href)
-                ? "text-[#00f0ff]"
-                : "text-neutral-200 hover:text-[#00f0ff]",
+                ? "bg-neutral-100 text-neutral-900"
+                : "text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900",
             )}
           >
             {label}
@@ -52,16 +52,16 @@ export default function MobileMenu({
             <Link
               href="/login?view=login"
               onClick={onClose}
-              className="rounded-md px-1 py-3 text-sm font-mono text-neutral-200 transition-colors hover:text-[#00f0ff]"
+              className="rounded-lg px-3 py-3 text-sm font-medium text-neutral-600 transition-colors hover:bg-neutral-50 hover:text-neutral-900"
             >
-              Log in
+              Sign in
             </Link>
             <Button
               href="/login?view=signup"
               onClick={onClose}
-              variant="border"
+              variant="primary"
               size="md"
-              className="mt-2 w-full rounded-none"
+              className="mt-3 w-full"
             >
               Sign up
             </Button>

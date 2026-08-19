@@ -61,7 +61,9 @@ export default function AlbumRatingBadge({
         {publicRating && (
           <div
             className="flex items-center gap-1.5 border-l border-white/10 pl-3"
-            title={`Public Rating: ${publicRating} (${publicCount} users)`}
+            title={`Public Rating: ${publicRating} (${publicCount} ${
+              publicCount === 1 ? "user" : "users"
+            })`}
           >
             <FaGlobe size={10} className="text-neutral-500" />
             <span className="text-[10px] font-mono text-neutral-300">

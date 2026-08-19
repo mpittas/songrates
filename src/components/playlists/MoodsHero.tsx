@@ -27,7 +27,6 @@ export default function MoodsHero({
 
   return (
     <PageHero
-      eyebrow="Moods"
       title="Find Your Vibe"
       subtitle={
         <>

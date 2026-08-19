@@ -122,6 +122,7 @@ export interface AppleTopSong {
 export interface ArtistDiscography {
   artist: AppleArtistDetail;
   topSongs: AppleTopSong[];
+  latestSongs: AppleTopSong[];
   featuredAlbums: AppleArtistAlbum[];
   fullAlbums: AppleArtistAlbum[];
   singles: AppleArtistAlbum[];

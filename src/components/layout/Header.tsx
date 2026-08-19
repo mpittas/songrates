@@ -31,7 +31,7 @@ function navLinkClassName(pathname: string, href: string) {
   return cn(
     "rounded-full px-3 py-1.5 text-sm font-medium transition-colors",
     isNavLinkActive(pathname, href)
-      ? "bg-neutral-900 text-white"
+      ? "bg-neutral-100 text-neutral-900"
       : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900",
   );
 }
@@ -43,7 +43,11 @@ export default function Header({ showSearch }: HeaderProps) {
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const shouldShowSearch = showSearch ?? pathname !== "/";
+  const shouldShowSearch =
+    showSearch ??
+    (pathname !== "/" &&
+      pathname !== "/hero-banners" &&
+      !pathname.startsWith("/album-playlists"));
 
   return (
     <>
@@ -66,7 +70,7 @@ export default function Header({ showSearch }: HeaderProps) {
 
                 <button
                   type="button"
-                  className="ml-auto rounded-md p-2 text-neutral-600 transition-colors hover:bg-neutral-200/60 hover:text-neutral-900 md:hidden"
+                  className="ml-auto flex size-10 cursor-pointer items-center justify-center rounded-md text-neutral-600 transition-colors hover:bg-neutral-200/60 hover:text-neutral-900 md:hidden"
                   onClick={() => setIsMobileSearchOpen(true)}
                   aria-label="Open search"
                 >
@@ -82,7 +86,7 @@ export default function Header({ showSearch }: HeaderProps) {
                       <button
                         type="button"
                         onClick={() => setIsMobileSearchOpen(false)}
-                        className="flex-shrink-0 text-sm font-medium text-neutral-600 transition-colors hover:text-neutral-900"
+                        className="flex-shrink-0 cursor-pointer text-sm font-medium text-neutral-600 transition-colors hover:text-neutral-900"
                       >
                         Cancel
                       </button>
@@ -112,7 +116,7 @@ export default function Header({ showSearch }: HeaderProps) {
                       />
                       <UserMenu user={user} onSignOut={signOut} />
                     </>
-                  ) : (
+                  ) : pathname.startsWith("/login") ? null : (
                     <Button
                       href="/login?view=login"
                       variant="primary"
@@ -127,7 +131,7 @@ export default function Header({ showSearch }: HeaderProps) {
             <div className="flex items-center gap-1 md:hidden">
               <button
                 type="button"
-                className="rounded-md p-2 text-neutral-600 transition-colors hover:bg-neutral-200/60 hover:text-neutral-900"
+                className="flex size-10 cursor-pointer items-center justify-center rounded-md text-neutral-600 transition-colors hover:bg-neutral-200/60 hover:text-neutral-900"
                 onClick={() => setIsMobileMenuOpen(true)}
                 aria-label="Open menu"
               >
@@ -136,7 +140,7 @@ export default function Header({ showSearch }: HeaderProps) {
               {!loading && user && (
                 <UserMenu user={user} onSignOut={signOut} isMobile={true} />
               )}
-              {!loading && !user && (
+              {!loading && !user && !pathname.startsWith("/login") && (
                 <Button
                   href="/login?view=login"
                   variant="primary"
@@ -153,7 +157,7 @@ export default function Header({ showSearch }: HeaderProps) {
       <MobileMenu
         isOpen={isMobileMenuOpen}
         onClose={() => setIsMobileMenuOpen(false)}
-        showAuthLinks={!loading && !user}
+        showAuthLinks={!loading && !user && !pathname.startsWith("/login")}
       />
     </>
   );

@@ -23,6 +23,7 @@ import DropdownMenu from "@/components/ui/DropdownMenu";
 import PlaylistSelectorModal from "@/components/ui/PlaylistSelectorModal";
 import { lyricsQueryOptions, useLyrics } from "@/hooks/useLyrics";
 import { TrackInfo, AlbumContext } from "@/types/music";
+import { albumPlaybackSource } from "@/lib/playbackSource";
 
 interface TrackItemProps {
   track: TrackInfo;
@@ -130,9 +131,13 @@ export default function TrackItem({
                   artists: track.artists,
                 },
                 queue,
+                albumPlaybackSource(albumId, albumContext.title),
               )
             }
-            className={`flex items-center justify-center w-6 h-6 border shrink-0 transition-all ${
+            aria-label={
+              isCurrentTrack && isPlaying ? "Pause" : "Play"
+            }
+            className={`flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center border transition-colors ${
               isCurrentTrack && isPlaying
                 ? "bg-[#1f1f1f] border-[#1f1f1f] text-white"
                 : "bg-white border-[#d7d7d7] text-neutral-500 hover:bg-[#f0f0f0] hover:border-[#c7c7c7] hover:text-neutral-900"
@@ -234,7 +239,7 @@ export default function TrackItem({
               <DropdownMenu
                 trigger={
                   <button
-                    className="w-6 h-6 flex items-center justify-center rounded-full text-neutral-500 hover:text-neutral-900 hover:bg-neutral-200 transition-colors"
+                  className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-full text-neutral-500 transition-colors hover:bg-neutral-200 hover:text-neutral-900"
                     title="More options"
                   >
                     <HiEllipsisVertical size={20} />
@@ -268,7 +273,7 @@ export default function TrackItem({
                       setShowPlaylistModal(true);
                     }}
                     data-menu-close
-                    className="w-full text-left flex items-center gap-3 px-3 py-2 text-xs font-mono text-neutral-600 hover:text-neutral-900 hover:bg-[#f5f5f5] transition-colors"
+                    className="flex w-full cursor-pointer items-center gap-3 px-3 py-2 text-left text-sm text-neutral-600 transition-colors hover:bg-neutral-100 hover:text-neutral-900"
                   >
                     <div className="w-4 flex justify-center">
                       <FaPlus size={12} />
@@ -286,7 +291,7 @@ export default function TrackItem({
                         onToggleLyrics?.(track.id);
                       }}
                       data-menu-close
-                      className="w-full text-left flex items-center gap-3 px-3 py-2 text-xs font-mono text-neutral-600 hover:text-neutral-900 hover:bg-[#f5f5f5] transition-colors"
+                      className="flex w-full cursor-pointer items-center gap-3 px-3 py-2 text-left text-sm text-neutral-600 transition-colors hover:bg-neutral-100 hover:text-neutral-900"
                     >
                       <div className="w-4 flex justify-center">
                         <HiOutlineMicrophone size={12} />
@@ -304,7 +309,7 @@ export default function TrackItem({
                       }}
                       data-menu-close
                       disabled={isRemoving}
-                      className="w-full text-left flex items-center gap-3 px-3 py-2 text-xs font-mono text-red-600 hover:text-red-700 hover:bg-[#f5f5f5] transition-colors"
+                      className="flex w-full cursor-pointer items-center gap-3 px-3 py-2 text-left text-sm text-red-600 transition-colors hover:bg-neutral-100 hover:text-red-700"
                     >
                       <div className="w-4 flex justify-center">
                         <FaTimes size={12} />

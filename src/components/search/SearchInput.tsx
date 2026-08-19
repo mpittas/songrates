@@ -1,6 +1,7 @@
 import { IoSearch, IoClose } from "react-icons/io5";
 
 import { SearchInputProps } from "@/types/search";
+import { cn } from "@/lib/utils";
 
 export default function SearchInput({
   value,
@@ -18,13 +19,12 @@ export default function SearchInput({
   const isGlass = variant === "glass";
 
   const containerClass = isGlass
-    ? `bg-white/20 backdrop-blur-md ${
-        isFocused
-          ? "border-white/40 bg-white/15"
-          : "border-white/25 hover:border-white/35 hover:bg-white/12"
-      }`
-    : "bg-white border border-[#d9d9d9] " +
-      (isFocused ? "border-[#b9b9b9]" : "hover:border-[#c8c8c8]");
+    ? isFocused
+      ? "border-white/40 bg-white/15"
+      : "border-white/25 bg-white/20 hover:border-white/35 hover:bg-white/12"
+    : isFocused
+      ? "border-[#b9b9b9] bg-white"
+      : "border-[#d9d9d9] bg-white hover:border-[#c8c8c8]";
 
   const iconClass = isGlass
     ? isFocused
@@ -44,49 +44,50 @@ export default function SearchInput({
 
   return (
     <div
-      className={`
-        relative flex items-center w-full
-        rounded-xl transition-all duration-200
-        ${containerClass}
-      `}
+      className={cn(
+        "relative flex w-full items-center rounded-xl border backdrop-blur-md transition-colors duration-200",
+        !isGlass && "backdrop-blur-none",
+        containerClass,
+      )}
     >
       <div
-        className={`transition-colors duration-200 ${iconClass} ${
-          isCompact ? "pl-2 pr-1.5" : isSmall ? "pl-3 pr-2" : "pl-5 pr-4"
-        }`}
+        className={cn(
+          iconClass,
+          isCompact ? "pr-1.5 pl-2" : isSmall ? "pr-2 pl-3" : "pr-4 pl-5",
+        )}
       >
         <IoSearch size={isCompact ? 12 : isSmall ? 16 : 20} />
       </div>
 
       <input
-        type="text"
+        type="search"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onFocus={onFocus}
         onBlur={onBlur}
         placeholder={placeholder}
-        style={{ outline: "none" }}
-        className={`flex-1 bg-transparent focus:outline-none font-mono ${inputClass} ${
-          isCompact
-            ? "py-1.5 text-xs"
-            : isSmall
-              ? "py-2 text-sm"
-              : "py-3 text-lg"
-        }`}
+        aria-label={placeholder}
+        className={cn(
+          "flex-1 bg-transparent outline-hidden",
+          inputClass,
+          isCompact ? "py-1.5 text-xs" : isSmall ? "py-2 text-sm" : "py-3 text-lg",
+        )}
       />
 
-      {value && (
+      {value ? (
         <button
           type="button"
           onClick={onClear}
-          className={`transition-colors ${clearClass} ${
-            isCompact ? "pr-2 pl-1.5" : isSmall ? "pr-3 pl-2" : "pr-5 pl-4"
-          }`}
+          className={cn(
+            "cursor-pointer transition-colors",
+            clearClass,
+            isCompact ? "pr-2 pl-1.5" : isSmall ? "pr-3 pl-2" : "pr-5 pl-4",
+          )}
           aria-label="Clear search"
         >
           <IoClose size={isCompact ? 12 : isSmall ? 16 : 20} />
         </button>
-      )}
+      ) : null}
     </div>
   );
 }

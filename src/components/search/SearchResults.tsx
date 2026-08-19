@@ -14,7 +14,7 @@ import type {
   AlbumSearchResult,
   SongSearchResult,
 } from "@/types/search";
-import { createSlug, formatTime } from "@/lib/utils";
+import { createSlug, cn, formatTime } from "@/lib/utils";
 
 // ─── Category Filter Tabs ──────────────────────────────────────────────────────
 
@@ -40,11 +40,12 @@ function CategoryTabs({
           type="button"
           onMouseDown={(e) => e.preventDefault()}
           onClick={() => onChange(cat.key)}
-          className={`px-3 py-1 text-[11px] font-mono tracking-wider uppercase transition-all rounded-sm ${
+          className={cn(
+            "cursor-pointer rounded-full px-3 py-1 text-xs font-medium transition-colors",
             active === cat.key
-              ? "bg-[#efefef] text-neutral-900 border border-[#d8d8d8]"
-              : "text-neutral-500 hover:text-neutral-900 border border-transparent"
-          }`}
+              ? "bg-neutral-100 text-neutral-900"
+              : "text-neutral-500 hover:text-neutral-900",
+          )}
         >
           {cat.label}
         </button>
@@ -133,7 +134,7 @@ function ArtistRow({
             : "Artist"}
         </p>
       </div>
-      <span className="text-[10px] text-neutral-600 font-mono flex-shrink-0 uppercase tracking-wider">
+      <span className="shrink-0 text-[11px] text-neutral-400">
         Artist
       </span>
     </InstantLink>
@@ -169,7 +170,7 @@ function AlbumRow({
           {result.releaseDate ? ` · ${result.releaseDate.slice(0, 4)}` : ""}
         </p>
       </div>
-      <span className="text-[10px] text-neutral-600 font-mono flex-shrink-0 uppercase tracking-wider">
+      <span className="shrink-0 text-[11px] text-neutral-400">
         {result.albumType || "Album"}
       </span>
     </InstantLink>
@@ -220,7 +221,7 @@ function SongRow({
             : ""}
         </p>
       </div>
-      <span className="text-[10px] text-neutral-600 font-mono flex-shrink-0 uppercase tracking-wider">
+      <span className="shrink-0 text-[11px] text-neutral-400">
         Song
       </span>
     </>
@@ -231,6 +232,7 @@ function SongRow({
       <InstantLink
         href={href}
         onClick={onSelect}
+        scroll={false}
         className={rowClass}
       >
         {content}
@@ -251,9 +253,9 @@ function SectionHeader({ label, count }: { label: string; count: number }) {
   if (count === 0) return null;
   return (
     <div className="px-4 py-1.5 border-b border-[#e6e6e6]">
-      <h2 className="font-mono text-[10px] text-neutral-500 tracking-wider uppercase">
+      <h2 className="text-xs font-medium text-neutral-500">
         {label}
-        <span className="ml-1.5 text-neutral-600">({count})</span>
+        <span className="ml-1.5 text-neutral-400">({count})</span>
       </h2>
     </div>
   );
@@ -343,7 +345,7 @@ export default function SearchResults({
     return (
       <div className={panelClass}>
         <div className="flex items-center justify-between px-4 py-2 border-b border-[#e6e6e6]">
-          <h2 className="font-mono text-[10px] text-neutral-500 tracking-wider uppercase">
+          <h2 className="text-xs font-medium text-neutral-500">
             Recent
           </h2>
           {onClearHistory && (
@@ -351,7 +353,7 @@ export default function SearchResults({
               type="button"
               onMouseDown={(e) => e.preventDefault()}
               onClick={onClearHistory}
-              className="font-mono text-[10px] text-neutral-500 hover:text-neutral-900 tracking-wider uppercase transition-colors"
+              className="cursor-pointer text-xs font-medium text-neutral-500 transition-colors hover:text-neutral-900"
             >
               Clear
             </button>
@@ -508,45 +510,10 @@ export default function SearchResults({
 
       {/* No results */}
       {query && !isFetching && !isPlaceholderData && results.length === 0 && (
-        <div className="text-center py-8 text-neutral-600 font-mono text-sm">
-          no results found for &ldquo;{query}&rdquo;
+        <div className="px-4 py-8 text-center text-sm text-neutral-600">
+          No results for &ldquo;{query}&rdquo;
         </div>
       )}
-
-      {/* Recent Artists (Hidden for now) */}
-      {/* {!query && isFocused && history.length > 0 && (
-        <div className="py-2">
-          <div className="px-4 py-2 border-b border-[#1a1a1f] mb-1">
-            <h2 className="font-mono text-[10px] text-neutral-500 tracking-wider uppercase">
-              Recent
-            </h2>
-          </div>
-          <div className="divide-y divide-[#1a1a1f]/50">
-            {history.map((artist) => (
-              <InstantLink
-                key={artist.id}
-                href={`/artist/${createSlug(artist.name, artist.id)}`}
-                className="flex items-center justify-between p-3 hover:bg-[#0f0f12] transition-colors group"
-                onMouseDown={(e: React.MouseEvent) => e.preventDefault()}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 overflow-hidden bg-[#0a0a0d] border border-[#1a1a1f] flex-shrink-0 group-hover:border-[#00f0ff]/30 flex items-center justify-center">
-                    <span className="text-[10px] font-mono text-neutral-600">
-                      {artist.name.slice(0, 2).toUpperCase()}
-                    </span>
-                  </div>
-                  <span className="text-sm text-neutral-400 group-hover:text-[#00f0ff] transition-colors">
-                    {artist.name}
-                  </span>
-                </div>
-                <span className="text-[10px] text-neutral-600 font-mono">
-                  {formatTimeAgo(artist.visitedAt)}
-                </span>
-              </InstantLink>
-            ))}
-          </div>
-        </div>
-      )} */}
     </div>
   );
 }

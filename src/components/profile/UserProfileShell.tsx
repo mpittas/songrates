@@ -2,7 +2,12 @@
 
 import ProfileLayout from "@/components/profile/ProfileLayout";
 import ProfileQuickLinks from "@/components/profile/ProfileQuickLinks";
+import ProfileRank from "@/components/profile/ProfileRank";
 import { enlargeAvatarUrl } from "@/lib/albumReviews";
+import {
+  getProgressionView,
+  type UserProgression,
+} from "@/lib/profileProgression";
 
 export interface UserProfileShellProfile {
   id: string;
@@ -10,6 +15,7 @@ export interface UserProfileShellProfile {
   display_name: string | null;
   avatar_url: string | null;
   created_at: string;
+  progression: UserProgression;
 }
 
 export default function UserProfileShell({
@@ -31,8 +37,18 @@ export default function UserProfileShell({
         username: profile.username,
         displayName: profile.display_name,
         avatarUrl: enlargeAvatarUrl(profile.avatar_url),
-        subtitle: `Joined ${memberSince}`,
+        subtitle: `Member since ${memberSince}`,
       }}
+      progression={
+        <ProfileRank
+          view={getProgressionView(
+            profile.progression.fullyRatedCount,
+            profile.progression.reviewCount,
+            profile.progression.xp,
+          )}
+          className="w-full max-w-none"
+        />
+      }
       quickLinks={
         <ProfileQuickLinks mode="user" username={profile.username} />
       }

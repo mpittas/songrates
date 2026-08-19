@@ -7,8 +7,13 @@ import { LuPause, LuPlay } from "react-icons/lu";
 import { usePlayerCore } from "@/context/PlayerContext";
 import { useRatingsContext as useRatings } from "@/context/RatingsContext";
 import { RATING_COLORS } from "@/components/rating/constants";
+import InstantLink from "@/components/ui/InstantLink";
 import { AlbumInfo, Track } from "@/types/music";
 import { albumKeys } from "@/hooks/useAlbumInfo";
+import {
+  albumPlaybackSource,
+  playbackSourceKindLabel,
+} from "@/lib/playbackSource";
 import { cn, formatTime } from "@/lib/utils";
 
 interface AlbumTracklistPopoverProps {
@@ -26,19 +31,25 @@ export default function AlbumTracklistPopover({
   anchorRef,
   onClose,
 }: AlbumTracklistPopoverProps) {
-  const { playTrack, isPlaying, queue } = usePlayerCore();
+  const { playTrack, isPlaying, queue, playbackSource } = usePlayerCore();
   const { ratings } = useRatings();
   const listRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const [mounted, setMounted] = useState(false);
   const [pos, setPos] = useState({ top: 0, left: 0 });
 
+  const showSourceQueue =
+    (playbackSource?.type === "playlist" ||
+      playbackSource?.type === "apple-playlist" ||
+      playbackSource?.type === "artist") &&
+    queue.length > 0;
+
   const queuedAlbumTracks = useMemo(() => {
     if (!albumId) return [];
     return queue.filter((track) => track.albumId === albumId);
   }, [albumId, queue]);
 
-  const hasQueuedAlbum = queuedAlbumTracks.length > 1;
+  const hasQueuedAlbum = !showSourceQueue && queuedAlbumTracks.length > 1;
 
   const { data: album, isLoading } = useQuery({
     queryKey: albumKeys.detailLite(albumId),
@@ -50,29 +61,54 @@ export default function AlbumTracklistPopover({
       if (!res.ok) throw new Error("Failed to fetch album");
       return (await res.json()) as AlbumInfo;
     },
-    enabled: isVisible && !!albumId && !hasQueuedAlbum,
+    enabled: isVisible && !!albumId && !hasQueuedAlbum && !showSourceQueue,
     staleTime: 10 * 60 * 1000,
     gcTime: 60 * 60 * 1000,
     refetchOnWindowFocus: false,
     retry: 1,
   });
 
-  const tracks: Track[] = hasQueuedAlbum
-    ? queuedAlbumTracks
-    : (album?.tracks ?? []).map((track) => ({
-        id: track.id,
-        title: track.title,
-        artistName: album?.artist.name,
-        artistId: album?.artist.id,
-        albumId: album?.id,
-        albumImageUrl: album?.artworkUrl,
-        albumTitle: album?.title,
-        releaseDate: album?.releaseDate,
-        totalTracks: album?.tracks.length,
-        length: track.length,
-        number: track.number,
-        artists: track.artists,
-      }));
+  const tracks: Track[] = showSourceQueue
+    ? queue
+    : hasQueuedAlbum
+      ? queuedAlbumTracks
+      : (album?.tracks ?? []).map((track) => ({
+          id: track.id,
+          title: track.title,
+          artistName: album?.artist.name,
+          artistId: album?.artist.id,
+          albumId: album?.id,
+          albumImageUrl: album?.artworkUrl,
+          albumTitle: album?.title,
+          releaseDate: album?.releaseDate,
+          totalTracks: album?.tracks.length,
+          length: track.length,
+          number: track.number,
+          artists: track.artists,
+        }));
+
+  const headerTitle = showSourceQueue
+    ? playbackSource?.title
+    : !albumId
+      ? "Album tracks"
+      : isLoading && !hasQueuedAlbum
+        ? "Loading…"
+        : album?.title ||
+          queuedAlbumTracks[0]?.albumTitle ||
+          "Unknown Album";
+
+  const headerSubtitle = showSourceQueue
+    ? playbackSource
+      ? playbackSourceKindLabel(playbackSource)
+      : ""
+    : !albumId
+      ? "No album is linked to this track"
+      : isLoading && !hasQueuedAlbum
+        ? " "
+        : album?.artist?.name || queuedAlbumTracks[0]?.artistName;
+
+  const headerHref =
+    playbackSource?.href || (albumId ? `/album/${albumId}` : undefined);
 
   useEffect(() => {
     setMounted(true);
@@ -122,7 +158,7 @@ export default function AlbumTracklistPopover({
   }, [anchorRef, isVisible, onClose]);
 
   useEffect(() => {
-    if (isVisible && album && currentTrackId && listRef.current) {
+    if (isVisible && tracks.length > 0 && currentTrackId && listRef.current) {
       const activeElement = listRef.current.querySelector(
         `[data-track-id="${currentTrackId}"]`,
       );
@@ -130,7 +166,7 @@ export default function AlbumTracklistPopover({
         activeElement.scrollIntoView({ block: "center", behavior: "smooth" });
       }
     }
-  }, [isVisible, album, currentTrackId]);
+  }, [isVisible, tracks.length, currentTrackId]);
 
   if (!isVisible || !mounted) return null;
 
@@ -146,33 +182,36 @@ export default function AlbumTracklistPopover({
     >
       <div className="flex max-h-96 w-80 flex-col overflow-hidden rounded-xl border border-white/10 bg-[#141414] shadow-[0_16px_40px_rgba(0,0,0,0.45)]">
         <div className="border-b border-white/10 px-3.5 py-3">
-          <h3 className="truncate text-xs font-medium tracking-tight text-white">
-            {!albumId
-              ? "Album tracks"
-              : isLoading && !hasQueuedAlbum
-                ? "Loading…"
-                : album?.title ||
-                  queuedAlbumTracks[0]?.albumTitle ||
-                  "Unknown Album"}
-          </h3>
-          <p className="mt-0.5 truncate text-[11px] text-white/45">
-            {!albumId
-              ? "No album is linked to this track"
-              : isLoading && !hasQueuedAlbum
-                ? " "
-                : album?.artist?.name || queuedAlbumTracks[0]?.artistName}
-          </p>
+          {headerHref ? (
+            <InstantLink href={headerHref} className="block min-w-0">
+              <h3 className="truncate text-xs font-medium tracking-tight text-white hover:underline">
+                {headerTitle}
+              </h3>
+              <p className="mt-0.5 truncate text-[11px] text-white/45">
+                {headerSubtitle}
+              </p>
+            </InstantLink>
+          ) : (
+            <>
+              <h3 className="truncate text-xs font-medium tracking-tight text-white">
+                {headerTitle}
+              </h3>
+              <p className="mt-0.5 truncate text-[11px] text-white/45">
+                {headerSubtitle}
+              </p>
+            </>
+          )}
         </div>
 
         <div
           ref={listRef}
           className="flex-1 overflow-y-auto overscroll-contain"
         >
-          {!albumId ? (
+          {!showSourceQueue && !albumId ? (
             <p className="px-3.5 py-6 text-center text-xs text-white/45">
-              Play a song from an album to see its tracklist.
+              Play a song from an album or playlist to see its tracklist.
             </p>
-          ) : isLoading && !hasQueuedAlbum ? (
+          ) : !showSourceQueue && isLoading && !hasQueuedAlbum ? (
             <div className="space-y-2 p-3">
               {[...Array(5)].map((_, i) => (
                 <div
@@ -201,7 +240,21 @@ export default function AlbumTracklistPopover({
                       : "text-white/65 hover:bg-white/6 hover:text-white",
                   )}
                   onClick={() => {
-                    playTrack(track, tracks);
+                    const inQueue = queue.some(
+                      (queued) => queued.id === track.id,
+                    );
+                    if (inQueue) {
+                      playTrack(track);
+                      return;
+                    }
+                    playTrack(
+                      track,
+                      tracks,
+                      albumPlaybackSource(
+                        albumId,
+                        album?.title || track.albumTitle || "Album",
+                      ),
+                    );
                   }}
                 >
                   <div className="flex w-4 shrink-0 justify-center text-[10px] tabular-nums">

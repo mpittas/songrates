@@ -4,7 +4,8 @@ import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { User } from "@supabase/supabase-js";
-import { LuLogOut, LuSettings } from "react-icons/lu";
+import { LuDisc3, LuLogOut, LuSettings } from "react-icons/lu";
+import LevelProgressionModal from "@/components/profile/LevelProgressionModal";
 import { cn } from "@/lib/utils";
 
 interface UserMenuProps {
@@ -112,6 +113,7 @@ function MenuRow({
 
 export default function UserMenu({ user, onSignOut }: UserMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [rankOpen, setRankOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const menuId = useId();
 
@@ -157,7 +159,7 @@ export default function UserMenu({ user, onSignOut }: UserMenuProps) {
         aria-expanded={isOpen}
         aria-controls={menuId}
         className={cn(
-          "flex size-8 items-center justify-center overflow-hidden rounded-full",
+          "flex size-8 cursor-pointer items-center justify-center overflow-hidden rounded-full",
           "ring-2 ring-offset-2 ring-offset-white transition-[box-shadow,transform] duration-150",
           "focus-visible:outline-none focus-visible:ring-neutral-900",
           isOpen
@@ -203,6 +205,16 @@ export default function UserMenu({ user, onSignOut }: UserMenuProps) {
           <div className="mx-1.5 my-1 h-px bg-neutral-100" />
 
           <MenuRow
+            icon={<LuDisc3 size={16} strokeWidth={1.75} />}
+            onClick={() => {
+              close();
+              setRankOpen(true);
+            }}
+          >
+            Your rank
+          </MenuRow>
+
+          <MenuRow
             href="/settings"
             icon={<LuSettings size={16} strokeWidth={1.75} />}
             onClick={close}
@@ -222,6 +234,10 @@ export default function UserMenu({ user, onSignOut }: UserMenuProps) {
             Sign out
           </MenuRow>
         </div>
+      ) : null}
+
+      {rankOpen ? (
+        <LevelProgressionModal onClose={() => setRankOpen(false)} />
       ) : null}
     </div>
   );

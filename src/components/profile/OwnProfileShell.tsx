@@ -1,18 +1,18 @@
 "use client";
 
 import { useAuth } from "@/context/AuthContext";
-import { useRatingsContext } from "@/context/RatingsContext";
-import { usePlaylist } from "@/context/PlaylistContext";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import Link from "next/link";
 import { FaSignOutAlt, FaCog } from "react-icons/fa";
 import { createClient } from "@/utils/supabase/client";
 import ProfileLayout from "@/components/profile/ProfileLayout";
 import ProfileQuickLinks from "@/components/profile/ProfileQuickLinks";
 import ProfilePageSkeleton from "@/components/layout/ProfilePageSkeleton";
-import Button from "@/components/ui/Button";
+import ProfileRank from "@/components/profile/ProfileRank";
+import LevelProgressionModal from "@/components/profile/LevelProgressionModal";
+import { useOwnProgression } from "@/components/profile/useOwnProgression";
 import { enlargeAvatarUrl } from "@/lib/albumReviews";
-import type { ProfileNavSegment } from "@/lib/profileNav";
 
 export default function OwnProfileShell({
   children,
@@ -20,9 +20,9 @@ export default function OwnProfileShell({
   children: React.ReactNode;
 }) {
   const { user, signOut, loading } = useAuth();
-  const { albumRatings, ratings } = useRatingsContext();
-  const { playlists } = usePlaylist();
+  const { view: progressionView } = useOwnProgression();
   const router = useRouter();
+  const [rankOpen, setRankOpen] = useState(false);
   const [profile, setProfile] = useState<{
     username: string | null;
     displayName: string | null;
@@ -56,21 +56,6 @@ export default function OwnProfileShell({
     fetchProfile();
   }, [user]);
 
-  const tabCounts = useMemo(() => {
-    const counts: Partial<Record<ProfileNavSegment, number>> = {
-      rated: Object.values(albumRatings).filter(
-        (album) => album.ratedTrackIds.length > 0,
-      ).length,
-      "rated-songs": Object.values(ratings).filter((value) => value > 0).length,
-      "songs-playlist": playlists.filter((playlist) => playlist.type === "songs")
-        .length,
-      "album-playlist": playlists.filter(
-        (playlist) => playlist.type === "albums",
-      ).length,
-    };
-    return counts;
-  }, [albumRatings, ratings, playlists]);
-
   if (loading) {
     return <ProfilePageSkeleton />;
   }
@@ -100,30 +85,37 @@ export default function OwnProfileShell({
         displayName: profile.displayName,
         avatarUrl,
       }}
+      progression={
+        <ProfileRank
+          view={progressionView}
+          showProgress
+          onClick={() => setRankOpen(true)}
+          className="w-full max-w-none"
+        />
+      }
       actions={
         <>
-          <Button
+          <Link
             href="/settings"
-            variant="border"
-            size="xs"
-            iconLeft={<FaCog size={12} className="mr-1.5" />}
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-neutral-100 px-4 py-2.5 text-sm font-semibold text-neutral-700 transition-all duration-200 hover:bg-neutral-200"
           >
-            Settings
-          </Button>
-          <Button
+            <FaCog size={14} /> Settings
+          </Link>
+          <button
             type="button"
-            variant="ghost"
-            size="xs"
-            iconLeft={<FaSignOutAlt size={12} className="mr-1.5" />}
             onClick={() => signOut()}
+            className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-red-50 px-4 py-2.5 text-sm font-semibold text-red-600 transition-all duration-200 hover:bg-red-100"
           >
-            Log out
-          </Button>
+            <FaSignOutAlt size={14} /> Log out
+          </button>
         </>
       }
-      quickLinks={<ProfileQuickLinks mode="own" counts={tabCounts} />}
+      quickLinks={<ProfileQuickLinks mode="own" />}
     >
       {children}
+      {rankOpen ? (
+        <LevelProgressionModal onClose={() => setRankOpen(false)} />
+      ) : null}
     </ProfileLayout>
   );
 }

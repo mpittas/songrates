@@ -16,6 +16,7 @@ import { usePlayerCore } from "@/context/PlayerContext";
 import SongRow from "@/main-components/SongRow";
 import type { AlbumContext, Track } from "@/types/music";
 import { FaArrowLeft } from "react-icons/fa";
+import { applePlaylistPlaybackSource } from "@/lib/playbackSource";
 
 interface ApplePlaylistDetailClientProps {
   playlist: ApplePlaylistDetail;
@@ -121,6 +122,11 @@ export default function ApplePlaylistDetailClient({
         [trackInfos, playlist.name],
   );
 
+  const playbackSource = applePlaylistPlaybackSource(
+    playlist.id,
+    playlist.name,
+  );
+
   return (
     <CollectionDetailPageLayout
       topBarLeft={
@@ -136,7 +142,7 @@ export default function ApplePlaylistDetailClient({
       artworkSrc={heroImageUrl}
       artworkAlt={playlist.name}
       onPlayClick={() => {
-        if (queue.length > 0) playTrack(queue[0], queue);
+        if (queue.length > 0) playTrack(queue[0], queue, playbackSource);
       }}
       playLabel="Play playlist"
       playDisabled={queue.length === 0}
@@ -167,30 +173,24 @@ export default function ApplePlaylistDetailClient({
       list={
         <div className="flex flex-col gap-y-1.5">
           {filteredTracks.map((track, i) => (
-            <div
+            <SongRow
               key={`${track.number}-${track.id}`}
-              className={
-                track.id === highlightTrackId
-                  ? "rounded-lg ring-2 ring-neutral-300"
-                  : ""
+              highlighted={track.id === highlightTrackId}
+              index={Number(track.number) || i + 1}
+              title={track.title}
+              artist={
+                track.artists?.[0]?.name || track.artistName || "Unknown"
               }
-            >
-              <SongRow
-                index={Number(track.number) || i + 1}
-                title={track.title}
-                artist={
-                  track.artists?.[0]?.name || track.artistName || "Unknown"
-                }
-                album={track.albumTitle || playlist.name}
-                duration={String(track.length || "")}
-                artworkUrl={track.albumImageUrl || heroImageUrl}
-                track={track}
-                artistId={track.artists?.[0]?.id || track.artistId || ""}
-                albumId={track.albumId || ""}
-                queue={queue}
-                albumContext={albumContextFromTrack(track)}
-              />
-            </div>
+              album={track.albumTitle || playlist.name}
+              duration={String(track.length || "")}
+              artworkUrl={track.albumImageUrl || heroImageUrl}
+              track={track}
+              artistId={track.artists?.[0]?.id || track.artistId || ""}
+              albumId={track.albumId || ""}
+              queue={queue}
+              playbackSource={playbackSource}
+              albumContext={albumContextFromTrack(track)}
+            />
           ))}
         </div>
       }

@@ -13,6 +13,7 @@ import FavoriteButton from "@/components/ui/FavoriteButton";
 import { FaArrowLeft, FaPlus } from "react-icons/fa";
 import { usePlayerCore } from "@/context/PlayerContext";
 import SongRow from "@/main-components/SongRow";
+import { albumPlaybackSource } from "@/lib/playbackSource";
 import { useAlbumInfo } from "@/hooks/useAlbumInfo";
 import { useAlbumViewingUserRatings } from "@/hooks/useAlbumViewingUserRatings";
 import { useShareLinkParams } from "@/hooks/useShareLinkParams";
@@ -59,6 +60,7 @@ export default function AlbumPageContent({
     albumRatings,
     publicAlbumRatings,
     ensurePublicAlbumRatings,
+    ensurePublicTrackRatings,
     syncAlbumTotalTracks,
   } = useRatings();
   const { viewingUserRatings, viewingUserName } = useAlbumViewingUserRatings(
@@ -86,6 +88,12 @@ export default function AlbumPageContent({
     if (!album?.id) return;
     void ensurePublicAlbumRatings([album.id]);
   }, [album?.id, ensurePublicAlbumRatings]);
+
+  useEffect(() => {
+    const trackIds = album?.tracks?.map((track) => track.id) ?? [];
+    if (trackIds.length === 0) return;
+    void ensurePublicTrackRatings(trackIds);
+  }, [album?.id, album?.tracks, ensurePublicTrackRatings]);
 
   useEffect(() => {
     if (!album?.id || !album.tracks?.length) return;
@@ -143,6 +151,7 @@ export default function AlbumPageContent({
   }
 
   const imageUrl = album.artworkUrl || "/vinyl-placeholder.svg";
+  const playbackSource = albumPlaybackSource(album.id, album.title);
   const activeRatings = viewingUserRatings || myRatings;
   const tracks = album.tracks || [];
   const { totalTracks, ratedTracksCount, isFullyRated, averageScore } =
@@ -234,7 +243,7 @@ export default function AlbumPageContent({
       artworkAlt={album.title}
       onPlayClick={() => {
         if (queue.length > 0) {
-          playTrack(queue[0], queue);
+          playTrack(queue[0], queue, playbackSource);
         }
       }}
       playLabel={playLabel}
@@ -300,38 +309,33 @@ export default function AlbumPageContent({
       list={
         <div className="flex flex-col gap-y-1.5">
           {filteredTracks.map((track, i) => (
-            <div
+            <SongRow
               key={track.id}
-              className={
-                track.id === highlightTrackId
-                  ? "rounded-lg ring-2 ring-neutral-300"
-                  : ""
+              highlighted={track.id === highlightTrackId}
+              index={Number(track.number) || i + 1}
+              title={track.title}
+              artist={track.artists?.[0]?.name || album.artist?.name || "Unknown"}
+              album={album.title}
+              duration={String(track.length || "")}
+              artworkUrl={imageUrl}
+              rating={
+                viewingUserRatings ? viewingUserRatings[track.id] || 0 : undefined
               }
-            >
-              <SongRow
-                index={Number(track.number) || i + 1}
-                title={track.title}
-                artist={track.artists?.[0]?.name || album.artist?.name || "Unknown"}
-                album={album.title}
-                duration={String(track.length || "")}
-                artworkUrl={imageUrl}
-                rating={
-                  viewingUserRatings ? viewingUserRatings[track.id] || 0 : undefined
-                }
-                track={track}
-                artistId={track.artists?.[0]?.id || album.artist?.id || ""}
-                albumId={album.id}
-                queue={queue}
-                albumContext={{
-                  albumId: album.id,
-                  title: album.title,
-                  artistName: album.artist?.name || "Unknown Artist",
-                  releaseDate: album.releaseDate,
-                  totalTracks: album.tracks?.length || 0,
-                  artworkUrl: album.artworkUrl,
-                }}
-              />
-            </div>
+              track={track}
+              artistId={track.artists?.[0]?.id || album.artist?.id || ""}
+              albumId={album.id}
+              queue={queue}
+              playbackSource={playbackSource}
+              albumContext={{
+                albumId: album.id,
+                title: album.title,
+                artistName: album.artist?.name || "Unknown Artist",
+                releaseDate: album.releaseDate,
+                totalTracks: album.tracks?.length || 0,
+                artworkUrl: album.artworkUrl,
+                albumType: album.type,
+              }}
+            />
           ))}
         </div>
       }

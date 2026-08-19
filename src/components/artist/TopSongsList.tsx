@@ -6,7 +6,28 @@ import SongRow from "@/main-components/SongRow";
 import { formatTime } from "@/lib/utils";
 import type { TopSong } from "@/types/music";
 
-export default function TopSongsList({ songs }: { songs: TopSong[] }) {
+function formatReleaseDate(iso?: string): string {
+  if (!iso) return "—";
+  const [year, month, day] = iso.split("-").map(Number);
+  if (!year || !month) return iso;
+  return new Date(Date.UTC(year, month - 1, day || 1)).toLocaleDateString(
+    "en-US",
+    {
+      month: "short",
+      day: day ? "numeric" : undefined,
+      year: "numeric",
+      timeZone: "UTC",
+    },
+  );
+}
+
+export default function TopSongsList({
+  songs,
+  trailing = "duration",
+}: {
+  songs: TopSong[];
+  trailing?: "duration" | "releaseDate";
+}) {
   const [showAll, setShowAll] = useState(false);
   const visible = showAll ? songs : songs.slice(0, 10);
 
@@ -21,9 +42,11 @@ export default function TopSongsList({ songs }: { songs: TopSong[] }) {
             artist={song.artistName}
             album={song.albumName || "Unknown Album"}
             duration={
-              song.durationMs
-                ? formatTime(song.durationMs, "milliseconds")
-                : "—"
+              trailing === "releaseDate"
+                ? formatReleaseDate(song.releaseDate)
+                : song.durationMs
+                  ? formatTime(song.durationMs, "milliseconds")
+                  : "—"
             }
             artworkUrl={song.artworkUrl}
             artistId={song.artistId}
@@ -38,6 +61,7 @@ export default function TopSongsList({ songs }: { songs: TopSong[] }) {
               albumTitle: song.albumName,
               albumImageUrl: song.artworkUrl,
               length: song.durationMs,
+              releaseDate: song.releaseDate,
             }}
             albumContext={
               song.albumId

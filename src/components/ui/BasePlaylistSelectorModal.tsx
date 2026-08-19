@@ -185,13 +185,11 @@ export default function BasePlaylistSelectorModal({
       </MainModalHeader>
 
         {/* Content Section */}
-        <div className="flex-1 overflow-y-auto p-5 scrollbar-none bg-blue-500/0">
+        <div className="flex-1 overflow-y-auto p-5">
           {loading ? (
-            <div className="py-20 flex flex-col items-center justify-center gap-3">
-              <div className="w-8 h-8 border-3 border-neutral-200 border-t-neutral-900 rounded-full animate-spin" />
-              <span className="text-xs font-bold text-neutral-400 uppercase tracking-widest font-mono">
-                Loading
-              </span>
+            <div className="flex flex-col items-center justify-center gap-3 py-20">
+              <div className="h-8 w-8 animate-spin rounded-full border-3 border-neutral-200 border-t-neutral-900" />
+              <span className="text-sm text-neutral-500">Loading playlists…</span>
             </div>
           ) : (
             <div className="space-y-4">

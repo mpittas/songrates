@@ -9,6 +9,46 @@ import MySection from "@/components/ui/MySection";
  *  The Apple Music chart sections are slow-moving and expensive to rebuild. */
 export const revalidate = 21600;
 
+function HomeHeroFallback() {
+  return (
+    <section className="relative flex flex-col bg-[#0a0a0a]">
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,#2c2624_0%,#161312_48%,#070707_100%)]" />
+      <div className="relative z-10 flex flex-col items-center px-4 pt-8 pb-6 sm:pt-10 sm:pb-8">
+        <div className="mx-auto h-10 w-3/4 max-w-2xl bg-white/10 sm:h-14" />
+        <div className="mx-auto mt-5 h-14 w-full max-w-[640px] rounded-xl bg-white/10" />
+      </div>
+      <div className="relative z-10 flex gap-1.5 overflow-hidden px-1.5 pb-5">
+        {Array.from({ length: 8 }).map((_, index) => (
+          <div
+            key={index}
+            className="size-24 shrink-0 bg-white/5 sm:size-28"
+          />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function HomeGridFallback() {
+  return (
+    <section className="py-12 sm:py-14">
+      <MySection>
+        <div className="w-full animate-pulse">
+          <div className="h-6 w-52 rounded bg-neutral-900/10" />
+          <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+            {Array.from({ length: 5 }).map((_, index) => (
+              <div
+                key={index}
+                className="aspect-square rounded-xl border border-black/5 bg-white/60"
+              />
+            ))}
+          </div>
+        </div>
+      </MySection>
+    </section>
+  );
+}
+
 function TrendingSongsFallback() {
   return (
     <section className="py-12 sm:py-14">
@@ -39,7 +79,7 @@ function TrendingSongsFallback() {
 export default function Home() {
   return (
     <main className="min-h-screen text-neutral-900 flex flex-col relative bg-[#F2EFED] pb-14">
-      <Suspense fallback={null}>
+      <Suspense fallback={<HomeHeroFallback />}>
         <HomeHero />
       </Suspense>
 
@@ -51,23 +91,11 @@ export default function Home() {
         <TrendingSongs />
       </Suspense>
 
-      <Suspense
-        fallback={
-          <div className="h-64 flex items-center justify-center text-neutral-600 text-xs tracking-widest uppercase">
-            Loading playlists...
-          </div>
-        }
-      >
+      <Suspense fallback={<HomeGridFallback />}>
         <DailyTop100Playlists />
       </Suspense>
 
-      <Suspense
-        fallback={
-          <div className="h-64 flex items-center justify-center text-neutral-600 text-xs tracking-widest uppercase">
-            Loading feeds...
-          </div>
-        }
-      >
+      <Suspense fallback={<HomeGridFallback />}>
         <LatestRatedAlbums />
       </Suspense>
     </main>

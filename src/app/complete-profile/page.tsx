@@ -7,14 +7,14 @@ import MeshGradient from "@/components/mesh/MeshGradient";
 import { MeshGradientConfig } from "@/components/mesh/types";
 import Button from "@/components/ui/Button";
 
-const greenMeshConfig: MeshGradientConfig = {
+const warmMeshConfig: MeshGradientConfig = {
   speed: 0.2,
   zoom: 1.2,
   amplitude: 0.4,
   contrast: 1.2,
   noise: 0.05,
-  color1: "#10b981",
-  color2: "#022c22",
+  color1: "#f05f45",
+  color2: "#181018",
 };
 
 export default function CompleteProfilePage() {
@@ -121,19 +121,19 @@ export default function CompleteProfilePage() {
 
   if (checking) {
     return (
-      <div className="min-h-screen bg-[#ebe8e5] flex items-center justify-center">
-        <div className="w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+      <div className="flex min-h-screen items-center justify-center bg-[#ebe8e5]">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-neutral-900 border-t-transparent" />
       </div>
     );
   }
 
   return (
     <div className="w-full min-h-screen grid grid-cols-1 md:grid-cols-2 bg-[#ebe8e5]">
-      {/* Left Column: Green Gradient */}
-      <div className="relative hidden md:block h-full w-full overflow-hidden">
+      {/* Left Column */}
+      <div className="relative hidden h-full w-full overflow-hidden md:block">
         <MeshGradient
-          config={greenMeshConfig}
-          className="absolute inset-0 w-full h-full opacity-80"
+          config={warmMeshConfig}
+          className="absolute inset-0 h-full w-full opacity-80"
         />
       </div>
 
@@ -159,7 +159,7 @@ export default function CompleteProfilePage() {
               required
               minLength={3}
               pattern="[a-zA-Z0-9_]+"
-              className="w-full bg-white border border-[#d8d8d8] text-neutral-900 text-sm px-4 py-3 placeholder:text-neutral-500 focus:ring-1 focus:ring-neutral-400/50 outline-none rounded-md"
+              className="w-full rounded-md border border-[#d8d8d8] bg-white px-4 py-3 text-sm text-neutral-900 outline-hidden placeholder:text-neutral-500 focus:border-neutral-400"
             />
             <p className="text-[11px] text-neutral-600">
               3-20 characters, letters, numbers, and underscores only
@@ -167,7 +167,7 @@ export default function CompleteProfilePage() {
           </div>
 
           {error && (
-            <div className="text-red-500 text-sm bg-red-500/10 p-2 border border-red-500/20 rounded-none">
+            <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
               {error}
             </div>
           )}
@@ -175,7 +175,7 @@ export default function CompleteProfilePage() {
           <Button
             type="submit"
             disabled={loading || username.length < 3}
-            variant="secondary"
+            variant="primary"
             size="md"
             className="mt-4 w-full"
           >

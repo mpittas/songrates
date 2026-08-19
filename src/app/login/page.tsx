@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, Suspense, useId } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { useRouter, useSearchParams } from "next/navigation";
 import MeshGradient from "@/components/mesh/MeshGradient";
@@ -13,15 +13,18 @@ import {
   getSafeNextPath,
 } from "@/lib/auth/redirect";
 
-const greenMeshConfig: MeshGradientConfig = {
-  speed: 0.2, // Slower for a calmer vibe
+const warmMeshConfig: MeshGradientConfig = {
+  speed: 0.2,
   zoom: 1.2,
   amplitude: 0.4,
   contrast: 1.2,
   noise: 0.05,
-  color1: "#10b981", // Emerald 500
-  color2: "#022c22", // Emerald 900 (Darker base)
+  color1: "#f05f45",
+  color2: "#181018",
 };
+
+const AUTH_INPUT_CLASS =
+  "w-full rounded-md border border-[#d8d8d8] bg-white px-4 py-3 text-sm text-neutral-900 outline-hidden placeholder:text-neutral-500 focus:border-neutral-400";
 
 function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Something went wrong";
@@ -40,6 +43,9 @@ function LoginContent() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const usernameId = useId();
+  const emailId = useId();
+  const passwordId = useId();
 
   const [passwordCriteria, setPasswordCriteria] = useState({
     length: false,
@@ -140,30 +146,27 @@ function LoginContent() {
   };
 
   return (
-    <div className="w-full h-[calc(100vh-65px)] grid grid-cols-1 md:grid-cols-2 bg-[#ebe8e5]">
-      {/* Left Column: Green Gradient */}
-      <div className="relative hidden md:block h-full w-full overflow-hidden">
+    <div className="grid h-[calc(100vh-65px)] w-full grid-cols-1 bg-[#ebe8e5] md:grid-cols-2">
+      <div className="relative hidden h-full w-full overflow-hidden md:block">
         <MeshGradient
-          config={greenMeshConfig}
-          className="absolute inset-0 w-full h-full opacity-80"
+          config={warmMeshConfig}
+          className="absolute inset-0 h-full w-full opacity-80"
         />
       </div>
 
-      {/* Right Column: Form */}
-      <div className="flex flex-col justify-center p-6 md:p-12 bg-[#ebe8e5] relative w-full max-w-[600px] mx-auto">
+      <div className="relative mx-auto flex w-full max-w-[600px] flex-col justify-center bg-[#ebe8e5] p-6 md:p-12">
         <div className="mb-8">
-          <h1 className="text-2xl text-neutral-900 mb-2 tracking-tight">
-            {isLogin ? "Welcome Back" : "Sign Up Account"}
+          <h1 className="mb-2 text-2xl tracking-tight text-neutral-900">
+            {isLogin ? "Welcome back" : "Create your account"}
           </h1>
-          <p className="text-neutral-500 text-sm">
+          <p className="text-sm text-neutral-600">
             {isLogin
-              ? "Enter your credentials to access your account."
-              : "Enter your personal data to create your account."}
+              ? "Enter your email and password to continue."
+              : "Choose a username and password to get started."}
           </p>
         </div>
 
-        {/* Social Login Buttons */}
-        <div className="flex gap-4 mb-6">
+        <div className="mb-6 flex gap-4">
           <Button
             type="button"
             onClick={() => handleSocialLogin("google")}
@@ -176,57 +179,68 @@ function LoginContent() {
           </Button>
         </div>
 
-        {/* Separator */}
-        <div className="relative flex items-center py-2 mb-6">
-          <div className="flex-grow border-t border-[#d9d9d9]"></div>
-          <span className="flex-shrink-0 mx-4 text-neutral-600 text-xs uppercase">
-            Or
+        <div className="relative mb-6 flex items-center py-2">
+          <div className="grow border-t border-[#d9d9d9]" />
+          <span className="mx-4 shrink-0 text-xs text-neutral-600">
+            or
           </span>
-          <div className="flex-grow border-t border-[#d9d9d9]"></div>
+          <div className="grow border-t border-[#d9d9d9]" />
         </div>
 
         <form onSubmit={handleAuth} className="flex flex-col gap-4">
           {!isLogin && (
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm text-neutral-500">Username *</label>
+              <label htmlFor={usernameId} className="text-sm text-neutral-600">
+                Username
+              </label>
               <input
+                id={usernameId}
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="eg. musiclover99"
                 required
-                className="w-full bg-white border border-[#d8d8d8] text-neutral-900 text-sm px-4 py-3 placeholder:text-neutral-500 focus:ring-1 focus:ring-neutral-400/50 outline-none rounded-md"
+                autoComplete="username"
+                className={AUTH_INPUT_CLASS}
               />
             </div>
           )}
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm text-neutral-500">Email</label>
+            <label htmlFor={emailId} className="text-sm text-neutral-600">
+              Email
+            </label>
             <input
+              id={emailId}
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="eg. johnfrans@gmail.com"
+              placeholder="eg. you@example.com"
               required
-              className="w-full bg-white border border-[#d8d8d8] text-neutral-900 text-sm px-4 py-3 placeholder:text-neutral-500 focus:ring-1 focus:ring-neutral-400/50 outline-none rounded-md"
+              autoComplete="email"
+              className={AUTH_INPUT_CLASS}
             />
           </div>
 
-          <div className="flex flex-col gap-1.5 relative">
-            <label className="text-sm text-neutral-500">Password</label>
+          <div className="relative flex flex-col gap-1.5">
+            <label htmlFor={passwordId} className="text-sm text-neutral-600">
+              Password
+            </label>
             <div className="relative">
               <input
+                id={passwordId}
                 type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => updatePassword(e.target.value)}
                 placeholder="Enter your password"
                 required
-                className="w-full bg-white border border-[#d8d8d8] text-neutral-900 text-sm px-4 py-3 pr-10 placeholder:text-neutral-500 focus:ring-1 focus:ring-neutral-400/50 outline-none rounded-md"
+                autoComplete={isLogin ? "current-password" : "new-password"}
+                className={`${AUTH_INPUT_CLASS} pr-10`}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-neutral-300 transition-colors"
+                className="absolute top-1/2 right-3 -translate-y-1/2 cursor-pointer text-neutral-500 transition-colors hover:text-neutral-900"
                 aria-label={showPassword ? "Hide password" : "Show password"}
               >
                 {showPassword ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
@@ -267,12 +281,12 @@ function LoginContent() {
           </div>
 
           {error && (
-            <div className="text-red-500 text-sm bg-red-500/10 p-2 border border-red-500/20 rounded-none">
+            <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
               {error}
             </div>
           )}
           {success && (
-            <div className="text-emerald-500 text-sm bg-emerald-500/10 p-2 border border-emerald-500/20 rounded-none">
+            <div className="rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
               {success}
             </div>
           )}
@@ -280,11 +294,17 @@ function LoginContent() {
           <Button
             type="submit"
             disabled={loading || (!isLogin && !isPasswordValid)}
-            variant="secondary"
+            variant="primary"
             size="md"
-            className="mt-4 w-full"
+            className="mt-2 w-full"
           >
-            {loading ? "Processing..." : isLogin ? "Login" : "Sign Up"}
+            {loading
+              ? isLogin
+                ? "Signing in..."
+                : "Creating account..."
+              : isLogin
+                ? "Sign in"
+                : "Create account"}
           </Button>
         </form>
 
@@ -292,7 +312,7 @@ function LoginContent() {
           className={
             isLogin
               ? "mt-6 text-center text-base text-neutral-700"
-              : "mt-6 text-center text-sm text-neutral-500"
+              : "mt-6 text-center text-sm text-neutral-600"
           }
         >
           {isLogin ? "Don't have an account? " : "Already have an account? "}
@@ -301,8 +321,8 @@ function LoginContent() {
             onClick={toggleView}
             className={
               isLogin
-                ? "font-semibold text-neutral-900 underline underline-offset-4 decoration-2 hover:text-black"
-                : "font-medium text-neutral-900 hover:underline"
+                ? "cursor-pointer font-semibold text-neutral-900 underline decoration-2 underline-offset-4 hover:text-black"
+                : "cursor-pointer font-medium text-neutral-900 hover:underline"
             }
           >
             {isLogin ? "Sign up" : "Log in"}

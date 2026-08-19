@@ -8,26 +8,12 @@ import EditPlaylistModal from "@/components/playlist/EditPlaylistModal";
 import ProfileSectionHeader from "@/components/profile/ProfileSectionHeader";
 import StackedCard from "@/components/ui/StackedCard";
 import { usePlaylistCollectionActions } from "@/hooks/usePlaylistCollectionActions";
-import type { Playlist } from "@/types/playlist";
+import {
+  fetchAlbumCollections,
+  type CollectionCardData,
+} from "@/lib/albumCollections";
 
-type AlbumPlaylist = Playlist & { itemCount: number };
-
-type PlaylistRow = Playlist & {
-  playlist_albums?: { count: number }[];
-};
-
-type AlbumPreviewRow = {
-  playlist_id: string;
-  thumbnail_url: string | null;
-  position: number;
-};
-
-export interface CollectionCardData {
-  id: string;
-  name: string;
-  itemCount: number;
-  coverUrls: (string | undefined)[];
-}
+export type { CollectionCardData };
 
 interface AlbumCollectionsSectionProps {
   userId: string;
@@ -87,72 +73,7 @@ export default function AlbumCollectionsSection({
       setLoading(true);
       try {
         const supabase = createClient();
-
-        const { data: playlistData, error: playlistError } = await supabase
-          .from("playlists")
-          .select(
-            "id, user_id, name, type, created_at, updated_at, playlist_albums(count)",
-          )
-          .eq("user_id", userId)
-          .eq("type", "albums")
-          .order("created_at", { ascending: false });
-
-        if (playlistError || !playlistData) {
-          if (!cancelled) setCollections([]);
-          return;
-        }
-
-        const albumPlaylists: AlbumPlaylist[] = (
-          playlistData as PlaylistRow[]
-        ).map((p) => {
-          const albumsCount =
-            Array.isArray(p.playlist_albums) &&
-            p.playlist_albums[0]?.count != null
-              ? Number(p.playlist_albums[0].count)
-              : 0;
-
-          return {
-            id: p.id,
-            user_id: p.user_id,
-            name: p.name,
-            type: p.type,
-            created_at: p.created_at,
-            updated_at: p.updated_at,
-            itemCount: albumsCount,
-          };
-        });
-
-        const playlistIds = albumPlaylists.map((p) => p.id);
-        const previewsByPlaylist = new Map<string, string[]>();
-
-        if (playlistIds.length > 0) {
-          const { data: previewData } = await supabase
-            .from("playlist_albums")
-            .select("playlist_id, thumbnail_url, position")
-            .in("playlist_id", playlistIds)
-            .order("position", { ascending: true });
-
-          for (const row of (previewData || []) as AlbumPreviewRow[]) {
-            if (!row.thumbnail_url) continue;
-            const existing = previewsByPlaylist.get(row.playlist_id) || [];
-            if (existing.length < 3) {
-              existing.push(row.thumbnail_url);
-              previewsByPlaylist.set(row.playlist_id, existing);
-            }
-          }
-        }
-
-        const mapped: CollectionCardData[] = albumPlaylists.map((p) => {
-          const previews = previewsByPlaylist.get(p.id) || [];
-          const [first, second, third] = previews;
-          return {
-            id: p.id,
-            name: p.name,
-            itemCount: p.itemCount,
-            coverUrls: [first, second, third],
-          };
-        });
-
+        const mapped = await fetchAlbumCollections(supabase, userId, 3);
         if (!cancelled) setCollections(mapped);
       } catch (e) {
         console.error("Failed to load album collections:", e);
@@ -212,7 +133,7 @@ export default function AlbumCollectionsSection({
               title={collection.name}
               itemCount={collection.itemCount}
               href={`/playlist/${collection.id}`}
-              coverUrls={collection.coverUrls}
+              coverUrls={collection.coverUrls.slice(0, 3)}
               onEdit={
                 isOwner
                   ? () => openEditPlaylist(collection.id, collection.name)

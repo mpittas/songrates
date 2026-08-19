@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import InstantLink from "@/components/ui/InstantLink";
 import { FaPlay, FaPause } from "react-icons/fa6";
@@ -9,7 +9,8 @@ import { usePlayerCore } from "@/context/PlayerContext";
 import { useRatingsContext } from "@/context/RatingsContext";
 import { lyricsQueryOptions, useLyrics } from "@/hooks/useLyrics";
 import { Track, AlbumContext } from "@/types/music";
-import { createSlug } from "@/lib/utils";
+import type { PlaybackSource } from "@/types/player";
+import { cn, createSlug } from "@/lib/utils";
 import PlaylistSelectorModal from "@/components/ui/PlaylistSelectorModal";
 import MainModal, { MainModalHeader } from "@/components/ui/MainModal";
 import SongRowLyrics from "./SongRowLyrics";
@@ -48,12 +49,15 @@ interface SongRowProps {
   albumContext?: AlbumContext;
   onPlay?: () => void;
   queue?: Track[];
+  playbackSource?: PlaybackSource;
   onRate?: (rating: number) => void;
   onAddToPlaylist?: () => void;
   onShare?: () => void;
   /** Show album name in the subline before duration (default: true) */
   showAlbumInSubline?: boolean;
   onFavoriteChange?: (isFavorite: boolean) => void;
+  /** When true, scroll into view and pulse-highlight this track (search / share links) */
+  highlighted?: boolean;
 }
 
 export default function SongRow({
@@ -70,12 +74,15 @@ export default function SongRow({
   albumContext,
   onPlay,
   queue,
+  playbackSource,
   onRate,
   onAddToPlaylist,
   onShare,
   showAlbumInSubline = true,
   onFavoriteChange,
+  highlighted = false,
 }: SongRowProps) {
+  const rowRef = useRef<HTMLDivElement>(null);
   const [hovered, setHovered] = useState(false);
   const [showPlaylistModal, setShowPlaylistModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
@@ -91,7 +98,8 @@ export default function SongRow({
   } = usePlayerCore();
   const isCurrentTrack = currentTrack?.id === track?.id;
 
-  const { ratings, publicAlbumRatings } = useRatingsContext();
+  const { ratings, publicTrackRatings, ensurePublicTrackRatings } =
+    useRatingsContext();
   const trackId = track?.id;
   const lyricsOpen = currentLyricsTrackId === trackId;
   const contextRating = trackId ? (ratings[trackId] ?? 0) : 0;
@@ -99,9 +107,14 @@ export default function SongRow({
 
   const effectiveArtistId = track?.artistId ?? artistId;
   const effectiveAlbumId = track?.albumId ?? albumId;
-  const publicRating = effectiveAlbumId
-    ? (publicAlbumRatings[effectiveAlbumId]?.averageRating ?? null)
+  const publicRating = trackId
+    ? (publicTrackRatings[trackId]?.averageRating ?? null)
     : null;
+
+  useEffect(() => {
+    if (!trackId) return;
+    void ensurePublicTrackRatings([trackId]);
+  }, [trackId, ensurePublicTrackRatings]);
 
   const queryClient = useQueryClient();
   const prefetchLyrics = useCallback(() => {
@@ -147,6 +160,7 @@ export default function SongRow({
           totalTracks: track.totalTracks ?? albumContext?.totalTracks,
         },
         queue,
+        playbackSource,
       );
     } else if (onPlay) {
       onPlay();
@@ -160,6 +174,7 @@ export default function SongRow({
     artist,
     effectiveArtistId,
     queue,
+    playbackSource,
     playTrack,
     onPlay,
   ]);
@@ -184,9 +199,33 @@ export default function SongRow({
     return undefined;
   })();
 
+  useEffect(() => {
+    if (!highlighted) return;
+    const node = rowRef.current;
+    if (!node) return;
+
+    const scrollToTrack = () => {
+      node.scrollIntoView({ behavior: "smooth", block: "center" });
+    };
+
+    // Next.js may still be settling layout after client navigation.
+    const timer = window.setTimeout(scrollToTrack, 150);
+    const retry = window.setTimeout(scrollToTrack, 500);
+    return () => {
+      window.clearTimeout(timer);
+      window.clearTimeout(retry);
+    };
+  }, [highlighted]);
+
   return (
     <div
-      className="group flex w-full min-w-0 flex-col rounded-lg border border-neutral-100 bg-white transition-colors duration-200 ease-in-out hover:border-neutral-300/90"
+      ref={rowRef}
+      className={cn(
+        "group flex w-full min-w-0 flex-col rounded-lg border bg-white transition-colors duration-200 ease-in-out hover:border-neutral-300/90",
+        highlighted
+          ? "animate-highlight-track border-neutral-300 ring-2 ring-neutral-300"
+          : "border-neutral-100",
+      )}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
@@ -199,7 +238,7 @@ export default function SongRow({
               {hovered || isCurrentTrack ? (
                 <button
                   onClick={handlePlay}
-                  className="flex h-6 w-6 items-center justify-center rounded-full bg-neutral-800 text-neutral-100 transition-all hover:bg-neutral-700 sm:h-7 sm:w-7"
+                  className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-full bg-neutral-800 text-neutral-100 transition-colors hover:bg-neutral-700 sm:h-7 sm:w-7"
                   aria-label={
                     isCurrentTrack && isPlayerPlaying ? "Pause" : "Play"
                   }
@@ -242,25 +281,23 @@ export default function SongRow({
           </div>
 
           {/* Song Info */}
-          <div className="flex min-w-0 flex-1 flex-col justify-center gap-0 sm:gap-0.5">
-            <div className="flex min-w-0 items-center">
-              {effectiveAlbumId ? (
-                <InstantLink
-                  href={`/album/${effectiveAlbumId}`}
-                  className="min-w-0 flex-1 truncate text-xs font-semibold text-neutral-900 hover:underline sm:text-base"
-                  title={title}
-                >
-                  {title}
-                </InstantLink>
-              ) : (
-                <span
-                  className="min-w-0 flex-1 truncate text-xs font-semibold text-neutral-900 sm:text-base"
-                  title={title}
-                >
-                  {title}
-                </span>
-              )}
-            </div>
+          <div className="flex min-w-0 flex-1 flex-col justify-center gap-0 overflow-hidden sm:gap-0.5">
+            {effectiveAlbumId ? (
+              <InstantLink
+                href={`/album/${effectiveAlbumId}`}
+                className="block truncate text-xs font-semibold text-neutral-900 hover:underline sm:text-base"
+                title={title}
+              >
+                {title}
+              </InstantLink>
+            ) : (
+              <span
+                className="block truncate text-xs font-semibold text-neutral-900 sm:text-base"
+                title={title}
+              >
+                {title}
+              </span>
+            )}
 
             <div className="flex min-w-0 items-center gap-x-1 truncate text-[11px] text-neutral-500 sm:text-xs">
               <span className="min-w-0 truncate">
@@ -393,7 +430,7 @@ export default function SongRow({
           />
 
           <div className="p-6">
-            <div className="text-xs uppercase tracking-widest font-mono text-neutral-400 mb-3">
+            <div className="mb-3 text-sm font-medium text-neutral-500">
               Copy link
             </div>
             <div className="flex items-center gap-2">
@@ -409,7 +446,7 @@ export default function SongRow({
                   setShareCopied(true);
                   window.setTimeout(() => setShareCopied(false), 900);
                 }}
-                className="shrink-0 rounded-xl border border-neutral-200 bg-white px-4 py-3 text-xs font-mono text-neutral-700 hover:text-neutral-900 hover:bg-neutral-50 transition-colors"
+                className="shrink-0 cursor-pointer rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-700 transition-colors hover:bg-neutral-50 hover:text-neutral-900"
                 disabled={!shareUrl}
               >
                 {shareCopied ? "Copied" : "Copy"}

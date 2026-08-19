@@ -15,6 +15,7 @@ import CollectionDetailPageLayout from "@/components/layout/CollectionDetailPage
 import { usePlayerCore } from "@/context/PlayerContext";
 import SongRow from "@/main-components/SongRow";
 import EditPlaylistModal from "@/components/playlist/EditPlaylistModal";
+import { playlistPlaybackSource } from "@/lib/playbackSource";
 
 interface PlaylistPageClientProps {
   initialPlaylist: Playlist | null;
@@ -190,6 +191,7 @@ export default function PlaylistPageClient({
   }
 
   const isAlbums = playlist.type === "albums";
+  const playbackSource = playlistPlaybackSource(playlist.id, playlist.name);
   const countLabel = isAlbums
     ? `${albums.length} ${albums.length === 1 ? "album" : "albums"}`
     : `${tracks.length} ${tracks.length === 1 ? "track" : "tracks"}`;
@@ -254,6 +256,7 @@ export default function PlaylistPageClient({
                   artistId=""
                   albumId={t.albumId || ""}
                   queue={queue}
+                  playbackSource={playbackSource}
                   albumContext={{
                     albumId: t.albumId || "",
                     title: t.albumTitle || playlist.name,
@@ -305,7 +308,8 @@ export default function PlaylistPageClient({
           isAlbums
             ? undefined
             : () => {
-                if (queue.length > 0) playTrack(queue[0], queue);
+                if (queue.length > 0)
+                  playTrack(queue[0], queue, playbackSource);
               }
         }
         playLabel="Play playlist"

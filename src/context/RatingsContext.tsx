@@ -11,7 +11,12 @@ import React, {
 } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/utils/supabase/client";
-import { AlbumContext, RatedAlbumData, PublicAlbumRating } from "@/types/music";
+import {
+  AlbumContext,
+  RatedAlbumData,
+  PublicAlbumRating,
+  PublicTrackRating,
+} from "@/types/music";
 import { generateUUID } from "@/lib/utils";
 import { fetchAllRows } from "@/lib/supabase/fetchAllRows";
 import { isFullyRatedAlbum } from "@/lib/albumPageStats";
@@ -20,7 +25,9 @@ interface RatingsContextType {
   ratings: Record<string, number>;
   albumRatings: Record<string, RatedAlbumData>;
   publicAlbumRatings: Record<string, PublicAlbumRating>;
+  publicTrackRatings: Record<string, PublicTrackRating>;
   ensurePublicAlbumRatings: (albumIds: string[]) => Promise<void>;
+  ensurePublicTrackRatings: (trackIds: string[]) => Promise<void>;
   setRating: (
     trackId: string,
     rating: number,
@@ -44,6 +51,24 @@ interface DBPublicAlbumRating {
   album_id: string;
   average_rating: string | number;
   rating_count: number;
+}
+
+interface DBPublicTrackRating {
+  track_id: string;
+  album_id: string;
+  average_rating: string | number;
+  rating_count: number;
+}
+
+const PUBLIC_TRACK_RATING_CHUNK = 200;
+
+function toPublicTrackRating(row: DBPublicTrackRating): PublicTrackRating {
+  return {
+    trackId: row.track_id,
+    albumId: row.album_id,
+    averageRating: Number(row.average_rating),
+    ratingCount: Number(row.rating_count),
+  };
 }
 
 interface RealtimePayload<T> {
@@ -70,6 +95,7 @@ interface DBUserAlbum {
   total_tracks: number;
   created_at?: string;
   thumbnail_url: string | null;
+  album_type?: string | null;
 }
 
 const RatingsContext = createContext<RatingsContextType | undefined>(undefined);
@@ -86,7 +112,16 @@ export function RatingsProvider({ children }: { children: React.ReactNode }) {
   const [publicAlbumRatings, setPublicAlbumRatings] = useState<
     Record<string, PublicAlbumRating>
   >({});
+  const [publicTrackRatings, setPublicTrackRatings] = useState<
+    Record<string, PublicTrackRating>
+  >({});
   const requestedPublicAlbumIdsRef = useRef<Set<string>>(new Set());
+  const requestedPublicTrackIdsRef = useRef<Set<string>>(new Set());
+  const pendingPublicTrackIdsRef = useRef<Set<string>>(new Set());
+  const publicTrackFlushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+  const publicTrackDrainPromiseRef = useRef<Promise<void> | null>(null);
   const didSyncTrackCountsRef = useRef(false);
   const albumRatingsRef = useRef(albumRatings);
   albumRatingsRef.current = albumRatings;
@@ -179,6 +214,38 @@ export function RatingsProvider({ children }: { children: React.ReactNode }) {
           }
         },
       )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "public_track_ratings",
+        },
+        (payload: RealtimePayload<DBPublicTrackRating>) => {
+          if (
+            payload.eventType === "INSERT" ||
+            payload.eventType === "UPDATE"
+          ) {
+            const newRecord = payload.new;
+            if (!newRecord?.track_id) return;
+            requestedPublicTrackIdsRef.current.add(newRecord.track_id);
+            setPublicTrackRatings((prev) => ({
+              ...prev,
+              [newRecord.track_id]: toPublicTrackRating(newRecord),
+            }));
+          } else if (payload.eventType === "DELETE") {
+            const oldRecord = payload.old;
+            if (oldRecord && oldRecord.track_id) {
+              setPublicTrackRatings((prev) => {
+                if (!(oldRecord.track_id in prev)) return prev;
+                const next = { ...prev };
+                delete next[oldRecord.track_id];
+                return next;
+              });
+            }
+          }
+        },
+      )
       .subscribe();
 
     const storedGuestId = localStorage.getItem("songrates_guest_id");
@@ -220,7 +287,7 @@ export function RatingsProvider({ children }: { children: React.ReactNode }) {
             supabase
               .from("user_albums")
               .select(
-                "album_id, title, artist_name, release_date, total_tracks, created_at, thumbnail_url",
+                "album_id, title, artist_name, release_date, total_tracks, created_at, thumbnail_url, album_type",
               )
               .eq("user_id", effectiveUserId)
               .range(from, to),
@@ -257,6 +324,7 @@ export function RatingsProvider({ children }: { children: React.ReactNode }) {
             ratedTrackIds: albumTracksMap[a.album_id] || [],
             ratedAt: a.created_at,
             artworkUrl: a.thumbnail_url || undefined,
+            albumType: a.album_type || undefined,
           };
         });
         setAlbumRatings(newAlbumRatings);
@@ -351,6 +419,119 @@ export function RatingsProvider({ children }: { children: React.ReactNode }) {
     [supabase],
   );
 
+  const applyPublicTrackRatingRows = useCallback(
+    (rows: DBPublicTrackRating[]) => {
+      if (rows.length === 0) return;
+      const next: Record<string, PublicTrackRating> = {};
+      for (const row of rows) {
+        requestedPublicTrackIdsRef.current.add(row.track_id);
+        next[row.track_id] = toPublicTrackRating(row);
+      }
+      setPublicTrackRatings((prev) => ({ ...prev, ...next }));
+    },
+    [],
+  );
+
+  const refreshPublicTrackRating = useCallback(
+    async (trackId: string) => {
+      if (!trackId) return;
+
+      const { data, error } = await supabase
+        .from("public_track_ratings")
+        .select("track_id, album_id, average_rating, rating_count")
+        .eq("track_id", trackId)
+        .limit(1)
+        .maybeSingle();
+
+      if (error) {
+        console.error("Error refreshing public track rating:", error);
+        return;
+      }
+
+      requestedPublicTrackIdsRef.current.add(trackId);
+      if (!data) {
+        setPublicTrackRatings((prev) => {
+          if (!(trackId in prev)) return prev;
+          const next = { ...prev };
+          delete next[trackId];
+          return next;
+        });
+        return;
+      }
+
+      setPublicTrackRatings((prev) => ({
+        ...prev,
+        [trackId]: toPublicTrackRating(data as DBPublicTrackRating),
+      }));
+    },
+    [supabase],
+  );
+
+  const flushPublicTrackRatings = useCallback(async () => {
+    const ids = Array.from(pendingPublicTrackIdsRef.current);
+    pendingPublicTrackIdsRef.current.clear();
+    if (ids.length === 0) return;
+
+    for (let i = 0; i < ids.length; i += PUBLIC_TRACK_RATING_CHUNK) {
+      const chunk = ids.slice(i, i + PUBLIC_TRACK_RATING_CHUNK);
+      const { data, error } = await supabase
+        .from("public_track_ratings")
+        .select("track_id, album_id, average_rating, rating_count")
+        .in("track_id", chunk);
+
+      if (error) {
+        console.error("Error fetching public track ratings:", error);
+        chunk.forEach((id) => requestedPublicTrackIdsRef.current.delete(id));
+        continue;
+      }
+
+      applyPublicTrackRatingRows((data || []) as DBPublicTrackRating[]);
+    }
+  }, [applyPublicTrackRatingRows, supabase]);
+
+  const ensurePublicTrackRatings = useCallback(
+    (trackIds: string[]) => {
+      for (const id of trackIds) {
+        if (!id || requestedPublicTrackIdsRef.current.has(id)) continue;
+        requestedPublicTrackIdsRef.current.add(id);
+        pendingPublicTrackIdsRef.current.add(id);
+      }
+
+      if (pendingPublicTrackIdsRef.current.size === 0) {
+        return publicTrackDrainPromiseRef.current ?? Promise.resolve();
+      }
+
+      if (!publicTrackDrainPromiseRef.current) {
+        publicTrackDrainPromiseRef.current = new Promise<void>((resolve) => {
+          publicTrackFlushTimerRef.current = setTimeout(() => {
+            publicTrackFlushTimerRef.current = null;
+            void (async () => {
+              try {
+                while (pendingPublicTrackIdsRef.current.size > 0) {
+                  await flushPublicTrackRatings();
+                }
+              } finally {
+                publicTrackDrainPromiseRef.current = null;
+                resolve();
+              }
+            })();
+          }, 0);
+        });
+      }
+
+      return publicTrackDrainPromiseRef.current;
+    },
+    [flushPublicTrackRatings],
+  );
+
+  useEffect(() => {
+    return () => {
+      if (publicTrackFlushTimerRef.current != null) {
+        clearTimeout(publicTrackFlushTimerRef.current);
+      }
+    };
+  }, []);
+
   const setRating = useCallback(
     async (trackId: string, rating: number, albumContext?: AlbumContext) => {
       // Optimistic Update
@@ -368,6 +549,7 @@ export function RatingsProvider({ children }: { children: React.ReactNode }) {
             releaseDate: albumContext.releaseDate,
             totalTracks: 0,
             artworkUrl: albumContext.artworkUrl,
+            albumType: albumContext.albumType,
             ratedTrackIds: [],
           };
 
@@ -395,6 +577,7 @@ export function RatingsProvider({ children }: { children: React.ReactNode }) {
               releaseDate: albumContext.releaseDate,
               totalTracks,
               artworkUrl: albumContext.artworkUrl || currentAlbum.artworkUrl,
+              albumType: albumContext.albumType || currentAlbum.albumType,
               ratedTrackIds: newRatedTrackIds,
               ratedAt: currentAlbum.ratedAt || new Date().toISOString(),
             },
@@ -435,8 +618,11 @@ export function RatingsProvider({ children }: { children: React.ReactNode }) {
             rError.details,
             rError.hint,
           );
+        } else {
+          void refreshPublicTrackRating(trackId);
         }
 
+        const albumType = albumContext.albumType?.trim();
         const albumRow = {
           user_id: targetUserId,
           album_id: albumContext.albumId,
@@ -448,6 +634,7 @@ export function RatingsProvider({ children }: { children: React.ReactNode }) {
             albumContext.totalTracks,
             albumRatingsRef.current[albumContext.albumId]?.totalTracks,
           ),
+          ...(albumType ? { album_type: albumType } : {}),
         };
 
         const { error: aError } = await supabase
@@ -466,10 +653,12 @@ export function RatingsProvider({ children }: { children: React.ReactNode }) {
 
         if (error) {
           console.error("Error deleting rating from Supabase", error);
+        } else {
+          void refreshPublicTrackRating(trackId);
         }
       }
     },
-    [user, supabase],
+    [user, supabase, refreshPublicTrackRating],
   );
 
   const getAlbumRating = useCallback(
@@ -581,7 +770,9 @@ export function RatingsProvider({ children }: { children: React.ReactNode }) {
       setRating,
       albumRatings,
       publicAlbumRatings,
+      publicTrackRatings,
       ensurePublicAlbumRatings,
+      ensurePublicTrackRatings,
       getAlbumRating,
       removeAlbumRating,
       syncAlbumTotalTracks,
@@ -591,7 +782,9 @@ export function RatingsProvider({ children }: { children: React.ReactNode }) {
       setRating,
       albumRatings,
       publicAlbumRatings,
+      publicTrackRatings,
       ensurePublicAlbumRatings,
+      ensurePublicTrackRatings,
       getAlbumRating,
       removeAlbumRating,
       syncAlbumTotalTracks,

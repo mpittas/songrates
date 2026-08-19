@@ -85,7 +85,7 @@ export default function DropdownMenu({
         createPortal(
           <div
             ref={dropdownRef}
-            className="fixed z-[9999] min-w-[160px] bg-[#0a0a0d] border border-[#1a1a1f] rounded-lg shadow-xl py-1 animate-in fade-in zoom-in-95 duration-100"
+            className="fixed z-[9999] min-w-[160px] rounded-xl border border-neutral-200 bg-white py-1 shadow-[0_8px_24px_rgba(15,15,15,0.12),0_2px_6px_rgba(15,15,15,0.06)]"
             style={{
               top: position.top, // Use state position
               left: align === "right" ? position.left : position.left,

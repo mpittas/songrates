@@ -1,6 +1,20 @@
 import { YouTubeProps, YouTubeEvent } from "react-youtube";
 import { Track } from "./music";
 
+export type PlaybackSourceType =
+  | "album"
+  | "playlist"
+  | "apple-playlist"
+  | "artist";
+
+/** Where the current queue started — used to return to album/playlist/artist. */
+export interface PlaybackSource {
+  type: PlaybackSourceType;
+  id: string;
+  title: string;
+  href: string;
+}
+
 // YouTube Player instance type
 export interface YouTubePlayer {
   playVideo: () => void;
@@ -26,7 +40,12 @@ export interface PlayerContextType {
   duration: number;
   buffered: number;
   setIsPlaying: (playing: boolean) => void;
-  playTrack: (track: Track, queue?: Track[]) => Promise<void>;
+  playbackSource: PlaybackSource | null;
+  playTrack: (
+    track: Track,
+    queue?: Track[],
+    source?: PlaybackSource,
+  ) => Promise<void>;
   stopPlayback: () => void;
   pausePlayback: () => void;
   togglePlayPause: () => void;
@@ -76,6 +95,7 @@ export interface PlaybackControlsProps {
 
 export interface TrackInfoProps {
   currentTrack: Track;
+  playbackSource?: PlaybackSource | null;
 }
 
 export interface VideoPlayerProps {

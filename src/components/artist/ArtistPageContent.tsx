@@ -9,6 +9,7 @@ import { addToHistory } from "@/lib/history";
 import MySection from "@/components/ui/MySection";
 import { usePlayerCore } from "@/context/PlayerContext";
 import { topSongsToTrackQueue } from "@/lib/topSongsQueue";
+import { artistPlaybackSource } from "@/lib/playbackSource";
 import {
   Album,
   ArtistInfo as ArtistInfoType,
@@ -22,6 +23,7 @@ interface ArtistPageContentProps {
   artistName: string;
   artistInfo: ArtistInfoType;
   topSongs: TopSong[];
+  latestSongs: TopSong[];
   essentialAlbums: Album[];
   albums: Album[];
   epsAndSingles: Album[];
@@ -33,6 +35,7 @@ export default function ArtistPageContent({
   artistName,
   artistInfo,
   topSongs,
+  latestSongs,
   essentialAlbums,
   albums,
   epsAndSingles,
@@ -59,7 +62,13 @@ export default function ArtistPageContent({
           artistName={artistName}
           artistInfo={artistInfo}
           topSongsQueue={topSongsQueue}
-          onPlayTopSongs={() => playTrack(topSongsQueue[0], topSongsQueue)}
+          onPlayTopSongs={() =>
+            playTrack(
+              topSongsQueue[0],
+              topSongsQueue,
+              artistPlaybackSource(artistId, artistName),
+            )
+          }
         />
 
         <div className="relative z-10 grid grid-cols-1 items-start gap-8 lg:grid-cols-[220px_1fr] lg:gap-20">
@@ -74,6 +83,7 @@ export default function ArtistPageContent({
           <div className="min-w-0">
             <Discography
               topSongs={topSongs}
+              latestSongs={latestSongs}
               essentialAlbums={essentialAlbums}
               albums={albums}
               epsAndSingles={epsAndSingles}

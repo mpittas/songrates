@@ -42,7 +42,6 @@ export default function FavoriteButton({
   buttonSize = "sm",
   className = "",
   variant = "icon",
-  menuTheme = "dark",
   onMenuClick,
   onFavoriteChange,
 }: FavoriteButtonProps) {
@@ -144,9 +143,7 @@ export default function FavoriteButton({
 
   if (variant === "menu-item") {
     const menuItemThemeClasses =
-      menuTheme === "light"
-        ? "text-sm font-mono text-neutral-600 hover:text-neutral-900 hover:bg-[#f5f5f5]"
-        : "text-xs font-mono text-neutral-400 hover:text-white hover:bg-white/5";
+      "cursor-pointer text-sm text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100";
 
     const likeLabel =
       itemType === "track"
