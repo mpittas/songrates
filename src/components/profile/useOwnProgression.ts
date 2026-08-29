@@ -11,6 +11,7 @@ import {
   progressionFromRow,
   xpFromRatedAlbums,
   type UserProgression,
+  type UserProgressionRow,
 } from "@/lib/profileProgression";
 
 export function useOwnProgression() {
@@ -27,7 +28,7 @@ export function useOwnProgression() {
       .select("xp, level, fully_rated_count, review_count")
       .eq("user_id", user.id)
       .maybeSingle()
-      .then(({ data }) => {
+      .then(({ data }: { data: UserProgressionRow | null }) => {
         if (!data) {
           setStored(EMPTY_PROGRESSION);
           return;

@@ -114,12 +114,14 @@ export const EMPTY_PROGRESSION: UserProgression = {
   reviewCount: 0,
 };
 
-export function progressionFromRow(row: {
+export type UserProgressionRow = {
   xp?: number | null;
   level?: number | null;
   fully_rated_count?: number | null;
   review_count?: number | null;
-}): UserProgression {
+};
+
+export function progressionFromRow(row: UserProgressionRow): UserProgression {
   const fullyRatedCount = Number(row.fully_rated_count) || 0;
   const reviewCount = Number(row.review_count) || 0;
   return {
