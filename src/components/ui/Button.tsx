@@ -3,7 +3,8 @@ import Link from "next/link";
 
 import { cn } from "@/lib/utils";
 
-interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+interface ButtonProps
+  extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "onClick"> {
   variant?: "primary" | "secondary" | "ghost" | "border" | "white" | "whiteMuted";
   size?: "xxs" | "xs" | "sm" | "md" | "lg";
   iconLeft?: React.ReactNode;
@@ -12,6 +13,7 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   className?: string;
   isExternal?: boolean;
   prefetch?: boolean;
+  onClick?: React.MouseEventHandler<HTMLElement>;
 }
 
 export default function Button({
