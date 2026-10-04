@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { usePathname } from "next/navigation";
 import Header from "@/components/layout/Header";
 
@@ -12,11 +12,7 @@ jest.mock("@/components/search/HeaderSearchBar", () => {
   };
 });
 
-jest.mock("@/components/ui/MySection", () => {
-  return function MockMySection({ children, className }: any) {
-    return <div className={className}>{children}</div>;
-  };
-});
+jest.mock("@/components/layout/UserMenu", () => ({ __esModule: true, default: () => null }));
 
 jest.mock("@/context/AuthContext", () => ({
   useAuth: () => ({
@@ -25,12 +21,6 @@ jest.mock("@/context/AuthContext", () => ({
     loading: false,
   }),
 }));
-
-jest.mock("@/components/layout/MobileMenu", () => {
-  return function MockMobileMenu() {
-    return null;
-  };
-});
 
 describe("Header", () => {
   beforeEach(() => {
@@ -88,13 +78,13 @@ describe("Header", () => {
     expect(screen.getByTestId("header-search-bar")).toBeInTheDocument();
   });
 
-  it("should not use sticky positioning", () => {
+  it("should keep navigation visible while scrolling", () => {
     (usePathname as jest.Mock).mockReturnValue("/");
 
     const { container } = render(<Header />);
 
     const header = container.querySelector("header");
-    expect(header).not.toHaveClass("sticky");
+    expect(header).toHaveClass("sticky");
   });
 
   it("should have proper z-index", () => {
@@ -115,13 +105,34 @@ describe("Header", () => {
     expect(logoLink).toHaveAttribute("href", "/");
   });
 
-  it("should center search bar on non-homepage", () => {
-    (usePathname as jest.Mock).mockReturnValue("/artist/123");
-
+  it("opens mobile search and closes it with Escape", () => {
+    (usePathname as jest.Mock).mockReturnValue("/explore");
     render(<Header />);
+    fireEvent.click(screen.getByRole("button", { name: "Search" }));
+    expect(screen.getByRole("dialog", { name: "Search music" })).toBeInTheDocument();
+    expect(document.body.style.overflow).toBe("hidden");
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(document.body.style.overflow).toBe("");
+  });
 
-    const searchBarContainer =
-      screen.getByTestId("header-search-bar").parentElement;
-    expect(searchBarContainer).toHaveClass("justify-center");
+  it("closes mobile search when navigating to another page", () => {
+    (usePathname as jest.Mock).mockReturnValue("/explore");
+    const { rerender } = render(<Header />);
+    fireEvent.click(screen.getByRole("button", { name: "Search" }));
+    (usePathname as jest.Mock).mockReturnValue("/moods");
+    rerender(<Header />);
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(document.body.style.overflow).toBe("");
+    (usePathname as jest.Mock).mockReturnValue("/explore");
+    rerender(<Header />);
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it.each(["/login", "/complete-profile"])("keeps account flow %s free of search", (path) => {
+    (usePathname as jest.Mock).mockReturnValue(path);
+    render(<Header />);
+    expect(screen.queryByRole("button", { name: "Search" })).not.toBeInTheDocument();
+    expect(screen.queryByTestId("header-search-bar")).not.toBeInTheDocument();
   });
 });

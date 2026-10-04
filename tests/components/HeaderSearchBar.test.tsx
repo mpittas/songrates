@@ -8,11 +8,15 @@ jest.mock("next/navigation", () => ({
 }));
 
 // Mock SearchResults component
-jest.mock("@/components/SearchResults", () => {
+jest.mock("@/components/search/SearchResults", () => {
   return function MockSearchResults({ query }: { query: string }) {
     return <div data-testid="search-results">Results for: {query}</div>;
   };
 });
+
+jest.mock("@/hooks/useSearchHistory", () => ({
+  useSearchHistory: () => ({ history: [], recordClick: jest.fn(), removeClick: jest.fn(), clearHistory: jest.fn() }),
+}));
 
 // Mock useSearchInput hook
 jest.mock("@/hooks/useSearchInput", () => ({
@@ -43,7 +47,7 @@ describe("HeaderSearchBar", () => {
   it("should render search input", () => {
     render(<HeaderSearchBar />);
 
-    const input = screen.getByPlaceholderText("Search artists...");
+    const input = screen.getByPlaceholderText("Search artists, albums, songs");
     expect(input).toBeInTheDocument();
   });
 
@@ -61,7 +65,7 @@ describe("HeaderSearchBar", () => {
 
     render(<HeaderSearchBar />);
 
-    const form = screen.getByLabelText("Search artists");
+    const form = screen.getByRole("search", { name: "Search music" });
     fireEvent.submit(form);
 
     expect(mockPush).toHaveBeenCalledWith("/?q=test%20query");
@@ -81,7 +85,7 @@ describe("HeaderSearchBar", () => {
 
     render(<HeaderSearchBar />);
 
-    const form = screen.getByLabelText("Search artists");
+    const form = screen.getByRole("search", { name: "Search music" });
     fireEvent.submit(form);
 
     expect(mockPush).not.toHaveBeenCalled();
@@ -123,7 +127,7 @@ describe("HeaderSearchBar", () => {
     expect(screen.queryByTestId("search-results")).not.toBeInTheDocument();
   });
 
-  it("should not show search results when query is empty", () => {
+  it("should open the history panel when focused with an empty query", () => {
     const { useSearchInput } = require("@/hooks/useSearchInput");
     useSearchInput.mockReturnValue({
       query: "",
@@ -137,7 +141,7 @@ describe("HeaderSearchBar", () => {
 
     render(<HeaderSearchBar />);
 
-    expect(screen.queryByTestId("search-results")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("search-results")).toBeInTheDocument();
   });
 
   it("should hide results when clicking outside", async () => {
@@ -163,11 +167,4 @@ describe("HeaderSearchBar", () => {
     });
   });
 
-  it("should use small size variant for SearchInput", () => {
-    render(<HeaderSearchBar />);
-
-    const input = screen.getByPlaceholderText("Search artists...");
-    // Small variant has specific classes
-    expect(input).toHaveClass("py-2", "text-sm");
-  });
 });

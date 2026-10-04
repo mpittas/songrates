@@ -1,14 +1,14 @@
-import { FaBolt } from "react-icons/fa6";
+import { LuSparkles } from "react-icons/lu";
 
 import MoodPlaylistGrid from "@/components/playlists/MoodPlaylistGrid";
+import EmptyState from "@/components/ui/EmptyState";
 import MySection from "@/components/ui/MySection";
+import PageHeader from "@/components/ui/PageHeader";
 import {
   type ApplePlaylistResult,
   type BrowsePill,
   getMoodsBrowseData,
 } from "@/lib/appleMusic/api";
-import { PAGE_CONTENT_TOP } from "@/lib/pageLayout";
-import { cn } from "@/lib/utils";
 
 /** ISR: regenerate moods page at most once every 6 hours. */
 export const revalidate = 21600;
@@ -44,30 +44,25 @@ export default async function MoodsPage() {
   const playlists = flattenMoodPlaylists(moods.pills);
 
   return (
-    <main
-      className={cn(
-        "min-h-screen bg-[#F2EFED] pb-16 text-neutral-900",
-        PAGE_CONTENT_TOP,
-      )}
-    >
-      {playlists.length > 0 ? (
-        <MySection className="pb-8">
+    <main className="min-h-screen pb-10 text-ink">
+      <PageHeader
+        eyebrow="Browse"
+        title="Moods"
+        description="Playlists for every moment: workouts, late nights, rainy days and everything in between."
+        tight
+      />
+
+      <MySection>
+        {playlists.length > 0 ? (
           <MoodPlaylistGrid playlists={playlists} moods={moods.pills} />
-        </MySection>
-      ) : (
-        <MySection className="py-16">
-          <div className="rounded-2xl border border-neutral-200 bg-white p-8 text-center">
-            <FaBolt className="mx-auto text-neutral-400" size={28} />
-            <h2 className="mt-4 text-xl font-semibold text-neutral-900">
-              Moods are warming up
-            </h2>
-            <p className="mx-auto mt-2 max-w-lg text-sm text-neutral-500">
-              Apple Music catalog data is not available right now. Please try
-              again shortly.
-            </p>
-          </div>
-        </MySection>
-      )}
+        ) : (
+          <EmptyState
+            icon={<LuSparkles size={22} />}
+            title="Moods are warming up"
+            description="Apple Music catalog data is not available right now. Please try again shortly."
+          />
+        )}
+      </MySection>
     </main>
   );
 }

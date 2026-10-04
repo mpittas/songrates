@@ -20,7 +20,7 @@ export default async function HomeHero() {
       artistName: song.artistName,
       albumName: song.albumName,
       albumId: song.albumId,
-      artworkUrl: artworkUrl(song.artworkUrl, 200),
+      artworkUrl: artworkUrl(song.artworkUrl, 300),
     });
   }
 

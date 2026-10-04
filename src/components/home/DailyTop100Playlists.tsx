@@ -1,8 +1,8 @@
-import { getDailyTop100Playlists, artworkUrl } from "@/lib/appleMusic/api";
-import OptimizedImage from "@/components/ui/OptimizedImage";
+import { getDailyTop100Playlists } from "@/lib/appleMusic/api";
+import CardRail from "@/components/ui/CardRail";
 import MySection from "@/components/ui/MySection";
-import InstantLink from "@/components/ui/InstantLink";
-import HeadingRow from "@/main-components/HeadingRow";
+import SectionHeader from "@/components/ui/SectionHeader";
+import PlaylistCard from "@/main-components/PlaylistCard";
 
 export default async function DailyTop100Playlists() {
   const playlists = await getDailyTop100Playlists("us", 12);
@@ -10,48 +10,25 @@ export default async function DailyTop100Playlists() {
   if (!playlists || playlists.length === 0) return null;
 
   return (
-    <section className="py-12 sm:py-14">
-      <MySection>
-        <div className="w-full">
-          <HeadingRow title="Daily Top 100 Playlists" />
+    <MySection className="py-10 sm:py-14">
+      <SectionHeader
+        eyebrow="Updated daily"
+        title="Top 100 around the world"
+        description="What each country has on repeat, straight from Apple Music."
+        href="/explore"
+        linkLabel="Explore"
+      />
 
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-            {playlists.slice(0, 5).map((playlist) => {
-              const imageUrl = artworkUrl(playlist.artworkUrl, 400);
-
-              return (
-                <InstantLink
-                  key={playlist.id}
-                  href={`/apple-playlist/${playlist.id}`}
-                  className="group overflow-hidden rounded-xl border border-[#dfdfdf] bg-white p-2 shadow-[0_1px_0_rgba(0,0,0,0.04)] transition-all hover:-translate-y-0.5 hover:shadow-sm"
-                >
-                  <div className="relative aspect-square w-full overflow-hidden rounded-md bg-[#ececec]">
-                    <OptimizedImage
-                      src={imageUrl}
-                      alt={playlist.name}
-                      fill
-                      className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"
-                      fallbackSrc="/vinyl-placeholder.svg"
-                    />
-                  </div>
-
-                  <div className="pt-2">
-                    <h3 className="line-clamp-1 text-base font-semibold text-[#1f1f1f] transition-colors group-hover:text-black">
-                      {playlist.name}
-                    </h3>
-                    <p className="mt-1 line-clamp-1 text-xs text-[#555]">
-                      Top 100 Playlist
-                    </p>
-                    <p className="mt-1 text-[11px] text-[#9b9b9b]">
-                      {playlist.curatorName || "Playlist"}
-                    </p>
-                  </div>
-                </InstantLink>
-              );
-            })}
-          </div>
-        </div>
-      </MySection>
-    </section>
+      <CardRail columns={6}>
+        {playlists.slice(0, 6).map((playlist, index) => (
+          <PlaylistCard
+            key={playlist.id}
+            playlist={playlist}
+            index={index}
+            subtitle="Daily chart"
+          />
+        ))}
+      </CardRail>
+    </MySection>
   );
 }

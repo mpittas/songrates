@@ -1,7 +1,17 @@
+import AuthLayout from "@/components/auth/AuthLayout";
+import { Skeleton } from "@/components/ui/Skeleton";
+
 export default function Loading() {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-neutral-950">
-      <div className="h-10 w-40 animate-pulse rounded-full bg-white/10" />
-    </main>
+    <AuthLayout>
+      <div aria-busy="true" aria-label="Loading account" className="space-y-5">
+        <Skeleton className="h-12 w-3/4" />
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-12 w-full rounded-full" />
+        <Skeleton className="h-12 w-full rounded-xl" />
+        <Skeleton className="h-12 w-full rounded-xl" />
+        <Skeleton className="h-12 w-full rounded-full" />
+      </div>
+    </AuthLayout>
   );
 }

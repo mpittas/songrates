@@ -3,7 +3,7 @@
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import Button from "@/components/ui/Button";
 import { FaSignOutAlt, FaCog } from "react-icons/fa";
 import { createClient } from "@/utils/supabase/client";
 import ProfileLayout from "@/components/profile/ProfileLayout";
@@ -95,19 +95,12 @@ export default function OwnProfileShell({
       }
       actions={
         <>
-          <Link
-            href="/settings"
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-neutral-100 px-4 py-2.5 text-sm font-semibold text-neutral-700 transition-all duration-200 hover:bg-neutral-200"
-          >
-            <FaCog size={14} /> Settings
-          </Link>
-          <button
-            type="button"
-            onClick={() => signOut()}
-            className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-red-50 px-4 py-2.5 text-sm font-semibold text-red-600 transition-all duration-200 hover:bg-red-100"
-          >
-            <FaSignOutAlt size={14} /> Log out
-          </button>
+          <Button href="/settings" variant="secondary" size="sm" iconLeft={<FaCog size={13} />}>
+            Settings
+          </Button>
+          <Button onClick={() => signOut()} variant="ghost" size="sm" iconLeft={<FaSignOutAlt size={13} />}>
+            Sign out
+          </Button>
         </>
       }
       quickLinks={<ProfileQuickLinks mode="own" />}

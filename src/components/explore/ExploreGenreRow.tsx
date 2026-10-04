@@ -1,5 +1,6 @@
 import AlbumCard from "@/components/album/AlbumCard";
 import PlaylistCarousel from "@/components/home/PlaylistCarousel";
+import SectionHeader from "@/components/ui/SectionHeader";
 import { artworkUrl, type AppleExploreGenreSection } from "@/lib/appleMusic/api";
 import { Album } from "@/types/music";
 
@@ -29,15 +30,18 @@ export default function ExploreGenreRow({
   if (albums.length === 0) return null;
 
   return (
-    <div className="border-t border-neutral-200/90 pt-10 first:border-t-0 first:pt-0">
-      <h3 className="mb-5 text-lg font-semibold tracking-tight text-[#1d1d1d]">
-        {section.genre.name}
-      </h3>
+    <div>
+      <SectionHeader
+        as="h3"
+        title={section.genre.name}
+        count={albums.length}
+        size="sm"
+      />
       <PlaylistCarousel>
         {albums.map((album, index) => (
           <div
             key={album.id}
-            className="w-[48%] shrink-0 snap-start sm:w-[32%] lg:w-[23%]"
+            className="w-[44%] shrink-0 snap-start sm:w-[30%] md:w-[calc((100%_-_3*1.25rem)/4)] lg:w-[calc((100%_-_4*1.25rem)/5.4)]"
           >
             <AlbumCard
               album={albumToCard(album)}

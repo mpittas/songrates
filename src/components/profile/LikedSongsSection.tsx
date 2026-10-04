@@ -5,7 +5,9 @@ import { FaMusic, FaHeart } from "react-icons/fa";
 import type { IconType } from "react-icons";
 import { useDebounce } from "use-debounce";
 import ProfileSectionHeader from "@/components/profile/ProfileSectionHeader";
+import SharedEmptyState from "@/components/ui/EmptyState";
 import SongRow from "@/main-components/SongRow";
+import TrackList from "@/components/ui/TrackList";
 import Button from "@/components/ui/Button";
 import { formatTime } from "@/lib/utils";
 
@@ -28,13 +30,11 @@ function EmptyState({
   description: string;
 }) {
   return (
-    <div className="py-16 text-center border-2 border-dashed border-neutral-200 rounded-2xl bg-neutral-50">
-      <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
-        <Icon size={24} className="text-neutral-400" />
-      </div>
-      <p className="text-neutral-900 font-bold text-lg mb-1">{title}</p>
-      <p className="text-neutral-500 text-sm">{description}</p>
-    </div>
+    <SharedEmptyState
+      icon={<Icon size={20} />}
+      title={title}
+      description={description}
+    />
   );
 }
 
@@ -151,7 +151,7 @@ export default function LikedSongsSection({
         />
       ) : loading ? (
         <div className="py-10 flex items-center justify-center">
-          <div className="w-6 h-6 border-2 border-neutral-500 border-t-transparent rounded-full animate-spin" />
+          <div className="size-6 animate-spin rounded-full border-2 border-ink/15 border-t-ink" />
         </div>
       ) : filteredSongs.length === 0 ? (
         <EmptyState
@@ -165,7 +165,7 @@ export default function LikedSongsSection({
         />
       ) : (
         <>
-          <div className="flex flex-col gap-1.5">
+          <TrackList>
             {filteredSongs.map((song, i) => {
               const albumTitle = song.albumName || "Unknown Album";
               const duration = song.durationMs
@@ -222,16 +222,15 @@ export default function LikedSongsSection({
                 />
               );
             })}
-          </div>
+          </TrackList>
 
           {hasMore && (
-            <div className="mt-4 flex justify-center pb-2">
+            <div className="mt-6 flex justify-center">
               <Button
-                variant="secondary"
-                size="xs"
+                variant="border"
+                size="sm"
                 onClick={handleLoadMore}
                 disabled={loadingMore}
-                className="min-w-[200px]"
               >
                 {loadingMore
                   ? "Loading..."

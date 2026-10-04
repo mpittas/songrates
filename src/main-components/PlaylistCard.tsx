@@ -1,37 +1,23 @@
-import InstantLink from "@/components/ui/InstantLink";
-import OptimizedImage from "@/components/ui/OptimizedImage";
+import MediaCard from "@/components/ui/MediaCard";
 import { artworkUrl, type ApplePlaylistResult } from "@/lib/appleMusic/api";
 
 export default function PlaylistCard({
   playlist,
   index = 0,
+  subtitle,
 }: {
   playlist: ApplePlaylistResult;
   index?: number;
+  /** Overrides the curator line under the title. */
+  subtitle?: string;
 }) {
   return (
-    <InstantLink
+    <MediaCard
       href={`/apple-playlist/${playlist.id}`}
-      className="group flex min-w-0 flex-col overflow-hidden rounded-xl border border-[#dfdfdf] bg-white p-2 shadow-[0_1px_0_rgba(0,0,0,0.04)] transition-all hover:-translate-y-0.5 hover:border-neutral-300 hover:shadow-sm"
-    >
-      <div className="relative aspect-square w-full overflow-hidden rounded-md bg-[#ececec]">
-        <OptimizedImage
-          src={artworkUrl(playlist.artworkUrl, 300)}
-          alt={playlist.name}
-          fill
-          priority={index < 2}
-          className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"
-          fallbackSrc="/vinyl-placeholder.svg"
-        />
-      </div>
-      <div className="pt-3">
-        <h3 className="line-clamp-1 text-sm font-semibold text-neutral-900 group-hover:underline">
-          {playlist.name}
-        </h3>
-        <p className="mt-1 line-clamp-1 text-xs text-neutral-500">
-          {playlist.curatorName || "Apple Music"}
-        </p>
-      </div>
-    </InstantLink>
+      imageUrl={artworkUrl(playlist.artworkUrl, 400)}
+      title={playlist.name}
+      subtitle={subtitle ?? (playlist.curatorName || "Apple Music")}
+      priority={index < 2}
+    />
   );
 }

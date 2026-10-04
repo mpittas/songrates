@@ -15,13 +15,14 @@ export function scrollToAlbumReviews() {
 export default function AlbumReviewsButton({ count }: { count: number }) {
   return (
     <Button
-      type="button"
-      variant="secondary"
-      size="xs"
+      variant="border"
+      size="lg"
       onClick={scrollToAlbumReviews}
-      iconLeft={<LuMessageSquare size={14} className="mr-2" />}
+      iconLeft={<LuMessageSquare size={16} />}
+      aria-label={`Reviews (${count})`}
+      title="Jump to reviews"
     >
-      REVIEWS ({count})
+      <span className="tabular-nums">{count}</span>
     </Button>
   );
 }

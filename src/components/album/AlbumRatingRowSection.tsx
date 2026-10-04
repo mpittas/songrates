@@ -1,57 +1,69 @@
 import type { ReactNode } from "react";
-import { FaGlobeAmericas, FaUser } from "react-icons/fa";
+import { LuGlobe, LuUserRound } from "react-icons/lu";
 
+import { ratingColor } from "@/components/rating/constants";
 import { cn } from "@/lib/utils";
 import type { PublicAlbumRating } from "@/types/music";
 
-function RatingStatIcon({ children }: { children: ReactNode }) {
-  return (
-    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-neutral-800 text-neutral-400">
-      {children}
-    </div>
-  );
-}
-
-function RatingStatMeta({
-  label,
-  detail,
-}: {
-  label: string;
-  detail: ReactNode;
-}) {
-  return (
-    <div className="flex flex-col text-left">
-      <span className="text-xs text-neutral-400">{label}</span>
-      <span className="mt-0.5 text-md text-white">{detail}</span>
-    </div>
-  );
-}
-
-function RatingStatTile({
+function RatingStatCard({
   icon,
   label,
-  detail,
   score,
-  className,
+  detail,
+  progress,
 }: {
   icon: ReactNode;
-  label: string;
+  label: ReactNode;
+  score: number | null;
   detail: ReactNode;
-  score: ReactNode;
-  className?: string;
+  /** 0–1 completion, renders a bar under the detail line. */
+  progress?: number;
 }) {
+  const hasScore = score != null && score > 0;
+
   return (
-    <div
-      className={cn(
-        "flex items-center justify-between bg-neutral-900 p-4",
-        className,
-      )}
-    >
-      <div className="flex items-center gap-4">
-        <RatingStatIcon>{icon}</RatingStatIcon>
-        <RatingStatMeta label={label} detail={detail} />
+    <div className="flex flex-col rounded-2xl bg-surface p-4 shadow-card sm:p-5">
+      <div className="flex items-center gap-2 text-ink-2">
+        <span className="flex size-6 items-center justify-center rounded-full bg-ink/[0.06] text-ink-2">
+          {icon}
+        </span>
+        <span className="eyebrow truncate">{label}</span>
       </div>
-      <div className="ml-6 text-3xl p-2 bg-neutral-950 rounded-lg leading-6 text-neutral-200">{score}</div>
+
+      <div className="mt-3 flex items-end gap-1.5 sm:mt-4">
+        <span
+          className={cn(
+            "font-display text-[2.25rem] leading-none font-semibold tracking-[-0.04em] tabular-nums sm:text-5xl",
+            !hasScore && "text-ink-3",
+          )}
+          style={hasScore ? { color: ratingColor(score) } : undefined}
+        >
+          {hasScore ? score.toFixed(1) : "–"}
+        </span>
+        {hasScore ? (
+          <span className="mb-1 text-sm font-medium text-ink-3">/10</span>
+        ) : null}
+      </div>
+
+      <p className="mt-2 text-[13px] leading-5 text-ink-2 sm:text-sm">
+        {detail}
+      </p>
+
+      {progress != null ? (
+        <div
+          className="mt-3 h-1.5 overflow-hidden rounded-full bg-ink/[0.07]"
+          role="progressbar"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={Math.round(progress * 100)}
+          aria-label="Tracks rated"
+        >
+          <div
+            className="h-full rounded-full bg-ink transition-[width] duration-500 ease-out"
+            style={{ width: `${Math.min(100, Math.max(0, progress * 100))}%` }}
+          />
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -77,46 +89,38 @@ export default function AlbumRatingRowSection({
 }: AlbumRatingRowSectionProps) {
   const personalLabel = viewingUserRatings
     ? viewingUserName
-      ? viewingUserName
-      : "User"
-    : "You";
+      ? `@${viewingUserName}`
+      : "Their score"
+    : "Your score";
 
-  const hasPersonalAverage =
-    Boolean(averageScore) && parseFloat(String(averageScore)) > 0;
+  const personalScore = parseFloat(String(averageScore)) || null;
 
-  const personalDetail = hasPersonalAverage
-    ? isFullyRated
-      ? "Completed"
-      : `${ratedTracksCount}/${totalTracks} rated`
-    : "Rate below";
+  const personalDetail = isFullyRated
+    ? "Every track rated"
+    : totalTracks > 0
+      ? `${ratedTracksCount} of ${totalTracks} tracks rated`
+      : "Rate tracks below";
 
   const publicUserCount = publicData?.ratingCount ?? 0;
   const publicDetail =
     publicUserCount > 0
-      ? `from ${publicUserCount} ${publicUserCount === 1 ? "user" : "users"}`
-      : "No ratings";
-
-  const publicScore = publicData?.averageRating
-    ? publicData.averageRating.toFixed(1)
-    : "-";
-
-  const personalScore = hasPersonalAverage ? averageScore : "-";
+      ? `From ${publicUserCount} ${publicUserCount === 1 ? "listener" : "listeners"}`
+      : "No community ratings yet";
 
   return (
-    <div className="mb-8 grid w-full grid-cols-1 gap-2 md:grid-cols-2 md:gap-0">
-      <RatingStatTile
-        className="rounded-xl border border-white/10 md:rounded-l-xl md:rounded-r-none md:border-r-0"
-        icon={<FaGlobeAmericas size={14} />}
-        label="Public rating"
+    <div className="grid grid-cols-2 gap-3 sm:gap-4">
+      <RatingStatCard
+        icon={<LuGlobe size={13} />}
+        label="Community"
+        score={publicData?.averageRating ?? null}
         detail={publicDetail}
-        score={publicScore}
       />
-      <RatingStatTile
-        className="rounded-xl border border-white/10 md:rounded-r-xl md:rounded-l-none md:border-0 md:border-y md:border-r md:border-l md:border-white/10"
-        icon={<FaUser size={14} />}
-        label={personalDetail}
-        detail={personalLabel}
+      <RatingStatCard
+        icon={<LuUserRound size={13} />}
+        label={personalLabel}
         score={personalScore}
+        detail={personalDetail}
+        progress={totalTracks > 0 ? ratedTracksCount / totalTracks : undefined}
       />
     </div>
   );

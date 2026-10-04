@@ -5,6 +5,7 @@ import { FaStar } from "react-icons/fa";
 import { useRatingsContext } from "@/context/RatingsContext";
 import ArtistAlbumGridSection from "@/components/artist/ArtistAlbumGridSection";
 import ProfileSectionHeader from "@/components/profile/ProfileSectionHeader";
+import EmptyState from "@/components/ui/EmptyState";
 import { isFullyRatedAlbum, isPartiallyRatedAlbum } from "@/lib/albumPageStats";
 import type { Album } from "@/types/music";
 
@@ -93,21 +94,17 @@ export default function OwnRatedMusicSection() {
       />
 
       {filteredAlbums.length === 0 ? (
-        <div className="py-20 text-center">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-white ring-1 ring-neutral-200">
-            <FaStar size={20} className="text-neutral-400" />
-          </div>
-          <p className="mb-1 text-base font-semibold text-neutral-900">
-            No albums found
-          </p>
-          <p className="text-sm text-neutral-500">
-            {activeTab === "full"
+        <EmptyState
+          icon={<FaStar size={20} />}
+          title="No albums found"
+          description={
+            activeTab === "full"
               ? "You haven't fully rated any albums yet"
               : activeTab === "partial"
                 ? "You have no partially rated albums"
-                : "Rate tracks on any album page to see them here"}
-          </p>
-        </div>
+                : "Rate tracks on any album page to see them here"
+          }
+        />
       ) : (
         <ArtistAlbumGridSection
           albums={filteredAlbums}

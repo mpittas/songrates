@@ -2,7 +2,9 @@ import { getArtistWithViews } from "@/lib/appleMusic/api";
 import ArtistPageContent from "@/components/artist/ArtistPageContent";
 import { mapArtistDiscographyToPageData } from "@/lib/artistPageModel";
 import { resolveArtistId } from "@/lib/resolveArtistId";
-import { PAGE_CONTENT_TOP } from "@/lib/pageLayout";
+import { PAGE_CONTAINER } from "@/lib/pageLayout";
+import Button from "@/components/ui/Button";
+import EmptyState from "@/components/ui/EmptyState";
 import { cn } from "@/lib/utils";
 import type { Metadata } from "next";
 
@@ -47,13 +49,16 @@ export default async function ArtistPage({ params }: PageProps) {
 
   if (!discography) {
     return (
-      <main
-        className={cn(
-          "flex min-h-screen items-center justify-center px-4 text-neutral-900 sm:px-6",
-          PAGE_CONTENT_TOP,
-        )}
-      >
-        <div className="font-mono text-neutral-500">Artist not found</div>
+      <main className={cn(PAGE_CONTAINER, "min-h-[60vh] py-16")}>
+        <EmptyState
+          title="Artist not found"
+          description="This artist may have been removed from Apple Music."
+          action={
+            <Button href="/explore" variant="primary" size="md">
+              Explore music
+            </Button>
+          }
+        />
       </main>
     );
   }

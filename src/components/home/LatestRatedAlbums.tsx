@@ -1,8 +1,9 @@
 import InstantLink from "@/components/ui/InstantLink";
-
-import OptimizedImage from "@/components/ui/OptimizedImage";
+import CardRail from "@/components/ui/CardRail";
+import { MediaCardArt } from "@/components/ui/MediaCard";
 import MySection from "@/components/ui/MySection";
-import HeadingRow from "@/main-components/HeadingRow";
+import SectionHeader from "@/components/ui/SectionHeader";
+import { ratingColor } from "@/components/rating/constants";
 import { createSlug } from "@/lib/utils";
 import { createPublicClient } from "@/utils/supabase/public";
 
@@ -29,12 +30,19 @@ interface RPCAlbum {
   user_name: string;
 }
 
+function formatRatedDate(iso: string) {
+  return new Date(iso).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
+}
+
 /** ISR-aligned with home page — avoids a client-side Supabase round-trip per visit. */
 export default async function LatestRatedAlbums() {
   const supabase = createPublicClient();
 
   const { data, error } = await supabase.rpc("get_latest_completed_albums", {
-    limit_count: 4,
+    limit_count: 8,
   });
 
   if (error) {
@@ -56,74 +64,65 @@ export default async function LatestRatedAlbums() {
   }));
 
   return (
-    <section className="py-12 sm:py-14">
-      <MySection>
-        <div className="w-full">
-          <HeadingRow title="Latest Community Rated Albums" badgeText="" />
+    <MySection className="py-10 sm:py-14">
+      <SectionHeader
+        eyebrow="Community"
+        title="Freshly rated albums"
+        description="Albums listeners just finished scoring, every track."
+      />
 
-          <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {ratedAlbums.map((album, index) => {
-              const imageUrl = album.thumbnailUrl || "/vinyl-placeholder.svg";
-              const slug = createSlug(album.albumTitle, album.albumId);
-              const href = `/album/${slug}?userId=${album.userId}&userName=${encodeURIComponent(album.userName)}`;
+      <CardRail columns={4}>
+        {ratedAlbums.map((album, index) => {
+          const slug = createSlug(album.albumTitle, album.albumId);
+          const href = `/album/${slug}?userId=${album.userId}&userName=${encodeURIComponent(album.userName)}`;
 
-              return (
-                <div
-                  key={`${album.albumId}-${index}`}
-                  className="group rounded-xl border border-[#dfdfdf] bg-white p-3 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm"
+          return (
+            <article key={`${album.albumId}-${index}`} className="group min-w-0">
+              <InstantLink
+                href={href}
+                className="block rounded-xl outline-offset-4"
+              >
+                <MediaCardArt
+                  imageUrl={album.thumbnailUrl}
+                  alt={album.albumTitle}
                 >
-                  <div className="flex flex-col gap-3">
-                    <div className="flex items-start justify-end text-xs text-neutral-500">
-                      <time
-                        dateTime={album.ratedAt}
-                        className="text-[10px] tracking-wide"
-                      >
-                        {new Date(album.ratedAt).toLocaleDateString()}
-                      </time>
-                    </div>
+                  <span
+                    className="absolute bottom-2.5 left-2.5 flex h-7 items-center rounded-lg px-2 text-[13px] font-semibold text-white tabular-nums shadow-[0_6px_16px_-4px_rgb(0_0_0/0.45)]"
+                    style={{ backgroundColor: ratingColor(album.rating) }}
+                  >
+                    {album.rating.toFixed(1)}
+                  </span>
+                </MediaCardArt>
+                <h3 className="mt-3 truncate text-[14px] leading-5 font-medium tracking-[-0.01em] text-ink">
+                  {album.albumTitle}
+                </h3>
+                <p className="truncate text-[13px] leading-5 text-ink-2">
+                  {album.artistName}
+                </p>
+              </InstantLink>
 
-                    <InstantLink href={href} className="flex gap-4">
-                      <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-md bg-[#ececec]">
-                        <OptimizedImage
-                          src={imageUrl}
-                          alt={album.albumTitle}
-                          fill
-                          className="object-cover"
-                          fallbackSrc="/vinyl-placeholder.svg"
-                        />
-                      </div>
-
-                      <div className="flex min-w-0 flex-col justify-center">
-                        <h3 className="truncate text-sm font-semibold text-[#1f1f1f] transition-colors group-hover:text-black">
-                          {album.albumTitle}
-                        </h3>
-                        <p className="mt-0.5 truncate text-xs text-neutral-500">
-                          {album.artistName}
-                        </p>
-                      </div>
-                    </InstantLink>
-
-                    <div className="mt-1 flex items-center justify-between border-t border-[#ececec] pt-2.5">
-                      <span className="inline-flex items-center gap-1.5 text-[10px] text-neutral-500">
-                        <span className="tracking-wider">By:</span>
-                        <InstantLink
-                          href={`/user/${album.userName}`}
-                          className="font-medium transition-colors hover:text-neutral-900 hover:underline"
-                        >
-                          @{album.userName}
-                        </InstantLink>
-                      </span>
-                      <span className="rounded-full bg-[#4fbf82] px-2 py-0.5 text-[11px] font-semibold text-white">
-                        {album.rating.toFixed(1)}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </MySection>
-    </section>
+              <p className="mt-2 flex min-w-0 items-center gap-1.5 text-xs text-ink-3">
+                <span
+                  aria-hidden
+                  className="flex size-5 shrink-0 items-center justify-center rounded-full bg-ink text-[10px] font-semibold text-white uppercase"
+                >
+                  {album.userName.slice(0, 1)}
+                </span>
+                <InstantLink
+                  href={`/user/${album.userName}`}
+                  className="min-w-0 truncate font-medium text-ink-2 transition-colors hover:text-ink hover:underline"
+                >
+                  @{album.userName}
+                </InstantLink>
+                <span aria-hidden>·</span>
+                <time dateTime={album.ratedAt} className="shrink-0">
+                  {formatRatedDate(album.ratedAt)}
+                </time>
+              </p>
+            </article>
+          );
+        })}
+      </CardRail>
+    </MySection>
   );
 }

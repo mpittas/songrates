@@ -2,8 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-import Button from "@/components/ui/Button";
-import CollectionDetailPageLayout from "@/components/layout/CollectionDetailPageLayout";
+import CollectionDetailPageLayout, {
+  MetaDot,
+} from "@/components/layout/CollectionDetailPageLayout";
+import EmptyState from "@/components/ui/EmptyState";
+import TrackList from "@/components/ui/TrackList";
 import { useShareLinkParams } from "@/hooks/useShareLinkParams";
 import {
   artworkUrl,
@@ -15,7 +18,6 @@ import { fetchPlaylistEnrichments } from "@/lib/fetchPlaylistEnrichments";
 import { usePlayerCore } from "@/context/PlayerContext";
 import SongRow from "@/main-components/SongRow";
 import type { AlbumContext, Track } from "@/types/music";
-import { FaArrowLeft } from "react-icons/fa";
 import { applePlaylistPlaybackSource } from "@/lib/playbackSource";
 
 interface ApplePlaylistDetailClientProps {
@@ -119,8 +121,20 @@ export default function ApplePlaylistDetailClient({
         length: t.length,
         number: t.number,
       })),
-        [trackInfos, playlist.name],
+    [trackInfos, playlist.name],
   );
+
+  const totalDurationMs = tracks.reduce(
+    (sum, track) => sum + (track.durationMs || 0),
+    0,
+  );
+  const totalMinutes = Math.round(totalDurationMs / 60000);
+  const totalDuration =
+    totalMinutes > 0
+      ? totalMinutes >= 60
+        ? `${Math.floor(totalMinutes / 60)} hr ${totalMinutes % 60} min`
+        : `${totalMinutes} min`
+      : null;
 
   const playbackSource = applePlaylistPlaybackSource(
     playlist.id,
@@ -129,41 +143,32 @@ export default function ApplePlaylistDetailClient({
 
   return (
     <CollectionDetailPageLayout
-      topBarLeft={
-        <Button
-          href="/genres"
-          variant="secondary"
-          size="xs"
-          iconLeft={<FaArrowLeft size={14} className="mr-2" />}
-        >
-          BACK TO PLAYLISTS
-        </Button>
-      }
+      back={{ href: "/explore", label: "Explore" }}
       artworkSrc={heroImageUrl}
       artworkAlt={playlist.name}
       onPlayClick={() => {
         if (queue.length > 0) playTrack(queue[0], queue, playbackSource);
       }}
-      playLabel="Play playlist"
+      playLabel="Play"
       playDisabled={queue.length === 0}
+      eyebrow="Playlist"
       title={playlist.name}
-      subtitle={
-        <p className="mb-4 text-md text-neutral-600">
-          {playlist.curatorName || "Apple Music"}
-        </p>
-      }
+      subtitle={playlist.curatorName || "Apple Music"}
       metaRow={
         <>
-          <span className="rounded bg-neutral-100 px-2 py-1 text-xs font-semibold text-neutral-700">
-            Playlist
-          </span>
-          <span>•</span>
           <span>
             {playlist.trackCount}{" "}
             {playlist.trackCount === 1 ? "track" : "tracks"}
           </span>
+          {totalDuration ? (
+            <>
+              <MetaDot />
+              <span>{totalDuration}</span>
+            </>
+          ) : null}
         </>
       }
+      listCount={playlist.trackCount || undefined}
       searchQuery={searchQuery}
       onSearchQueryChange={setSearchQuery}
       onSearchClear={() => setSearchQuery("")}
@@ -171,28 +176,36 @@ export default function ApplePlaylistDetailClient({
       onSearchBlur={() => setIsSearchFocused(false)}
       searchFocused={isSearchFocused}
       list={
-        <div className="flex flex-col gap-y-1.5">
-          {filteredTracks.map((track, i) => (
-            <SongRow
-              key={`${track.number}-${track.id}`}
-              highlighted={track.id === highlightTrackId}
-              index={Number(track.number) || i + 1}
-              title={track.title}
-              artist={
-                track.artists?.[0]?.name || track.artistName || "Unknown"
-              }
-              album={track.albumTitle || playlist.name}
-              duration={String(track.length || "")}
-              artworkUrl={track.albumImageUrl || heroImageUrl}
-              track={track}
-              artistId={track.artists?.[0]?.id || track.artistId || ""}
-              albumId={track.albumId || ""}
-              queue={queue}
-              playbackSource={playbackSource}
-              albumContext={albumContextFromTrack(track)}
-            />
-          ))}
-        </div>
+        filteredTracks.length === 0 ? (
+          <EmptyState
+            compact
+            title={`No tracks match “${searchQuery}”`}
+            description="Try a different search."
+          />
+        ) : (
+          <TrackList>
+            {filteredTracks.map((track, i) => (
+              <SongRow
+                key={`${track.number}-${track.id}`}
+                highlighted={track.id === highlightTrackId}
+                index={Number(track.number) || i + 1}
+                title={track.title}
+                artist={
+                  track.artists?.[0]?.name || track.artistName || "Unknown"
+                }
+                album={track.albumTitle || playlist.name}
+                duration={String(track.length || "")}
+                artworkUrl={track.albumImageUrl || heroImageUrl}
+                track={track}
+                artistId={track.artists?.[0]?.id || track.artistId || ""}
+                albumId={track.albumId || ""}
+                queue={queue}
+                playbackSource={playbackSource}
+                albumContext={albumContextFromTrack(track)}
+              />
+            ))}
+          </TrackList>
+        )
       }
     />
   );

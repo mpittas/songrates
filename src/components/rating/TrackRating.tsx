@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import type React from "react";
 import { LuStar } from "react-icons/lu";
 import { RiUserStarLine } from "react-icons/ri";
 
@@ -9,6 +10,7 @@ import Tooltip from "@/components/ui/Tooltip";
 import { useRatingsContext } from "@/context/RatingsContext";
 import { AlbumContext } from "@/types/music";
 import { cn } from "@/lib/utils";
+import { ratingColor } from "./constants";
 
 export interface TrackRatingProps {
   trackId?: string;
@@ -24,19 +26,8 @@ export interface TrackRatingProps {
   popoverAlign?: "center" | "left";
 }
 
-const ratingColors: Record<number, string> = {
-  1: "bg-red-500",
-  2: "bg-red-400",
-  3: "bg-orange-400",
-  4: "bg-orange-300",
-  5: "bg-yellow-400",
-  6: "bg-yellow-300",
-  7: "bg-lime-400",
-  8: "bg-green-400",
-  9: "bg-emerald-400",
-  10: "bg-emerald-500",
-};
-
+const POPOVER_WIDTH = 228;
+const VIEWPORT_MARGIN = 8;
 const POPOVER_LEAVE_MS = 40;
 const POPOVER_ENTER_MS = 120;
 const POPOVER_EXIT_MS = 75;
@@ -55,7 +46,7 @@ export default function TrackRating({
   const [popoverMounted, setPopoverMounted] = useState(false);
   const [popoverEntering, setPopoverEntering] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const [pos, setPos] = useState({ top: 0, left: 0 });
+  const [pos, setPos] = useState({ top: 0, left: 0, arrowLeft: 0 });
   const triggerRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -99,11 +90,15 @@ export default function TrackRating({
     const trigger = triggerRef.current;
     if (!trigger) return;
     const rect = trigger.getBoundingClientRect();
-    setPos(
-      popoverAlign === "left"
-        ? { top: rect.top - 8, left: rect.left }
-        : { top: rect.top - 8, left: rect.left + rect.width / 2 },
+    const anchorX = rect.left + rect.width / 2;
+    const preferredLeft =
+      popoverAlign === "left" ? rect.left : anchorX - POPOVER_WIDTH / 2;
+    // Keep the whole panel on screen; the arrow still points at the trigger.
+    const left = Math.min(
+      Math.max(preferredLeft, VIEWPORT_MARGIN),
+      window.innerWidth - POPOVER_WIDTH - VIEWPORT_MARGIN,
     );
+    setPos({ top: rect.top - 8, left, arrowLeft: anchorX - left });
   }, [popoverAlign]);
 
   const openPopover = () => {
@@ -171,12 +166,12 @@ export default function TrackRating({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [dismissPopover, popoverMounted]);
 
-  const ratingBg =
-    displayRating && displayRating > 0
-      ? ratingColors[displayRating]
-      : appearance === "dark"
-        ? "bg-neutral-800 ring-1 ring-white/10"
-        : "bg-neutral-200";
+  const isRated = Boolean(displayRating && displayRating > 0);
+  const ratingBg = isRated
+    ? ""
+    : appearance === "dark"
+      ? "bg-white/[0.06] ring-1 ring-inset ring-white/15 hover:bg-white/10"
+      : "bg-transparent ring-1 ring-inset ring-line-strong hover:bg-ink/[0.05]";
   const publicRatingTooltip =
     publicRating && publicRating > 0
       ? "Average public rating from all users"
@@ -186,7 +181,7 @@ export default function TrackRating({
     <div className="relative flex items-center gap-0.5 sm:gap-2">
       {showPublicRating ? (
         <Tooltip content={publicRatingTooltip}>
-          <span className="hidden items-center gap-1 rounded-md px-1.5 py-1 text-xs font-medium text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-600 sm:flex">
+          <span className="hidden h-8 items-center gap-1 rounded-full px-2 text-xs font-medium text-ink-3 tabular-nums transition-colors hover:bg-ink/[0.05] hover:text-ink-2 sm:flex">
             <RiUserStarLine size={14} />
             {publicRating && publicRating > 0 ? publicRating.toFixed(1) : "−"}
           </span>
@@ -203,28 +198,30 @@ export default function TrackRating({
           type="button"
           onClick={() => openPopover()}
           className={cn(
-            "flex h-6 w-6 cursor-pointer items-center justify-center rounded-full text-[10px] font-semibold transition-all hover:scale-105 sm:h-8 sm:w-8 sm:text-xs",
+            "flex size-8 cursor-pointer items-center justify-center rounded-full text-xs font-semibold tabular-nums transition-[background-color,transform] duration-150 hover:scale-105 active:scale-95",
             ratingBg,
-            displayRating && displayRating > 0
-              ? "text-white"
+            isRated
+              ? "text-white shadow-[inset_0_-1px_0_rgb(0_0_0/0.15)]"
               : appearance === "dark"
-                ? "text-neutral-500"
-                : "text-neutral-400",
+                ? "text-white/50"
+                : "text-ink-3 hover:text-ink",
           )}
+          style={
+            isRated
+              ? { backgroundColor: ratingColor(displayRating!) }
+              : undefined
+          }
           aria-expanded={popoverMounted && popoverEntering}
-          aria-label="Rate song"
+          aria-label={
+            isRated
+              ? `Your rating: ${displayRating}. Change rating`
+              : "Rate song"
+          }
         >
           {displayRating && displayRating > 0 ? (
             displayRating
           ) : (
-            <>
-              <LuStar size={12} className="shrink-0 sm:hidden" aria-hidden />
-              <LuStar
-                size={16}
-                className="hidden shrink-0 sm:block"
-                aria-hidden
-              />
-            </>
+            <LuStar size={15} className="shrink-0" aria-hidden />
           )}
         </button>
       </div>
@@ -234,22 +231,20 @@ export default function TrackRating({
         createPortal(
           <div
             ref={panelRef}
-            className="fixed z-[80] w-[220px]"
+            className="fixed z-[80]"
             style={{
               top: pos.top,
               left: pos.left,
-              transform:
-                popoverAlign === "left"
-                  ? "translate(0, -100%)"
-                  : "translate(-50%, -100%)",
+              width: POPOVER_WIDTH,
+              transform: "translate(0, -100%)",
             }}
             onMouseEnter={openPopover}
             onMouseLeave={scheduleClosePopover}
           >
             <div
               className={cn(
-                "relative flex flex-col items-center justify-center rounded-2xl bg-neutral-800 p-3 shadow-2xl/15 transition-[opacity,transform] ease-out motion-reduce:transition-none",
-                popoverAlign === "left" ? "origin-bottom-left" : "origin-bottom",
+                "relative flex flex-col items-center justify-center rounded-2xl bg-[#1b1a19] p-3 shadow-pop ring-1 ring-white/10 transition-[opacity,transform] ease-out motion-reduce:transition-none",
+                "origin-bottom",
                 popoverEntering
                   ? "pointer-events-auto translate-y-0 scale-100 opacity-100"
                   : "pointer-events-none translate-y-1 scale-[0.96] opacity-0",
@@ -260,10 +255,8 @@ export default function TrackRating({
                 }ms`,
               }}
             >
-              <div className="mb-3 text-xs font-medium uppercase text-neutral-300">
-                Rate this track
-              </div>
-              <div className="grid grid-cols-5 gap-1.5">
+              <div className="eyebrow mb-3 text-white/55">Rate this track</div>
+              <div className="grid grid-cols-5 gap-2">
                 {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
                   <button
                     key={n}
@@ -276,11 +269,18 @@ export default function TrackRating({
                       onRate?.(nextRating);
                       dismissPopover(true);
                     }}
+                    aria-label={`Rate ${n} out of 10`}
+                    aria-pressed={displayRating === n}
+                    style={
+                      {
+                        "--rating-color": ratingColor(n),
+                      } as React.CSSProperties
+                    }
                     className={cn(
-                      "h-8 w-8 rounded-full text-xs font-bold transition-all",
+                      "size-9 cursor-pointer rounded-full text-[13px] font-semibold tabular-nums text-white transition-[background-color,transform] duration-100 active:scale-90",
                       displayRating === n
-                        ? `${ratingColors[n]} text-white`
-                        : "bg-neutral-700 text-neutral-100 hover:bg-neutral-400/60",
+                        ? "bg-(--rating-color) ring-2 ring-white/70"
+                        : "bg-white/[0.08] text-white/90 hover:bg-(--rating-color) hover:text-white",
                     )}
                   >
                     {n}
@@ -288,15 +288,16 @@ export default function TrackRating({
                 ))}
               </div>
               <div
-                className={cn(
-                  "pointer-events-none absolute top-full",
-                  popoverAlign === "left"
-                    ? "left-4"
-                    : "left-1/2 -translate-x-1/2",
-                )}
+                className="pointer-events-none absolute top-full -translate-x-1/2"
+                style={{
+                  left: Math.min(
+                    Math.max(pos.arrowLeft, 18),
+                    POPOVER_WIDTH - 18,
+                  ),
+                }}
                 aria-hidden
               >
-                <div className="h-0 w-0 border-x-[7px] border-t-[6px] border-x-transparent border-t-neutral-800" />
+                <div className="h-0 w-0 border-x-[7px] border-t-[6px] border-x-transparent border-t-[#1b1a19]" />
               </div>
             </div>
             <div className="h-3" aria-hidden />

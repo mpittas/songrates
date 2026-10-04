@@ -1,8 +1,10 @@
 import ApplePlaylistDetailClient from "@/components/apple-playlist/ApplePlaylistDetailClient";
-import CollectionDetailPageLayout from "@/components/layout/CollectionDetailPageLayout";
 import Button from "@/components/ui/Button";
+import EmptyState from "@/components/ui/EmptyState";
 import { getPlaylistDetail } from "@/lib/appleMusic/api";
-import { FaArrowLeft } from "react-icons/fa";
+import { PAGE_CONTAINER } from "@/lib/pageLayout";
+import { cn } from "@/lib/utils";
+import { LuListMusic } from "react-icons/lu";
 
 /** ISR: regenerate playlist pages at most once every 6 hours.
  *  Apple editorial/chart playlists are slow-moving and expensive to rebuild.
@@ -29,31 +31,18 @@ export default async function ApplePlaylistPage({ params }: PageProps) {
 
   if (!playlist) {
     return (
-      <CollectionDetailPageLayout
-        topBarLeft={
-          <Button
-            href="/genres"
-            variant="secondary"
-            size="xs"
-            iconLeft={<FaArrowLeft size={14} className="mr-2" />}
-          >
-            BACK TO PLAYLISTS
-          </Button>
-        }
-        artworkSrc="/vinyl-placeholder.svg"
-        artworkAlt="Playlist not found"
-        title="Playlist not found"
-        subtitle={
-          <p className="mb-4 text-md text-neutral-600">
-            This playlist is missing or unavailable.
-          </p>
-        }
-        list={
-          <p className="py-16 text-center text-sm text-neutral-500">
-            Try another playlist from genres or explore.
-          </p>
-        }
-      />
+      <main className={cn(PAGE_CONTAINER, "min-h-[60vh] py-16")}>
+        <EmptyState
+          icon={<LuListMusic size={22} />}
+          title="Playlist not found"
+          description="This playlist is missing or no longer available on Apple Music."
+          action={
+            <Button href="/explore" variant="primary" size="md">
+              Explore playlists
+            </Button>
+          }
+        />
+      </main>
     );
   }
 

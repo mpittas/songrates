@@ -1,7 +1,8 @@
 "use client";
 
-import InstantLink from "@/components/ui/InstantLink";
-import OptimizedImage from "@/components/ui/OptimizedImage";
+import CardRail from "@/components/ui/CardRail";
+import MediaCard from "@/components/ui/MediaCard";
+import SectionHeader from "@/components/ui/SectionHeader";
 import { createSlug } from "@/lib/utils";
 import type { AlbumInfo } from "@/types/music";
 
@@ -15,38 +16,25 @@ export default function AlbumOtherVersions({ versions }: AlbumOtherVersionsProps
   if (!versions?.length) return null;
 
   return (
-    <div className="mt-10 w-full">
-      <h3 className="mb-4 font-mono text-xs uppercase tracking-wide text-neutral-600">
-        other versions
-      </h3>
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-        {versions.map((version) => {
-          const versionSlug = createSlug(version.name, version.id);
-          return (
-            <InstantLink key={version.id} href={`/album/${versionSlug}`} className="group">
-              <div className="relative aspect-square overflow-hidden rounded-md border border-[#dddddd] bg-white transition-colors group-hover:border-[#c9c9c9]">
-                <OptimizedImage
-                  src={version.artworkUrl || "/vinyl-placeholder.svg"}
-                  alt={version.name}
-                  fill
-                  className="object-cover"
-                  fallbackSrc="/vinyl-placeholder.svg"
-                />
-              </div>
-              <div className="mt-2">
-                <p className="truncate text-sm text-neutral-900 transition-colors group-hover:text-black">
-                  {version.name}
-                </p>
-                <p className="mt-0.5 truncate text-[11px] text-neutral-600">
-                  {version.releaseDate?.slice(0, 4) || ""}
-                  {version.type ? ` · ${version.type}` : ""}
-                  {version.trackCount ? ` · ${version.trackCount} tracks` : ""}
-                </p>
-              </div>
-            </InstantLink>
-          );
-        })}
-      </div>
-    </div>
+    <section className="mt-12 w-full sm:mt-16">
+      <SectionHeader title="Other versions" count={versions.length} />
+      <CardRail columns={6}>
+        {versions.map((version) => (
+          <MediaCard
+            key={version.id}
+            href={`/album/${createSlug(version.name, version.id)}`}
+            imageUrl={version.artworkUrl}
+            title={version.name}
+            subtitle={[
+              version.releaseDate?.slice(0, 4),
+              version.type,
+              version.trackCount ? `${version.trackCount} tracks` : null,
+            ]
+              .filter(Boolean)
+              .join(" · ")}
+          />
+        ))}
+      </CardRail>
+    </section>
   );
 }

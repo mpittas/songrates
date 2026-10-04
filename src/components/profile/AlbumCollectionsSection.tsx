@@ -6,6 +6,7 @@ import type { IconType } from "react-icons";
 import { createClient } from "@/utils/supabase/client";
 import EditPlaylistModal from "@/components/playlist/EditPlaylistModal";
 import ProfileSectionHeader from "@/components/profile/ProfileSectionHeader";
+import SharedEmptyState from "@/components/ui/EmptyState";
 import StackedCard from "@/components/ui/StackedCard";
 import { usePlaylistCollectionActions } from "@/hooks/usePlaylistCollectionActions";
 import {
@@ -30,13 +31,11 @@ function EmptyState({
   description: string;
 }) {
   return (
-    <div className="py-16 text-center border-2 border-dashed border-neutral-200 rounded-2xl bg-neutral-50">
-      <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
-        <Icon size={24} className="text-neutral-400" />
-      </div>
-      <p className="text-neutral-900 font-bold text-lg mb-1">{title}</p>
-      <p className="text-neutral-500 text-sm">{description}</p>
-    </div>
+    <SharedEmptyState
+      icon={<Icon size={20} />}
+      title={title}
+      description={description}
+    />
   );
 }
 
@@ -113,7 +112,7 @@ export default function AlbumCollectionsSection({
         />
       ) : loading ? (
         <div className="py-10 flex items-center justify-center">
-          <div className="w-6 h-6 border-2 border-neutral-500 border-t-transparent rounded-full animate-spin" />
+          <div className="size-6 animate-spin rounded-full border-2 border-ink/15 border-t-ink" />
         </div>
       ) : filteredCollections.length === 0 ? (
         <EmptyState

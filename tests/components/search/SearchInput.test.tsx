@@ -89,29 +89,11 @@ describe("SearchInput", () => {
     expect(onClear).toHaveBeenCalled();
   });
 
-  it("should apply focus styles when isFocused is true", () => {
-    const { container } = render(
-      <SearchInput {...defaultProps} isFocused={true} />,
-    );
-
-    const searchContainer = container.querySelector("div");
-    expect(searchContainer).toHaveClass(
-      "shadow-[0_0_0px_5px_rgba(0,240,255,0.2)]",
-    );
-  });
-
-  it("should render with small size variant", () => {
-    render(<SearchInput {...defaultProps} size="small" />);
-
-    const input = screen.getByPlaceholderText("Search artists...");
-    expect(input).toHaveClass("py-2", "text-sm");
-  });
-
-  it("should render with large size variant", () => {
-    render(<SearchInput {...defaultProps} size="large" />);
-
-    const input = screen.getByPlaceholderText("Search artists...");
-    expect(input).toHaveClass("py-3", "text-lg");
+  it("keeps search accessible in each size", () => {
+    const { rerender } = render(<SearchInput {...defaultProps} size="small" />);
+    expect(screen.getByRole("searchbox", { name: "Search artists..." })).toBeInTheDocument();
+    rerender(<SearchInput {...defaultProps} size="large" />);
+    expect(screen.getByRole("searchbox", { name: "Search artists..." })).toHaveAttribute("enterKeyHint", "search");
   });
 
   it("should render search icon", () => {
@@ -122,10 +104,4 @@ describe("SearchInput", () => {
     expect(svg).toBeInTheDocument();
   });
 
-  it("should have no outline style on input", () => {
-    render(<SearchInput {...defaultProps} />);
-
-    const input = screen.getByPlaceholderText("Search artists...");
-    expect(input).toHaveStyle({ outline: "none" });
-  });
 });

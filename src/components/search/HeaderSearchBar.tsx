@@ -7,9 +7,24 @@ import { useSearchHistory } from "@/hooks/useSearchHistory";
 import SearchInput from "@/components/search/SearchInput";
 import SearchResults from "@/components/search/SearchResults";
 
-export default function HeaderSearchBar() {
+function isTypingTarget(target: EventTarget | null) {
+  if (!(target instanceof HTMLElement)) return false;
+  return (
+    target.isContentEditable ||
+    target.tagName === "INPUT" ||
+    target.tagName === "TEXTAREA" ||
+    target.tagName === "SELECT"
+  );
+}
+
+export default function HeaderSearchBar({
+  autoFocus = false,
+}: {
+  autoFocus?: boolean;
+}) {
   const router = useRouter();
   const containerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const {
     query,
@@ -37,6 +52,21 @@ export default function HeaderSearchBar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [setIsFocused]);
 
+  // "/" focuses the search field from anywhere on the page.
+  useEffect(() => {
+    if (autoFocus) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== "/" || e.metaKey || e.ctrlKey || e.altKey) return;
+      if (isTypingTarget(e.target)) return;
+      const input = inputRef.current;
+      if (!input || input.offsetParent === null) return;
+      e.preventDefault();
+      input.focus();
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [autoFocus]);
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (!query.trim()) return;
@@ -45,10 +75,11 @@ export default function HeaderSearchBar() {
   };
 
   return (
-    <div ref={containerRef} className="relative w-full max-w-md">
+    <div ref={containerRef} className="relative w-full">
       <form
         onSubmit={handleSearch}
         className="w-full"
+        role="search"
         aria-label="Search music"
       >
         <SearchInput
@@ -57,16 +88,20 @@ export default function HeaderSearchBar() {
           onClear={() => {
             clearQuery();
             setIsFocused(true);
+            inputRef.current?.focus();
           }}
           onFocus={() => setIsFocused(true)}
           isFocused={isFocused}
-          placeholder="Search artists, albums, songs..."
+          placeholder="Search artists, albums, songs"
           size="small"
+          autoFocus={autoFocus}
+          inputRef={inputRef}
+          shortcutHint={autoFocus ? undefined : "/"}
         />
       </form>
 
       {isFocused && (
-        <div className="absolute top-full left-0 right-0 z-[9999] mt-2">
+        <div className="absolute top-full right-0 left-0 z-[9999] mt-2 md:left-auto md:w-[min(28rem,calc(100vw-2rem))]">
           <SearchResults
             query={debouncedQuery}
             isFocused={isFocused}

@@ -1,9 +1,9 @@
 "use client";
 
+import { LuEye } from "react-icons/lu";
+
 import InstantLink from "@/components/ui/InstantLink";
 import Button from "@/components/ui/Button";
-import { PAGE_CONTAINER } from "@/lib/pageLayout";
-import { cn } from "@/lib/utils";
 
 export interface AlbumReadOnlyBannerProps {
   slug: string;
@@ -19,50 +19,32 @@ export default function AlbumReadOnlyBanner({
   const displayName = viewingUserName || fallbackUserName;
 
   return (
-    <div
-      className="relative z-10 w-full py-3.5 sm:py-4"
-      style={{
-        backgroundColor: "#5d2301",
-        backgroundImage: `repeating-linear-gradient(
-                -36deg,
-                transparent,
-                transparent 5px,
-                rgba(255, 255, 255, 0.018) 3px,
-                rgba(255, 255, 255, 0.018) 10px
-              )`,
-      }}
-    >
-      <div
-        className={cn(
-          PAGE_CONTAINER,
-          "flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between",
-        )}
-      >
-        <div className="text-sm leading-snug text-white">
-          <span className="text-white/70">Read only · </span>
+    <div className="flex flex-col gap-3 rounded-2xl bg-ink px-4 py-3 text-white shadow-lift sm:flex-row sm:items-center sm:justify-between sm:pl-5">
+      <div className="flex min-w-0 items-center gap-3 text-sm leading-snug">
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-white/10">
+          <LuEye size={15} />
+        </span>
+        <p className="min-w-0">
           {displayName ? (
             <>
-              Viewing ratings by{" "}
+              Viewing{" "}
               <InstantLink
                 href={`/user/${displayName}`}
-                className="text-white underline decoration-white/40 underline-offset-2 transition-colors hover:decoration-white"
+                className="font-semibold underline decoration-white/40 underline-offset-2 transition-colors hover:decoration-white"
               >
                 @{displayName}
               </InstantLink>
+              &apos;s ratings
             </>
           ) : (
-            <span>Viewing another user&apos;s ratings</span>
+            <span>Viewing another listener&apos;s ratings</span>
           )}
-        </div>
-        <Button
-          href={`/album/${slug}`}
-          variant="border"
-          size="sm"
-          className="shrink-0 self-start border-0 bg-white text-neutral-950 hover:bg-neutral-100 sm:self-auto"
-        >
-          My ratings
-        </Button>
+          <span className="text-white/55"> · Read only</span>
+        </p>
       </div>
+      <Button href={`/album/${slug}`} variant="white" size="sm">
+        Show my ratings
+      </Button>
     </div>
   );
 }

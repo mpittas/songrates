@@ -1,7 +1,6 @@
 "use client";
 
-import { BsThreeDotsVertical } from "react-icons/bs";
-import { LuStarOff } from "react-icons/lu";
+import { LuEllipsis, LuStarOff } from "react-icons/lu";
 import ContextDropdown, {
   ContextDropdownDivider,
   ContextDropdownMenuItem,
@@ -63,7 +62,7 @@ function RemoveAllRatingsMenuItem({ album }: { album: Album }) {
         void removeAlbumRating(album.id);
         close?.();
       }}
-      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+      className="text-red-700 hover:bg-red-50 hover:text-red-700"
     />
   );
 }
@@ -89,16 +88,19 @@ export default function AlbumCardDropdown({
             toggle();
           }}
           className={cn(
-            "rounded-md text-neutral-600 hover:text-neutral-900 bg-white/90 hover:bg-white border border-neutral-200 shadow-sm transition-colors",
-            compact ? "p-1" : "p-1.5",
+            "flex cursor-pointer items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-md transition-colors hover:bg-black/70",
+            compact ? "size-7" : "size-8",
           )}
           aria-label="Album options"
         >
-          <BsThreeDotsVertical size={compact ? 12 : 14} />
+          <LuEllipsis size={compact ? 15 : 17} />
         </button>
       )}
     >
-      <AlbumFavoriteMenuItem album={album} onFavoriteChange={onFavoriteChange} />
+      <AlbumFavoriteMenuItem
+        album={album}
+        onFavoriteChange={onFavoriteChange}
+      />
       {showRemoveAllRatings ? (
         <>
           <ContextDropdownDivider />

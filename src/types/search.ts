@@ -1,3 +1,5 @@
+import type { Ref } from "react";
+
 // ─── Search Filter Types ───────────────────────────────────────────────────────
 
 /** The user-facing search categories */
@@ -99,4 +101,8 @@ export interface SearchInputProps {
   placeholder?: string;
   size?: SearchInputSize;
   variant?: SearchInputVariant;
+  autoFocus?: boolean;
+  inputRef?: Ref<HTMLInputElement>;
+  /** Keyboard hint shown while the field is empty and unfocused (e.g. "/"). */
+  shortcutHint?: string;
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { cn, createSlug } from "@/lib/utils";
-import OptimizedImage from "@/components/ui/OptimizedImage";
+import { MediaCardArt } from "@/components/ui/MediaCard";
 import { useState } from "react";
 import InstantLink from "@/components/ui/InstantLink";
 import { useRatingsContext } from "@/context/RatingsContext";
@@ -100,49 +100,35 @@ export default function AlbumCard({
   onFavoriteChange,
 }: AlbumCardProps) {
   const isCompact = size === "compact";
-  const imageUrl = album.artworkUrl || "/vinyl-placeholder.svg";
-  const [imageError, setImageError] = useState(false);
   const [optionsOpen, setOptionsOpen] = useState(false);
 
   const slug = createSlug(album.title, album.id);
+  const year = album.releaseDate?.split("-")[0];
 
   if (layout === "list") {
     return (
       <InstantLink
         href={`/album/${slug}`}
-        className="flex items-center gap-4 p-2 hover:bg-[#f7f7f7] border-b border-[#ececec] last:border-0 group transition-colors"
+        className="group flex items-center gap-3 px-3 py-2.5 transition-colors hover:bg-ink/[0.025] sm:px-4"
       >
-        <div className="relative w-12 h-12 shrink-0 overflow-hidden bg-[#efefef] rounded-sm">
-          {!imageError ? (
-            <OptimizedImage
-              src={imageUrl}
-              alt={album.title}
-              fill
-              className="object-cover"
-              onError={() => setImageError(true)}
-              fallbackText="·"
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center p-2 opacity-40">
-              <img
-                src="/vinyl-placeholder.svg"
-                alt=""
-                className="w-full h-full object-contain"
-              />
-            </div>
-          )}
-        </div>
-        <div className="flex bg-transparent min-w-0 flex-1 justify-between items-center gap-4">
-          <div>
-            <h3 className="text-neutral-900 truncate group-hover:text-black transition-colors font-medium">
+        <MediaCardArt
+          imageUrl={album.artworkUrl}
+          alt={album.title}
+          radius="md"
+          lift={false}
+          className="size-12 shrink-0"
+        />
+        <div className="flex min-w-0 flex-1 items-center justify-between gap-4">
+          <div className="min-w-0">
+            <h3 className="truncate text-[14px] font-medium text-ink">
               {album.title}
             </h3>
-            <p className="text-neutral-500 text-sm truncate">
+            <p className="truncate text-[13px] text-ink-2">
               {album.artistName || "Unknown Artist"}
             </p>
           </div>
-          <span className="text-neutral-600 font-mono text-xs shrink-0">
-            {album.releaseDate?.split("-")[0] || "—"}
+          <span className="shrink-0 text-xs text-ink-3 tabular-nums">
+            {year || "—"}
           </span>
         </div>
       </InstantLink>
@@ -150,88 +136,59 @@ export default function AlbumCard({
   }
 
   return (
-    <div className="group block">
-      <div className={cn("relative", isCompact ? "mb-2" : "mb-3")}>
-        <InstantLink
-          href={`/album/${slug}`}
-          className={cn(
-            "block aspect-square bg-[#efefef] overflow-hidden relative border border-[#e1e1e1] group-hover:border-[#c9c9c9] transition-colors",
-            isCompact ? "rounded-sm" : "rounded-md",
-          )}
+    <div className="group relative block min-w-0">
+      <InstantLink
+        href={`/album/${slug}`}
+        className="block rounded-xl outline-offset-4"
+      >
+        <MediaCardArt
+          imageUrl={album.artworkUrl}
+          alt={album.title}
+          priority={isPriority}
+          radius={isCompact ? "lg" : "xl"}
         >
-          {!imageError ? (
-            <OptimizedImage
-              src={imageUrl}
-              alt={album.title}
-              fill
-              className="object-cover transition-all duration-300"
-              onError={() => setImageError(true)}
-              priority={isPriority}
-              fallbackText="·"
-            />
-          ) : (
-            <div
-              className={cn(
-                "w-full h-full flex items-center justify-center opacity-20 group-hover:opacity-30 transition-opacity",
-                isCompact ? "p-6" : "p-10",
-              )}
-            >
-              <img
-                src="/vinyl-placeholder.svg"
-                alt=""
-                className="w-full h-full object-contain"
-              />
-            </div>
-          )}
-
           {showRating && <RatingBadge album={album} mode={ratingMode} />}
-        </InstantLink>
+        </MediaCardArt>
 
-        {showOptionsMenu && (
-          <div
-            className={cn(
-              "absolute z-30 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity duration-200",
-              optionsOpen && "opacity-100",
-              isCompact ? "top-1 right-1" : "top-2 right-2",
-            )}
-          >
-            <AlbumCardDropdown
-              album={album}
-              compact={isCompact}
-              showRemoveAllRatings={showRemoveAllRatings}
-              onFavoriteChange={onFavoriteChange}
-              onOpenChange={setOptionsOpen}
-            />
-          </div>
-        )}
-      </div>
-
-      <div className="flex justify-between items-start gap-2">
-        <InstantLink
-          href={`/album/${slug}`}
-          className="flex-1 min-w-0 block"
-        >
+        <div className={cn("min-w-0", isCompact ? "mt-2" : "mt-3")}>
           <h3
             className={cn(
-              "text-neutral-900 font-medium truncate group-hover:text-black transition-colors leading-tight",
-              isCompact ? "text-xs mb-0" : "text-sm mb-0.5",
+              "truncate font-medium tracking-[-0.01em] text-ink",
+              isCompact ? "text-[13px] leading-5" : "text-[14px] leading-5",
             )}
           >
             {album.title}
           </h3>
-          <div
+          <p
             className={cn(
-              "flex flex-col gap-0 text-neutral-500",
-              isCompact ? "text-[11px]" : "text-xs",
+              "truncate text-ink-2",
+              isCompact ? "text-xs leading-5" : "text-[13px] leading-5",
             )}
           >
-            <p className="truncate group-hover:text-neutral-700 transition-colors">
-              {album.artistName ? `${album.artistName} • ` : ""}
-              {album.releaseDate?.split("-")[0] || "—"}
-            </p>
-          </div>
-        </InstantLink>
-      </div>
+            {[album.artistName, year].filter(Boolean).join(" · ") || "—"}
+          </p>
+        </div>
+      </InstantLink>
+
+      {showOptionsMenu && (
+        <div
+          className={cn(
+            "absolute z-30 transition-opacity duration-200",
+            optionsOpen
+              ? "opacity-100"
+              : "pointer-fine:opacity-0 pointer-fine:group-hover:opacity-100 pointer-fine:focus-within:opacity-100",
+            isCompact ? "top-1.5 right-1.5" : "top-2 right-2",
+          )}
+        >
+          <AlbumCardDropdown
+            album={album}
+            compact={isCompact}
+            showRemoveAllRatings={showRemoveAllRatings}
+            onFavoriteChange={onFavoriteChange}
+            onOpenChange={setOptionsOpen}
+          />
+        </div>
+      )}
     </div>
   );
 }

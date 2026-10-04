@@ -4,21 +4,25 @@ import { useEffect, useMemo, useState } from "react";
 import InstantLink from "@/components/ui/InstantLink";
 import { useRatingsContext as useRatings } from "@/context/RatingsContext";
 import { createSlug } from "@/lib/utils";
-import CollectionDetailPageLayout from "@/components/layout/CollectionDetailPageLayout";
+import CollectionDetailPageLayout, {
+  MetaDot,
+} from "@/components/layout/CollectionDetailPageLayout";
 import AlbumRatingRowSection from "@/components/album/AlbumRatingRowSection";
 import AlbumSkeleton from "@/components/album/AlbumSkeleton";
 import Button from "@/components/ui/Button";
 import AlbumPlaylistSelectorModal from "@/components/ui/AlbumPlaylistSelectorModal";
 import FavoriteButton from "@/components/ui/FavoriteButton";
-import { FaArrowLeft, FaPlus } from "react-icons/fa";
+import { LuPlus } from "react-icons/lu";
+import EmptyState from "@/components/ui/EmptyState";
+import TrackList from "@/components/ui/TrackList";
 import { usePlayerCore } from "@/context/PlayerContext";
 import SongRow from "@/main-components/SongRow";
 import { albumPlaybackSource } from "@/lib/playbackSource";
 import { useAlbumInfo } from "@/hooks/useAlbumInfo";
 import { useAlbumViewingUserRatings } from "@/hooks/useAlbumViewingUserRatings";
 import { useShareLinkParams } from "@/hooks/useShareLinkParams";
-import { PAGE_CONTENT_TOP } from "@/lib/pageLayout";
-import { cn } from "@/lib/utils";
+import { PAGE_CONTAINER } from "@/lib/pageLayout";
+import { cn, formatTime } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
 import {
   computeTrackRatingStats,
@@ -34,6 +38,14 @@ import AlbumReviewModal from "./AlbumReviewModal";
 import AlbumReviewsSection from "./AlbumReviewsSection";
 import type { AlbumInfo } from "@/types/music";
 
+/** "54 min" / "1 hr 12 min" */
+function formatAlbumDuration(ms: number) {
+  const totalMinutes = Math.round(ms / 60000);
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return hours > 0 ? `${hours} hr ${minutes} min` : `${minutes} min`;
+}
+
 export interface AlbumPageContentProps {
   slug: string | undefined;
   albumId: string | undefined;
@@ -48,8 +60,11 @@ export default function AlbumPageContent({
   // Read share-link query params on the client only (after hydration), so
   // they never participate in the server render or the CDN cache key. See
   // useShareLinkParams for the rationale.
-  const { userId: viewingUserId, track: highlightTrackId, userName: fallbackUserName } =
-    useShareLinkParams();
+  const {
+    userId: viewingUserId,
+    track: highlightTrackId,
+    userName: fallbackUserName,
+  } = useShareLinkParams();
 
   const { data: album = null, isLoading: loading } = useAlbumInfo(
     slug,
@@ -100,12 +115,7 @@ export default function AlbumPageContent({
     if (!albumRatings[album.id]) return;
     if (albumRatings[album.id].totalTracks === album.tracks.length) return;
     syncAlbumTotalTracks(album.id, album.tracks.length);
-  }, [
-    album?.id,
-    album?.tracks?.length,
-    albumRatings,
-    syncAlbumTotalTracks,
-  ]);
+  }, [album?.id, album?.tracks?.length, albumRatings, syncAlbumTotalTracks]);
 
   const queue = useMemo(() => {
     if (!album) return [];
@@ -139,14 +149,17 @@ export default function AlbumPageContent({
 
   if (!album) {
     return (
-      <div
-        className={cn(
-          "min-h-screen px-4 text-neutral-600 font-mono text-sm sm:px-6",
-          PAGE_CONTENT_TOP,
-        )}
-      >
-        album not found
-      </div>
+      <main className={cn(PAGE_CONTAINER, "min-h-[60vh] py-16")}>
+        <EmptyState
+          title="Album not found"
+          description="This release may have been removed from Apple Music."
+          action={
+            <Button href="/explore" variant="primary" size="md">
+              Explore music
+            </Button>
+          }
+        />
+      </main>
     );
   }
 
@@ -163,6 +176,14 @@ export default function AlbumPageContent({
   const primaryArtist = album.tracks?.[0]?.artists?.[0] ?? album.artist ?? null;
   const subtitleArtists = getAlbumSubtitleArtists(album);
   const playLabel = getAlbumPlayLabel(album.type);
+  // Apple tags nearly everything with the catch-all "Music" genre.
+  const genres = (album.genres ?? []).filter((genre) => genre !== "Music");
+  const totalDurationMs = tracks.reduce(
+    (sum, track) => sum + (Number(track.length) || 0),
+    0,
+  );
+  const totalDuration =
+    totalDurationMs > 0 ? formatAlbumDuration(totalDurationMs) : null;
 
   const handleOpenPlaylistModal = async () => {
     const { createClient } = await import("@/utils/supabase/client");
@@ -180,194 +201,209 @@ export default function AlbumPageContent({
   return (
     <>
       <CollectionDetailPageLayout
-      beforeConstrained={
-        viewingUserId && slug ? (
-          <AlbumReadOnlyBanner
-            slug={slug}
-            viewingUserName={viewingUserName}
-            fallbackUserName={fallbackUserName}
-          />
-        ) : undefined
-      }
-      topBarLeft={
-        <Button
-          href={
-            primaryArtist?.id
-              ? `/artist/${createSlug(primaryArtist.name, primaryArtist.id)}`
-              : "/"
-          }
-          variant="secondary"
-          size="xs"
-          iconLeft={<FaArrowLeft size={14} className=" mr-2" />}
-        >
-          BACK TO ARTIST
-        </Button>
-      }
-      topBarRight={
-        <>
-          <FavoriteButton
-            itemId={album.id}
-            itemType="album"
-            itemName={album.title}
-            artistName={album.artist?.name}
-            thumbnailUrl={album.artworkUrl}
-            variant="secondary"
-            buttonSize="xs"
-          />
-
-          <Button
-            onClick={handleOpenPlaylistModal}
-            variant="secondary"
-            size="xs"
-            iconLeft={<FaPlus size={14} className=" mr-2" />}
-          >
-            SAVE ALBUM
-          </Button>
-
-          {isReviewable ? <AlbumReviewsButton count={reviewCount} /> : null}
-
-          {isPlaylistModalOpen && (
-            <AlbumPlaylistSelectorModal
-              albumId={album.id}
-              albumName={album.title}
+        notice={
+          viewingUserId && slug ? (
+            <AlbumReadOnlyBanner
+              slug={slug}
+              viewingUserName={viewingUserName}
+              fallbackUserName={fallbackUserName}
+            />
+          ) : undefined
+        }
+        back={
+          primaryArtist?.id
+            ? {
+                href: `/artist/${createSlug(primaryArtist.name, primaryArtist.id)}`,
+                label: primaryArtist.name,
+              }
+            : { href: "/", label: "Home" }
+        }
+        actions={
+          <>
+            <FavoriteButton
+              itemId={album.id}
+              itemType="album"
+              itemName={album.title}
               artistName={album.artist?.name}
               thumbnailUrl={album.artworkUrl}
-              releaseDate={album.releaseDate}
-              totalTracks={album.tracks?.length}
-              onClose={() => setIsPlaylistModalOpen(false)}
+              variant="secondary"
+              buttonSize="lg"
+              iconOnly
             />
-          )}
-        </>
-      }
-      artworkSrc={imageUrl}
-      artworkAlt={album.title}
-      onPlayClick={() => {
-        if (queue.length > 0) {
-          playTrack(queue[0], queue, playbackSource);
-        }
-      }}
-      playLabel={playLabel}
-      title={album.title}
-      subtitle={
-        <div className="text-md mb-4 text-neutral-600">
-          {subtitleArtists.map((a, i, arr) => (
-            <span key={a.id || `${a.name}-${i}`}>
-              {a.id ? (
-                <InstantLink
-                  href={`/artist/${createSlug(a.name, a.id)}`}
-                  className="transition-colors hover:text-neutral-900 hover:underline"
-                >
-                  {a.name}
-                </InstantLink>
-              ) : (
-                <span>{a.name}</span>
-              )}
-              {i < arr.length - 1 && (
-                <span className="px-1 tracking-tight text-neutral-400">
-                  ft.
-                </span>
-              )}
-            </span>
-          ))}
-        </div>
-      }
-      metaRow={
-        <>
-          <span className="rounded bg-neutral-100 px-2 py-1 text-xs font-semibold text-neutral-700">
-            {album.type}
-          </span>
-          <span>•</span>
-          <span>{album.releaseDate?.split("-")[0]}</span>
-          <span>•</span>
-          <span>{album.tracks?.length || 0} tracks</span>
 
-          {album.genres?.length ? (
-            <>
-              <span>•</span>
-              <span>{album.genres.slice(0, 3).join(", ")}</span>
-            </>
-          ) : null}
-        </>
-      }
-      afterHero={
-        <AlbumRatingRowSection
-          publicData={publicData}
-          viewingUserRatings={viewingUserRatings}
-          viewingUserName={viewingUserName}
-          averageScore={averageScore}
-          isFullyRated={isFullyRated}
-          ratedTracksCount={ratedTracksCount}
-          totalTracks={totalTracks}
-        />
-      }
-      searchQuery={searchQuery}
-      onSearchQueryChange={setSearchQuery}
-      onSearchClear={() => setSearchQuery("")}
-      onSearchFocus={() => setIsSearchFocused(true)}
-      onSearchBlur={() => setIsSearchFocused(false)}
-      searchFocused={isSearchFocused}
-      list={
-        <div className="flex flex-col gap-y-1.5">
-          {filteredTracks.map((track, i) => (
-            <SongRow
-              key={track.id}
-              highlighted={track.id === highlightTrackId}
-              index={Number(track.number) || i + 1}
-              title={track.title}
-              artist={track.artists?.[0]?.name || album.artist?.name || "Unknown"}
-              album={album.title}
-              duration={String(track.length || "")}
-              artworkUrl={imageUrl}
-              rating={
-                viewingUserRatings ? viewingUserRatings[track.id] || 0 : undefined
-              }
-              track={track}
-              artistId={track.artists?.[0]?.id || album.artist?.id || ""}
-              albumId={album.id}
-              queue={queue}
-              playbackSource={playbackSource}
-              albumContext={{
-                albumId: album.id,
-                title: album.title,
-                artistName: album.artist?.name || "Unknown Artist",
-                releaseDate: album.releaseDate,
-                totalTracks: album.tracks?.length || 0,
-                artworkUrl: album.artworkUrl,
-                albumType: album.type,
-              }}
+            <Button
+              onClick={handleOpenPlaylistModal}
+              variant="border"
+              size="lg"
+              icon
+              aria-label="Save to a playlist"
+              title="Save to a playlist"
+            >
+              <LuPlus size={18} />
+            </Button>
+
+            {isReviewable ? <AlbumReviewsButton count={reviewCount} /> : null}
+
+            {isPlaylistModalOpen && (
+              <AlbumPlaylistSelectorModal
+                albumId={album.id}
+                albumName={album.title}
+                artistName={album.artist?.name}
+                thumbnailUrl={album.artworkUrl}
+                releaseDate={album.releaseDate}
+                totalTracks={album.tracks?.length}
+                onClose={() => setIsPlaylistModalOpen(false)}
+              />
+            )}
+          </>
+        }
+        artworkSrc={imageUrl}
+        artworkAlt={album.title}
+        onPlayClick={() => {
+          if (queue.length > 0) {
+            playTrack(queue[0], queue, playbackSource);
+          }
+        }}
+        playLabel={playLabel}
+        eyebrow={[album.type, album.releaseDate?.split("-")[0]]
+          .filter(Boolean)
+          .join(" · ")}
+        title={album.title}
+        subtitle={
+          <div>
+            {subtitleArtists.map((a, i, arr) => (
+              <span key={a.id || `${a.name}-${i}`}>
+                {a.id ? (
+                  <InstantLink
+                    href={`/artist/${createSlug(a.name, a.id)}`}
+                    className="transition-colors hover:text-accent"
+                  >
+                    {a.name}
+                  </InstantLink>
+                ) : (
+                  <span>{a.name}</span>
+                )}
+                {i < arr.length - 1 && (
+                  <span className="px-1.5 font-normal text-ink-3">ft.</span>
+                )}
+              </span>
+            ))}
+          </div>
+        }
+        metaRow={
+          <>
+            <span>
+              {album.tracks?.length || 0}{" "}
+              {album.tracks?.length === 1 ? "track" : "tracks"}
+            </span>
+            {totalDuration ? (
+              <>
+                <MetaDot />
+                <span>{totalDuration}</span>
+              </>
+            ) : null}
+            {genres.length ? (
+              <>
+                <MetaDot />
+                <span>{genres.slice(0, 2).join(", ")}</span>
+              </>
+            ) : null}
+          </>
+        }
+        afterHero={
+          <AlbumRatingRowSection
+            publicData={publicData}
+            viewingUserRatings={viewingUserRatings}
+            viewingUserName={viewingUserName}
+            averageScore={averageScore}
+            isFullyRated={isFullyRated}
+            ratedTracksCount={ratedTracksCount}
+            totalTracks={totalTracks}
+          />
+        }
+        listCount={album.tracks?.length || undefined}
+        searchQuery={searchQuery}
+        onSearchQueryChange={setSearchQuery}
+        onSearchClear={() => setSearchQuery("")}
+        onSearchFocus={() => setIsSearchFocused(true)}
+        onSearchBlur={() => setIsSearchFocused(false)}
+        searchFocused={isSearchFocused}
+        list={
+          filteredTracks.length === 0 ? (
+            <EmptyState
+              compact
+              title={`No tracks match “${searchQuery}”`}
+              description="Try a different search."
             />
-          ))}
-        </div>
-      }
-      bottom={
-        <>
-          {isReviewable ? (
-            <AlbumReviewsSection
-              reviews={reviews}
-              loading={reviewsLoading}
-              currentUserId={user?.id}
-              currentUserAvatarUrl={
-                (typeof user?.user_metadata?.avatar_url === "string" &&
-                  user.user_metadata.avatar_url) ||
-                (typeof user?.user_metadata?.picture === "string" &&
-                  user.user_metadata.picture) ||
-                null
-              }
-              canWrite={canWriteReview}
-              isSignedIn={Boolean(user)}
-              isFullyRated={myRatingStats.isFullyRated}
-              ratedTracksCount={myRatingStats.ratedTracksCount}
-              totalTracks={myRatingStats.totalTracks}
-              albumType={album.type}
-              showWriteHints={!viewingUserId}
-              onWrite={() => setIsReviewModalOpen(true)}
-              onEdit={() => setIsReviewModalOpen(true)}
-              onDeleteOwn={() => deleteReview(user!.id)}
-            />
-          ) : null}
-          <AlbumOtherVersions versions={album.otherVersions} />
-        </>
-      }
+          ) : (
+            <TrackList>
+              {filteredTracks.map((track, i) => (
+                <SongRow
+                  key={track.id}
+                  highlighted={track.id === highlightTrackId}
+                  index={Number(track.number) || i + 1}
+                  title={track.title}
+                  artist={
+                    track.artists?.[0]?.name || album.artist?.name || "Unknown"
+                  }
+                  album={album.title}
+                  duration={String(track.length || "")}
+                  artworkUrl={imageUrl}
+                  showArtwork={false}
+                  showAlbumInSubline={false}
+                  rating={
+                    viewingUserRatings
+                      ? viewingUserRatings[track.id] || 0
+                      : undefined
+                  }
+                  track={track}
+                  artistId={track.artists?.[0]?.id || album.artist?.id || ""}
+                  albumId={album.id}
+                  queue={queue}
+                  playbackSource={playbackSource}
+                  albumContext={{
+                    albumId: album.id,
+                    title: album.title,
+                    artistName: album.artist?.name || "Unknown Artist",
+                    releaseDate: album.releaseDate,
+                    totalTracks: album.tracks?.length || 0,
+                    artworkUrl: album.artworkUrl,
+                    albumType: album.type,
+                  }}
+                />
+              ))}
+            </TrackList>
+          )
+        }
+        bottom={
+          <>
+            {isReviewable ? (
+              <AlbumReviewsSection
+                reviews={reviews}
+                loading={reviewsLoading}
+                currentUserId={user?.id}
+                currentUserAvatarUrl={
+                  (typeof user?.user_metadata?.avatar_url === "string" &&
+                    user.user_metadata.avatar_url) ||
+                  (typeof user?.user_metadata?.picture === "string" &&
+                    user.user_metadata.picture) ||
+                  null
+                }
+                canWrite={canWriteReview}
+                isSignedIn={Boolean(user)}
+                isFullyRated={myRatingStats.isFullyRated}
+                ratedTracksCount={myRatingStats.ratedTracksCount}
+                totalTracks={myRatingStats.totalTracks}
+                albumType={album.type}
+                showWriteHints={!viewingUserId}
+                onWrite={() => setIsReviewModalOpen(true)}
+                onEdit={() => setIsReviewModalOpen(true)}
+                onDeleteOwn={() => deleteReview(user!.id)}
+              />
+            ) : null}
+            <AlbumOtherVersions versions={album.otherVersions} />
+          </>
+        }
       />
       {isReviewModalOpen && canWriteReview ? (
         <AlbumReviewModal

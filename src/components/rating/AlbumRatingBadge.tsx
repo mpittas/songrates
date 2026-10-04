@@ -1,8 +1,10 @@
 "use client";
 
 import React from "react";
-import { RATING_COLORS } from "./constants";
-import { FaGlobe } from "react-icons/fa";
+import { LuGlobe } from "react-icons/lu";
+
+import { cn } from "@/lib/utils";
+import { ratingColor } from "./constants";
 
 interface AlbumRatingBadgeProps {
   score: number | string;
@@ -15,6 +17,11 @@ interface AlbumRatingBadgeProps {
   publicCount?: number;
 }
 
+const CHIP =
+  "flex h-6 items-center rounded-md px-1.5 text-[11px] font-semibold tabular-nums";
+const GLASS = "bg-black/55 text-white/90 backdrop-blur-md";
+
+/** Score chips floated over album artwork (your score, progress, public). */
 export default function AlbumRatingBadge({
   score,
   ratedCount,
@@ -25,63 +32,47 @@ export default function AlbumRatingBadge({
   publicRating,
   publicCount,
 }: AlbumRatingBadgeProps) {
-  // Determine color based on score
   const numericScore =
     typeof score === "number" ? score : parseFloat(score as string);
-
-  // Clean score for display/width calculation
-  const safeScore = !isNaN(numericScore) ? numericScore : 0;
-
-  // Clamp score between 1 and 10 and map to index (0-9)
-  const colorIndex =
-    safeScore > 0 ? Math.min(Math.max(Math.round(safeScore), 1), 10) - 1 : 9;
-
-  const baseColor =
-    RATING_COLORS[colorIndex] || RATING_COLORS[RATING_COLORS.length - 1];
-
-  const positionClasses =
-    position === "absolute"
-      ? "absolute bottom-0 right-0 left-0"
-      : "relative w-full";
+  const hasScore = !isNaN(numericScore) && numericScore > 0;
 
   return (
     <div
-      className={`${positionClasses} py-1 px-2 text-xs flex justify-between items-center backdrop-blur-md bg-[#050507]/80 border-t border-[#1a1a1f] ${className}`}
+      className={cn(
+        "pointer-events-none flex items-end justify-between gap-1.5",
+        position === "absolute"
+          ? "absolute inset-x-2 bottom-2"
+          : "relative w-full",
+        className,
+      )}
     >
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-1">
         <span
-          className="font-bold text-xs text-white p-0.5 min-w-[24px] text-center"
-          style={{
-            backgroundColor: baseColor,
-          }}
+          className={cn(CHIP, hasScore ? "text-white" : GLASS)}
+          style={
+            hasScore ? { backgroundColor: ratingColor(numericScore) } : undefined
+          }
         >
           {score}
         </span>
-
-        {publicRating && (
-          <div
-            className="flex items-center gap-1.5 border-l border-white/10 pl-3"
-            title={`Public Rating: ${publicRating} (${publicCount} ${
-              publicCount === 1 ? "user" : "users"
-            })`}
-          >
-            <FaGlobe size={10} className="text-neutral-500" />
-            <span className="text-[10px] font-mono text-neutral-300">
-              {publicRating.toFixed(2)}
-            </span>
-          </div>
-        )}
+        {totalTracks > 0 || isFull ? (
+          <span className={cn(CHIP, GLASS, "font-medium")}>
+            {isFull ? "Rated" : `${ratedCount}/${totalTracks}`}
+          </span>
+        ) : null}
       </div>
 
-      {isFull ? (
-        <span className="text-[10px] text-neutral-400 font-medium tracking-wide">
-          Fully rated
+      {publicRating ? (
+        <span
+          className={cn(CHIP, GLASS, "gap-1 font-medium")}
+          title={`Public rating: ${publicRating.toFixed(2)} from ${publicCount} ${
+            publicCount === 1 ? "user" : "users"
+          }`}
+        >
+          <LuGlobe size={11} aria-hidden />
+          {publicRating.toFixed(1)}
         </span>
-      ) : (
-        <span className="text-[10px] text-neutral-400">
-          {ratedCount}/{totalTracks} Rated
-        </span>
-      )}
+      ) : null}
     </div>
   );
 }

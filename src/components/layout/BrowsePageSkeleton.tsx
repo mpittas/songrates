@@ -1,32 +1,43 @@
 import MySection from "@/components/ui/MySection";
-import { PAGE_CONTENT_TOP } from "@/lib/pageLayout";
+import {
+  CardGridSkeleton,
+  SectionHeaderSkeleton,
+  Skeleton,
+} from "@/components/ui/Skeleton";
+import { PAGE_CONTAINER } from "@/lib/pageLayout";
 import { cn } from "@/lib/utils";
+
+/** Matches `PageHeader` so browse pages don't jump when data arrives. */
+export function PageHeaderSkeleton({ chips = false }: { chips?: boolean }) {
+  return (
+    <div className={cn(PAGE_CONTAINER, "pt-8 pb-8 sm:pt-14 sm:pb-10")}>
+      <Skeleton className="mb-4 h-3 w-16" />
+      <Skeleton className="h-10 w-48 sm:h-14 sm:w-72" />
+      <Skeleton className="mt-4 h-4 w-80 max-w-full" />
+      {chips ? (
+        <div className="mt-6 flex gap-2 overflow-hidden sm:mt-8">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <Skeleton key={i} className="h-9 w-20 shrink-0 rounded-full" />
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
 
 export default function BrowsePageSkeleton({
   cards = 12,
+  chips = false,
 }: {
   cards?: number;
+  chips?: boolean;
 }) {
   return (
-    <main
-      className={cn(
-        "min-h-screen bg-[#F2EFED] pb-16 text-neutral-900",
-        PAGE_CONTENT_TOP,
-      )}
-    >
-      <MySection className="pb-8">
-        <div className="animate-pulse">
-          <div className="h-8 w-40 rounded-md bg-neutral-900/10" />
-          <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-            {Array.from({ length: cards }).map((_, index) => (
-              <div key={index} className="space-y-2">
-                <div className="aspect-square rounded-xl bg-neutral-900/10" />
-                <div className="h-3 w-3/4 rounded bg-neutral-900/10" />
-                <div className="h-2.5 w-1/2 rounded bg-neutral-900/10" />
-              </div>
-            ))}
-          </div>
-        </div>
+    <main className="min-h-screen pb-6 text-ink">
+      <PageHeaderSkeleton chips={chips} />
+      <MySection className="pb-10">
+        {chips ? null : <SectionHeaderSkeleton eyebrow={false} />}
+        <CardGridSkeleton count={cards} columns={6} />
       </MySection>
     </main>
   );

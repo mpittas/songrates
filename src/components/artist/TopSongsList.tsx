@@ -1,10 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { LuChevronDown } from "react-icons/lu";
 import Button from "@/components/ui/Button";
+import TrackList from "@/components/ui/TrackList";
 import SongRow from "@/main-components/SongRow";
-import { formatTime } from "@/lib/utils";
+import { cn, formatTime } from "@/lib/utils";
 import type { TopSong } from "@/types/music";
+
+const INITIAL_COUNT = 10;
 
 function formatReleaseDate(iso?: string): string {
   if (!iso) return "—";
@@ -29,11 +33,11 @@ export default function TopSongsList({
   trailing?: "duration" | "releaseDate";
 }) {
   const [showAll, setShowAll] = useState(false);
-  const visible = showAll ? songs : songs.slice(0, 10);
+  const visible = showAll ? songs : songs.slice(0, INITIAL_COUNT);
 
   return (
     <div>
-      <div className="flex flex-col gap-1.5 sm:gap-2">
+      <TrackList columns={2}>
         {visible.map((song, i) => (
           <SongRow
             key={song.id}
@@ -51,6 +55,7 @@ export default function TopSongsList({
             artworkUrl={song.artworkUrl}
             artistId={song.artistId}
             albumId={song.albumId}
+            showAlbumInSubline={false}
             track={{
               id: song.id,
               title: song.name,
@@ -76,15 +81,23 @@ export default function TopSongsList({
             }
           />
         ))}
-      </div>
+      </TrackList>
 
-      {songs.length > 10 && (
-        <div className="mt-4 flex justify-center pb-6">
+      {songs.length > INITIAL_COUNT && (
+        <div className="mt-4 flex justify-center">
           <Button
-            variant="secondary"
-            size="xs"
+            variant="border"
+            size="sm"
             onClick={() => setShowAll(!showAll)}
-            className="w-full"
+            iconRight={
+              <LuChevronDown
+                size={15}
+                className={cn(
+                  "transition-transform duration-200",
+                  showAll && "rotate-180",
+                )}
+              />
+            }
           >
             {showAll ? "Show less" : `Show all ${songs.length} songs`}
           </Button>

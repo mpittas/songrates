@@ -1,7 +1,8 @@
 "use client";
 
 import { FaPlus } from "react-icons/fa6";
-import { BsThreeDotsVertical } from "react-icons/bs";
+import { LuEllipsis } from "react-icons/lu";
+import { cn } from "@/lib/utils";
 import { HiOutlineMicrophone } from "react-icons/hi2";
 import { FiShare2 } from "react-icons/fi";
 import FavoriteButton from "@/components/ui/FavoriteButton";
@@ -97,14 +98,21 @@ export default function SongRowDropdown({
 }: SongRowDropdownProps) {
   return (
     <ContextDropdown
-      trigger={({ toggle }) => (
+      trigger={({ open, toggle }) => (
         <button
           type="button"
           onClick={() => toggle()}
-          className="p-1 rounded-md text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-700 sm:p-1.5"
           aria-label="More options"
+          aria-haspopup="menu"
+          aria-expanded={open}
+          className={cn(
+            "flex size-8 cursor-pointer items-center justify-center rounded-full text-ink-3 transition-[color,background-color,opacity] hover:bg-ink/[0.06] hover:text-ink focus-visible:opacity-100",
+            open
+              ? "bg-ink/[0.06] text-ink"
+              : "pointer-fine:opacity-0 pointer-fine:group-hover/row:opacity-100",
+          )}
         >
-          <BsThreeDotsVertical size={14} />
+          <LuEllipsis size={18} />
         </button>
       )}
     >

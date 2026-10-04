@@ -119,6 +119,14 @@ export default function MiniPlayer() {
     if (!currentTrack) setShowTracklist(false);
   }, [currentTrack]);
 
+  // Tells the layout to reserve room for the player (see --player-h).
+  const hasTrack = Boolean(currentTrack);
+  useEffect(() => {
+    const root = document.documentElement;
+    if (hasTrack) root.dataset.player = "on";
+    else delete root.dataset.player;
+  }, [hasTrack]);
+
   useEffect(() => {
     if (!videoId || !isPlaying) return;
 
@@ -286,133 +294,142 @@ export default function MiniPlayer() {
 
       <div
         className={cn(
-          "fixed right-0 bottom-0 left-0 z-[60] safe-area-bottom",
-          "bg-[#0a0a0a] text-white",
-          "transition-transform duration-400 ease-[cubic-bezier(0.22,1,0.36,1)]",
+          "fixed inset-x-0 bottom-(--mobile-nav-h) z-[60] px-2 pb-2 md:bottom-0 md:px-0 md:pb-0",
+          "transition-[transform,opacity] duration-500 ease-out-expo",
           currentTrack
-            ? "translate-y-0"
-            : "pointer-events-none translate-y-full",
+            ? "translate-y-0 opacity-100"
+            : "pointer-events-none translate-y-6 opacity-0",
         )}
         aria-hidden={!currentTrack}
         {...(!currentTrack ? { inert: true } : {})}
       >
-        <div className="md:hidden">
-          <ProgressBar
-            compact
-            currentTime={currentTime}
-            duration={duration}
-            buffered={buffered}
-            onSeek={seekTo}
-          />
-        </div>
-
-        <div className="flex items-center gap-2 px-3 py-2.5 md:grid md:grid-cols-[minmax(0,1fr)_minmax(280px,1.4fr)_minmax(0,1fr)] md:gap-6 md:px-4 md:py-3">
-          <div className="flex min-w-0 flex-1 items-center gap-2.5 md:flex-none md:gap-3">
-            <div className="hidden shrink-0 md:block">
-              <TrackRating
-                trackId={currentTrack?.id}
-                albumContext={albumContext}
-                displayRating={rating}
-                showPublicRating={false}
-                appearance="dark"
-                popoverAlign="left"
-              />
-            </div>
-            {currentTrack && (
-              <TrackInfo
-                currentTrack={currentTrack}
-                playbackSource={playbackSource}
-              />
-            )}
-          </div>
-
-          <div className="flex shrink-0 flex-col items-center justify-center gap-1.5">
-            <PlaybackControls
-              isPlaying={isPlaying}
-              isLoading={isLoading}
-              hasVideoId={!!videoId}
-              onTogglePlay={togglePlayPause}
-              onNext={nextTrack}
-              onPrev={prevTrack}
-              hasNext={hasNext}
-              hasPrev={hasPrev}
-              isRepeating={isRepeating}
-              onToggleRepeat={toggleRepeat}
-              isShuffling={isShuffling}
-              onToggleShuffle={toggleShuffle}
+        <div
+          className={cn(
+            "overflow-hidden rounded-2xl bg-[#141312] text-white ring-1 ring-white/10",
+            "shadow-[0_16px_40px_-12px_rgb(0_0_0/0.55)]",
+            "md:rounded-none md:shadow-[0_-1px_0_rgb(255_255_255/0.06)] md:ring-0",
+          )}
+        >
+          <div className="md:hidden">
+            <ProgressBar
+              compact
+              currentTime={currentTime}
+              duration={duration}
+              buffered={buffered}
+              onSeek={seekTo}
             />
-            <div className="hidden w-full max-w-[520px] md:block">
-              <ProgressBar
-                currentTime={currentTime}
-                duration={duration}
-                buffered={buffered}
-                onSeek={seekTo}
-              />
-            </div>
           </div>
 
-          <div className="hidden items-center justify-end gap-0.5 md:flex">
-            <button
-              ref={tracklistButtonRef}
-              type="button"
-              aria-label={tracklistLabel}
-              title={tracklistLabel}
-              aria-expanded={showTracklist}
-              onClick={() => setShowTracklist((open) => !open)}
-              className={cn(
-                "flex size-8 cursor-pointer items-center justify-center rounded-full transition-colors duration-150",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40",
-                showTracklist ? "text-white" : "text-white/40 hover:text-white",
+          <div className="flex items-center gap-2 px-2.5 py-2 md:grid md:grid-cols-[minmax(0,1fr)_minmax(280px,1.4fr)_minmax(0,1fr)] md:gap-6 md:px-4 md:py-3">
+            <div className="flex min-w-0 flex-1 items-center gap-2.5 md:flex-none md:gap-3">
+              <div className="hidden shrink-0 md:block">
+                <TrackRating
+                  trackId={currentTrack?.id}
+                  albumContext={albumContext}
+                  displayRating={rating}
+                  showPublicRating={false}
+                  appearance="dark"
+                  popoverAlign="left"
+                />
+              </div>
+              {currentTrack && (
+                <TrackInfo
+                  currentTrack={currentTrack}
+                  playbackSource={playbackSource}
+                />
               )}
-            >
-              <LuList size={16} strokeWidth={2} />
-            </button>
-            <AlbumTracklistPopover
-              albumId={currentTrack?.albumId || ""}
-              currentTrackId={currentTrack?.id || ""}
-              isVisible={showTracklist}
-              anchorRef={tracklistButtonRef}
-              onClose={() => setShowTracklist(false)}
-            />
+            </div>
 
-            <VolumeControl
-              volume={volume}
-              isMuted={isMuted}
-              onVolumeChange={handleVolumeChange}
-              onToggleMute={toggleMute}
-            />
+            <div className="flex shrink-0 flex-col items-center justify-center gap-1.5">
+              <PlaybackControls
+                isPlaying={isPlaying}
+                isLoading={isLoading}
+                hasVideoId={!!videoId}
+                onTogglePlay={togglePlayPause}
+                onNext={nextTrack}
+                onPrev={prevTrack}
+                hasNext={hasNext}
+                hasPrev={hasPrev}
+                isRepeating={isRepeating}
+                onToggleRepeat={toggleRepeat}
+                isShuffling={isShuffling}
+                onToggleShuffle={toggleShuffle}
+              />
+              <div className="hidden w-full max-w-[520px] md:block">
+                <ProgressBar
+                  currentTime={currentTime}
+                  duration={duration}
+                  buffered={buffered}
+                  onSeek={seekTo}
+                />
+              </div>
+            </div>
 
-            <IconButton
-              label={showVideo ? "Hide video" : "Show video"}
-              active={showVideo}
-              onClick={() => setShowVideo((open) => !open)}
-            >
-              <LuTv size={16} strokeWidth={2} />
-            </IconButton>
-
-            {youtubeHref ? (
-              <IconButton
-                label="Open in YouTube"
-                href={youtubeHref}
-                onClick={pausePlayback}
+            <div className="hidden items-center justify-end gap-0.5 md:flex">
+              <button
+                ref={tracklistButtonRef}
+                type="button"
+                aria-label={tracklistLabel}
+                title={tracklistLabel}
+                aria-expanded={showTracklist}
+                onClick={() => setShowTracklist((open) => !open)}
+                className={cn(
+                  "flex size-8 cursor-pointer items-center justify-center rounded-full transition-colors duration-150",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40",
+                  showTracklist
+                    ? "text-white"
+                    : "text-white/40 hover:text-white",
+                )}
               >
-                <LuYoutube size={16} strokeWidth={2} />
+                <LuList size={16} strokeWidth={2} />
+              </button>
+              <AlbumTracklistPopover
+                albumId={currentTrack?.albumId || ""}
+                currentTrackId={currentTrack?.id || ""}
+                isVisible={showTracklist}
+                anchorRef={tracklistButtonRef}
+                onClose={() => setShowTracklist(false)}
+              />
+
+              <VolumeControl
+                volume={volume}
+                isMuted={isMuted}
+                onVolumeChange={handleVolumeChange}
+                onToggleMute={toggleMute}
+              />
+
+              <IconButton
+                label={showVideo ? "Hide video" : "Show video"}
+                active={showVideo}
+                onClick={() => setShowVideo((open) => !open)}
+              >
+                <LuTv size={16} strokeWidth={2} />
               </IconButton>
-            ) : null}
 
-            <IconButton label="Close player" onClick={stopPlayback}>
+              {youtubeHref ? (
+                <IconButton
+                  label="Open in YouTube"
+                  href={youtubeHref}
+                  onClick={pausePlayback}
+                >
+                  <LuYoutube size={16} strokeWidth={2} />
+                </IconButton>
+              ) : null}
+
+              <IconButton label="Close player" onClick={stopPlayback}>
+                <LuX size={16} strokeWidth={2} />
+              </IconButton>
+            </div>
+
+            <button
+              type="button"
+              onClick={stopPlayback}
+              className="flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full text-white/40 transition-colors hover:text-white md:hidden"
+              aria-label="Close player"
+            >
               <LuX size={16} strokeWidth={2} />
-            </IconButton>
+            </button>
           </div>
-
-          <button
-            type="button"
-            onClick={stopPlayback}
-            className="flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full text-white/40 transition-colors hover:text-white md:hidden"
-            aria-label="Close player"
-          >
-            <LuX size={16} strokeWidth={2} />
-          </button>
         </div>
       </div>
     </>

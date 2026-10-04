@@ -1,7 +1,7 @@
 "use client";
 
 import { cn, createSlug } from "@/lib/utils";
-import OptimizedImage from "@/components/ui/OptimizedImage";
+import { MediaCardArt } from "@/components/ui/MediaCard";
 import { useState } from "react";
 import InstantLink from "@/components/ui/InstantLink";
 import ArtistCardDropdown from "@/components/artist/ArtistCardDropdown";
@@ -29,84 +29,66 @@ export default function ArtistCard({
   onFavoriteChange,
 }: ArtistCardProps) {
   const isCompact = size === "compact";
-  const imageUrl = artist.artworkUrl || "/vinyl-placeholder.svg";
-  const [imageError, setImageError] = useState(false);
   const [optionsOpen, setOptionsOpen] = useState(false);
 
   const slug = createSlug(artist.name, artist.id);
   const primaryGenre = artist.genres?.[0];
 
   return (
-    <div className="group block text-center">
-      <div className={cn("relative mx-auto", isCompact ? "mb-2 w-24" : "mb-3 w-full max-w-[180px]")}>
-        <InstantLink
-          href={`/artist/${slug}`}
-          className={cn(
-            "block aspect-square bg-[#efefef] overflow-hidden relative border border-[#e1e1e1] group-hover:border-[#c9c9c9] transition-colors rounded-full",
-          )}
-        >
-          {!imageError ? (
-            <OptimizedImage
-              src={imageUrl}
-              alt={artist.name}
-              fill
-              className="object-cover transition-all duration-300"
-              onError={() => setImageError(true)}
-              priority={isPriority}
-              fallbackText="·"
-            />
-          ) : (
-            <div
-              className={cn(
-                "w-full h-full flex items-center justify-center opacity-20 group-hover:opacity-30 transition-opacity",
-                isCompact ? "p-4" : "p-8",
-              )}
-            >
-              <span className="text-lg font-mono text-neutral-500">
-                {artist.name.slice(0, 2).toUpperCase()}
-              </span>
-            </div>
-          )}
-        </InstantLink>
+    <div className="group relative block min-w-0 text-center">
+      <InstantLink
+        href={`/artist/${slug}`}
+        className="block rounded-full outline-offset-4"
+      >
+        <MediaCardArt
+          imageUrl={artist.artworkUrl}
+          alt={artist.name}
+          shape="circle"
+          priority={isPriority}
+          className={cn("mx-auto", isCompact ? "w-24" : "w-full max-w-[180px]")}
+        />
+      </InstantLink>
 
-        {showOptionsMenu && (
-          <div
-            className={cn(
-              "absolute z-30 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity duration-200",
-              optionsOpen && "opacity-100",
-              isCompact ? "top-0 right-0" : "top-1 right-1",
-            )}
-          >
-            <ArtistCardDropdown
-              artist={artist}
-              compact={isCompact}
-              onFavoriteChange={onFavoriteChange}
-              onOpenChange={setOptionsOpen}
-            />
-          </div>
-        )}
-      </div>
-
-      <InstantLink href={`/artist/${slug}`} className="block min-w-0">
+      <InstantLink
+        href={`/artist/${slug}`}
+        className={cn("block min-w-0", isCompact ? "mt-2" : "mt-3")}
+      >
         <h3
           className={cn(
-            "text-neutral-900 font-medium truncate group-hover:text-black transition-colors leading-tight",
-            isCompact ? "text-xs" : "text-sm",
+            "truncate font-medium tracking-[-0.01em] text-ink",
+            isCompact ? "text-xs" : "text-[14px] leading-5",
           )}
         >
           {artist.name}
         </h3>
-        {primaryGenre && (
-          <p
-            className={cn(
-              "text-neutral-500 truncate group-hover:text-neutral-700 transition-colors mt-0.5",
-              isCompact ? "text-[11px]" : "text-xs",
-            )}
-          >
-            {primaryGenre}
-          </p>
-        )}
+        <p
+          className={cn(
+            "truncate text-ink-2",
+            isCompact ? "text-[11px]" : "text-[13px] leading-5",
+          )}
+        >
+          {primaryGenre || "Artist"}
+        </p>
       </InstantLink>
+
+      {showOptionsMenu && (
+        <div
+          className={cn(
+            "absolute z-30 transition-opacity duration-200",
+            optionsOpen
+              ? "opacity-100"
+              : "pointer-fine:opacity-0 pointer-fine:group-hover:opacity-100 pointer-fine:focus-within:opacity-100",
+            isCompact ? "top-0 right-0" : "top-1 right-1",
+          )}
+        >
+          <ArtistCardDropdown
+            artist={artist}
+            compact={isCompact}
+            onFavoriteChange={onFavoriteChange}
+            onOpenChange={setOptionsOpen}
+          />
+        </div>
+      )}
     </div>
   );
 }

@@ -2,33 +2,39 @@
 
 import type { ReactNode } from "react";
 import { FaPlay } from "react-icons/fa";
-import { LuListMusic } from "react-icons/lu";
+import { LuChevronLeft } from "react-icons/lu";
 
 import ArtworkColorWash from "@/components/layout/ArtworkColorWash";
-import MySection from "@/components/ui/MySection";
-import Tilt3DImage from "@/components/ui/Tilt3DImage";
 import SearchInput from "@/components/search/SearchInput";
-import { PAGE_CONTAINER, PAGE_CONTENT_TOP } from "@/lib/pageLayout";
+import Button from "@/components/ui/Button";
+import InstantLink from "@/components/ui/InstantLink";
+import SectionHeader from "@/components/ui/SectionHeader";
+import Tilt3DImage from "@/components/ui/Tilt3DImage";
+import { PAGE_CONTAINER } from "@/lib/pageLayout";
 import { cn } from "@/lib/utils";
 
 export interface CollectionDetailPageLayoutProps {
-  /** Renders above the max-width column (e.g. full-bleed read-only banner). */
-  beforeConstrained?: ReactNode;
-  topBarLeft: ReactNode;
-  topBarRight?: ReactNode;
+  /** Full-width notice above the hero (e.g. read-only ratings banner). */
+  notice?: ReactNode;
+  back?: { href: string; label: string };
+  /** Secondary actions next to the play button (like, save, edit…). */
+  actions?: ReactNode;
   artworkSrc: string;
   artworkAlt: string;
   onPlayClick?: () => void;
   playLabel?: string;
   playDisabled?: boolean;
+  /** Small uppercase line above the title ("Album · 2026"). */
+  eyebrow?: ReactNode;
   title: ReactNode;
   /** Primary line under the title (artist link, curator, etc.). */
   subtitle?: ReactNode;
-  /** Mono/meta row under the subtitle (badges, year, genres). */
+  /** Muted facts under the subtitle (track count, genres…). */
   metaRow?: ReactNode;
-  /** e.g. public + personal rating tiles */
+  /** e.g. public + personal rating cards */
   afterHero?: ReactNode;
   listHeading?: string;
+  listCount?: number;
   searchQuery?: string;
   onSearchQueryChange?: (value: string) => void;
   onSearchClear?: () => void;
@@ -37,131 +43,142 @@ export interface CollectionDetailPageLayoutProps {
   searchFocused?: boolean;
   searchPlaceholder?: string;
   list?: ReactNode;
-  /** e.g. other album versions */
+  /** e.g. reviews, other album versions */
   bottom?: ReactNode;
-  sectionClassName?: string;
 }
 
 export default function CollectionDetailPageLayout({
-  beforeConstrained,
-  topBarLeft,
-  topBarRight,
+  notice,
+  back,
+  actions,
   artworkSrc,
   artworkAlt,
   onPlayClick,
   playLabel = "Play",
   playDisabled = false,
+  eyebrow,
   title,
   subtitle,
   metaRow,
   afterHero,
   listHeading = "Tracklist",
+  listCount,
   searchQuery = "",
   onSearchQueryChange,
   onSearchClear,
   onSearchFocus,
   onSearchBlur,
   searchFocused = false,
-  searchPlaceholder = "search tracks...",
+  searchPlaceholder = "Search tracks",
   list,
   bottom,
-  sectionClassName = "pb-24",
 }: CollectionDetailPageLayoutProps) {
+  const hasActions = Boolean(onPlayClick || actions);
+
   return (
-    <main className="min-h-screen text-neutral-900">
-      <MySection className={sectionClassName} container={false}>
-        <ArtworkColorWash src={artworkSrc} />
-        {beforeConstrained}
+    <main className="relative min-h-screen pb-12 text-ink">
+      <ArtworkColorWash src={artworkSrc} />
 
-        <div className={cn("relative z-10", PAGE_CONTAINER, PAGE_CONTENT_TOP)}>
-          <div className="mb-12 flex flex-wrap items-center justify-between gap-3">
-            {topBarLeft}
-            <div className="flex items-center gap-3">{topBarRight}</div>
+      <div className={cn("relative z-10", PAGE_CONTAINER, "pt-4 sm:pt-6")}>
+        {notice ? <div className="mb-4">{notice}</div> : null}
+
+        {back ? (
+          <InstantLink
+            href={back.href}
+            className="-ml-1 inline-flex max-w-full items-center gap-1 rounded-full py-1 pr-3 pl-1 text-sm font-medium text-ink-2 transition-colors hover:bg-ink/[0.06] hover:text-ink"
+          >
+            <LuChevronLeft size={17} aria-hidden className="shrink-0" />
+            <span className="truncate">{back.label}</span>
+          </InstantLink>
+        ) : null}
+
+        <header className="mt-5 flex flex-col items-center gap-6 text-center sm:mt-8 md:flex-row md:items-end md:gap-10 md:text-left">
+          <div className="w-[min(68vw,280px)] shrink-0 md:w-60 lg:w-72">
+            <div className="relative aspect-square rounded-2xl shadow-[0_28px_60px_-24px_rgb(21_20_19/0.55)]">
+              <Tilt3DImage
+                src={artworkSrc}
+                alt={artworkAlt}
+                fallbackText={artworkAlt?.slice(0, 2).toUpperCase() || "??"}
+                fallbackSrc="/vinyl-placeholder.svg"
+              />
+            </div>
           </div>
 
-          <div className="relative mb-8 flex flex-col items-start gap-8 md:flex-row md:gap-12">
-            <div className="group relative w-full shrink-0 self-start sm:w-52 md:w-72">
-              <div className="relative aspect-square">
-                <Tilt3DImage
-                  src={artworkSrc}
-                  alt={artworkAlt}
-                  fallbackText={artworkAlt?.slice(0, 2).toUpperCase() || "??"}
-                  fallbackSrc="/vinyl-placeholder.svg"
-                />
+          <div className="flex w-full min-w-0 flex-1 flex-col items-center md:items-start md:pb-1">
+            {eyebrow ? <p className="eyebrow text-ink-2">{eyebrow}</p> : null}
+            <h1 className="mt-3 max-w-full font-display text-[2rem] leading-[1.05] font-semibold tracking-[-0.045em] text-balance break-words text-ink sm:text-5xl lg:text-[3.5rem]">
+              {title}
+            </h1>
+            {subtitle != null ? (
+              <div className="mt-3 text-base font-medium text-ink sm:text-lg">
+                {subtitle}
               </div>
-            </div>
+            ) : null}
+            {metaRow != null ? (
+              <div className="mt-2 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm text-ink-2 md:justify-start">
+                {metaRow}
+              </div>
+            ) : null}
 
-            <div className="flex w-full min-w-0 flex-1 flex-col items-start justify-center md:pt-4">
-              {onPlayClick ? (
-                <button
-                  type="button"
-                  onClick={onPlayClick}
-                  disabled={playDisabled}
-                  className={cn(
-                    "group mb-5 flex w-full cursor-pointer items-center gap-2 rounded-full bg-white p-3 transition-transform md:mb-8 md:w-auto",
-                    playDisabled
-                      ? "cursor-not-allowed opacity-40"
-                      : "hover:scale-105",
-                  )}
-                >
-                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#e76418] text-white transition-transform group-hover:scale-105 group-disabled:group-hover:scale-100">
-                    <FaPlay className="ml-1" size={12} />
-                  </div>
-                  <span className="text-lg font-bold tracking-tight text-black">
+            {hasActions ? (
+              <div className="mt-6 flex w-full items-center justify-center gap-2 sm:w-auto md:justify-start">
+                {onPlayClick ? (
+                  <Button
+                    variant="primary"
+                    size="lg"
+                    onClick={onPlayClick}
+                    disabled={playDisabled}
+                    iconLeft={<FaPlay size={13} />}
+                    className="flex-1 sm:flex-none sm:px-7"
+                  >
                     {playLabel}
-                  </span>
-                </button>
-              ) : null}
-
-              <h1 className="mb-4 text-3xl leading-9 font-bold tracking-tight text-neutral-900 md:text-4xl md:leading-11">
-                {title}
-              </h1>
-
-              {subtitle != null ? subtitle : null}
-
-              {metaRow != null ? (
-                <div className="flex w-full flex-wrap items-center gap-2 border-t border-neutral-950/10 pt-4 font-mono text-sm text-neutral-900 md:mb-6">
-                  {metaRow}
-                </div>
-              ) : null}
-            </div>
-          </div>
-
-          {afterHero}
-
-          {list != null ? (
-            <div className="w-full">
-              <div className="rounded-md">
-                <div className="mb-3 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <LuListMusic size={18} />
-                    <h3 className="text-xs uppercase">{listHeading}</h3>
-                  </div>
-
-                  {onSearchQueryChange && onSearchClear ? (
-                    <div className="w-32 transition-all duration-300 focus-within:w-48">
-                      <SearchInput
-                        value={searchQuery}
-                        onChange={onSearchQueryChange}
-                        onClear={onSearchClear}
-                        onFocus={onSearchFocus}
-                        onBlur={onSearchBlur}
-                        isFocused={searchFocused}
-                        placeholder={searchPlaceholder}
-                        size="compact"
-                      />
-                    </div>
-                  ) : null}
-                </div>
-
-                {list}
+                  </Button>
+                ) : null}
+                {actions}
               </div>
-            </div>
-          ) : null}
+            ) : null}
+          </div>
+        </header>
 
-          {bottom}
-        </div>
-      </MySection>
+        {afterHero ? <div className="mt-10 sm:mt-12">{afterHero}</div> : null}
+
+        {list != null ? (
+          <section className="mt-10 sm:mt-12">
+            <SectionHeader
+              title={listHeading}
+              count={listCount}
+              actions={
+                onSearchQueryChange && onSearchClear ? (
+                  <div className="w-36 transition-[width] duration-300 ease-out focus-within:w-52 sm:w-44 sm:focus-within:w-60">
+                    <SearchInput
+                      value={searchQuery}
+                      onChange={onSearchQueryChange}
+                      onClear={onSearchClear}
+                      onFocus={onSearchFocus}
+                      onBlur={onSearchBlur}
+                      isFocused={searchFocused}
+                      placeholder={searchPlaceholder}
+                      size="compact"
+                    />
+                  </div>
+                ) : undefined
+              }
+            />
+            {list}
+          </section>
+        ) : null}
+
+        {bottom}
+      </div>
     </main>
+  );
+}
+
+/** Dot separator for `metaRow` items. */
+export function MetaDot() {
+  return (
+    <span aria-hidden className="text-ink-3/70">
+      ·
+    </span>
   );
 }

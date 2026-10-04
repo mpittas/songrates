@@ -1,21 +1,103 @@
 @import "tailwindcss";
 
+/*
+ * songrates design tokens.
+ *
+ * One warm "paper and ink" palette for the whole product. Components use the
+ * semantic utilities generated below (bg-canvas, bg-surface, text-ink,
+ * text-ink-2, border-line, …) instead of hard-coded hex values, so every page
+ * shares the same surfaces, text colours and hairlines.
+ */
 :root {
-  --background: #ebe8e5;
-  --foreground: #161616;
-  --accent: #1f1f1f;
-  --accent-dim: #1f1f1f33;
-  --border: #dedede;
-  --border-hover: #cfcfcf;
-  --muted: #6d6d6d;
+  --background: #f3f1ee;
+  --foreground: #151413;
+
+  --surface: #ffffff;
+  --subtle: #ebe8e4;
+  --ink-2: #57534e;
+  --ink-3: #6e6963;
+  --line: rgb(21 20 19 / 0.08);
+  --line-strong: rgb(21 20 19 / 0.14);
+  --accent: #e2531b;
+
+  /* Fixed chrome. --player-h is switched on by the mini player. */
+  --header-h: 64px;
+  --mobile-nav-h: 0px;
+  --player-h: 0px;
+  --app-bottom-inset: calc(var(--mobile-nav-h) + var(--player-h));
+}
+
+@media (max-width: 767.98px) {
+  :root {
+    --mobile-nav-h: calc(60px + env(safe-area-inset-bottom));
+  }
+
+  html[data-tabbar="off"] {
+    --mobile-nav-h: 0px;
+  }
+
+  html[data-player="on"] {
+    --player-h: 72px;
+  }
+}
+
+@media (min-width: 768px) {
+  html[data-player="on"] {
+    --player-h: 84px;
+  }
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+
+  --color-canvas: var(--background);
+  --color-surface: var(--surface);
+  --color-subtle: var(--subtle);
+  --color-ink: var(--foreground);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
   --color-accent: var(--accent);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-inter-tight), var(--font-inter), ui-sans-serif,
+    system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
+
+  --shadow-card: 0 1px 2px rgb(21 20 19 / 0.04), 0 0 0 1px rgb(21 20 19 / 0.05);
+  --shadow-lift: 0 12px 32px -12px rgb(21 20 19 / 0.28),
+    0 2px 6px rgb(21 20 19 / 0.06);
+  --shadow-pop: 0 18px 48px -12px rgb(21 20 19 / 0.25),
+    0 4px 12px rgb(21 20 19 / 0.06), 0 0 0 1px rgb(21 20 19 / 0.06);
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Small uppercase label used above titles ("ALBUM · 2026", "GLOBAL TOP 100"). */
+@utility eyebrow {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 11px;
+  line-height: 1.2;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* Horizontal rails: hide the scrollbar but keep native scrolling. */
+@utility scrollbar-none {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Clear the fixed mobile tab bar and mini player at the end of the page. */
+@utility pb-app-inset {
+  padding-bottom: var(--app-bottom-inset);
 }
 
 /* Hide caret globally to fix Chrome Caret Browsing blinking cursor - FORCE override */
@@ -26,24 +108,32 @@ body,
   caret-color: transparent !important;
 }
 
+html {
+  background: var(--background);
+  -webkit-tap-highlight-color: transparent;
+  text-size-adjust: 100%;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-inter), system-ui, sans-serif;
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  font-feature-settings: "cv11", "ss01";
   min-height: 100vh;
+  min-height: 100svh;
 }
 
 /* Restore caret for actual input elements */
 input,
 textarea,
 [contenteditable="true"] {
-  caret-color: #111111 !important;
+  caret-color: var(--foreground) !important;
 }
 
 /* Minimalist scrollbar */
 ::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -51,33 +141,31 @@ textarea,
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--border);
+  background: var(--line-strong);
   border-radius: 999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--border-hover);
+  background: rgb(21 20 19 / 0.24);
 }
 
-/* Subtle selection highlight */
 ::selection {
   background: var(--foreground);
   color: var(--background);
 }
 
-/* Focus outline with accent */
 *:focus-visible {
-  outline: 1px solid var(--accent);
+  outline: 2px solid var(--foreground);
   outline-offset: 2px;
 }
 
 /* Track highlight animation — used when navigating from search to a specific song */
 @keyframes highlight-track-pulse {
   0% {
-    background-color: #ececec;
+    background-color: rgb(226 83 27 / 0.12);
   }
   100% {
-    background-color: #ffffff;
+    background-color: transparent;
   }
 }
 
@@ -111,6 +199,22 @@ textarea,
   animation: fadeInUp 0.35s ease-out both;
 }
 
+/* Equaliser bars shown on the playing track row. */
+@keyframes eq-bounce {
+  0%,
+  100% {
+    transform: scaleY(0.35);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+.eq-bar {
+  transform-origin: bottom;
+  animation: eq-bounce 0.9s ease-in-out infinite;
+}
+
 .explore-hero-noise {
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   background-size: 128px 128px;
@@ -135,12 +239,12 @@ textarea,
 }
 
 .hero-marquee-left {
-  animation: hero-marquee-left 40s linear infinite;
+  animation: hero-marquee-left 60s linear infinite;
   will-change: transform;
 }
 
 .hero-marquee-right {
-  animation: hero-marquee-right 40s linear infinite;
+  animation: hero-marquee-right 60s linear infinite;
   will-change: transform;
 }
 
@@ -156,7 +260,11 @@ textarea,
 
 @media (prefers-reduced-motion: reduce) {
   .hero-marquee-left,
-  .hero-marquee-right {
+  .hero-marquee-right,
+  .eq-bar,
+  .animate-fade-in-up,
+  .animate-highlight-track,
+  .animate-pulse {
     animation: none;
   }
 }

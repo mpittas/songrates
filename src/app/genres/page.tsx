@@ -1,11 +1,13 @@
 import { Suspense } from "react";
-import { FaCompactDisc } from "react-icons/fa6";
+import { LuLibrary } from "react-icons/lu";
 
+import { PageHeaderSkeleton } from "@/components/layout/BrowsePageSkeleton";
 import GenresBrowse from "@/components/playlists/GenresBrowse";
+import EmptyState from "@/components/ui/EmptyState";
 import MySection from "@/components/ui/MySection";
+import PageHeader from "@/components/ui/PageHeader";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { getCategoriesBrowseData } from "@/lib/appleMusic/api";
-import { PAGE_CONTENT_TOP } from "@/lib/pageLayout";
-import { cn } from "@/lib/utils";
 
 /** ISR: regenerate genres page at most once every 6 hours. */
 export const revalidate = 21600;
@@ -17,20 +19,16 @@ export const metadata = {
 
 function GenresBrowseFallback() {
   return (
-    <div>
-      <div className="flex items-end justify-between gap-4">
-        <div className="h-11 w-40 animate-pulse rounded-md bg-neutral-900/10" />
-        <div className="h-4 w-20 animate-pulse rounded bg-neutral-900/10" />
-      </div>
-      <div className="mt-8 grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3 md:grid-cols-4 lg:grid-cols-6">
-        {Array.from({ length: 12 }).map((_, i) => (
-          <div
-            key={i}
-            className="aspect-square animate-pulse rounded-xl bg-neutral-900/10"
-          />
-        ))}
-      </div>
-    </div>
+    <>
+      <PageHeaderSkeleton chips />
+      <MySection className="pb-10">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-6">
+          {Array.from({ length: 12 }).map((_, i) => (
+            <Skeleton key={i} className="aspect-square rounded-xl" />
+          ))}
+        </div>
+      </MySection>
+    </>
   );
 }
 
@@ -39,30 +37,23 @@ export default async function GenresPage() {
   const hasData = categories.pills.length > 0;
 
   return (
-    <main
-      className={cn(
-        "min-h-screen bg-[#F2EFED] pb-16 text-neutral-900",
-        PAGE_CONTENT_TOP,
+    <main className="min-h-screen pb-6 text-ink">
+      {hasData ? (
+        <Suspense fallback={<GenresBrowseFallback />}>
+          <GenresBrowse pills={categories.pills} />
+        </Suspense>
+      ) : (
+        <>
+          <PageHeader eyebrow="Browse" title="Genres" />
+          <MySection className="pb-16">
+            <EmptyState
+              icon={<LuLibrary size={22} />}
+              title="Genres are warming up"
+              description="Apple Music catalog data is not available right now. Please try again shortly."
+            />
+          </MySection>
+        </>
       )}
-    >
-      <MySection className="pb-8">
-        {hasData ? (
-          <Suspense fallback={<GenresBrowseFallback />}>
-            <GenresBrowse pills={categories.pills} />
-          </Suspense>
-        ) : (
-          <div className="rounded-2xl border border-neutral-200 bg-white p-8 text-center">
-            <FaCompactDisc className="mx-auto text-neutral-400" size={28} />
-            <h2 className="mt-4 text-xl font-semibold text-neutral-900">
-              Genres are warming up
-            </h2>
-            <p className="mx-auto mt-2 max-w-lg text-sm text-neutral-500">
-              Apple Music catalog data is not available right now. Please try
-              again shortly.
-            </p>
-          </div>
-        )}
-      </MySection>
     </main>
   );
 }

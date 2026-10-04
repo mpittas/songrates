@@ -13,6 +13,7 @@ import type { PlaybackSource } from "@/types/player";
 import { cn, createSlug } from "@/lib/utils";
 import PlaylistSelectorModal from "@/components/ui/PlaylistSelectorModal";
 import MainModal, { MainModalHeader } from "@/components/ui/MainModal";
+import Button from "@/components/ui/Button";
 import SongRowLyrics from "./SongRowLyrics";
 import SongRowDropdown from "./SongRowDropdown";
 import SongRowRating from "./SongRowRating";
@@ -33,6 +34,21 @@ async function copyTextToClipboard(text: string) {
   textarea.select();
   document.execCommand("copy");
   document.body.removeChild(textarea);
+}
+
+/** Animated bars shown on the artwork of the track that is playing. */
+function EqualizerBars() {
+  return (
+    <span className="flex h-3.5 items-end gap-[2px]">
+      {[0, 0.25, 0.5].map((delay) => (
+        <span
+          key={delay}
+          className="eq-bar h-full w-[3px] rounded-full bg-current"
+          style={{ animationDelay: `${-delay}s` }}
+        />
+      ))}
+    </span>
+  );
 }
 
 interface SongRowProps {
@@ -58,6 +74,9 @@ interface SongRowProps {
   onFavoriteChange?: (isFavorite: boolean) => void;
   /** When true, scroll into view and pulse-highlight this track (search / share links) */
   highlighted?: boolean;
+  /** Hide the cover thumbnail (album pages, where every row shares one cover).
+   *  The track number becomes the play button instead. */
+  showArtwork?: boolean;
 }
 
 export default function SongRow({
@@ -81,6 +100,7 @@ export default function SongRow({
   showAlbumInSubline = true,
   onFavoriteChange,
   highlighted = false,
+  showArtwork = true,
 }: SongRowProps) {
   const rowRef = useRef<HTMLDivElement>(null);
   const [hovered, setHovered] = useState(false);
@@ -217,149 +237,185 @@ export default function SongRow({
     };
   }, [highlighted]);
 
+  const artistLinks = (
+    track?.artists?.length
+      ? track.artists
+      : [{ id: effectiveArtistId, name: artist }]
+  ).map((a, i) => (
+    <span key={`${a.id || "noid"}-${i}-${a.name}`} className="inline">
+      {i > 0 && <span className="text-ink-3"> ft. </span>}
+      {a.id ? (
+        <InstantLink
+          href={`/artist/${createSlug(a.name, a.id)}`}
+          className="transition-colors hover:text-ink hover:underline"
+        >
+          {a.name}
+        </InstantLink>
+      ) : (
+        <span>{a.name}</span>
+      )}
+    </span>
+  ));
+
+  const showArtOverlay = hovered || isCurrentTrack;
+  const playLabel =
+    isCurrentTrack && isPlayerPlaying ? `Pause ${title}` : `Play ${title}`;
+  const formattedDuration = formatDuration(duration);
+
   return (
     <div
       ref={rowRef}
       className={cn(
-        "group flex w-full min-w-0 flex-col rounded-lg border bg-white transition-colors duration-200 ease-in-out hover:border-neutral-300/90",
-        highlighted
-          ? "animate-highlight-track border-neutral-300 ring-2 ring-neutral-300"
-          : "border-neutral-100",
+        "group/row relative flex w-full min-w-0 flex-col transition-colors duration-150 hover:bg-ink/[0.025]",
+        highlighted && "animate-highlight-track",
       )}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      <div className="flex w-full min-w-0 items-center gap-1.5 px-1.5 py-2 sm:gap-3 sm:px-3 sm:py-2.5">
-        {/* Left Section */}
-        <div className="flex min-w-0 flex-1 items-center gap-1.5 sm:gap-3">
-          <div className="flex shrink-0 items-center gap-1 sm:gap-3">
-            {/* Track Number / Play Icon */}
-            <div className="flex w-5 shrink-0 items-center justify-center sm:w-8">
-              {hovered || isCurrentTrack ? (
-                <button
-                  onClick={handlePlay}
-                  className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-full bg-neutral-800 text-neutral-100 transition-colors hover:bg-neutral-700 sm:h-7 sm:w-7"
-                  aria-label={
-                    isCurrentTrack && isPlayerPlaying ? "Pause" : "Play"
-                  }
-                >
-                  {isCurrentTrack && isLoading ? (
-                    <span className="animate-pulse text-[10px]">...</span>
-                  ) : isCurrentTrack && isPlayerPlaying ? (
-                    <>
-                      <FaPause size={10} className="sm:hidden" />
-                      <FaPause size={12} className="hidden sm:block" />
-                    </>
-                  ) : (
-                    <>
-                      <FaPlay size={10} className="ml-0.5 sm:hidden" />
-                      <FaPlay size={12} className="ml-0.5 hidden sm:block" />
-                    </>
-                  )}
-                </button>
-              ) : (
-                <span className="w-5 text-center font-mono text-[10px] text-neutral-400 sm:w-8 sm:text-xs">
-                  {index}
-                </span>
+      <div className="flex w-full min-w-0 items-center gap-3 py-2 pr-2 pl-3 sm:gap-4 sm:py-2.5 sm:pr-3 sm:pl-4">
+        {showArtwork ? (
+          <>
+            {/* Track number */}
+            <span
+              className={cn(
+                "w-5 shrink-0 text-center text-[13px] font-medium tabular-nums sm:w-6",
+                isCurrentTrack ? "text-accent" : "text-ink-3",
               )}
-            </div>
+            >
+              {index}
+            </span>
 
-            {/* Album Art */}
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded bg-neutral-200 sm:h-10 sm:w-10 sm:rounded-md">
+            {/* Artwork doubles as the play button */}
+            <button
+              type="button"
+              onClick={handlePlay}
+              className="relative flex size-11 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-md bg-subtle shadow-[inset_0_0_0_1px_rgb(0_0_0/0.05)] sm:size-12"
+              aria-label={playLabel}
+            >
               {artworkUrl ? (
                 <img
                   src={artworkUrl}
-                  alt={album}
+                  alt=""
                   loading="lazy"
                   decoding="async"
                   className="h-full w-full object-cover"
                 />
               ) : (
-                <IoDiscOutline className="text-neutral-400" size={16} />
+                <IoDiscOutline className="text-ink-3" size={18} />
               )}
-            </div>
-          </div>
-
-          {/* Song Info */}
-          <div className="flex min-w-0 flex-1 flex-col justify-center gap-0 overflow-hidden sm:gap-0.5">
-            {effectiveAlbumId ? (
-              <InstantLink
-                href={`/album/${effectiveAlbumId}`}
-                className="block truncate text-xs font-semibold text-neutral-900 hover:underline sm:text-base"
-                title={title}
-              >
-                {title}
-              </InstantLink>
-            ) : (
               <span
-                className="block truncate text-xs font-semibold text-neutral-900 sm:text-base"
-                title={title}
+                aria-hidden
+                className={cn(
+                  "absolute inset-0 flex items-center justify-center bg-black/45 text-white transition-opacity duration-150",
+                  showArtOverlay ? "opacity-100" : "opacity-0",
+                )}
               >
-                {title}
-              </span>
-            )}
-
-            <div className="flex min-w-0 items-center gap-x-1 truncate text-[11px] text-neutral-500 sm:text-xs">
-              <span className="min-w-0 truncate">
-                {(track?.artists?.length
-                  ? track.artists
-                  : [{ id: effectiveArtistId, name: artist }]
-                ).map((a, i) => (
-                  <span
-                    key={`${a.id || "noid"}-${i}-${a.name}`}
-                    className="inline"
-                  >
-                    {i > 0 && (
-                      <span className="font-mono tracking-tight text-neutral-400">
-                        {" "}
-                        ft.{" "}
-                      </span>
-                    )}
-                    {a.id ? (
-                      <InstantLink
-                        href={`/artist/${createSlug(a.name, a.id)}`}
-                        className="hover:text-neutral-700 hover:underline"
-                      >
-                        {a.name}
-                      </InstantLink>
-                    ) : (
-                      <span>{a.name}</span>
-                    )}
-                  </span>
-                ))}
-              </span>
-              {showAlbumInSubline ? (
-                <>
-                  <span className="hidden shrink-0 text-neutral-300 sm:inline">
-                    •
-                  </span>
-                  {effectiveAlbumId ? (
-                    <InstantLink
-                      href={`/album/${effectiveAlbumId}`}
-                      className="hidden min-w-0 max-w-48 shrink truncate hover:text-neutral-700 hover:underline sm:inline"
-                    >
-                      {displayAlbum}
-                    </InstantLink>
+                {isCurrentTrack && isLoading ? (
+                  <span className="size-3 animate-pulse rounded-full bg-white/80" />
+                ) : isCurrentTrack && isPlayerPlaying ? (
+                  hovered ? (
+                    <FaPause size={13} />
                   ) : (
-                    <span className="hidden min-w-0 max-w-48 shrink truncate sm:inline">
-                      {displayAlbum}
-                    </span>
-                  )}
-                </>
-              ) : null}
-              <span className="shrink-0 text-neutral-300">•</span>
-              <span className="shrink-0 tabular-nums">
-                {formatDuration(duration)}
+                    <EqualizerBars />
+                  )
+                ) : (
+                  <FaPlay size={12} className="ml-0.5" />
+                )}
               </span>
-            </div>
+            </button>
+          </>
+        ) : (
+          /* Track number doubles as the play button */
+          <button
+            type="button"
+            onClick={handlePlay}
+            aria-label={playLabel}
+            className={cn(
+              "-ml-1 flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full text-[13px] font-medium tabular-nums transition-colors hover:bg-ink/[0.06]",
+              isCurrentTrack ? "text-accent" : "text-ink-3",
+            )}
+          >
+            {isCurrentTrack && isLoading ? (
+              <span className="size-2.5 animate-pulse rounded-full bg-current" />
+            ) : isCurrentTrack && isPlayerPlaying ? (
+              hovered ? (
+                <FaPause size={12} className="text-ink" />
+              ) : (
+                <EqualizerBars />
+              )
+            ) : showArtOverlay ? (
+              <FaPlay size={11} className="ml-0.5 text-ink" />
+            ) : (
+              index
+            )}
+          </button>
+        )}
+
+        {/* Song info */}
+        <div className="flex min-w-0 flex-1 flex-col justify-center">
+          {effectiveAlbumId ? (
+            <InstantLink
+              href={`/album/${effectiveAlbumId}`}
+              className={cn(
+                "block truncate text-[14px] leading-5 font-medium tracking-[-0.01em] hover:underline sm:text-[15px]",
+                isCurrentTrack ? "text-accent" : "text-ink",
+              )}
+              title={title}
+            >
+              {title}
+            </InstantLink>
+          ) : (
+            <span
+              className={cn(
+                "block truncate text-[14px] leading-5 font-medium tracking-[-0.01em] sm:text-[15px]",
+                isCurrentTrack ? "text-accent" : "text-ink",
+              )}
+              title={title}
+            >
+              {title}
+            </span>
+          )}
+
+          <div className="flex min-w-0 items-center gap-x-1.5 truncate text-[12.5px] leading-5 text-ink-2 sm:text-[13px]">
+            <span className="min-w-0 truncate">{artistLinks}</span>
+            {showAlbumInSubline ? (
+              <>
+                <span
+                  aria-hidden
+                  className="hidden shrink-0 text-ink-3/60 sm:inline"
+                >
+                  ·
+                </span>
+                {effectiveAlbumId ? (
+                  <InstantLink
+                    href={`/album/${effectiveAlbumId}`}
+                    className="hidden max-w-56 min-w-0 shrink truncate transition-colors hover:text-ink hover:underline sm:inline"
+                  >
+                    {displayAlbum}
+                  </InstantLink>
+                ) : (
+                  <span className="hidden max-w-56 min-w-0 shrink truncate sm:inline">
+                    {displayAlbum}
+                  </span>
+                )}
+              </>
+            ) : null}
+            <span aria-hidden className="shrink-0 text-ink-3/60 sm:hidden">
+              ·
+            </span>
+            <span className="shrink-0 tabular-nums sm:hidden">
+              {formattedDuration}
+            </span>
           </div>
         </div>
 
-        {/* Right Section */}
-        <div className="flex shrink-0 items-center gap-0.5 sm:gap-1.5">
-          {/* Duration */}
+        {/* Duration column (desktop) */}
+        <span className="hidden min-w-12 shrink-0 text-right text-[13px] whitespace-nowrap text-ink-3 tabular-nums sm:block">
+          {formattedDuration}
+        </span>
 
-          {/* Rating Circle */}
+        {/* Ratings + menu */}
+        <div className="flex shrink-0 items-center gap-1 sm:gap-1.5">
           <SongRowRating
             trackId={trackId}
             albumContext={albumContext}
@@ -368,7 +424,6 @@ export default function SongRow({
             onRate={onRate}
           />
 
-          {/* Three Dots Menu */}
           <SongRowDropdown
             isLyricsOpen={lyricsOpen}
             onToggleLyrics={() =>
@@ -430,27 +485,26 @@ export default function SongRow({
           />
 
           <div className="p-6">
-            <div className="mb-3 text-sm font-medium text-neutral-500">
-              Copy link
-            </div>
+            <div className="mb-3 text-sm font-medium text-ink-2">Copy link</div>
             <div className="flex items-center gap-2">
               <input
                 value={shareUrl}
                 readOnly
-                className="flex-1 min-w-0 rounded-xl border border-neutral-200 bg-neutral-100 px-4 py-3 text-xs font-mono text-neutral-800 outline-none"
+                className="h-10 min-w-0 flex-1 rounded-full bg-ink/[0.05] px-4 font-mono text-xs text-ink outline-none"
               />
-              <button
-                type="button"
+              <Button
+                variant="primary"
+                size="md"
                 onClick={async () => {
                   await copyTextToClipboard(shareUrl);
                   setShareCopied(true);
                   window.setTimeout(() => setShareCopied(false), 900);
                 }}
-                className="shrink-0 cursor-pointer rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-700 transition-colors hover:bg-neutral-50 hover:text-neutral-900"
                 disabled={!shareUrl}
+                className="min-w-20"
               >
                 {shareCopied ? "Copied" : "Copy"}
-              </button>
+              </Button>
             </div>
           </div>
         </MainModal>

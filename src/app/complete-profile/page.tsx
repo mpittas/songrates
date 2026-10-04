@@ -3,19 +3,9 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
-import MeshGradient from "@/components/mesh/MeshGradient";
-import { MeshGradientConfig } from "@/components/mesh/types";
+import AuthLayout, { AUTH_INPUT_CLASS } from "@/components/auth/AuthLayout";
+import { Skeleton } from "@/components/ui/Skeleton";
 import Button from "@/components/ui/Button";
-
-const warmMeshConfig: MeshGradientConfig = {
-  speed: 0.2,
-  zoom: 1.2,
-  amplitude: 0.4,
-  contrast: 1.2,
-  noise: 0.05,
-  color1: "#f05f45",
-  color2: "#181018",
-};
 
 export default function CompleteProfilePage() {
   const [username, setUsername] = useState("");
@@ -54,8 +44,7 @@ export default function CompleteProfilePage() {
     };
 
     checkProfile();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [router, supabase]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,8 +53,8 @@ export default function CompleteProfilePage() {
 
     try {
       // Validate username
-      if (!username || username.length < 3) {
-        throw new Error("Username must be at least 3 characters");
+      if (!username || username.length < 3 || username.length > 20) {
+        throw new Error("Username must be 3–20 characters");
       }
 
       if (!/^[a-zA-Z0-9_]+$/.test(username)) {
@@ -112,8 +101,8 @@ export default function CompleteProfilePage() {
 
       // Redirect to home
       router.push("/");
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Could not save your profile. Try again.");
     } finally {
       setLoading(false);
     }
@@ -121,53 +110,49 @@ export default function CompleteProfilePage() {
 
   if (checking) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#ebe8e5]">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-neutral-900 border-t-transparent" />
-      </div>
+      <AuthLayout>
+        <div aria-busy="true" aria-label="Loading profile" className="space-y-5">
+          <Skeleton className="h-10 w-3/4" /><Skeleton className="h-4 w-full" /><Skeleton className="h-12 w-full" />
+        </div>
+      </AuthLayout>
     );
   }
 
   return (
-    <div className="w-full min-h-screen grid grid-cols-1 md:grid-cols-2 bg-[#ebe8e5]">
-      {/* Left Column */}
-      <div className="relative hidden h-full w-full overflow-hidden md:block">
-        <MeshGradient
-          config={warmMeshConfig}
-          className="absolute inset-0 h-full w-full opacity-80"
-        />
-      </div>
-
-      {/* Right Column: Form */}
-      <div className="flex flex-col justify-center p-6 md:p-12 bg-[#ebe8e5] relative w-full max-w-[600px] mx-auto">
+    <AuthLayout>
         <div className="mb-8">
-          <h1 className="text-2xl text-neutral-900 mb-2 tracking-tight">
-            Complete Your Profile
+          <h1 className="font-display text-4xl font-semibold tracking-[-0.045em]">
+            Make it yours
           </h1>
-          <p className="text-neutral-500 text-sm">
+          <p className="mt-3 text-sm leading-6 text-ink-2">
             Choose a username to complete your registration.
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm text-neutral-500">Username *</label>
+            <label htmlFor="profile-username" className="text-sm font-medium text-ink-2">Username</label>
             <input
+              id="profile-username"
+              autoComplete="username"
+              aria-describedby="profile-username-hint"
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value.toLowerCase())}
-              placeholder="eg. musiclover99"
+              placeholder="musiclover99"
               required
               minLength={3}
+              maxLength={20}
               pattern="[a-zA-Z0-9_]+"
-              className="w-full rounded-md border border-[#d8d8d8] bg-white px-4 py-3 text-sm text-neutral-900 outline-hidden placeholder:text-neutral-500 focus:border-neutral-400"
+              className={AUTH_INPUT_CLASS}
             />
-            <p className="text-[11px] text-neutral-600">
+            <p id="profile-username-hint" className="text-xs text-ink-3">
               3-20 characters, letters, numbers, and underscores only
             </p>
           </div>
 
           {error && (
-            <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+            <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
               {error}
             </div>
           )}
@@ -176,13 +161,12 @@ export default function CompleteProfilePage() {
             type="submit"
             disabled={loading || username.length < 3}
             variant="primary"
-            size="md"
+            size="lg"
             className="mt-4 w-full"
           >
-            {loading ? "Saving..." : "Complete Profile"}
+            {loading ? "Saving..." : "Save profile"}
           </Button>
         </form>
-      </div>
-    </div>
+    </AuthLayout>
   );
 }

@@ -27,18 +27,22 @@ export default function Providers({ children }: { children: React.ReactNode }) {
                 <Toaster
                   position="bottom-right"
                   closeButton
+                  offset={{ bottom: "calc(var(--player-h) + 20px)", right: 20 }}
+                  mobileOffset={{
+                    bottom: "calc(var(--app-bottom-inset) + 12px)",
+                  }}
                   toastOptions={{
                     classNames: {
                       toast:
-                        "rounded-3xl bg-neutral-950 text-white border border-neutral-800 shadow-xl p-4",
-                      title: "text-white",
-                      description: "text-neutral-300",
+                        "rounded-2xl bg-ink text-white border border-white/10 shadow-pop p-4",
+                      title: "text-white font-medium",
+                      description: "text-white/65",
                       actionButton:
-                        "rounded-full bg-white text-neutral-950 hover:bg-neutral-200",
+                        "rounded-full bg-white text-ink hover:bg-white/90",
                       cancelButton:
-                        "rounded-full bg-neutral-900 text-neutral-200 hover:bg-neutral-800",
+                        "rounded-full bg-white/10 text-white/80 hover:bg-white/15",
                       closeButton:
-                        "bg-transparent text-neutral-300 hover:text-white border-neutral-700",
+                        "bg-ink text-white/70 hover:text-white border-white/15",
                     },
                   }}
                 />

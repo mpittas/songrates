@@ -56,7 +56,7 @@ function UserAvatar({
   return (
     <span
       aria-hidden
-      className="flex items-center justify-center rounded-full bg-neutral-900 font-medium text-white"
+      className="flex items-center justify-center rounded-full bg-ink font-semibold text-white"
       style={{ width: size, height: size, fontSize: size * 0.38 }}
     >
       {getInitials(name)}
@@ -76,15 +76,15 @@ function MenuRow({
   onClick?: () => void;
 }) {
   const className = cn(
-    "flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-left text-sm text-neutral-700",
+    "flex w-full cursor-pointer items-center gap-3 rounded-xl px-2.5 py-2 text-left text-sm text-ink-2",
     "transition-colors duration-150",
-    "hover:bg-neutral-100 hover:text-neutral-950",
-    "focus-visible:bg-neutral-100 focus-visible:outline-none",
+    "hover:bg-ink/[0.05] hover:text-ink",
+    "focus-visible:bg-ink/[0.05] focus-visible:outline-none",
   );
 
   const content = (
     <>
-      <span className="flex size-4 shrink-0 items-center justify-center text-neutral-500">
+      <span className="flex size-4 shrink-0 items-center justify-center text-ink-3">
         {icon}
       </span>
       <span className="min-w-0 truncate">{children}</span>
@@ -159,15 +159,13 @@ export default function UserMenu({ user, onSignOut }: UserMenuProps) {
         aria-expanded={isOpen}
         aria-controls={menuId}
         className={cn(
-          "flex size-8 cursor-pointer items-center justify-center overflow-hidden rounded-full",
-          "ring-2 ring-offset-2 ring-offset-white transition-[box-shadow,transform] duration-150",
-          "focus-visible:outline-none focus-visible:ring-neutral-900",
-          isOpen
-            ? "ring-neutral-900"
-            : "ring-transparent hover:ring-neutral-300",
+          "flex size-9 cursor-pointer items-center justify-center overflow-hidden rounded-full",
+          "ring-2 ring-offset-2 ring-offset-canvas transition-[box-shadow,transform] duration-150",
+          "focus-visible:outline-none focus-visible:ring-ink",
+          isOpen ? "ring-ink" : "ring-transparent hover:ring-ink/20",
         )}
       >
-        <UserAvatar url={avatarUrl} name={displayName} size={32} />
+        <UserAvatar url={avatarUrl} name={displayName} size={36} />
       </button>
 
       {isOpen ? (
@@ -176,33 +174,31 @@ export default function UserMenu({ user, onSignOut }: UserMenuProps) {
           role="menu"
           aria-label="Account"
           className={cn(
-            "absolute right-0 z-50 mt-2 w-72 max-w-[calc(100vw-1.5rem)] origin-top-right",
-            "rounded-xl border border-neutral-200 bg-white p-1.5",
-            "shadow-[0_8px_24px_rgba(15,15,15,0.12),0_2px_6px_rgba(15,15,15,0.06)]",
-            "animate-in fade-in slide-in-from-top-1 duration-150",
+            "animate-fade-in-up absolute right-0 z-50 mt-2.5 w-72 max-w-[calc(100vw-1.5rem)] origin-top-right",
+            "rounded-2xl bg-surface p-1.5 shadow-pop",
           )}
         >
           <Link
             href="/profile"
             role="menuitem"
             onClick={close}
-            className="flex items-center gap-3 rounded-lg px-2.5 py-2.5 transition-colors hover:bg-neutral-50 focus-visible:bg-neutral-50 focus-visible:outline-none"
+            className="flex items-center gap-3 rounded-xl px-2.5 py-2.5 transition-colors hover:bg-ink/[0.05] focus-visible:bg-ink/[0.05] focus-visible:outline-none"
           >
             <UserAvatar url={avatarUrl} name={displayName} size={40} />
             <div className="min-w-0">
-              <p className="truncate text-sm font-medium tracking-tight text-neutral-950">
+              <p className="truncate text-sm font-semibold tracking-tight text-ink">
                 {displayName}
               </p>
               {showSecondary ? (
-                <p className="truncate text-xs text-neutral-500">{secondary}</p>
+                <p className="truncate text-xs text-ink-2">{secondary}</p>
               ) : null}
-              <p className="mt-1 text-xs font-medium text-neutral-900">
+              <p className="mt-1 text-xs font-medium text-accent">
                 View profile
               </p>
             </div>
           </Link>
 
-          <div className="mx-1.5 my-1 h-px bg-neutral-100" />
+          <div className="mx-2.5 my-1 h-px bg-line" />
 
           <MenuRow
             icon={<LuDisc3 size={16} strokeWidth={1.75} />}
@@ -222,7 +218,7 @@ export default function UserMenu({ user, onSignOut }: UserMenuProps) {
             Settings
           </MenuRow>
 
-          <div className="mx-1.5 my-1 h-px bg-neutral-100" />
+          <div className="mx-2.5 my-1 h-px bg-line" />
 
           <MenuRow
             icon={<LuLogOut size={16} strokeWidth={1.75} />}

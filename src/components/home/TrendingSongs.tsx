@@ -1,8 +1,13 @@
-import { getTrendingSongs, artworkUrl } from "@/lib/appleMusic/api";
+import {
+  getTrendingSongs,
+  artworkUrl,
+  TOP_100_PLAYLIST_IDS,
+} from "@/lib/appleMusic/api";
 import SongRow from "@/main-components/SongRow";
 import MySection from "@/components/ui/MySection";
+import SectionHeader from "@/components/ui/SectionHeader";
+import TrackList from "@/components/ui/TrackList";
 import { formatTime } from "@/lib/utils";
-import HeadingRow from "@/main-components/HeadingRow";
 
 export default async function TrendingSongs() {
   const songs = await getTrendingSongs(10);
@@ -10,51 +15,51 @@ export default async function TrendingSongs() {
   if (!songs || songs.length === 0) return null;
 
   return (
-    <section className="py-12 sm:py-14">
-      <MySection>
-        <div className="w-full">
-          <HeadingRow
-            title="Trending Songs"
-            badgeText="Global top 100"
-          />
+    <MySection className="pt-12 pb-10 sm:pt-16 sm:pb-14">
+      <SectionHeader
+        eyebrow="Global top 100"
+        title="Trending songs"
+        description="The most played tracks right now. Tap a cover to listen, then rate it."
+        href={`/apple-playlist/${TOP_100_PLAYLIST_IDS[0]}`}
+        linkLabel="Full chart"
+      />
 
-          <div className="flex flex-col gap-1.5 sm:gap-2">
-            {songs.map((song, i) => (
-              <SongRow
-                key={song.id}
-                index={i + 1}
-                title={song.name}
-                artist={song.artistName}
-                album={song.albumName || "Unknown Album"}
-                duration={formatTime(song.durationMs, "milliseconds")}
-                artworkUrl={artworkUrl(song.artworkUrl, 80)}
-                track={{
-                  id: song.id,
-                  title: song.name,
-                  artistName: song.artistName,
-                  artistId: song.artistId,
-                  artists: song.artists,
-                  albumId: song.albumId,
-                  albumTitle: song.albumName,
-                  albumImageUrl: artworkUrl(song.artworkUrl, 300),
-                  length: song.durationMs,
-                }}
-                albumContext={
-                  song.albumId
-                    ? {
-                        albumId: song.albumId,
-                        title: song.albumName || "Unknown Album",
-                        artistName: song.artistName,
-                        artworkUrl: artworkUrl(song.artworkUrl, 300),
-                        releaseDate: song.releaseDate,
-                      }
-                    : undefined
-                }
-              />
-            ))}
-          </div>
-        </div>
-      </MySection>
-    </section>
+      <TrackList columns={2}>
+        {songs.map((song, i) => (
+          <SongRow
+            key={song.id}
+            index={i + 1}
+            title={song.name}
+            artist={song.artistName}
+            album={song.albumName || "Unknown Album"}
+            duration={formatTime(song.durationMs, "milliseconds")}
+            artworkUrl={artworkUrl(song.artworkUrl, 120)}
+            showAlbumInSubline={false}
+            track={{
+              id: song.id,
+              title: song.name,
+              artistName: song.artistName,
+              artistId: song.artistId,
+              artists: song.artists,
+              albumId: song.albumId,
+              albumTitle: song.albumName,
+              albumImageUrl: artworkUrl(song.artworkUrl, 300),
+              length: song.durationMs,
+            }}
+            albumContext={
+              song.albumId
+                ? {
+                    albumId: song.albumId,
+                    title: song.albumName || "Unknown Album",
+                    artistName: song.artistName,
+                    artworkUrl: artworkUrl(song.artworkUrl, 300),
+                    releaseDate: song.releaseDate,
+                  }
+                : undefined
+            }
+          />
+        ))}
+      </TrackList>
+    </MySection>
   );
 }

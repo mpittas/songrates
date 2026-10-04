@@ -1,12 +1,5 @@
 "use client";
 
-/**
- * THESIS: Settings is a quiet editor for how you appear, not a dashboard
- * of icon tiles. OWN-WORLD: Stone page, large title, Luma-style fields,
- * Airbnb toggle rows, Circle unsaved action line. STORY: Change handle
- * and what's public, then save. FIRST VIEWPORT: Back + Settings; identity;
- * username; privacy list; save. FORM: Luma account + Pinterest visibility.
- */
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
@@ -19,6 +12,7 @@ import OptimizedImage from "@/components/ui/OptimizedImage";
 import MySection from "@/components/ui/MySection";
 import { cn } from "@/lib/utils";
 import { PAGE_CONTENT_TOP } from "@/lib/pageLayout";
+import SettingsLoading from "./loading";
 import { enlargeAvatarUrl } from "@/lib/albumReviews";
 
 interface ProfileSettings {
@@ -38,24 +32,22 @@ function Switch({
   label: string;
 }) {
   return (
-    <button
-      type="button"
+    <Button
+      size="xxs"
+      variant={checked ? "primary" : "secondary"}
       role="switch"
       aria-checked={checked}
       aria-label={label}
       onClick={onCheckedChange}
-      className={cn(
-        "relative h-6 w-11 shrink-0 cursor-pointer rounded-full transition-colors",
-        checked ? "bg-neutral-900" : "bg-neutral-300",
-      )}
+      className="relative w-11"
     >
       <span
         className={cn(
-          "absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow-[0_1px_2px_rgba(0,0,0,0.2)] transition-transform duration-200",
+          "absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-surface shadow-[0_1px_2px_rgba(0,0,0,0.2)] transition-transform duration-200",
           checked ? "translate-x-5" : "translate-x-0",
         )}
       />
-    </button>
+    </Button>
   );
 }
 
@@ -73,8 +65,8 @@ function SettingRow({
   return (
     <div className="flex items-start justify-between gap-6 py-5">
       <div className="min-w-0">
-        <p className="text-sm font-medium text-neutral-900">{title}</p>
-        <p className="mt-1 text-sm text-neutral-500">{description}</p>
+        <p className="text-sm font-medium text-ink">{title}</p>
+        <p className="mt-1 text-sm text-ink-2">{description}</p>
       </div>
       <Switch
         checked={checked}
@@ -104,9 +96,8 @@ export default function SettingsPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [checkingUsername, setCheckingUsername] = useState(false);
-  const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(
-    null,
-  );
+  const [usernameCheck, setUsernameCheck] = useState<{ username: string; available: boolean } | null>(null);
+  const usernameAvailable = usernameCheck?.username === settings.username ? usernameCheck.available : null;
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -163,24 +154,26 @@ export default function SettingsPage() {
       settings.username === original?.username ||
       settings.username.length < 3
     ) {
-      setUsernameAvailable(null);
       return;
     }
 
+    let cancelled = false;
     const timer = setTimeout(async () => {
       setCheckingUsername(true);
-      const { data } = await supabase
+      const { data, error: checkError } = await supabase
         .from("profiles")
         .select("id")
         .eq("username", settings.username)
         .neq("id", user?.id || "")
         .maybeSingle();
 
-      setUsernameAvailable(!data);
-      setCheckingUsername(false);
+      if (!cancelled) {
+        setUsernameCheck(checkError ? null : { username: settings.username, available: !data });
+        setCheckingUsername(false);
+      }
     }, 500);
 
-    return () => clearTimeout(timer);
+    return () => { cancelled = true; clearTimeout(timer); };
   }, [settings.username, original?.username, supabase, user?.id]);
 
   const handleSave = async () => {
@@ -189,8 +182,8 @@ export default function SettingsPage() {
     setError(null);
 
     try {
-      if (!settings.username || settings.username.length < 3) {
-        throw new Error("Username must be at least 3 characters");
+      if (!settings.username || settings.username.length < 3 || settings.username.length > 20) {
+        throw new Error("Username must be 3–20 characters");
       }
 
       if (!/^[a-zA-Z0-9_]+$/.test(settings.username)) {
@@ -249,7 +242,7 @@ export default function SettingsPage() {
 
   const usernameChanged = settings.username !== original?.username;
   const hasValidUsername =
-    settings.username.length >= 3 && /^[a-zA-Z0-9_]+$/.test(settings.username);
+    settings.username.length >= 3 && settings.username.length <= 20 && /^[a-zA-Z0-9_]+$/.test(settings.username);
   const isDirty =
     original != null &&
     (settings.username !== original.username ||
@@ -263,18 +256,7 @@ export default function SettingsPage() {
     !checkingUsername;
 
   if (authLoading || loading) {
-    return (
-      <main className="min-h-screen bg-[var(--background)]">
-        <MySection className={cn(PAGE_CONTENT_TOP, "pb-24")}>
-          <div className="mx-auto w-full max-w-xl animate-pulse space-y-6">
-            <div className="h-9 w-40 rounded-md bg-neutral-300" />
-            <div className="h-4 w-56 rounded-md bg-neutral-200" />
-            <div className="h-16 rounded-2xl bg-neutral-200" />
-            <div className="h-24 rounded-2xl bg-neutral-200" />
-          </div>
-        </MySection>
-      </main>
-    );
+    return <SettingsLoading />;
   }
 
   if (!user) return null;
@@ -282,26 +264,26 @@ export default function SettingsPage() {
   const shownName = displayName?.trim() || settings.username || "You";
 
   return (
-    <main className="min-h-screen bg-[var(--background)]">
+    <main className="min-h-screen bg-canvas">
       <MySection className={cn(PAGE_CONTENT_TOP, "pb-28")}>
         <div className="mx-auto w-full max-w-xl">
           <Link
             href="/profile"
-            className="inline-flex items-center gap-2 text-sm font-medium text-neutral-500 transition-colors hover:text-neutral-900"
+            className="inline-flex items-center gap-2 text-sm font-medium text-ink-2 transition-colors hover:text-ink"
           >
             <FaArrowLeft size={12} />
             Back to profile
           </Link>
 
-          <h1 className="mt-5 text-3xl font-semibold tracking-tight text-neutral-900 sm:text-4xl">
+          <h1 className="mt-5 font-display text-4xl font-semibold tracking-[-0.045em] text-ink sm:text-5xl">
             Settings
           </h1>
-          <p className="mt-2 text-sm text-neutral-500">
+          <p className="mt-2 text-sm text-ink-2">
             How you appear on Songrates, and what others can see.
           </p>
 
           <div className="mt-8 flex items-center gap-4">
-            <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-full bg-neutral-200 ring-1 ring-neutral-200">
+            <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-full bg-subtle ring-1 ring-line-strong">
               {avatarUrl ? (
                 <OptimizedImage
                   src={avatarUrl}
@@ -312,32 +294,32 @@ export default function SettingsPage() {
                 />
               ) : (
                 <div className="flex h-full w-full items-center justify-center">
-                  <FaUser size={22} className="text-neutral-400" />
+                  <FaUser size={22} className="text-ink-3" />
                 </div>
               )}
             </div>
             <div className="min-w-0">
-              <p className="truncate font-medium text-neutral-900">{shownName}</p>
-              <p className="truncate text-sm text-neutral-500">{user.email}</p>
+              <p className="truncate font-medium text-ink">{shownName}</p>
+              <p className="truncate text-sm text-ink-2">{user.email}</p>
             </div>
           </div>
 
           <section className="mt-10">
-            <h2 className="text-lg font-semibold tracking-tight text-neutral-900">
+            <h2 className="font-display text-xl font-semibold tracking-[-0.03em] text-ink">
               Profile
             </h2>
-            <p className="mt-1 text-sm text-neutral-500">
+            <p className="mt-1 text-sm text-ink-2">
               Your public handle. This is how people find you.
             </p>
 
             <label
               htmlFor="username"
-              className="mt-5 block text-sm font-medium text-neutral-900"
+              className="mt-5 block text-sm font-medium text-ink"
             >
               Username
             </label>
             <div className="relative mt-2">
-              <span className="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-sm text-neutral-400">
+              <span className="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-sm text-ink-3">
                 @
               </span>
               <input
@@ -346,13 +328,11 @@ export default function SettingsPage() {
                 type="text"
                 autoComplete="username"
                 value={settings.username}
-                onChange={(e) =>
-                  setSettings((prev) => ({
-                    ...prev,
-                    username: e.target.value.toLowerCase().replace(/\s/g, ""),
-                  }))
-                }
-                className="h-11 w-full rounded-xl border border-neutral-200 bg-white pr-10 pl-8 text-sm text-neutral-900 placeholder:text-neutral-400"
+                onChange={(e) => {
+                  setCheckingUsername(false);
+                  setSettings((prev) => ({ ...prev, username: e.target.value.toLowerCase().replace(/\s/g, "") }));
+                }}
+                className="h-11 w-full rounded-xl border border-line-strong bg-surface pr-10 pl-8 text-sm text-ink placeholder:text-ink-3"
                 placeholder="username"
                 minLength={3}
                 maxLength={20}
@@ -367,7 +347,7 @@ export default function SettingsPage() {
                 {checkingUsername && (
                   <FaSpinner
                     size={14}
-                    className="animate-spin text-neutral-400"
+                    className="animate-spin text-ink-3"
                   />
                 )}
                 {!checkingUsername &&
@@ -383,7 +363,7 @@ export default function SettingsPage() {
                   )}
               </div>
             </div>
-            <p id="username-hint" className="mt-2 text-xs text-neutral-500">
+            <p id="username-hint" className="mt-2 text-xs text-ink-2">
               3–20 characters. Letters, numbers, and underscores.
             </p>
             {usernameChanged && usernameAvailable === false && (
@@ -401,14 +381,14 @@ export default function SettingsPage() {
           </section>
 
           <section className="mt-12">
-            <h2 className="text-lg font-semibold tracking-tight text-neutral-900">
+            <h2 className="font-display text-xl font-semibold tracking-[-0.03em] text-ink">
               Privacy
             </h2>
-            <p className="mt-1 text-sm text-neutral-500">
+            <p className="mt-1 text-sm text-ink-2">
               Choose what appears on your public profile.
             </p>
 
-            <div className="mt-2 divide-y divide-neutral-200 border-y border-neutral-200">
+            <div className="mt-2 divide-y divide-line-strong border-y border-line-strong">
               <SettingRow
                 title="Public profile"
                 description={
@@ -456,7 +436,7 @@ export default function SettingsPage() {
           ) : null}
 
           <div className="mt-8 flex flex-wrap items-center justify-between gap-3">
-            <p className="text-sm text-neutral-500">
+            <p className="text-sm text-ink-2">
               {isDirty ? "You have unsaved changes." : "\u00a0"}
             </p>
             <div className="flex items-center gap-2">
@@ -468,7 +448,6 @@ export default function SettingsPage() {
                 size="sm"
                 onClick={handleSave}
                 disabled={saving || !canSave}
-                className="disabled:pointer-events-none disabled:opacity-40"
               >
                 {saving ? "Saving..." : "Save changes"}
               </Button>

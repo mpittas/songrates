@@ -33,7 +33,7 @@ function CategoryTabs({
   onChange: (cat: SearchCategory) => void;
 }) {
   return (
-    <div className="flex gap-1 px-3 pt-2 pb-1 border-b border-[#e6e6e6]">
+    <div className="sticky top-0 z-10 flex gap-1 border-b border-line bg-surface/95 px-2.5 py-2 backdrop-blur-md">
       {CATEGORIES.map((cat) => (
         <button
           key={cat.key}
@@ -41,10 +41,10 @@ function CategoryTabs({
           onMouseDown={(e) => e.preventDefault()}
           onClick={() => onChange(cat.key)}
           className={cn(
-            "cursor-pointer rounded-full px-3 py-1 text-xs font-medium transition-colors",
+            "h-7 cursor-pointer rounded-full px-3 text-xs font-medium transition-colors",
             active === cat.key
-              ? "bg-neutral-100 text-neutral-900"
-              : "text-neutral-500 hover:text-neutral-900",
+              ? "bg-ink text-white"
+              : "text-ink-2 hover:bg-ink/[0.05] hover:text-ink",
           )}
         >
           {cat.label}
@@ -72,10 +72,7 @@ function ArtworkImage({
   if (hasError || !url) {
     return (
       fallbackIcon || (
-        <IoDisc
-          className="text-neutral-600 group-hover:text-neutral-900"
-          size={18}
-        />
+        <IoDisc className="text-ink-3" size={18} />
       )
     );
   }
@@ -89,7 +86,7 @@ function ArtworkImage({
       loading="lazy"
       decoding="async"
       onError={() => setHasError(true)}
-      className={`w-full h-full object-cover transition-all grayscale group-hover:grayscale-0 ${rounded ? "rounded-full" : ""}`}
+      className={`h-full w-full object-cover ${rounded ? "rounded-full" : ""}`}
     />
   );
 }
@@ -109,32 +106,29 @@ function ArtistRow({
     <InstantLink
       href={`/artist/${createSlug(result.title, result.id)}`}
       onClick={onSelect}
-      className={`flex items-center gap-3 p-3 hover:bg-[#f7f7f7] transition-colors group${reserveRightSpace ? " pr-9" : ""}`}
+      className={`group mx-1.5 flex items-center gap-3 rounded-xl px-2.5 py-2 transition-colors hover:bg-ink/[0.045]${reserveRightSpace ? " pr-9" : ""}`}
     >
-      <div className="w-10 h-10 rounded-full overflow-hidden bg-[#efefef] border border-[#dcdcdc] group-hover:border-[#c8c8c8] flex items-center justify-center flex-shrink-0">
+      <div className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-subtle">
         <ArtworkImage
           url={result.artworkUrl}
           alt={result.title}
           rounded
           fallbackIcon={
-            <IoPerson
-              className="text-neutral-600 group-hover:text-neutral-900"
-              size={18}
-            />
+            <IoPerson className="text-ink-3" size={18} />
           }
         />
       </div>
       <div className="flex-1 min-w-0">
-        <h3 className="text-sm text-neutral-900 group-hover:text-black transition-colors truncate">
+        <h3 className="truncate text-sm font-medium text-ink">
           {result.title}
         </h3>
-        <p className="text-[11px] text-neutral-600 truncate mt-0.5">
+        <p className="mt-0.5 truncate text-xs text-ink-2">
           {result.genres && result.genres.length > 0
             ? result.genres.slice(0, 3).join(", ")
             : "Artist"}
         </p>
       </div>
-      <span className="shrink-0 text-[11px] text-neutral-400">
+      <span className="shrink-0 text-[11px] font-medium text-ink-3">
         Artist
       </span>
     </InstantLink>
@@ -156,21 +150,21 @@ function AlbumRow({
     <InstantLink
       href={`/album/${slug}`}
       onClick={onSelect}
-      className={`flex items-center gap-3 p-3 hover:bg-[#f7f7f7] transition-colors group${reserveRightSpace ? " pr-9" : ""}`}
+      className={`group mx-1.5 flex items-center gap-3 rounded-xl px-2.5 py-2 transition-colors hover:bg-ink/[0.045]${reserveRightSpace ? " pr-9" : ""}`}
     >
-      <div className="w-10 h-10 overflow-hidden bg-[#efefef] border border-[#dcdcdc] group-hover:border-[#c8c8c8] flex items-center justify-center flex-shrink-0 rounded-sm">
+      <div className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-md bg-subtle shadow-[inset_0_0_0_1px_rgb(0_0_0/0.05)]">
         <ArtworkImage url={result.artworkUrl} alt={result.title} />
       </div>
       <div className="flex-1 min-w-0">
-        <h3 className="text-sm text-neutral-900 group-hover:text-black transition-colors truncate">
+        <h3 className="truncate text-sm font-medium text-ink">
           {result.title}
         </h3>
-        <p className="text-[11px] text-neutral-600 truncate mt-0.5">
+        <p className="mt-0.5 truncate text-xs text-ink-2">
           {result.artistName || "Unknown Artist"}
           {result.releaseDate ? ` · ${result.releaseDate.slice(0, 4)}` : ""}
         </p>
       </div>
-      <span className="shrink-0 text-[11px] text-neutral-400">
+      <span className="shrink-0 text-[11px] font-medium text-ink-3">
         {result.albumType || "Album"}
       </span>
     </InstantLink>
@@ -190,29 +184,26 @@ function SongRow({
     ? createSlug(result.albumName || result.title, result.albumId)
     : null;
   const href = albumSlug ? `/album/${albumSlug}?track=${result.id}` : undefined;
-  const rowClass = `flex items-center gap-3 p-3 hover:bg-[#f7f7f7] transition-colors group${reserveRightSpace ? " pr-9" : ""}`;
+  const rowClass = `group mx-1.5 flex items-center gap-3 rounded-xl px-2.5 py-2 transition-colors hover:bg-ink/[0.045]${reserveRightSpace ? " pr-9" : ""}`;
 
   const displayYear = result.releaseDate?.slice(0, 4) || "";
 
   const content = (
     <>
-      <div className="w-10 h-10 overflow-hidden bg-[#efefef] border border-[#dcdcdc] group-hover:border-[#c8c8c8] flex items-center justify-center flex-shrink-0 rounded-sm">
+      <div className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-md bg-subtle shadow-[inset_0_0_0_1px_rgb(0_0_0/0.05)]">
         <ArtworkImage
           url={result.artworkUrl}
           alt={result.title}
           fallbackIcon={
-            <IoMusicalNotes
-              className="text-neutral-600 group-hover:text-neutral-900"
-              size={18}
-            />
+            <IoMusicalNotes className="text-ink-3" size={18} />
           }
         />
       </div>
       <div className="flex-1 min-w-0">
-        <h3 className="text-sm text-neutral-900 group-hover:text-black transition-colors truncate">
+        <h3 className="truncate text-sm font-medium text-ink">
           {result.title}
         </h3>
-        <p className="text-[11px] text-neutral-600 truncate mt-0.5">
+        <p className="mt-0.5 truncate text-xs text-ink-2">
           {result.artistName || "Unknown Artist"}
           {result.albumName ? ` · ${result.albumName}` : ""}
           {displayYear ? ` · ${displayYear}` : ""}
@@ -221,7 +212,7 @@ function SongRow({
             : ""}
         </p>
       </div>
-      <span className="shrink-0 text-[11px] text-neutral-400">
+      <span className="shrink-0 text-[11px] font-medium text-ink-3">
         Song
       </span>
     </>
@@ -252,10 +243,10 @@ function SongRow({
 function SectionHeader({ label, count }: { label: string; count: number }) {
   if (count === 0) return null;
   return (
-    <div className="px-4 py-1.5 border-b border-[#e6e6e6]">
-      <h2 className="text-xs font-medium text-neutral-500">
+    <div className="px-4 pt-3 pb-1.5">
+      <h2 className="eyebrow text-ink-3">
         {label}
-        <span className="ml-1.5 text-neutral-400">({count})</span>
+        <span className="ml-1.5 opacity-70">{count}</span>
       </h2>
     </div>
   );
@@ -331,8 +322,8 @@ export default function SearchResults({
 
   const isGlass = variant === "glass";
   const panelClass = isGlass
-    ? "w-full bg-white/80 backdrop-blur-xl border border-white/30 z-[9999] max-h-[60vh] overflow-y-auto shadow-2xl rounded-xl text-left"
-    : "w-full bg-white border border-[#dcdcdc] z-[9999] max-h-[60vh] overflow-y-auto shadow-2xl rounded-xl text-left";
+    ? "z-[9999] max-h-[min(65vh,560px)] w-full overflow-y-auto overscroll-contain rounded-2xl bg-white/95 pb-1.5 text-left text-ink shadow-pop backdrop-blur-xl"
+    : "z-[9999] max-h-[min(65vh,560px)] w-full overflow-y-auto overscroll-contain rounded-2xl bg-surface pb-1.5 text-left shadow-pop";
 
   if (query.trim().length === 1) {
     return null;
@@ -344,22 +335,20 @@ export default function SearchResults({
 
     return (
       <div className={panelClass}>
-        <div className="flex items-center justify-between px-4 py-2 border-b border-[#e6e6e6]">
-          <h2 className="text-xs font-medium text-neutral-500">
-            Recent
-          </h2>
+        <div className="flex items-center justify-between px-4 pt-3 pb-1.5">
+          <h2 className="eyebrow text-ink-3">Recent</h2>
           {onClearHistory && (
             <button
               type="button"
               onMouseDown={(e) => e.preventDefault()}
               onClick={onClearHistory}
-              className="cursor-pointer text-xs font-medium text-neutral-500 transition-colors hover:text-neutral-900"
+              className="cursor-pointer text-xs font-medium text-ink-2 transition-colors hover:text-ink"
             >
               Clear
             </button>
           )}
         </div>
-        <div className="divide-y divide-[#ececec]">
+        <div className="pt-1">
           {history.map((item) => (
             <div key={item.recordId} className="relative group/recent">
               <ResultRow
@@ -372,7 +361,7 @@ export default function SearchResults({
                   type="button"
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => onRemoveClick(item.result.id)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-full bg-white/90 text-neutral-400 hover:text-neutral-900 opacity-0 group-hover/recent:opacity-100 transition-opacity"
+                  className="absolute top-1/2 right-4 -translate-y-1/2 cursor-pointer rounded-full p-1 text-ink-3 transition-opacity hover:bg-ink/[0.06] hover:text-ink md:opacity-0 md:group-hover/recent:opacity-100"
                   aria-label={`Remove ${item.result.title} from recent`}
                 >
                   <IoClose size={16} />
@@ -394,15 +383,15 @@ export default function SearchResults({
 
       {/* Loading skeletons */}
       {query && showLoading && (
-        <div className="divide-y divide-[#ececec]">
+        <div className="pt-1">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="flex items-center gap-3 p-3 animate-pulse">
-              <div className="w-10 h-10 rounded bg-[#efefef] flex-shrink-0" />
+            <div key={i} className="mx-1.5 flex animate-pulse items-center gap-3 px-2.5 py-2">
+              <div className="size-10 shrink-0 rounded-md bg-subtle" />
               <div className="flex-1 min-w-0 space-y-2">
-                <div className="h-3.5 bg-[#e5e5e5] rounded w-2/5" />
-                <div className="h-2.5 bg-[#ececec] rounded w-3/5" />
+                <div className="h-3.5 w-2/5 rounded bg-subtle" />
+                <div className="h-2.5 w-3/5 rounded bg-subtle/70" />
               </div>
-              <div className="h-3 bg-[#e5e5e5] rounded w-10 flex-shrink-0" />
+              <div className="h-3 w-10 shrink-0 rounded bg-subtle" />
             </div>
           ))}
         </div>
@@ -410,9 +399,9 @@ export default function SearchResults({
 
       {/* Fetching indicator */}
       {query && isFetching && !showLoading && results.length > 0 && (
-        <div className="h-0.5 bg-[#e9e9e9] overflow-hidden">
+        <div className="h-0.5 overflow-hidden bg-ink/[0.06]">
           <div
-            className="h-full bg-[#6f6f6f] w-1/3"
+            className="h-full w-1/3 bg-accent"
             style={{ animation: "searchSlide 1s ease-in-out infinite" }}
           />
         </div>
@@ -420,7 +409,7 @@ export default function SearchResults({
 
       {/* Results */}
       {query && !showLoading && results.length > 0 && (
-        <div className="divide-y divide-[#ececec]">
+        <div className="pt-1">
           {category === "all" && grouped ? (
             <>
               {grouped.artists.length > 0 && (
@@ -510,7 +499,7 @@ export default function SearchResults({
 
       {/* No results */}
       {query && !isFetching && !isPlaceholderData && results.length === 0 && (
-        <div className="px-4 py-8 text-center text-sm text-neutral-600">
+        <div className="px-4 py-10 text-center text-sm text-ink-2">
           No results for &ldquo;{query}&rdquo;
         </div>
       )}

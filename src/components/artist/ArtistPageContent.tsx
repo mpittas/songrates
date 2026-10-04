@@ -2,11 +2,10 @@
 
 import { useEffect, useMemo } from "react";
 
-import ArtistInfo from "./ArtistInfo";
 import Discography from "./Discography";
 import ArtistPageHeader from "./ArtistPageHeader";
+import ArtworkColorWash from "@/components/layout/ArtworkColorWash";
 import { addToHistory } from "@/lib/history";
-import MySection from "@/components/ui/MySection";
 import { usePlayerCore } from "@/context/PlayerContext";
 import { topSongsToTrackQueue } from "@/lib/topSongsQueue";
 import { artistPlaybackSource } from "@/lib/playbackSource";
@@ -16,7 +15,7 @@ import {
   TopSong,
 } from "@/types/music";
 import { cn } from "@/lib/utils";
-import { PAGE_CONTENT_TOP } from "@/lib/pageLayout";
+import { PAGE_CONTAINER } from "@/lib/pageLayout";
 
 interface ArtistPageContentProps {
   artistId: string;
@@ -53,10 +52,10 @@ export default function ArtistPageContent({
   );
 
   return (
-    <main className="min-h-screen text-neutral-900">
-      <MySection className={cn(PAGE_CONTENT_TOP, "pb-28 md:pb-32")}>
-        <div className="absolute left-0 top-0 z-0 h-[500px] w-full bg-linear-to-b from-[#f0e5df] to-[#f0e5df]/0" />
+    <main className="relative min-h-screen pb-12 text-ink">
+      <ArtworkColorWash src={artistInfo.image || "/vinyl-placeholder.svg"} />
 
+      <div className={cn("relative z-10", PAGE_CONTAINER, "pt-8 sm:pt-12")}>
         <ArtistPageHeader
           artistId={artistId}
           artistName={artistName}
@@ -71,27 +70,17 @@ export default function ArtistPageContent({
           }
         />
 
-        <div className="relative z-10 grid grid-cols-1 items-start gap-8 lg:grid-cols-[220px_1fr] lg:gap-20">
-          <div className="lg:sticky lg:top-20">
-            <ArtistInfo
-              artistName={artistName}
-              data={artistInfo}
-              className="w-full"
-            />
-          </div>
-
-          <div className="min-w-0">
-            <Discography
-              topSongs={topSongs}
-              latestSongs={latestSongs}
-              essentialAlbums={essentialAlbums}
-              albums={albums}
-              epsAndSingles={epsAndSingles}
-              appearsOn={appearsOn}
-            />
-          </div>
+        <div className="mt-12 sm:mt-16">
+          <Discography
+            topSongs={topSongs}
+            latestSongs={latestSongs}
+            essentialAlbums={essentialAlbums}
+            albums={albums}
+            epsAndSingles={epsAndSingles}
+            appearsOn={appearsOn}
+          />
         </div>
-      </MySection>
+      </div>
     </main>
   );
 }

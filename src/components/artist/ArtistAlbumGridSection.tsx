@@ -1,18 +1,25 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { LuChevronDown } from "react-icons/lu";
 import Button from "@/components/ui/Button";
 import AlbumCard from "@/components/album/AlbumCard";
 import { useRatingsContext } from "@/context/RatingsContext";
 import { cn } from "@/lib/utils";
 import type { Album } from "@/types/music";
 
+const GRID_COLUMNS = {
+  3: "grid-cols-2 sm:grid-cols-3",
+  4: "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4",
+  6: "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6",
+} as const;
+
 export default function ArtistAlbumGridSection({
   albums,
   initialCount = 12,
   ratingMode = "full",
   showOptionsMenu = true,
-  columns = 3,
+  columns = 4,
   showRemoveAllRatings = false,
   onAlbumFavoriteChange,
 }: {
@@ -20,7 +27,7 @@ export default function ArtistAlbumGridSection({
   initialCount?: number;
   ratingMode?: "any" | "full";
   showOptionsMenu?: boolean;
-  columns?: 3 | 4;
+  columns?: keyof typeof GRID_COLUMNS;
   showRemoveAllRatings?: boolean;
   onAlbumFavoriteChange?: (albumId: string, isFavorite: boolean) => void;
 }) {
@@ -43,10 +50,7 @@ export default function ArtistAlbumGridSection({
   return (
     <div>
       <div
-        className={cn(
-          "grid grid-cols-2 gap-[22px]",
-          columns === 4 ? "sm:grid-cols-4" : "sm:grid-cols-3",
-        )}
+        className={cn("grid gap-x-4 gap-y-8 md:gap-x-5", GRID_COLUMNS[columns])}
       >
         {visible.map((album) => (
           <AlbumCard
@@ -62,14 +66,22 @@ export default function ArtistAlbumGridSection({
         ))}
       </div>
       {hasMore && (
-        <div className="mt-4 flex justify-center pb-6">
+        <div className="mt-8 flex justify-center">
           <Button
-            variant="secondary"
-            size="xs"
+            variant="border"
+            size="sm"
             onClick={() => setShowAll(!showAll)}
-            className="w-full"
+            iconRight={
+              <LuChevronDown
+                size={15}
+                className={cn(
+                  "transition-transform duration-200",
+                  showAll && "rotate-180",
+                )}
+              />
+            }
           >
-            {showAll ? "Show less" : `Show all ${albums.length} releases`}
+            {showAll ? "Show less" : `Show all ${albums.length}`}
           </Button>
         </div>
       )}

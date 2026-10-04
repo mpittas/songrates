@@ -1,16 +1,19 @@
-import Link from "next/link";
-import { FaMusic } from "react-icons/fa6";
+import { LuCompass } from "react-icons/lu";
 
 import AlbumCard from "@/components/album/AlbumCard";
 import ExploreGenreRow from "@/components/explore/ExploreGenreRow";
 import FeaturedPlaylistCard from "@/components/explore/FeaturedPlaylistCard";
+import Button from "@/components/ui/Button";
+import CardRail from "@/components/ui/CardRail";
+import EmptyState from "@/components/ui/EmptyState";
 import MySection from "@/components/ui/MySection";
-import HeadingRow from "@/main-components/HeadingRow";
+import PageHeader from "@/components/ui/PageHeader";
+import SectionHeader from "@/components/ui/SectionHeader";
+import TrackList from "@/components/ui/TrackList";
 import PlaylistCard from "@/main-components/PlaylistCard";
 import SongRow from "@/main-components/SongRow";
 import { artworkUrl, getExploreData } from "@/lib/appleMusic/api";
-import { PAGE_CONTENT_TOP } from "@/lib/pageLayout";
-import { cn, formatTime } from "@/lib/utils";
+import { formatTime } from "@/lib/utils";
 import { Album } from "@/types/music";
 
 /** ISR: regenerate explore page at most once every 6 hours.
@@ -23,6 +26,8 @@ export const metadata = {
   title: "Explore | songrates",
   description: "Discover new music with Apple Music charts and playlists.",
 };
+
+const SECTION = "py-8 sm:py-10";
 
 function albumToCard(album: {
   id: string;
@@ -40,29 +45,6 @@ function albumToCard(album: {
   };
 }
 
-function EmptyExploreState() {
-  return (
-    <MySection className="py-16">
-      <div className="rounded-2xl border border-neutral-200 bg-white p-8 text-center">
-        <FaMusic className="mx-auto text-neutral-400" size={28} />
-        <h2 className="mt-4 text-xl font-semibold text-neutral-900">
-          Explore is warming up
-        </h2>
-        <p className="mx-auto mt-2 max-w-lg text-sm text-neutral-500">
-          Apple Music catalog data is not available right now. Try search while
-          the charts refresh.
-        </p>
-        <Link
-          href="/"
-          className="mt-5 inline-flex rounded-full bg-neutral-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-neutral-700"
-        >
-          Search music
-        </Link>
-      </div>
-    </MySection>
-  );
-}
-
 export default async function ExplorePage() {
   const explore = await getExploreData();
   const featuredPlaylists = explore.editorialPlaylists.slice(0, 2);
@@ -76,34 +58,61 @@ export default async function ExplorePage() {
     topSongs.length > 0;
 
   return (
-    <main
-      className={cn(
-        "min-h-screen bg-[#F2EFED] pb-16 text-neutral-900",
-        PAGE_CONTENT_TOP,
-      )}
-    >
+    <main className="min-h-screen pb-6 text-ink">
+      <PageHeader
+        eyebrow="Browse"
+        title="Explore"
+        description="Charts, fresh playlists and the albums everyone has on rotation right now."
+        actions={
+          <>
+            <Button href="/moods" variant="border" size="sm">
+              Moods
+            </Button>
+            <Button href="/genres" variant="border" size="sm">
+              Genres
+            </Button>
+          </>
+        }
+      />
+
       {!hasExploreData ? (
-        <EmptyExploreState />
+        <MySection className="pb-16">
+          <EmptyState
+            icon={<LuCompass size={22} />}
+            title="Explore is warming up"
+            description="Apple Music catalog data is not available right now. Try search while the charts refresh."
+            action={
+              <Button href="/" variant="primary" size="md">
+                Search music
+              </Button>
+            }
+          />
+        </MySection>
       ) : (
         <>
           {featuredPlaylists.length > 0 && (
-            <MySection className="py-8">
-              <HeadingRow title="Featured" />
-              <div className="grid gap-4 sm:grid-cols-2">
-                {featuredPlaylists.map((playlist) => (
+            <MySection className="pb-8 sm:pb-10">
+              <CardRail columns={2} itemWidth="wide">
+                {featuredPlaylists.map((playlist, index) => (
                   <FeaturedPlaylistCard
                     key={playlist.id}
                     playlist={playlist}
+                    priority={index === 0}
                   />
                 ))}
-              </div>
+              </CardRail>
             </MySection>
           )}
 
           {morePlaylists.length > 0 && (
-            <MySection className="py-8">
-              <HeadingRow title="Fresh Playlists" seeAllHref="/genres" />
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+            <MySection className={SECTION}>
+              <SectionHeader
+                title="Fresh playlists"
+                description="New and updated editorial playlists."
+                href="/genres"
+                linkLabel="All genres"
+              />
+              <CardRail columns={6}>
                 {morePlaylists.map((playlist, index) => (
                   <PlaylistCard
                     key={playlist.id}
@@ -111,14 +120,17 @@ export default async function ExplorePage() {
                     index={index}
                   />
                 ))}
-              </div>
+              </CardRail>
             </MySection>
           )}
 
           {explore.topAlbums.length > 0 && (
-            <MySection className="py-8">
-              <HeadingRow title="Albums People Are Playing" />
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+            <MySection className={SECTION}>
+              <SectionHeader
+                title="Albums people are playing"
+                description="The most played albums on Apple Music today."
+              />
+              <CardRail columns={6}>
                 {explore.topAlbums.slice(0, 12).map((album, index) => (
                   <AlbumCard
                     key={album.id}
@@ -128,14 +140,17 @@ export default async function ExplorePage() {
                     showOptionsMenu={false}
                   />
                 ))}
-              </div>
+              </CardRail>
             </MySection>
           )}
 
           {topSongs.length > 0 && (
-            <MySection className="py-8">
-              <HeadingRow title="Trending Songs" />
-              <div className="grid gap-1.5 sm:grid-cols-2 sm:gap-x-6 sm:gap-y-2">
+            <MySection className={SECTION}>
+              <SectionHeader
+                title="Trending songs"
+                description="Tap a cover to listen, then rate it."
+              />
+              <TrackList columns={2}>
                 {topSongs.map((song, index) => (
                   <SongRow
                     key={song.id}
@@ -144,7 +159,7 @@ export default async function ExplorePage() {
                     artist={song.artistName}
                     album={song.albumName || "Unknown Album"}
                     duration={formatTime(song.durationMs, "milliseconds")}
-                    artworkUrl={artworkUrl(song.artworkUrl, 80)}
+                    artworkUrl={artworkUrl(song.artworkUrl, 120)}
                     showAlbumInSubline={false}
                     track={{
                       id: song.id,
@@ -170,29 +185,38 @@ export default async function ExplorePage() {
                     }
                   />
                 ))}
-              </div>
+              </TrackList>
             </MySection>
           )}
 
           {explore.chartPlaylists.length > 0 && (
-            <MySection className="py-8">
-              <HeadingRow title="Charts" />
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+            <MySection className={SECTION}>
+              <SectionHeader
+                title="Charts"
+                description="Daily top 100s, updated every morning."
+              />
+              <CardRail columns={6}>
                 {explore.chartPlaylists.map((playlist, index) => (
                   <PlaylistCard
                     key={playlist.id}
                     playlist={playlist}
                     index={index}
+                    subtitle="Daily chart"
                   />
                 ))}
-              </div>
+              </CardRail>
             </MySection>
           )}
 
           {explore.genreSections.length > 0 && (
-            <MySection className="bg-white py-10">
-              <HeadingRow title="By Genre" />
-              <div className="flex flex-col gap-4">
+            <MySection className={SECTION}>
+              <SectionHeader
+                title="By genre"
+                description="Top albums across the biggest genres."
+                href="/genres"
+                linkLabel="All genres"
+              />
+              <div className="flex flex-col gap-10 sm:gap-12">
                 {explore.genreSections.map((section) => (
                   <ExploreGenreRow key={section.genre.id} section={section} />
                 ))}

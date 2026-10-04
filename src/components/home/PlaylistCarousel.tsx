@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, useEffect, MouseEvent, TouchEvent } from "react";
-import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
+import { LuChevronLeft, LuChevronRight } from "react-icons/lu";
 
 interface Props {
   children: React.ReactNode;
@@ -107,11 +107,12 @@ export default function PlaylistCarousel({ children }: Props) {
       {/* Left Arrow */}
       {canScrollLeft && (
         <button
+          type="button"
           onClick={() => scrollBy("left")}
-          className="absolute left-2 top-[40%] md:top-1/2 -translate-y-1/2 z-30 bg-black/60 hover:bg-black border border-white/20 text-white w-10 h-10 rounded-full flex items-center justify-center backdrop-blur-md opacity-0 group-hover/carousel:opacity-100 transition-opacity"
+          className="absolute top-[38%] -left-4 z-30 hidden size-10 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-surface text-ink opacity-0 shadow-pop transition-[opacity,transform] duration-200 group-hover/carousel:opacity-100 hover:scale-105 focus-visible:opacity-100 md:flex"
           aria-label="Scroll left"
         >
-          <FaChevronLeft className="w-5 h-5 pr-1" />
+          <LuChevronLeft size={20} />
         </button>
       )}
 
@@ -129,10 +130,10 @@ export default function PlaylistCarousel({ children }: Props) {
         onClickCapture={handleClickCapture}
         onScroll={checkScroll}
         draggable={false}
-        className={`flex overflow-x-auto overflow-y-hidden gap-4 w-full pb-6 px-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] select-none touch-pan-x [user-select:none] ${
+        className={`scrollbar-none -mx-4 flex w-auto touch-pan-x scroll-px-4 gap-3 overflow-x-auto overflow-y-hidden px-4 pb-2 select-none sm:-mx-6 sm:scroll-px-6 sm:gap-4 sm:px-6 md:mx-0 md:scroll-px-0 md:gap-5 md:px-0 ${
           isDragging
             ? "cursor-grabbing snap-none"
-            : "cursor-grab snap-x snap-mandatory scroll-smooth"
+            : "snap-x snap-mandatory scroll-smooth md:cursor-grab"
         }`}
       >
         {children}
@@ -141,11 +142,12 @@ export default function PlaylistCarousel({ children }: Props) {
       {/* Right Arrow */}
       {canScrollRight && (
         <button
+          type="button"
           onClick={() => scrollBy("right")}
-          className="absolute right-2 top-[40%] md:top-1/2 -translate-y-1/2 z-30 bg-black/60 hover:bg-black border border-white/20 text-white w-10 h-10 rounded-full flex items-center justify-center backdrop-blur-md opacity-0 group-hover/carousel:opacity-100 transition-opacity"
+          className="absolute top-[38%] -right-4 z-30 hidden size-10 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-surface text-ink opacity-0 shadow-pop transition-[opacity,transform] duration-200 group-hover/carousel:opacity-100 hover:scale-105 focus-visible:opacity-100 md:flex"
           aria-label="Scroll right"
         >
-          <FaChevronRight className="w-5 h-5 pl-1" />
+          <LuChevronRight size={20} />
         </button>
       )}
     </div>

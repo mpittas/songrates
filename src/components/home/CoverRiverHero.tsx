@@ -1,16 +1,9 @@
-import { Anton } from "next/font/google";
 import type { ReactNode } from "react";
 
 import Cover from "@/components/hero-banners/Cover";
 import type { HeroTrack } from "@/components/hero-banners/types";
 import InstantLink from "@/components/ui/InstantLink";
 import { cn, createSlug } from "@/lib/utils";
-
-const anton = Anton({
-  subsets: ["latin"],
-  weight: "400",
-  variable: "--font-anton",
-});
 
 type CoverRiverHeroProps = {
   tracks: HeroTrack[];
@@ -30,77 +23,60 @@ export default function CoverRiverHero({
     <section
       id={id}
       className={cn(
-        anton.variable,
-        "hero-river relative flex flex-col bg-[#0a0a0a]",
+        "relative px-2 pt-2 sm:px-3 sm:pt-3",
         underHeader ? undefined : "min-h-svh scroll-mt-14",
       )}
     >
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,#2c2624_0%,#161312_48%,#070707_100%)]" />
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_20%,rgba(255,255,255,0.07)_0%,transparent_52%)]" />
+      <div className="hero-river relative isolate overflow-hidden rounded-[28px] bg-[#0c0b0a] text-white sm:rounded-[32px]">
+        <HeroBackdrop />
 
-      <div
-        className={cn(
-          "relative z-20 flex flex-col items-center px-4 text-center",
-          underHeader
-            ? "pt-8 pb-6 sm:pt-10 sm:pb-8"
-            : "flex-1 justify-center py-16",
-        )}
-      >
-        <div className="w-full max-w-2xl">
-          <h1
-            className={cn(
-              "font-(family-name:--font-anton) leading-[0.9] font-normal tracking-[-0.02em] text-white uppercase",
-              underHeader
-                ? "text-[clamp(2.1rem,5.5vw,3.75rem)]"
-                : "text-[clamp(2.6rem,8vw,6rem)]",
-            )}
-          >
+        <div
+          className={cn(
+            "relative z-20 flex flex-col items-center px-5 text-center",
+            underHeader ? "pt-14 pb-10 sm:pt-20 sm:pb-12" : "py-24",
+          )}
+        >
+          <p className="eyebrow inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-3 py-1.5 text-white/70 backdrop-blur-md">
+            <span className="size-1.5 rounded-full bg-accent shadow-[0_0_12px_2px_rgb(226_83_27/0.7)]" />
+            Rate music track by track
+          </p>
+          <h1 className="mt-6 max-w-3xl font-display text-[2.75rem] leading-[0.95] font-semibold tracking-[-0.055em] text-balance sm:text-6xl lg:text-[5rem]">
             What are you rating?
           </h1>
-          <p
-            className={cn(
-              "mx-auto max-w-md text-white/65",
-              underHeader ? "mt-3 text-sm sm:text-base" : "mt-5 text-base",
-            )}
-          >
+          <p className="mt-5 max-w-md text-[15px] leading-6 text-white/60 sm:text-base">
             The catalog keeps moving. Stop it on a song, then score it.
           </p>
-          <div
-            className={cn(
-              "relative z-20 mx-auto w-full max-w-[640px] text-left",
-              underHeader ? "mt-5" : "mt-8",
-            )}
-          >
+          <div className="relative z-20 mt-8 w-full max-w-[600px] text-left">
             {search}
           </div>
         </div>
-      </div>
 
-      <MarqueeRow tracks={tracks} compact={underHeader} />
+        <MarqueeRow tracks={tracks} />
+      </div>
     </section>
   );
 }
 
-function MarqueeRow({
-  tracks,
-  compact,
-}: {
-  tracks: HeroTrack[];
-  compact: boolean;
-}) {
+function HeroBackdrop() {
+  return (
+    <div aria-hidden className="pointer-events-none absolute inset-0">
+      <div className="absolute inset-0 bg-[radial-gradient(120%_80%_at_50%_0%,#2a2320_0%,#141110_45%,#0a0909_100%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(40%_35%_at_50%_0%,rgb(226_83_27/0.22),transparent_70%)]" />
+      <div className="explore-hero-noise absolute inset-0 opacity-[0.07] mix-blend-overlay" />
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/25 to-transparent" />
+    </div>
+  );
+}
+
+function MarqueeRow({ tracks }: { tracks: HeroTrack[] }) {
   const items = uniqueAlbums(tracks);
   if (items.length === 0) return null;
 
   return (
-    <div
-      className={cn(
-        "relative z-10 overflow-hidden",
-        compact ? "pb-5" : "pb-8",
-      )}
-    >
+    <div className="relative z-10 overflow-hidden pb-6 [mask-image:linear-gradient(to_right,transparent,black_10%,black_90%,transparent)] sm:pb-8">
       <div className="hero-marquee-left flex w-max">
-        <CoverSequence tracks={items} compact={compact} />
-        <CoverSequence tracks={items} compact={compact} decorative />
+        <CoverSequence tracks={items} />
+        <CoverSequence tracks={items} decorative />
       </div>
     </div>
   );
@@ -108,11 +84,9 @@ function MarqueeRow({
 
 function CoverSequence({
   tracks,
-  compact,
   decorative = false,
 }: {
   tracks: HeroTrack[];
-  compact: boolean;
   decorative?: boolean;
 }) {
   return (
@@ -129,19 +103,17 @@ function CoverSequence({
         const href = `/album/${createSlug(title, albumId)}`;
 
         return (
-          <li key={albumId} className="shrink-0 px-1.5">
+          <li key={albumId} className="shrink-0 px-1.5 sm:px-2">
             <InstantLink
               href={href}
-              className={cn(
-                "relative block cursor-pointer overflow-hidden bg-neutral-800 transition-opacity hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white",
-                compact ? "size-24 sm:size-28" : "size-28 sm:size-36",
-              )}
+              className="group relative block size-24 cursor-pointer overflow-hidden rounded-xl bg-white/5 ring-1 ring-white/10 transition-transform duration-300 ease-out hover:-translate-y-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:size-32"
               tabIndex={decorative ? -1 : undefined}
+              aria-label={`${title} by ${track.artistName}`}
             >
               <Cover
                 url={track.artworkUrl}
-                alt={`${title} by ${track.artistName}`}
-                sizes={compact ? "112px" : "144px"}
+                alt=""
+                sizes="(min-width: 640px) 128px, 96px"
                 className="h-full w-full"
               />
             </InstantLink>

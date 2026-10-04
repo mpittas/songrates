@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import SearchBar from "@/components/search/SearchBar";
 
@@ -16,6 +16,10 @@ jest.mock("@/components/search/SearchResults", () => {
     ) : null;
   };
 });
+
+jest.mock("@/hooks/useSearchHistory", () => ({
+  useSearchHistory: () => ({ history: [], recordClick: jest.fn(), removeClick: jest.fn(), clearHistory: jest.fn() }),
+}));
 
 // Mock useSearchInput hook
 jest.mock("@/hooks/useSearchInput", () => ({
@@ -196,17 +200,7 @@ describe("SearchBar", () => {
     expect(clearQuery).toBeDefined();
   });
 
-  it("should use large size variant for SearchInput", () => {
-    render(<SearchBar />);
-
-    const input = screen.getByPlaceholderText(
-      "Search artists, albums, songs...",
-    );
-    // Large variant has specific classes
-    expect(input).toHaveClass("py-3", "text-lg");
-  });
-
-  it("should handle focus and blur events", () => {
+  it("should handle focus and delayed blur to allow result clicks", async () => {
     const { useSearchInput } = require("@/hooks/useSearchInput");
     const setIsFocused = jest.fn();
     useSearchInput.mockReturnValue({
@@ -229,6 +223,6 @@ describe("SearchBar", () => {
     expect(setIsFocused).toHaveBeenCalledWith(true);
 
     fireEvent.blur(input);
-    expect(setIsFocused).toHaveBeenCalledWith(false);
+    await waitFor(() => expect(setIsFocused).toHaveBeenCalledWith(false));
   });
 });

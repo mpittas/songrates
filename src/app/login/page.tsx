@@ -3,8 +3,8 @@
 import { useState, Suspense, useId } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { useRouter, useSearchParams } from "next/navigation";
-import MeshGradient from "@/components/mesh/MeshGradient";
-import { MeshGradientConfig } from "@/components/mesh/types";
+import AuthLayout, { AUTH_INPUT_CLASS } from "@/components/auth/AuthLayout";
+import LoginLoading from "./loading";
 import { FcGoogle } from "react-icons/fc";
 import { FaCheck, FaEye, FaEyeSlash } from "react-icons/fa";
 import Button from "@/components/ui/Button";
@@ -12,19 +12,6 @@ import {
   buildAuthCallbackUrl,
   getSafeNextPath,
 } from "@/lib/auth/redirect";
-
-const warmMeshConfig: MeshGradientConfig = {
-  speed: 0.2,
-  zoom: 1.2,
-  amplitude: 0.4,
-  contrast: 1.2,
-  noise: 0.05,
-  color1: "#f05f45",
-  color2: "#181018",
-};
-
-const AUTH_INPUT_CLASS =
-  "w-full rounded-md border border-[#d8d8d8] bg-white px-4 py-3 text-sm text-neutral-900 outline-hidden placeholder:text-neutral-500 focus:border-neutral-400";
 
 function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Something went wrong";
@@ -68,11 +55,15 @@ function LoginContent() {
 
   const isPasswordValid = Object.values(passwordCriteria).every(Boolean);
 
-  const supabase = createClient();
+  const [supabase] = useState(() => createClient());
 
   const toggleView = () => {
     const newView = isLogin ? "signup" : "login";
-    router.replace(`/login?view=${newView}`, { scroll: false });
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("view", newView);
+    setError(null);
+    setSuccess(null);
+    router.replace(`/login?${params.toString()}`, { scroll: false });
   };
 
   const handleSocialLogin = async (
@@ -146,20 +137,12 @@ function LoginContent() {
   };
 
   return (
-    <div className="grid h-[calc(100vh-65px)] w-full grid-cols-1 bg-[#ebe8e5] md:grid-cols-2">
-      <div className="relative hidden h-full w-full overflow-hidden md:block">
-        <MeshGradient
-          config={warmMeshConfig}
-          className="absolute inset-0 h-full w-full opacity-80"
-        />
-      </div>
-
-      <div className="relative mx-auto flex w-full max-w-[600px] flex-col justify-center bg-[#ebe8e5] p-6 md:p-12">
+    <AuthLayout>
         <div className="mb-8">
-          <h1 className="mb-2 text-2xl tracking-tight text-neutral-900">
+          <h1 className="font-display text-4xl leading-tight font-semibold tracking-[-0.045em] sm:text-5xl">
             {isLogin ? "Welcome back" : "Create your account"}
           </h1>
-          <p className="text-sm text-neutral-600">
+          <p className="mt-3 text-sm leading-6 text-ink-2">
             {isLogin
               ? "Enter your email and password to continue."
               : "Choose a username and password to get started."}
@@ -171,26 +154,27 @@ function LoginContent() {
             type="button"
             onClick={() => handleSocialLogin("google")}
             variant="border"
-            size="md"
+            disabled={loading}
+            size="lg"
             className="flex-1"
             iconLeft={<FcGoogle size={18} />}
           >
-            Google
+            Continue with Google
           </Button>
         </div>
 
         <div className="relative mb-6 flex items-center py-2">
-          <div className="grow border-t border-[#d9d9d9]" />
-          <span className="mx-4 shrink-0 text-xs text-neutral-600">
+          <div className="grow border-t border-line-strong" />
+          <span className="mx-4 shrink-0 text-xs text-ink-2">
             or
           </span>
-          <div className="grow border-t border-[#d9d9d9]" />
+          <div className="grow border-t border-line-strong" />
         </div>
 
         <form onSubmit={handleAuth} className="flex flex-col gap-4">
           {!isLogin && (
             <div className="flex flex-col gap-1.5">
-              <label htmlFor={usernameId} className="text-sm text-neutral-600">
+              <label htmlFor={usernameId} className="text-sm text-ink-2">
                 Username
               </label>
               <input
@@ -198,8 +182,11 @@ function LoginContent() {
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="eg. musiclover99"
+                placeholder="musiclover99"
                 required
+                minLength={3}
+                maxLength={20}
+                pattern="[a-zA-Z0-9_]+"
                 autoComplete="username"
                 className={AUTH_INPUT_CLASS}
               />
@@ -207,7 +194,7 @@ function LoginContent() {
           )}
 
           <div className="flex flex-col gap-1.5">
-            <label htmlFor={emailId} className="text-sm text-neutral-600">
+            <label htmlFor={emailId} className="text-sm text-ink-2">
               Email
             </label>
             <input
@@ -215,7 +202,7 @@ function LoginContent() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="eg. you@example.com"
+              placeholder="you@example.com"
               required
               autoComplete="email"
               className={AUTH_INPUT_CLASS}
@@ -223,7 +210,7 @@ function LoginContent() {
           </div>
 
           <div className="relative flex flex-col gap-1.5">
-            <label htmlFor={passwordId} className="text-sm text-neutral-600">
+            <label htmlFor={passwordId} className="text-sm text-ink-2">
               Password
             </label>
             <div className="relative">
@@ -237,14 +224,11 @@ function LoginContent() {
                 autoComplete={isLogin ? "current-password" : "new-password"}
                 className={`${AUTH_INPUT_CLASS} pr-10`}
               />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute top-1/2 right-3 -translate-y-1/2 cursor-pointer text-neutral-500 transition-colors hover:text-neutral-900"
-                aria-label={showPassword ? "Hide password" : "Show password"}
-              >
-                {showPassword ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
-              </button>
+              <div className="absolute top-1/2 right-2 -translate-y-1/2">
+                <Button icon variant="ghost" size="sm" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? "Hide password" : "Show password"} aria-pressed={showPassword}>
+                  {showPassword ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
+                </Button>
+              </div>
             </div>
             {!isLogin && password.length > 0 && (
               <div className="mt-2 space-y-1">
@@ -262,13 +246,13 @@ function LoginContent() {
                       ] ? (
                         <FaCheck className="text-emerald-500" size={10} />
                       ) : (
-                        <div className="w-2.5 h-2.5 rounded-full border border-neutral-600" />
+                        <div className="w-2.5 h-2.5 rounded-full border border-ink-3" />
                       )}
                       <span
                         className={
                           passwordCriteria[key as keyof typeof passwordCriteria]
                             ? "text-emerald-500"
-                            : "text-neutral-500"
+                            : "text-ink-3"
                         }
                       >
                         {label}
@@ -281,12 +265,12 @@ function LoginContent() {
           </div>
 
           {error && (
-            <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+            <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
               {error}
             </div>
           )}
           {success && (
-            <div className="rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+            <div role="status" className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
               {success}
             </div>
           )}
@@ -295,7 +279,7 @@ function LoginContent() {
             type="submit"
             disabled={loading || (!isLogin && !isPasswordValid)}
             variant="primary"
-            size="md"
+            size="lg"
             className="mt-2 w-full"
           >
             {loading
@@ -308,34 +292,19 @@ function LoginContent() {
           </Button>
         </form>
 
-        <p
-          className={
-            isLogin
-              ? "mt-6 text-center text-base text-neutral-700"
-              : "mt-6 text-center text-sm text-neutral-600"
-          }
-        >
-          {isLogin ? "Don't have an account? " : "Already have an account? "}
-          <button
-            type="button"
-            onClick={toggleView}
-            className={
-              isLogin
-                ? "cursor-pointer font-semibold text-neutral-900 underline decoration-2 underline-offset-4 hover:text-black"
-                : "cursor-pointer font-medium text-neutral-900 hover:underline"
-            }
-          >
-            {isLogin ? "Sign up" : "Log in"}
-          </button>
-        </p>
-      </div>
-    </div>
+        <div className="mt-6 flex items-center justify-center gap-1 text-sm text-ink-2">
+          <span>{isLogin ? "Don't have an account?" : "Already have an account?"}</span>
+          <Button variant="ghost" size="sm" onClick={toggleView} disabled={loading}>
+            {isLogin ? "Create account" : "Sign in"}
+          </Button>
+        </div>
+    </AuthLayout>
   );
 }
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-[#ebe8e5]" />}>
+    <Suspense fallback={<LoginLoading />}>
       <LoginContent />
     </Suspense>
   );
