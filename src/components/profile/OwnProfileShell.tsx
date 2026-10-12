@@ -9,9 +9,6 @@ import { createClient } from "@/utils/supabase/client";
 import ProfileLayout from "@/components/profile/ProfileLayout";
 import ProfileQuickLinks from "@/components/profile/ProfileQuickLinks";
 import ProfilePageSkeleton from "@/components/layout/ProfilePageSkeleton";
-import ProfileRank from "@/components/profile/ProfileRank";
-import LevelProgressionModal from "@/components/profile/LevelProgressionModal";
-import { useOwnProgression } from "@/components/profile/useOwnProgression";
 import { enlargeAvatarUrl } from "@/lib/albumReviews";
 
 export default function OwnProfileShell({
@@ -20,9 +17,7 @@ export default function OwnProfileShell({
   children: React.ReactNode;
 }) {
   const { user, signOut, loading } = useAuth();
-  const { view: progressionView } = useOwnProgression();
   const router = useRouter();
-  const [rankOpen, setRankOpen] = useState(false);
   const [profile, setProfile] = useState<{
     username: string | null;
     displayName: string | null;
@@ -85,14 +80,6 @@ export default function OwnProfileShell({
         displayName: profile.displayName,
         avatarUrl,
       }}
-      progression={
-        <ProfileRank
-          view={progressionView}
-          showProgress
-          onClick={() => setRankOpen(true)}
-          className="w-full max-w-none"
-        />
-      }
       actions={
         <>
           <Button href="/settings" variant="secondary" size="sm" iconLeft={<FaCog size={13} />}>
@@ -106,9 +93,6 @@ export default function OwnProfileShell({
       quickLinks={<ProfileQuickLinks mode="own" />}
     >
       {children}
-      {rankOpen ? (
-        <LevelProgressionModal onClose={() => setRankOpen(false)} />
-      ) : null}
     </ProfileLayout>
   );
 }

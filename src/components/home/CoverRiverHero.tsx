@@ -36,8 +36,7 @@ export default function CoverRiverHero({
             underHeader ? "pt-14 pb-10 sm:pt-20 sm:pb-12" : "py-24",
           )}
         >
-          <p className="eyebrow inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-3 py-1.5 text-white/70 backdrop-blur-md">
-            <span className="size-1.5 rounded-full bg-accent shadow-[0_0_12px_2px_rgb(226_83_27/0.7)]" />
+          <p className="eyebrow rounded-full border border-white/10 bg-white/[0.06] px-3 py-1.5 text-white/70 backdrop-blur-md">
             Rate music track by track
           </p>
           <h1 className="mt-6 max-w-3xl font-display text-[2.75rem] leading-[0.95] font-semibold tracking-[-0.055em] text-balance sm:text-6xl lg:text-[5rem]">

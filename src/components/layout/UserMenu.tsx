@@ -4,8 +4,7 @@ import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { User } from "@supabase/supabase-js";
-import { LuDisc3, LuLogOut, LuSettings } from "react-icons/lu";
-import LevelProgressionModal from "@/components/profile/LevelProgressionModal";
+import { LuLogOut, LuSettings } from "react-icons/lu";
 import { cn } from "@/lib/utils";
 
 interface UserMenuProps {
@@ -113,7 +112,6 @@ function MenuRow({
 
 export default function UserMenu({ user, onSignOut }: UserMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [rankOpen, setRankOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const menuId = useId();
 
@@ -201,16 +199,6 @@ export default function UserMenu({ user, onSignOut }: UserMenuProps) {
           <div className="mx-2.5 my-1 h-px bg-line" />
 
           <MenuRow
-            icon={<LuDisc3 size={16} strokeWidth={1.75} />}
-            onClick={() => {
-              close();
-              setRankOpen(true);
-            }}
-          >
-            Your rank
-          </MenuRow>
-
-          <MenuRow
             href="/settings"
             icon={<LuSettings size={16} strokeWidth={1.75} />}
             onClick={close}
@@ -230,10 +218,6 @@ export default function UserMenu({ user, onSignOut }: UserMenuProps) {
             Sign out
           </MenuRow>
         </div>
-      ) : null}
-
-      {rankOpen ? (
-        <LevelProgressionModal onClose={() => setRankOpen(false)} />
       ) : null}
     </div>
   );

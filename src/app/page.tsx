@@ -1,6 +1,5 @@
 import { Suspense } from "react";
 import HomeHero from "@/components/home/HomeHero";
-import JoinBanner from "@/components/home/JoinBanner";
 import LatestRatedAlbums from "@/components/home/LatestRatedAlbums";
 import DailyTop100Playlists from "@/components/home/DailyTop100Playlists";
 import TrendingSongs from "@/components/home/TrendingSongs";
@@ -32,8 +31,6 @@ export default function Home() {
       <Suspense fallback={<HomeGridSkeleton columns={4} />}>
         <LatestRatedAlbums />
       </Suspense>
-
-      <JoinBanner />
     </main>
   );
 }
